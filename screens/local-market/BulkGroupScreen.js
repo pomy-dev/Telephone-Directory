@@ -1,12 +1,15 @@
-import { Ionicons } from '@expo/vector-icons';
 import React, { useEffect, useState } from 'react';
 import {
   Alert,
   FlatList,
   ScrollView,
   StyleSheet,
+  ImageBackground,
+  Image,
   TouchableOpacity,
+  StatusBar,
   View,
+  Dimensions
 } from 'react-native';
 import {
   Badge,
@@ -16,10 +19,15 @@ import {
   FAB,
   Text,
 } from 'react-native-paper';
+import Carousel from 'react-native-reanimated-carousel';
+import { Icons } from '../../constants/Icons';
 import { mockBulkGroups, mockSuppliers } from '../../utils/mockData';
-import { theme } from '../../constants/vendorTheme';
+import { AppContext } from '../../context/appContext';
+
+const { width: screenWidth } = Dimensions.get('window');
 
 export default function BulkGroupsScreen({ navigation }) {
+  const { theme, isDarkMode } = React.useContext(AppContext);
   const [bulkGroups, setBulkGroups] = useState([]);
   const [userGroups, setUserGroups] = useState([]);
   const [selectedTab, setSelectedTab] = useState('available');
@@ -69,52 +77,52 @@ export default function BulkGroupsScreen({ navigation }) {
   };
 
   const renderGroupCard = ({ item, isUserGroup = false }) => (
-    <Card style={styles.groupCard}>
+    <Card style={[styles.groupCard, { backgroundColor: theme.colors.card }]}>
       <Card.Content>
         <View style={styles.groupHeader}>
           <View style={styles.groupInfo}>
             <Text style={styles.groupName}>{item.name}</Text>
-            <Text style={styles.groupCategory}>{item.category}</Text>
+            <Text style={[styles.groupCategory, { color: theme.colors.placeholder }]}>{item.category}</Text>
             <View style={styles.groupStats}>
               <View style={styles.statItem}>
-                <Ionicons name="people" size={16} color={theme.colors.primary} />
-                <Text style={styles.statText}>{item.memberCount} members</Text>
+                <Icons.Ionicons name="people" size={16} color={theme.colors.primary} />
+                <Text style={[styles.statText, { color: theme.colors.placeholder }]}>{item.memberCount} members</Text>
               </View>
               <View style={styles.statItem}>
-                <Ionicons name="cash" size={16} color={theme.colors.success} />
-                <Text style={styles.statText}>{item.savings}% savings</Text>
+                <Icons.Ionicons name="cash" size={16} color={theme.colors.success} />
+                <Text style={[styles.statText, { color: theme.colors.placeholder }]}>{item.savings}% savings</Text>
               </View>
             </View>
           </View>
           {isUserGroup && (
-            <Badge style={styles.joinedBadge}>Joined</Badge>
+            <Badge style={[styles.joinedBadge, { backgroundColor: theme.colors.success }]}>Joined</Badge>
           )}
         </View>
 
-        <Text style={styles.groupDescription}>
+        <Text style={[styles.groupDescription, { color: theme.colors.text }]}>
           {item.description}
         </Text>
 
         <View style={styles.groupDetails}>
           <View style={styles.detailRow}>
-            <Ionicons name="location-outline" size={16} color={theme.colors.primary} />
-            <Text style={styles.detailText}>Area: {item.area}</Text>
+            <Icons.Ionicons name="location-outline" size={16} color={theme.colors.primary} />
+            <Text style={[styles.detailText, { color: theme.colors.placeholder }]}>Area: {item.area}</Text>
           </View>
           <View style={styles.detailRow}>
-            <Ionicons name="calendar-outline" size={16} color={theme.colors.primary} />
-            <Text style={styles.detailText}>Next Order: {item.nextOrderDate}</Text>
+            <Icons.Ionicons name="calendar-outline" size={16} color={theme.colors.primary} />
+            <Text style={[styles.detailText, { color: theme.colors.placeholder }]}>Next Order: {item.nextOrderDate}</Text>
           </View>
           <View style={styles.detailRow}>
-            <Ionicons name="receipt-outline" size={16} color={theme.colors.primary} />
-            <Text style={styles.detailText}>Min Order: E{item.minOrder}</Text>
+            <Icons.Ionicons name="receipt-outline" size={16} color={theme.colors.primary} />
+            <Text style={[styles.detailText, { color: theme.colors.placeholder }]}>Min Order: E{item.minOrder}</Text>
           </View>
         </View>
 
         <View style={styles.benefitsContainer}>
-          <Text style={styles.benefitsTitle}>Benefits:</Text>
+          <Text style={[styles.benefitsTitle, { color: theme.colors.text }]}>Benefits:</Text>
           <View style={styles.benefitsList}>
             {item.benefits.map((benefit, index) => (
-              <Chip key={index} style={styles.benefitChip} compact>
+              <Chip key={index} style={[styles.benefitChip, { backgroundColor: '#F8FAFC' }]} compact>
                 {benefit}
               </Chip>
             ))}
@@ -123,79 +131,128 @@ export default function BulkGroupsScreen({ navigation }) {
 
         {isUserGroup ? (
           <View style={styles.groupActions}>
-            <Button
+            <TouchableOpacity
               mode="outlined"
               onPress={() => Alert.alert('Group Details', 'View group details and manage orders')}
-              style={styles.actionButton}
+              style={[styles.actionButton, { backgroundColor: theme.colors.indicator }]}
             >
-              Manage Group
-            </Button>
-            <Button
-              mode="contained"
+              <Text style={{ color: '#ccc', textAlign: 'center' }}>Manage Group</Text>
+
+            </TouchableOpacity>
+
+            <TouchableOpacity
               onPress={() => Alert.alert('Place Order', 'Place order for next bulk purchase')}
-              style={styles.actionButton}
+              style={[styles.actionButton, { backgroundColor: theme.colors.indicator }]}
             >
-              Place Order
-            </Button>
+              <Text style={{ color: '#ccc', textAlign: 'center' }}>View Updates</Text>
+            </TouchableOpacity>
           </View>
         ) : (
-          <Button
-            mode="contained"
+          <TouchableOpacity
             onPress={() => handleJoinGroup(item)}
-            style={styles.joinButton}
+            style={[styles.joinButton, { backgroundColor: theme.colors.indicator }]}
           >
-            Join Group
-          </Button>
+            <Text style={{ color: '#ccc', textAlign: 'center' }}>Join Group</Text>
+          </TouchableOpacity>
         )}
       </Card.Content>
     </Card>
   );
 
   const renderSupplierCard = ({ item }) => (
-    <Card style={styles.supplierCard}>
-      <Card.Content>
-        <View style={styles.supplierHeader}>
-          <Text style={styles.supplierName}>{item.name}</Text>
-          <Chip style={styles.supplierType}>{item.type}</Chip>
+    <Card style={[styles.supplierCard, { backgroundColor: theme.colors.card }]}>
+      {/* Image background using vendor logo/profileImage */}
+      <ImageBackground
+        source={{ uri: item.profileImage || item.logo }}
+        style={styles.cardImage}
+        imageStyle={{ borderTopLeftRadius: 8, borderTopRightRadius: 8 }}
+        resizeMode="cover"
+      >
+        <View style={styles.supplierOverlay}>
+          <View style={styles.supplierHeaderTop}>
+            <View style={styles.supplierTitleWrap}>
+              <Text style={[styles.supplierNameOverlay, { color: '#fff' }]} numberOfLines={1}>
+                {item.name}
+              </Text>
+              <Chip style={styles.supplierTypeOverlay} compact mode="flat">
+                {item.type}
+              </Chip>
+            </View>
+
+            <Badge style={[styles.ratingBadge, { backgroundColor: theme.colors.success }]}>
+              {item.rating}
+            </Badge>
+          </View>
+
+          <Text style={[styles.supplierShortDesc, { color: 'rgba(255,255,255,0.9)' }]} numberOfLines={2}>
+            {item.description}
+          </Text>
         </View>
+      </ImageBackground>
 
-        <Text style={styles.supplierDescription}>
-          {item.description}
-        </Text>
-
+      <Card.Content>
         <View style={styles.supplierDetails}>
           <View style={styles.detailRow}>
-            <Ionicons name="location-outline" size={16} color={theme.colors.primary} />
-            <Text style={styles.detailText}>{item.location}</Text>
+            <Icons.Ionicons name="location-outline" size={16} color={theme.colors.primary} />
+            <Text style={[styles.detailText, { color: theme.colors.placeholder }]}>{item.location}</Text>
           </View>
+
           <View style={styles.detailRow}>
-            <Ionicons name="phone-outline" size={16} color={theme.colors.primary} />
-            <Text style={styles.detailText}>{item.contact}</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Ionicons name="receipt-outline" size={16} color={theme.colors.primary} />
-            <Text style={styles.detailText}>Min Order: E{item.minOrder}</Text>
+            <Icons.Feather name="phone" size={16} color={theme.colors.primary} />
+            <Text style={[styles.detailText, { color: theme.colors.placeholder }]}>{item.contact.phone}</Text>
           </View>
         </View>
 
-        <View style={styles.productsContainer}>
-          <Text style={styles.productsTitle}>Products:</Text>
-          <View style={styles.productsList}>
-            {item.products.map((product, index) => (
-              <Chip key={index} style={styles.productChip} compact>
-                {product}
-              </Chip>
-            ))}
-          </View>
+        {/* Auto sliding adverts carousel */}
+        <View style={styles.carouselContainer}>
+          {item.deals && item.deals.length > 0 ? (
+            <Carousel
+              width={screenWidth - 60}
+              height={180}
+              loop
+              autoPlay
+              autoPlayInterval={3000}
+              data={item.deals}
+              scrollAnimationDuration={800}
+              style={{ alignSelf: 'center' }}
+              renderItem={({ item: ad }) => (
+                <Card style={[styles.adCard, { width: screenWidth - 60 }]}>
+                  <Image
+                    source={{ uri: ad.image }}
+                    style={styles.adImage}
+                    resizeMode="cover"
+                  />
+                  <Card.Content>
+                    <Text style={styles.adTitle}>{ad.title}</Text>
+                    <Text style={styles.adDesc} numberOfLines={2}>{ad.desc}</Text>
+                  </Card.Content>
+                </Card>
+              )}
+            />
+          ) : (
+            <View style={styles.noAds}>
+              <Text style={{ color: theme.colors.placeholder }}>No adverts available</Text>
+            </View>
+          )}
         </View>
 
-        <Button
-          mode="outlined"
-          onPress={() => Alert.alert('Contact Supplier', `Contact ${item.name} for bulk orders`)}
-          style={styles.contactButton}
-        >
-          Contact Supplier
-        </Button>
+        <View style={styles.entityActions}>
+          <Button
+            mode="outlined"
+            onPress={() => Alert.alert('Contact Supplier', `Contact ${item.name} for bulk orders`)}
+            style={styles.contactButton}
+          >
+            Contact Supplier
+          </Button>
+
+          <Button
+            mode="outlined"
+            onPress={() => Alert.alert('Order', `Place an order with ${item.name}`)}
+            style={styles.contactButton}
+          >
+            View Catelog
+          </Button>
+        </View>
       </Card.Content>
     </Card>
   );
@@ -224,9 +281,9 @@ export default function BulkGroupsScreen({ navigation }) {
             />
           ) : (
             <View style={styles.emptyState}>
-              <Ionicons name="people-outline" size={64} color={theme.colors.disabled} />
-              <Text style={styles.emptyTitle}>No Groups Joined</Text>
-              <Text style={styles.emptySubtitle}>
+              <Icons.Ionicons name="people-outline" size={64} color={theme.colors.disabled} />
+              <Text style={[styles.emptyTitle, { color: theme.colors.placeholder }]}>No Groups Joined</Text>
+              <Text style={[styles.emptySubtitle, { color: theme.colors.placeholder, }]}>
                 Join bulk buying groups to get better prices and connect with other vendors
               </Text>
               <Button
@@ -254,10 +311,15 @@ export default function BulkGroupsScreen({ navigation }) {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Bulk Buying Groups</Text>
-        <Text style={styles.headerSubtitle}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
+
+      <View style={[styles.header, { borderColor: theme.colors.border }]}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+          <Icons.Ionicons name='arrow-back' size={24} color={theme.colors.text} />
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Bulk Buying Groups</Text>
+        <Text style={[styles.headerSubtitle, { color: theme.colors.sub_text }]}>
           Join groups to get better prices on bulk orders
         </Text>
       </View>
@@ -265,29 +327,38 @@ export default function BulkGroupsScreen({ navigation }) {
       <View style={styles.tabContainer}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           <TouchableOpacity
-            style={[styles.tab, selectedTab === 'available' && styles.activeTab]}
+            style={[styles.tab, selectedTab === 'available' && styles.activeTab, { borderColor: theme.colors.border }]}
             onPress={() => setSelectedTab('available')}
           >
-            <Text style={[styles.tabText, selectedTab === 'available' && styles.activeTabText]}>
+            <Text style={[styles.tabText, selectedTab === 'available' && styles.activeTabText, {
+              color: theme.colors.placeholder
+            }]}>
               Available Groups
             </Text>
           </TouchableOpacity>
+
           <TouchableOpacity
-            style={[styles.tab, selectedTab === 'my-groups' && styles.activeTab]}
+            style={[styles.tab, selectedTab === 'my-groups' && styles.activeTab, { borderColor: theme.colors.border }]}
             onPress={() => setSelectedTab('my-groups')}
           >
-            <Text style={[styles.tabText, selectedTab === 'my-groups' && styles.activeTabText]}>
+            <Text style={[styles.tabText, selectedTab === 'my-groups' && styles.activeTabText, {
+              color: theme.colors.placeholder
+            }]}>
               My Groups ({userGroups.length})
             </Text>
           </TouchableOpacity>
+
           <TouchableOpacity
-            style={[styles.tab, selectedTab === 'suppliers' && styles.activeTab]}
+            style={[styles.tab, selectedTab === 'suppliers' && styles.activeTab, { borderColor: theme.colors.border }]}
             onPress={() => setSelectedTab('suppliers')}
           >
-            <Text style={[styles.tabText, selectedTab === 'suppliers' && styles.activeTabText]}>
+            <Text style={[styles.tabText, selectedTab === 'suppliers' && styles.activeTabText, {
+              color: theme.colors.placeholder
+            }]}>
               Suppliers
             </Text>
           </TouchableOpacity>
+
         </ScrollView>
       </View>
 
@@ -295,7 +366,7 @@ export default function BulkGroupsScreen({ navigation }) {
 
       <FAB
         icon="plus"
-        style={styles.fab}
+        style={[styles.fab, { backgroundColor: theme.colors.sub_card }]}
         onPress={handleCreateGroup}
         label="Create Group"
       />
@@ -306,48 +377,51 @@ export default function BulkGroupsScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
   },
   header: {
-    backgroundColor: theme.colors.primary,
-    paddingTop: 60,
+    paddingTop: 30,
     paddingBottom: 20,
     paddingHorizontal: 20,
+    borderBottomWidth: 1
+  },
+  backBtn: {
+    position: 'absolute',
+    left: 20,
+    top: 35
   },
   headerTitle: {
-    color: 'white',
+    marginLeft: '20%',
     fontSize: 24,
     fontWeight: 'bold',
   },
   headerSubtitle: {
-    color: 'white',
     opacity: 0.9,
     marginTop: 4,
+    marginLeft: '10%',
   },
   tabContainer: {
-    backgroundColor: 'white',
     paddingVertical: 12,
-    elevation: 2,
   },
   tab: {
     paddingHorizontal: 20,
     paddingVertical: 8,
     marginHorizontal: 8,
     borderRadius: 20,
+    borderWidth: 1,
+    backgroundColor: '#F0F4FF'
   },
   activeTab: {
-    backgroundColor: theme.colors.primary,
+    backgroundColor: "#003366"
   },
   tabText: {
     fontSize: 14,
     fontWeight: '500',
-    color: theme.colors.placeholder,
   },
   activeTabText: {
-    color: 'white',
+    color: '#ffffff',
   },
   listContainer: {
-    padding: 20,
+    padding: 10,
     paddingBottom: 100,
   },
   groupCard: {
@@ -370,7 +444,6 @@ const styles = StyleSheet.create({
   },
   groupCategory: {
     fontSize: 14,
-    color: theme.colors.placeholder,
     marginBottom: 8,
   },
   groupStats: {
@@ -383,16 +456,13 @@ const styles = StyleSheet.create({
   },
   statText: {
     fontSize: 12,
-    color: theme.colors.placeholder,
     marginLeft: 4,
   },
   joinedBadge: {
-    backgroundColor: theme.colors.success,
     color: 'white',
   },
   groupDescription: {
     fontSize: 14,
-    color: theme.colors.text,
     marginBottom: 12,
   },
   groupDetails: {
@@ -405,7 +475,6 @@ const styles = StyleSheet.create({
   },
   detailText: {
     fontSize: 12,
-    color: theme.colors.placeholder,
     marginLeft: 8,
   },
   benefitsContainer: {
@@ -415,7 +484,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
     marginBottom: 8,
-    color: theme.colors.text,
   },
   benefitsList: {
     flexDirection: 'row',
@@ -424,66 +492,98 @@ const styles = StyleSheet.create({
   benefitChip: {
     marginRight: 8,
     marginBottom: 4,
-    backgroundColor: theme.colors.surface,
   },
   groupActions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
   actionButton: {
-    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderRadius: 10,
     marginHorizontal: 4,
   },
   joinButton: {
+    paddingVertical: 10,
+    borderRadius: 10,
     marginTop: 8,
   },
   supplierCard: {
     marginBottom: 16,
     elevation: 4,
+    borderRadius: 8,
+    overflow: 'hidden',
   },
-  supplierHeader: {
+  cardImage: {
+    height: 160,
+    width: '100%',
+    justifyContent: 'flex-end',
+  },
+  supplierOverlay: {
+    padding: 12,
+    backgroundColor: 'rgba(0,0,0,0.28)',
+  },
+  supplierHeaderTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
+    alignItems: 'center',
   },
-  supplierName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    flex: 1,
+  supplierTitleWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  supplierType: {
-    backgroundColor: theme.colors.accent,
-    color: 'white',
+  supplierNameOverlay: {
+    fontSize: 16,
+    fontWeight: '700',
+    maxWidth: '75%',
   },
-  supplierDescription: {
+  supplierTypeOverlay: {
+    marginLeft: 8,
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    color: '#fff',
+  },
+  supplierShortDesc: {
+    marginTop: 6,
+    fontSize: 13,
+  },
+  carouselContainer: {
+    alignItems: 'center',
+  },
+  adCard: {
+    borderRadius: 8,
+    // overflow: 'hidden',
+    // elevation: 2,
+  },
+  adImage: {
+    width: '100%',
+    height: 100,
+  },
+  adTitle: {
     fontSize: 14,
-    color: theme.colors.text,
-    marginBottom: 12,
+    fontWeight: '700',
+    marginTop: 6,
+  },
+  adDesc: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
+  },
+  noAds: {
+    height: 120,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   supplierDetails: {
-    marginBottom: 12,
-  },
-  productsContainer: {
-    marginBottom: 16,
-  },
-  productsTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
+    marginTop: 12,
     marginBottom: 8,
-    color: theme.colors.text,
   },
-  productsList: {
+  entityActions: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  productChip: {
-    marginRight: 8,
-    marginBottom: 4,
-    backgroundColor: theme.colors.surface,
+    justifyContent: 'space-between',
   },
   contactButton: {
-    marginTop: 8,
+    alignItems: 'center',
+    justifyContent: 'center'
   },
   emptyState: {
     alignItems: 'center',
@@ -491,12 +591,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   emptyTitle: {
-    color: theme.colors.placeholder,
     marginTop: 16,
     marginBottom: 8,
   },
   emptySubtitle: {
-    color: theme.colors.placeholder,
     textAlign: 'center',
     marginBottom: 24,
   },
@@ -509,6 +607,5 @@ const styles = StyleSheet.create({
     marginVertical: 60,
     right: 0,
     bottom: 0,
-    backgroundColor: theme.colors.accent,
   },
 });

@@ -356,12 +356,7 @@ const HomeScreen = ({ navigation }) => {
       />
 
       {/* Login Modal */}
-      {showLogin && (
-        <LoginScreen
-          isLoginVisible={showLogin}
-          onClose={() => setShowLogin(false)}
-        />
-      )}
+      <LoginScreen isLoginVisible={showLogin} onClose={() => setShowLogin(false)} />
 
       {/* Show ProfileScreen Modal */}
       {showProfile && (

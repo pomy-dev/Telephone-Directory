@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   View,
   TextInput,
+  StatusBar
 } from 'react-native';
 import {
   Button,
@@ -15,15 +16,17 @@ import {
   RadioButton,
   Text,
 } from 'react-native-paper';
+import CustomLoader from '../../components/customLoader';
 import { mockAreas, mockCategories } from '../../utils/mockData';
 import { Icons } from '../../constants/Icons';
+import MapPickerModal from '../../components/mapPicker';
 import { AppContext } from '../../context/appContext';
 import { AuthContext } from '../../context/authProvider';
 import { addVendor } from '../../service/getApi';
 
 export default function VendorRegistrationScreen({ navigation }) {
   const { theme, isDarkMode } = React.useContext(AppContext);
-  const { user, loading } = React.useContext(AuthContext);
+  const { user } = React.useContext(AuthContext);
   const [formData, setFormData] = useState({
     businessName: '',
     ownerName: '',
@@ -43,12 +46,17 @@ export default function VendorRegistrationScreen({ navigation }) {
       saturday: '',
       sunday: '',
     },
+    location: {
+      latitude: null,
+      longitude: null
+    },
     deliveryRadius: 5,
     acceptsBulkOrders: false,
     hasLicense: false,
   });
   const [isLoading, setIsLoading] = useState(false);
   const [step, setStep] = useState(1);
+  const [showMapPicker, setShowMapPicker] = useState(false);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({
@@ -87,7 +95,6 @@ export default function VendorRegistrationScreen({ navigation }) {
   const handleSubmit = async () => {
     setIsLoading(true);
     try {
-      console.log('Submitting vendor registration:\n\t', formData);
       const response = await addVendor(formData);
       if (response)
         Alert.alert('Success', 'Vendor registration submitted successfully');
@@ -97,29 +104,29 @@ export default function VendorRegistrationScreen({ navigation }) {
     } catch (error) {
       Alert.alert('Error', 'An error occurred while submitting your registration');
     } finally {
-      // setFormData({
-      //   businessName: '',
-      //   ownerName: '',
-      //   email: user?.email || '',
-      //   phone: '',
-      //   businessType: 'street_vendor',
-      //   category: '',
-      //   area: '',
-      //   address: '',
-      //   description: '',
-      //   workingHours: {
-      //     monday: '',
-      //     tuesday: '',
-      //     wednesday: '',
-      //     thursday: '',
-      //     friday: '',
-      //     saturday: '',
-      //     sunday: '',
-      //   },
-      //   deliveryRadius: 5,
-      //   acceptsBulkOrders: false,
-      //   hasLicense: false,
-      // });
+      setFormData({
+        businessName: '',
+        ownerName: '',
+        email: user?.email || '',
+        phone: '',
+        businessType: 'street_vendor',
+        category: '',
+        area: '',
+        address: '',
+        description: '',
+        workingHours: {
+          monday: '',
+          tuesday: '',
+          wednesday: '',
+          thursday: '',
+          friday: '',
+          saturday: '',
+          sunday: '',
+        },
+        deliveryRadius: 5,
+        acceptsBulkOrders: false,
+        hasLicense: false,
+      });
       setStep(1);
       setIsLoading(false);
     }
@@ -155,7 +162,7 @@ export default function VendorRegistrationScreen({ navigation }) {
           placeholder="Email Address *"
           value={formData.email}
           onChangeText={(value) => handleInputChange('email', value)}
-          editable={!!user?.email ? false : true}
+          // editable={!!user?.email ? false : true}
           keyboardType="email-address"
           style={styles.textInput}
         />
@@ -231,10 +238,33 @@ export default function VendorRegistrationScreen({ navigation }) {
 
   const renderStep2 = () => (
     <View>
-      <Text style={[styles.stepTitle, { color: theme.colors.primary }]}>Business Details</Text>
+      <Text style={[styles.stepTitle, { color: theme.colors.text }]}>Business Details</Text>
       <Text style={[styles.stepSubtitle, { color: theme.colors.placeholder }]}>
         Additional information about your business
       </Text>
+
+      <View style={styles.field}>
+        <TextInput
+          placeholder="Business Description"
+          value={formData.description}
+          onChangeText={(value) => handleInputChange('description', value)}
+          multiline
+          style={[styles.textInput, styles.textArea]}
+        />
+      </View>
+
+      <Text style={styles.sectionTitle}>Business Location</Text>
+      <View style={styles.field}>
+        <Button
+          mode="outlined"
+          onPress={() => setShowMapPicker(true)}
+          style={styles.textInput}
+        >
+          {formData.location.latitude && formData.location.longitude
+            ? `Update Location (Lat ${formData.location.latitude.toFixed(4)}, Lng ${formData.location.longitude.toFixed(4)})`
+            : 'Pick Location on Map'}
+        </Button>
+      </View>
 
       <View style={styles.field}>
         <TextInput
@@ -243,16 +273,6 @@ export default function VendorRegistrationScreen({ navigation }) {
           onChangeText={(value) => handleInputChange('address', value)}
           multiline
           style={styles.textInput}
-        />
-      </View>
-
-      <View style={styles.field}>
-        <TextInput
-          placeholder="Business Description"
-          value={formData.description}
-          onChangeText={(value) => handleInputChange('description', value)}
-          numberOfLines={3}
-          style={styles.textArea}
         />
       </View>
 
@@ -306,6 +326,8 @@ export default function VendorRegistrationScreen({ navigation }) {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
+
       {/* header */}
       <View style={[styles.header, { borderColor: theme.colors.border }]}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={[styles.backButton, { color: theme.colors.text }]}>
@@ -313,30 +335,50 @@ export default function VendorRegistrationScreen({ navigation }) {
         </TouchableOpacity>
 
         <View style={styles.headerContent}>
-          <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Vendor Registration</Text>
+          <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Join Local Market</Text>
           <Text style={[styles.stepIndicator, { color: theme.colors.sub_text }]}>Step {step} of 2</Text>
         </View>
+
+        <TouchableOpacity onPress={() => navigation.navigate('VendorHome')} style={[styles.backNav, { color: theme.colors.text, marginLeft: '15%' }]}>
+          <Icons.MaterialIcons name='store' style={{ color: theme.colors.text, fontSize: 24 }} />
+        </TouchableOpacity>
       </View>
 
+      {/* loader */}
+      {isLoading && <CustomLoader />}
+
+      {/* Map picker modal */}
+      <MapPickerModal
+        visible={showMapPicker}
+        initialCoords={formData.location.latitude ? formData.location : null}
+        onPick={(coord) => {
+          setFormData(prev => ({
+            ...prev,
+            location: { latitude: coord.latitude, longitude: coord.longitude },
+          }));
+        }}
+        onClose={() => setShowMapPicker(false)}
+      />
+
       <ScrollView>
-        {/* business info */}
         <Card style={styles.card}>
           <Card.Content>
+            {/* business info */}
             {step === 1 ? renderStep1() : renderStep2()}
 
+            {/* buttons */}
             <View style={styles.buttonContainer}>
               <Button
                 mode="outlined"
                 onPress={() => setStep(1)}
                 disabled={step === 1}
-                style={styles.backButton}
+                style={styles.backNav}
               >
                 Back
               </Button>
               <Button
                 mode="contained"
                 onPress={handleNext}
-                loading={isLoading}
                 style={{ backgroundColor: theme.colors.indicator }}
                 contentStyle={styles.buttonContent}
               >
@@ -394,9 +436,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginLeft: '15%',
   },
-  backButton: {
+  backNav: {
     alignItems: 'center',
     justifyContent: 'center'
+  },
+  backButton: {
+    position: 'absolute',
+    left: 20
   },
   backButtonText: {
     color: 'white',
@@ -433,16 +479,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   textArea: {
-    height: 80,
-    textAlignVertical: 'top',
-    backgroundColor: '#f9fafb',
-    borderWidth: 1,
-    color: '#6b7280',
-    borderColor: '#e5e7eb',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 16,
+    minHeight: 80,
+    textAlignVertical: 'top'
   },
   field: {
     marginBottom: 16,

@@ -2173,7 +2173,7 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: 14,
-    color: "#666666",
+    color: "#cccc",
     marginLeft: 6,
     fontWeight: "500",
   },

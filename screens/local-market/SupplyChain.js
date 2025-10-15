@@ -1,379 +1,149 @@
-import { Ionicons } from '@expo/vector-icons';
+// SupplyChainScreen.js
+import { Icons } from '../../constants/Icons';
 import React, { useEffect, useState } from 'react';
 import {
-    Alert,
-    FlatList,
-    StyleSheet,
-    TouchableOpacity,
-    View
+  Alert,
+  FlatList,
+  StyleSheet,
+  TouchableOpacity,
+  View,
+  Image,
+  Dimensions,
+  StatusBar
 } from 'react-native';
-import {
-    Badge,
-    Button,
-    Card,
-    Chip,
-    FAB,
-    Text,
-} from 'react-native-paper';
-import { mockSuppliers } from '../../utils/mockData';
-import { theme } from '../../constants/vendorTheme';
+import { Badge, Card, Chip, Text } from 'react-native-paper';
+import Carousel from 'react-native-reanimated-carousel';
+import { mockSuppliers, mockBrokers, mockFinanceOffers } from '../../utils/mockData';
+import { AppContext } from '../../context/appContext';
+import { ScrollView } from 'react-native-gesture-handler';
+
+const { width: screenWidth } = Dimensions.get('window');
 
 export default function SupplyChainScreen({ navigation }) {
+  const { theme, isDarkMode } = React.useContext(AppContext);
   const [selectedTab, setSelectedTab] = useState('suppliers');
   const [suppliers, setSuppliers] = useState([]);
-  const [bulkOrders, setBulkOrders] = useState([]);
-  const [vendorRequests, setVendorRequests] = useState([]);
+  const [brokers, setBrokers] = useState([]);
+  const [financeOffers, setFinanceOffers] = useState([]);
 
   useEffect(() => {
     setSuppliers(mockSuppliers);
-    // Mock bulk orders data
-    setBulkOrders([
-      {
-        id: '1',
-        supplier: 'Swazi Fresh Produce Co.',
-        group: 'Mbabane Vegetable Collective',
-        totalAmount: 2500,
-        status: 'pending',
-        orderDate: '2024-01-15',
-        deliveryDate: '2024-01-20',
-        items: [
-          { name: 'Tomatoes', quantity: 100, unit: 'kg', price: 15 },
-          { name: 'Onions', quantity: 80, unit: 'kg', price: 12 },
-          { name: 'Carrots', quantity: 60, unit: 'kg', price: 18 }
-        ]
-      },
-      {
-        id: '2',
-        supplier: 'Royal Swazi Foods',
-        group: 'Manzini Food Suppliers',
-        totalAmount: 1800,
-        status: 'confirmed',
-        orderDate: '2024-01-18',
-        deliveryDate: '2024-01-25',
-        items: [
-          { name: 'Traditional Stew Mix', quantity: 50, unit: 'packets', price: 25 },
-          { name: 'Fresh Bread', quantity: 100, unit: 'loaves', price: 8 }
-        ]
-      }
-    ]);
-    
-    // Mock vendor requests
-    setVendorRequests([
-      {
-        id: '1',
-        vendorName: 'New Vendor ABC',
-        category: 'Vegetables',
-        requestType: 'supplier_partnership',
-        status: 'pending',
-        requestDate: '2024-01-14',
-        description: 'Requesting partnership for bulk vegetable supply'
-      },
-      {
-        id: '2',
-        vendorName: 'Local Craft Shop',
-        category: 'Handicrafts',
-        requestType: 'bulk_group_join',
-        status: 'approved',
-        requestDate: '2024-01-12',
-        description: 'Requesting to join handicraft bulk buying group'
-      }
-    ]);
+    setBrokers(mockBrokers);
+    setFinanceOffers(mockFinanceOffers);
   }, []);
 
-  const handleSupplierContact = (supplier) => {
+  const handleContact = (item, type) => {
     Alert.alert(
-      'Contact Supplier',
-      `Contact ${supplier.name}?\n\nPhone: ${supplier.contact}\nLocation: ${supplier.location}`,
+      `Contact ${type}`,
+      `Contact ${item.name}?\n\nPhone: ${item.contact.phone}\nEmail: ${item.contact.email}`,
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Call', onPress: () => console.log('Call supplier') },
-        { text: 'Email', onPress: () => console.log('Email supplier') }
+        { text: 'Call', onPress: () => console.log(`Call ${type}`) },
+        { text: 'Email', onPress: () => console.log(`Email ${type}`) },
       ]
     );
   };
 
-  const handleBulkOrderAction = (order, action) => {
-    switch (action) {
-      case 'approve':
-        Alert.alert(
-          'Approve Order',
-          `Approve bulk order for ${order.supplier}?`,
-          [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Approve', onPress: () => console.log('Approve order') }
-          ]
-        );
-        break;
-      case 'reject':
-        Alert.alert(
-          'Reject Order',
-          `Reject bulk order for ${order.supplier}?`,
-          [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Reject', onPress: () => console.log('Reject order') }
-          ]
-        );
-        break;
-      case 'track':
-        Alert.alert(
-          'Track Order',
-          `Order #${order.id}\nStatus: ${order.status}\nDelivery Date: ${order.deliveryDate}`,
-          [{ text: 'OK' }]
-        );
-        break;
-    }
-  };
-
-  const handleVendorRequestAction = (request, action) => {
-    switch (action) {
-      case 'approve':
-        Alert.alert(
-          'Approve Request',
-          `Approve ${request.requestType} request from ${request.vendorName}?`,
-          [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Approve', onPress: () => console.log('Approve request') }
-          ]
-        );
-        break;
-      case 'reject':
-        Alert.alert(
-          'Reject Request',
-          `Reject ${request.requestType} request from ${request.vendorName}?`,
-          [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Reject', onPress: () => console.log('Reject request') }
-          ]
-        );
-        break;
-    }
-  };
-
-  const renderSupplierCard = ({ item }) => (
-    <Card style={styles.card}>
+  const renderAdCard = ({ item }) => (
+    <Card style={styles.adCard}>
+      <Image source={{ uri: item.image }} style={styles.adImage} />
       <Card.Content>
-        <View style={styles.supplierHeader}>
-          <View style={styles.supplierInfo}>
-            <Text style={styles.supplierName}>{item.name}</Text>
-            <Text style={styles.supplierType}>{item.type} • {item.category}</Text>
-          </View>
-          <Chip style={styles.supplierChip}>{item.type}</Chip>
-        </View>
-        
-        <Text style={styles.supplierDescription}>
-          {item.description}
-        </Text>
-
-        <View style={styles.supplierDetails}>
-          <View style={styles.detailRow}>
-            <Ionicons name="location-outline" size={16} color={theme.colors.primary} />
-            <Text style={styles.detailText}>{item.location}</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Ionicons name="phone-outline" size={16} color={theme.colors.primary} />
-            <Text style={styles.detailText}>{item.contact}</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Ionicons name="receipt-outline" size={16} color={theme.colors.primary} />
-            <Text style={styles.detailText}>Min Order: E{item.minOrder}</Text>
-          </View>
-        </View>
-
-        <View style={styles.productsContainer}>
-          <Text style={styles.productsTitle}>Products:</Text>
-          <View style={styles.productsList}>
-            {item.products.map((product, index) => (
-              <Chip key={index} style={styles.productChip} compact>
-                {product}
-              </Chip>
-            ))}
-          </View>
-        </View>
-
-        <View style={styles.supplierActions}>
-          <Button 
-            mode="outlined" 
-            onPress={() => handleSupplierContact(item)}
-            style={styles.actionButton}
-            icon="phone"
-          >
-            Contact
-          </Button>
-          <Button 
-            mode="contained" 
-            onPress={() => Alert.alert('Place Order', `Place bulk order with ${item.name}`)}
-            style={styles.actionButton}
-            icon="shopping-cart"
-          >
-            Order
-          </Button>
-        </View>
+        <Text style={[styles.adTitle, { color: theme.colors.text }]}>{item.title}</Text>
+        <Text style={[styles.adDesc, { color: theme.colors.placeholder }]}>{item.desc}</Text>
       </Card.Content>
     </Card>
   );
 
-  const renderBulkOrderCard = ({ item }) => (
-    <Card style={styles.card}>
+  const renderEntityCard = ({ item, type }) => (
+    <Card style={[styles.card, { backgroundColor: theme.colors.card }]}>
       <Card.Content>
-        <View style={styles.orderHeader}>
-          <View style={styles.orderInfo}>
-            <Text style={styles.orderTitle}>Order #{item.id}</Text>
-            <Text style={styles.orderSupplier}>{item.supplier}</Text>
+        <View style={styles.entityHeader}>
+          <Image source={{ uri: item.logo }} style={styles.entityLogo} />
+          <View style={styles.entityInfo}>
+            <Text style={styles.entityName}>{item.name}</Text>
+            <Text style={[styles.entityType, { color: theme.colors.placeholder }]}>
+              {type === 'suppliers' ? `${item.type} • ${item.category}` : item.specialty || item.offer}
+            </Text>
           </View>
-          <Badge style={[styles.statusBadge, { backgroundColor: getOrderStatusColor(item.status) }]}>
-            {item.status.toUpperCase()}
+          <Badge style={[styles.ratingBadge, { backgroundColor: theme.colors.success }]}>
+            {item.rating} ({item.reviewCount})
           </Badge>
         </View>
 
-        <View style={styles.orderDetails}>
-          <View style={styles.detailRow}>
-            <Ionicons name="people" size={16} color={theme.colors.primary} />
-            <Text style={styles.detailText}>Group: {item.group}</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Ionicons name="calendar" size={16} color={theme.colors.primary} />
-            <Text style={styles.detailText}>Order Date: {item.orderDate}</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Ionicons name="truck" size={16} color={theme.colors.primary} />
-            <Text style={styles.detailText}>Delivery: {item.deliveryDate}</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Ionicons name="cash" size={16} color={theme.colors.primary} />
-            <Text style={styles.detailText}>Total: E{item.totalAmount}</Text>
-          </View>
-        </View>
+        <Text style={[styles.entityDescription, { color: theme.colors.text }]}>{item.description}</Text>
 
-        <View style={styles.itemsContainer}>
-          <Text style={styles.itemsTitle}>Items:</Text>
-          {item.items.map((orderItem, index) => (
-            <View key={index} style={styles.orderItem}>
-              <Text style={styles.itemName}>{orderItem.name}</Text>
-              <Text style={styles.itemQuantity}>{orderItem.quantity} {orderItem.unit}</Text>
-              <Text style={styles.itemPrice}>E{orderItem.price}</Text>
+        <View style={styles.entityDetails}>
+          <View style={styles.detailRow}>
+            <Icons.Ionicons name="location-outline" size={16} color={theme.colors.primary} />
+            <Text style={[styles.detailText, { color: theme.colors.placeholder }]}>{item.location}</Text>
+          </View>
+          <View style={styles.detailRow}>
+            <Icons.Feather name="phone" size={16} color={theme.colors.primary} />
+            <Text style={[styles.detailText, { color: theme.colors.placeholder }]}>{item.contact.phone}</Text>
+          </View>
+          {type === 'suppliers' && (
+            <View style={styles.detailRow}>
+              <Icons.Ionicons name="receipt-outline" size={16} color={theme.colors.primary} />
+              <Text style={[styles.detailText, { color: theme.colors.placeholder }]}>Min Order: E{item.minOrder}</Text>
             </View>
-          ))}
-        </View>
-
-        <View style={styles.orderActions}>
-          {item.status === 'pending' && (
-            <>
-              <Button 
-                mode="outlined" 
-                onPress={() => handleBulkOrderAction(item, 'reject')}
-                style={styles.actionButton}
-                icon="close"
-                buttonColor={theme.colors.error}
-                textColor="white"
-              >
-                Reject
-              </Button>
-              <Button 
-                mode="contained" 
-                onPress={() => handleBulkOrderAction(item, 'approve')}
-                style={styles.actionButton}
-                icon="check"
-              >
-                Approve
-              </Button>
-            </>
-          )}
-          {item.status === 'confirmed' && (
-            <Button 
-              mode="contained" 
-              onPress={() => handleBulkOrderAction(item, 'track')}
-              style={styles.actionButton}
-              icon="map"
-            >
-              Track Order
-            </Button>
           )}
         </View>
-      </Card.Content>
-    </Card>
-  );
 
-  const renderVendorRequestCard = ({ item }) => (
-    <Card style={styles.card}>
-      <Card.Content>
-        <View style={styles.requestHeader}>
-          <View style={styles.requestInfo}>
-            <Text style={styles.requestTitle}>{item.vendorName}</Text>
-            <Text style={styles.requestType}>{item.requestType.replace('_', ' ')}</Text>
-          </View>
-          <Badge style={[styles.statusBadge, { backgroundColor: getRequestStatusColor(item.status) }]}>
-            {item.status.toUpperCase()}
-          </Badge>
-        </View>
-
-        <Text style={styles.requestDescription}>
-          {item.description}
-        </Text>
-
-        <View style={styles.requestDetails}>
-          <View style={styles.detailRow}>
-            <Ionicons name="tag" size={16} color={theme.colors.primary} />
-            <Text style={styles.detailText}>Category: {item.category}</Text>
-          </View>
-          <View style={styles.detailRow}>
-            <Ionicons name="calendar" size={16} color={theme.colors.primary} />
-            <Text style={styles.detailText}>Request Date: {item.requestDate}</Text>
-          </View>
-        </View>
-
-        {item.status === 'pending' && (
-          <View style={styles.requestActions}>
-            <Button 
-              mode="outlined" 
-              onPress={() => handleVendorRequestAction(item, 'reject')}
-              style={styles.actionButton}
-              icon="close"
-              buttonColor={theme.colors.error}
-              textColor="white"
-            >
-              Reject
-            </Button>
-            <Button 
-              mode="contained" 
-              onPress={() => handleVendorRequestAction(item, 'approve')}
-              style={styles.actionButton}
-              icon="check"
-            >
-              Approve
-            </Button>
+        {type === 'suppliers' && (
+          <View style={styles.productsContainer}>
+            <Text style={[styles.productsTitle, { color: theme.colors.text }]}>Products:</Text>
+            <View style={styles.productsList}>
+              {item.products.map((product, index) => (
+                <Chip key={index} style={[styles.productChip, { backgroundColor: '#F8FAFC', borderColor: theme.colors.border }]} compact>
+                  {product}
+                </Chip>
+              ))}
+            </View>
           </View>
         )}
+
+        <View style={styles.marketingContainer}>
+          <Text style={[styles.marketingTitle, { color: theme.colors.text }]}>Why Choose Us:</Text>
+          <Text style={[styles.marketingText, { color: theme.colors.text }]}>{item.marketingInfo}</Text>
+        </View>
+
+        <View style={styles.dealsContainer}>
+          <Text style={[styles.dealsTitle, { color: theme.colors.text }]}>Deals & Offers:</Text>
+          <Carousel
+            width={screenWidth - 80}
+            height={180}
+            data={item.deals}
+            renderItem={renderAdCard}
+            loop
+            autoPlay
+            autoPlayInterval={3000}
+            scrollAnimationDuration={1000}
+          />
+        </View>
+
+        <View style={styles.entityActions}>
+          <TouchableOpacity
+            onPress={() => handleContact(item, type)}
+            style={[styles.actionButton, { borderColor: theme.colors.border, backgroundColor: theme.colors.inidcator }]}
+          >
+            <Icons.Feather name='phone' size={24} color={'#cccccc'} />
+            <Text style={{ textAlign: 'center', colors: theme.colors.text }}>Contact</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={() => Alert.alert('Engage', `Engage with ${item.name} for ${type}`)}
+            style={[styles.actionButton, { borderColor: theme.colors.border, backgroundColor: theme.colors.indicator }]}
+          >
+            {type === 'suppliers'
+              ? <Icons.FontAwesome name='search-plus' size={24} color={'#cccccc'} />
+              : <Icons.FontAwesome5 name='handshake' size={24} color={'#cccccc'} />
+            }
+            <Text style={{ color: '#cccccc' }}>{type === 'suppliers' ? 'View More' : 'Engage'}</Text>
+          </TouchableOpacity>
+        </View>
       </Card.Content>
     </Card>
   );
-
-  const getOrderStatusColor = (status) => {
-    switch (status) {
-      case 'pending':
-        return theme.colors.warning;
-      case 'confirmed':
-        return theme.colors.primary;
-      case 'delivered':
-        return theme.colors.success;
-      case 'cancelled':
-        return theme.colors.error;
-      default:
-        return theme.colors.disabled;
-    }
-  };
-
-  const getRequestStatusColor = (status) => {
-    switch (status) {
-      case 'pending':
-        return theme.colors.warning;
-      case 'approved':
-        return theme.colors.success;
-      case 'rejected':
-        return theme.colors.error;
-      default:
-        return theme.colors.disabled;
-    }
-  };
 
   const renderTabContent = () => {
     switch (selectedTab) {
@@ -381,27 +151,27 @@ export default function SupplyChainScreen({ navigation }) {
         return (
           <FlatList
             data={suppliers}
-            renderItem={renderSupplierCard}
+            renderItem={({ item }) => renderEntityCard({ item, type: 'suppliers' })}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.listContainer}
             showsVerticalScrollIndicator={false}
           />
         );
-      case 'orders':
+      case 'brokers':
         return (
           <FlatList
-            data={bulkOrders}
-            renderItem={renderBulkOrderCard}
+            data={brokers}
+            renderItem={({ item }) => renderEntityCard({ item, type: 'brokers' })}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.listContainer}
             showsVerticalScrollIndicator={false}
           />
         );
-      case 'requests':
+      case 'finance':
         return (
           <FlatList
-            data={vendorRequests}
-            renderItem={renderVendorRequestCard}
+            data={financeOffers}
+            renderItem={({ item }) => renderEntityCard({ item, type: 'finance' })}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.listContainer}
             showsVerticalScrollIndicator={false}
@@ -413,64 +183,66 @@ export default function SupplyChainScreen({ navigation }) {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Supply Chain</Text>
-        <Text style={styles.headerSubtitle}>
-          Manage suppliers, bulk orders, and vendor partnerships
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
+
+      <View style={[styles.header, { borderColor: theme.colors.border }]}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+          <Icons.Ionicons name='arrow-back' size={24} color={theme.colors.primary} />
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Supply Chain</Text>
+        <Text style={[styles.headerSubtitle, { color: theme.colors.sub_text }]}>
+          Connect with industry
         </Text>
       </View>
 
       <View style={styles.tabContainer}>
-        <TouchableOpacity
-          style={[styles.tab, selectedTab === 'suppliers' && styles.activeTab]}
-          onPress={() => setSelectedTab('suppliers')}
-        >
-          <Ionicons 
-            name="business-outline" 
-            size={20} 
-            color={selectedTab === 'suppliers' ? 'white' : theme.colors.placeholder} 
-          />
-          <Text style={[styles.tabText, selectedTab === 'suppliers' && styles.activeTabText]}>
-            Suppliers
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, selectedTab === 'orders' && styles.activeTab]}
-          onPress={() => setSelectedTab('orders')}
-        >
-          <Ionicons 
-            name="receipt-outline" 
-            size={20} 
-            color={selectedTab === 'orders' ? 'white' : theme.colors.placeholder} 
-          />
-          <Text style={[styles.tabText, selectedTab === 'orders' && styles.activeTabText]}>
-            Bulk Orders
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, selectedTab === 'requests' && styles.activeTab]}
-          onPress={() => setSelectedTab('requests')}
-        >
-          <Ionicons 
-            name="people-outline" 
-            size={20} 
-            color={selectedTab === 'requests' ? 'white' : theme.colors.placeholder} 
-          />
-          <Text style={[styles.tabText, selectedTab === 'requests' && styles.activeTabText]}>
-            Requests
-          </Text>
-        </TouchableOpacity>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+          <TouchableOpacity
+            style={[styles.tab, selectedTab === 'suppliers' && styles.activeTab, { borderColor: theme.colors.border }]}
+            onPress={() => setSelectedTab('suppliers')}
+          >
+            <Icons.Ionicons
+              name="business-outline"
+              size={20}
+              color={selectedTab === 'suppliers' ? '#cccccc' : theme.colors.placeholder}
+            />
+            <Text style={[styles.tabText, selectedTab === 'suppliers' && styles.activeTabText]}>
+              Suppliers
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.tab, selectedTab === 'brokers' && styles.activeTab, { borderColor: theme.colors.border }]}
+            onPress={() => setSelectedTab('brokers')}
+          >
+            <Icons.Ionicons
+              name="people-outline"
+              size={20}
+              color={selectedTab === 'brokers' ? 'white' : theme.colors.placeholder}
+            />
+            <Text style={[styles.tabText, selectedTab === 'brokers' && styles.activeTabText]}>
+              Brokers
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.tab, selectedTab === 'finance' && styles.activeTab, { borderColor: theme.colors.border }]}
+            onPress={() => setSelectedTab('finance')}
+          >
+            <Icons.Ionicons
+              name="cash-outline"
+              size={20}
+              color={selectedTab === 'finance' ? 'white' : theme.colors.placeholder}
+            />
+            <Text style={[styles.tabText, selectedTab === 'finance' && styles.activeTabText]}>
+              Finance
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
       </View>
 
       {renderTabContent()}
-
-      <FAB
-        icon="plus"
-        style={styles.fab}
-        onPress={() => Alert.alert('New Partnership', 'Add new supplier or vendor partnership')}
-        label="Add Partnership"
-      />
     </View>
   );
 }
@@ -478,85 +250,91 @@ export default function SupplyChainScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
   },
   header: {
-    backgroundColor: theme.colors.primary,
-    paddingTop: 60,
-    paddingBottom: 20,
+    paddingTop: 30,
+    paddingBottom: 10,
     paddingHorizontal: 20,
+    borderWidth: 1
+  },
+  backBtn: {
+    position: 'absolute',
+    left: 20,
+    top: 35
   },
   headerTitle: {
-    color: 'white',
+    marginLeft: '28%',
     fontSize: 24,
     fontWeight: 'bold',
   },
   headerSubtitle: {
-    color: 'white',
+    textAlign: 'center',
     opacity: 0.9,
     marginTop: 4,
   },
   tabContainer: {
     flexDirection: 'row',
-    backgroundColor: 'white',
-    elevation: 2,
+    paddingVertical: 10,
   },
   tab: {
-    flex: 1,
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    backgroundColor: 'transparent',
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    marginHorizontal: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    gap: 10,
+    backgroundColor: '#F0F4FF'
   },
   activeTab: {
-    backgroundColor: theme.colors.primary,
+    backgroundColor: "#003366"
   },
   tabText: {
     fontSize: 14,
     fontWeight: '500',
-    color: theme.colors.placeholder,
-    marginLeft: 8,
   },
   activeTabText: {
-    color: 'white',
+    color: '#ffffff',
   },
   listContainer: {
-    padding: 20,
-    paddingBottom: 100,
+    padding: 10,
+    paddingBottom: 50,
   },
   card: {
     marginBottom: 16,
     elevation: 4,
   },
-  supplierHeader: {
+  entityHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     marginBottom: 12,
   },
-  supplierInfo: {
+  entityLogo: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginRight: 12,
+  },
+  entityInfo: {
     flex: 1,
   },
-  supplierName: {
+  entityName: {
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 4,
   },
-  supplierType: {
+  entityType: {
     fontSize: 14,
-    color: theme.colors.placeholder,
   },
-  supplierChip: {
-    backgroundColor: theme.colors.accent,
+  ratingBadge: {
     color: 'white',
+    fontSize: 10,
   },
-  supplierDescription: {
+  entityDescription: {
     fontSize: 14,
-    color: theme.colors.text,
     marginBottom: 12,
   },
-  supplierDetails: {
+  entityDetails: {
     marginBottom: 12,
   },
   detailRow: {
@@ -566,7 +344,6 @@ const styles = StyleSheet.create({
   },
   detailText: {
     fontSize: 12,
-    color: theme.colors.placeholder,
     marginLeft: 8,
   },
   productsContainer: {
@@ -576,7 +353,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
     marginBottom: 8,
-    color: theme.colors.text,
   },
   productsList: {
     flexDirection: 'row',
@@ -585,110 +361,56 @@ const styles = StyleSheet.create({
   productChip: {
     marginRight: 8,
     marginBottom: 4,
-    backgroundColor: theme.colors.surface,
   },
-  supplierActions: {
+  marketingContainer: {
+    marginBottom: 16,
+  },
+  marketingTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  marketingText: {
+    fontSize: 14,
+  },
+  dealsContainer: {
+    marginBottom: 16,
+  },
+  dealsTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  adCard: {
+    width: 180,
+    marginRight: 8,
+  },
+  adImage: {
+    width: '100%',
+    height: 100,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
+  },
+  adTitle: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginTop: 8,
+  },
+  adDesc: {
+    fontSize: 12,
+  },
+  entityActions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
   },
   actionButton: {
-    flex: 1,
+    flexDirection: 'row',
+    gap: 10,
+    borderWidth: 1,
+    alignItems: 'center',
+    borderRadius: 30,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
     marginHorizontal: 4,
-  },
-  orderHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  orderInfo: {
-    flex: 1,
-  },
-  orderTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  orderSupplier: {
-    fontSize: 14,
-    color: theme.colors.placeholder,
-  },
-  statusBadge: {
-    color: 'white',
-    fontSize: 10,
-  },
-  orderDetails: {
-    marginBottom: 12,
-  },
-  itemsContainer: {
-    marginBottom: 16,
-  },
-  itemsTitle: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    marginBottom: 8,
-    color: theme.colors.text,
-  },
-  orderItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  itemName: {
-    fontSize: 14,
-    flex: 1,
-    color: theme.colors.text,
-  },
-  itemQuantity: {
-    fontSize: 12,
-    color: theme.colors.placeholder,
-    marginHorizontal: 8,
-  },
-  itemPrice: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: theme.colors.text,
-  },
-  orderActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  requestHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  requestInfo: {
-    flex: 1,
-  },
-  requestTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  requestType: {
-    fontSize: 14,
-    color: theme.colors.placeholder,
-  },
-  requestDescription: {
-    fontSize: 14,
-    color: theme.colors.text,
-    marginBottom: 12,
-  },
-  requestDetails: {
-    marginBottom: 16,
-  },
-  requestActions: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  fab: {
-    position: 'absolute',
-    marginHorizontal: 16,
-    marginVertical: 60,
-    right: 0,
-    bottom: 0,
-    backgroundColor: theme.colors.accent,
   },
 });

@@ -730,25 +730,218 @@ export const mockSuppliers = [
     name: 'Swazi Fresh Produce Co.',
     type: 'Wholesale',
     category: 'Vegetables',
-    description: 'Large scale vegetable supplier',
+    description: 'Large-scale supplier of fresh vegetables and fruits from local farms.',
+    logo: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400',
+    contact: {
+      phone: '+268 2528 3456',
+      email: 'info@swazifreshproduce.com',
+      whatsapp: '+268 2528 3456',
+    },
     location: 'Malkerns',
-    contact: '+268 2528 3456',
     minOrder: 1000,
     deliveryAreas: ['Mbabane', 'Manzini', 'Ezulwini'],
-    products: ['Fresh Vegetables', 'Herbs', 'Fruits']
+    products: ['Fresh Vegetables', 'Herbs', 'Fruits'],
+    marketingInfo: 'Committed to delivering farm-fresh produce with reliable delivery across major towns.',
+    deals: [
+      {
+        id: 'sd1',
+        title: 'Bulk Veggie Deal',
+        desc: '15% off orders over SZL 2000',
+        image: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?w=400',
+      },
+      {
+        id: 'sd2',
+        title: 'Free Delivery',
+        desc: 'Free delivery on orders over SZL 1500',
+        image: 'https://images.unsplash.com/photo-1586528116311-ad8dd3a8dd22?w=400',
+      },
+    ],
+    rating: 4.6,
+    reviewCount: 50,
   },
   {
     id: '2',
     name: 'Royal Swazi Foods',
     type: 'Manufacturer',
     category: 'Processed Foods',
-    description: 'Traditional food processing company',
+    description: 'Leading manufacturer of traditional Swazi foods and snacks.',
+    logo: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400',
+    contact: {
+      phone: '+268 2518 7890',
+      email: 'sales@royalswazifoods.com',
+      whatsapp: '+268 2518 7890',
+    },
     location: 'Matsapha',
-    contact: '+268 2518 7890',
     minOrder: 500,
     deliveryAreas: ['All major towns'],
-    products: ['Traditional Foods', 'Snacks', 'Beverages']
+    products: ['Traditional Foods', 'Snacks', 'Beverages'],
+    marketingInfo: 'Authentic Swazi flavors crafted with quality ingredients for local and regional markets.',
+    deals: [
+      {
+        id: 'sd3',
+        title: 'Snack Combo Offer',
+        desc: 'Buy 2 snack packs, get 1 free',
+        image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=400',
+      },
+      {
+        id: 'sd4',
+        title: 'Bulk Beverage Deal',
+        desc: '10% off beverage orders over SZL 1000',
+        image: 'https://images.unsplash.com/photo-1604908177079-46b0f84b39c8?w=400',
+      },
+    ],
+    rating: 4.2,
+    reviewCount: 35,
+  },
+];
+
+export const mockSupplierAdverts = [
+  {
+    id: 'ad-1',
+    title: 'Combo A',
+    desc: 'Rice + Oil + Sugar',
+    image: 'https://images.unsplash.com/photo-1604908177079-46b0f84b39c8?w=1200'
+  },
+  {
+    id: 'ad-2',
+    title: 'Combo B',
+    desc: 'Flour + Beans',
+    image: 'https://images.unsplash.com/photo-1586201375761-83865001e31b?w=1200'
+  },
+  {
+    id: 'ad-3',
+    title: '10% off Cooking Oil',
+    desc: 'Limited time deal',
+    image: 'https://images.unsplash.com/photo-1585238342028-4bbc2c23c2d5?w=1200'
   }
+];
+
+export const mockBrokers = [
+  {
+    id: 'b1',
+    name: 'Industry Broker A',
+    specialty: 'Agriculture, Logistics',
+    description: 'Matching farmers with distributors for efficient supply chain solutions.',
+    logo: 'https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=400',
+    contact: {
+      phone: '+268 2400 1234',
+      email: 'contact@industrybrokera.com',
+      whatsapp: '+268 2400 1234',
+    },
+    location: 'Mbabane',
+    marketingInfo: 'Trusted partner for over 200 farmers, offering seamless logistics and distribution services.',
+    deals: [
+      { id: 'd1', title: 'Logistics Discount', desc: '20% off transport costs for bulk orders', image: 'https://images.unsplash.com/photo-1586528116311-ad8dd3a8dd22?w=400' },
+      { id: 'd2', title: 'Free Consultation', desc: 'Free supply chain analysis for new clients', image: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=400' },
+    ],
+    rating: 4.7,
+    reviewCount: 30,
+  },
+  {
+    id: 'b2',
+    name: 'Intermediary B',
+    specialty: 'Manufacturing, Packaging',
+    description: 'Sourcing high-quality packaging solutions for small and medium enterprises.',
+    logo: 'https://images.unsplash.com/photo-1587613864414-6a9e8d5296ca?w=400',
+    contact: {
+      phone: '+268 2505 5678',
+      email: 'info@intermediaryb.com',
+      whatsapp: '+268 2505 5678',
+    },
+    location: 'Manzini',
+    marketingInfo: 'Specialized in eco-friendly packaging with a network of trusted manufacturers.',
+    deals: [
+      {
+        id: 'd3', title: 'Eco-Pack Deal', desc: '10% off biodegradable packaging',
+        image: 'https://images.unsplash.com/photo-1581579185617-3f072e5d3690?w=400'
+      },
+    ],
+    rating: 4.5,
+    reviewCount: 25,
+  },
+  {
+    id: 'b3',
+    name: 'Trade Link C',
+    specialty: 'Import/Export',
+    description: 'Facilitating cross-border shipments and customs clearance.',
+    logo: 'https://images.unsplash.com/photo-1567427013953-1c0e560fbf19?w=400',
+    contact: {
+      phone: '+268 2416 9012',
+      email: 'support@tradelinkc.com',
+      whatsapp: '+268 2416 9012',
+    },
+    location: 'Matsapha',
+    marketingInfo: 'Streamlined import/export services with a focus on compliance and efficiency.',
+    deals: [
+      {
+        id: 'd4', title: 'Customs Fast-Track', desc: 'Priority customs clearance for urgent shipments',
+        image: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400'
+      },
+    ],
+    rating: 4.8,
+    reviewCount: 40,
+  },
+];
+
+export const mockFinanceOffers = [
+  {
+    id: 'f1',
+    name: 'Eswatini Bank',
+    offer: 'SME Loans, 12% APR',
+    description: 'Flexible financing solutions for small and medium enterprises.',
+    logo: 'https://images.unsplash.com/photo-1553729459-efe14ef6055d?w=400',
+    contact: {
+      phone: '+268 2404 5678',
+      email: 'loans@eswatinibank.com',
+      whatsapp: '+268 2404 5678',
+    },
+    location: 'Mbabane',
+    marketingInfo: 'Empowering businesses with tailored financial products and dedicated support.',
+    deals: [
+      { id: 'fd1', title: 'SME Loan Offer', desc: 'Low-interest loans up to SZL 500,000', image: 'https://images.unsplash.com/photo-1556745753-b2904692b3cd?w=400' },
+      { id: 'fd2', title: 'No-Fee Accounts', desc: 'Free business account setup for new clients', image: 'https://images.unsplash.com/photo-1567427013953-1c0e560fbf19?w=400' },
+    ],
+    rating: 4.6,
+    reviewCount: 50,
+  },
+  {
+    id: 'f2',
+    name: 'Building Society',
+    offer: 'Micro-loans up to SZL 20,000',
+    description: 'Quick and easy micro-loans for small businesses and entrepreneurs.',
+    logo: 'https://images.unsplash.com/photo-1567427013953-1c0e560fbf19?w=400',
+    contact: {
+      phone: '+268 2518 7890',
+      email: 'info@buildingsociety.com',
+      whatsapp: '+268 2518 7890',
+    },
+    location: 'Manzini',
+    marketingInfo: 'Supporting small businesses with accessible financing and low rates.',
+    deals: [
+      { id: 'fd3', title: 'Micro-Loan Promo', desc: 'No repayment for first 3 months', image: 'https://images.unsplash.com/photo-1556745753-b2904692b3cd?w=400' },
+    ],
+    rating: 4.3,
+    reviewCount: 35,
+  },
+  {
+    id: 'f3',
+    name: 'InstaCash',
+    offer: 'POS machines, 0% setup fee',
+    description: 'Modern payment solutions for businesses of all sizes.',
+    logo: 'https://images.unsplash.com/photo-1556745753-b2904692b3cd?w=400',
+    contact: {
+      phone: '+268 2528 3456',
+      email: 'support@instacash.com',
+      whatsapp: '+268 2528 3456',
+    },
+    location: 'Ezulwini',
+    marketingInfo: 'Seamless payment processing with cutting-edge POS technology.',
+    deals: [
+      { id: 'fd4', title: 'Free POS Setup', desc: 'Zero setup fees for new POS systems', image: 'https://images.unsplash.com/photo-1586528116311-ad8dd3a8dd22?w=400' },
+    ],
+    rating: 4.9,
+    reviewCount: 60,
+  },
 ];
 
 export const mockCustomers = [

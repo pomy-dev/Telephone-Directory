@@ -107,6 +107,29 @@ export const addVendor = async (vendorData) => {
   }
 };
 
+export const addVendorStock = async (stockData) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/add-stock`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(stockData),
+    });
+    if (!response.ok) {
+      console.error('==============\n');
+      console.error(response.arrayBuffer);
+      throw new Error(response.status);
+    }
+    const data = await response.json();
+    console.log(data.message);
+    return data;
+  } catch (error) {
+    console.error("Error adding stock:", error);
+    throw error;
+  }
+}
+
 export const getVendorProfile = async (email) => {
   try {
     const response = await fetch(`${API_BASE_URL}/api/vendor-profile?email=${encodeURIComponent(email)}`,

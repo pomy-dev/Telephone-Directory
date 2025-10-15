@@ -3,6 +3,7 @@ import {
   ScrollView,
   StyleSheet,
   View,
+  StatusBar,
   TouchableOpacity,
 } from 'react-native';
 import { Icons } from '../../constants/Icons';
@@ -11,16 +12,19 @@ import {
   Card,
   Text
 } from 'react-native-paper';
-import { theme } from '../../constants/vendorTheme';
+import { AppContext } from '../../context/appContext';
 
 export default function LoginScreen({ navigation }) {
+  const { theme, isDarkMode } = React.useContext(AppContext)
 
   const handleVendorLogin = () => {
     navigation.navigate('AddVendor');
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
+
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Icons.Ionicons name='arrow-back' style={{ color: theme.colors.primary, fontSize: 24 }} />
@@ -30,17 +34,17 @@ export default function LoginScreen({ navigation }) {
 
       <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}>
 
-        <Card style={styles.vendorCard}>
+        <Card style={[styles.vendorCard, { borderColor: theme.colors.primary, backgroundColor: theme.colors.card }]}>
           <Card.Content>
-            <Text style={styles.vendorTitle}>Are you a vendor?</Text>
-            <Text style={styles.vendorSubtitle}>
+            <Text style={[styles.vendorTitle, { color: theme.colors.accent }]}>Are you a vendor?</Text>
+            <Text style={[styles.vendorSubtitle, { color: theme.colors.placeholder }]}>
               Join our marketplace to reach more customers and connect with bulk buying groups
             </Text>
 
             <Button
               mode="outlined"
               onPress={handleVendorLogin}
-              style={styles.vendorButton}
+              style={[styles.vendorButton, { borderColor: theme.colors.primary }]}
               contentStyle={styles.buttonContent}
             >
               Vendor Registration
@@ -59,26 +63,26 @@ export default function LoginScreen({ navigation }) {
         </Button>
 
         <View style={styles.features}>
-          <Text style={styles.featuresTitle}>Why Choose Our Platform?</Text>
+          <Text style={[styles.featuresTitle, { color: theme.colors.indicator }]}>Why Choose Our Platform?</Text>
 
           <View style={styles.featureItem}>
             <Text style={styles.featureIcon}>🔍</Text>
-            <Text style={styles.featureText}>Discover local vendors near you</Text>
+            <Text style={[styles.featureText, { color: theme.colors.text }]}>Discover local vendors near you</Text>
           </View>
 
           <View style={styles.featureItem}>
             <Text style={styles.featureIcon}>👥</Text>
-            <Text style={styles.featureText}>Join bulk buying groups for better prices</Text>
+            <Text style={[styles.featureText, { color: theme.colors.text }]}>Join bulk buying groups for better prices</Text>
           </View>
 
           <View style={styles.featureItem}>
             <Text style={styles.featureIcon}>🚚</Text>
-            <Text style={styles.featureText}>Fast delivery to your location</Text>
+            <Text style={[styles.featureText, { color: theme.colors.text }]}>Fast delivery to your location</Text>
           </View>
 
           <View style={styles.featureItem}>
             <Text style={styles.featureIcon}>📱</Text>
-            <Text style={styles.featureText}>Real-time stock updates</Text>
+            <Text style={[styles.featureText, { color: theme.colors.text }]}>Real-time stock updates</Text>
           </View>
         </View>
       </ScrollView>
@@ -89,7 +93,6 @@ export default function LoginScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
   },
   header: {
     flexDirection: 'row', alignItems: 'center', marginTop: 50
@@ -101,26 +104,19 @@ const styles = StyleSheet.create({
     position: 'absolute', left: '30%', textAlign: 'center', fontSize: 24, fontWeight: 'bold',
   },
   vendorCard: {
-    // paddingTop: 60,
     marginTop: 60,
     marginHorizontal: 20,
     marginTop: 0,
     elevation: 4,
-    borderColor: theme.colors.accent,
     borderWidth: 1,
   },
   vendorTitle: {
     textAlign: 'center',
     marginBottom: 8,
-    color: theme.colors.accent,
   },
   vendorSubtitle: {
     textAlign: 'center',
     marginBottom: 20,
-    color: theme.colors.placeholder,
-  },
-  vendorButton: {
-    borderColor: theme.colors.accent,
   },
   card: {
     margin: 20,
@@ -139,8 +135,7 @@ const styles = StyleSheet.create({
   },
   featuresTitle: {
     textAlign: 'center',
-    marginBottom: 20,
-    color: theme.colors.primary,
+    marginBottom: 20
   },
   featureItem: {
     flexDirection: 'row',
@@ -156,6 +151,5 @@ const styles = StyleSheet.create({
   featureText: {
     flex: 1,
     fontSize: 16,
-    color: theme.colors.text,
   },
 });

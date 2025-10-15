@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Icons } from '../../constants/Icons';
 import React, { useEffect, useState } from 'react';
 import {
   Alert,
@@ -6,6 +6,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   View,
+  StatusBar
 } from 'react-native';
 import {
   Avatar,
@@ -17,9 +18,10 @@ import {
   Text,
 } from 'react-native-paper';
 import { mockOrders, mockVendors } from '../../utils/mockData';
-import { theme } from '../../constants/vendorTheme';
+import { AppContext } from '../../context/appContext';
 
 export default function OrdersScreen({ navigation }) {
+  const { theme, isDarkMode } = React.useContext(AppContext);
   const [orders, setOrders] = useState([]);
   const [selectedTab, setSelectedTab] = useState('active');
 
@@ -125,7 +127,7 @@ export default function OrdersScreen({ navigation }) {
   );
 
   const renderOrderCard = ({ item }) => (
-    <Card style={styles.orderCard}>
+    <Card style={[styles.orderCard, { backgroundColor: theme.colors.card }]}>
       <Card.Content>
         <View style={styles.orderHeader}>
           <View style={styles.vendorInfo}>
@@ -136,7 +138,7 @@ export default function OrdersScreen({ navigation }) {
             />
             <View style={styles.vendorDetails}>
               <Text style={styles.vendorName}>{getVendorName(item.vendorId)}</Text>
-              <Text style={styles.orderDate}>Order #{item.id} • {item.orderDate}</Text>
+              <Text style={[styles.orderDate, { color: theme.colors.placeholder }]}>Order #{item.id} • {item.orderDate}</Text>
             </View>
           </View>
           <Badge style={[styles.statusBadge, { backgroundColor: getOrderStatusColor(item.status) }]}>
@@ -145,12 +147,12 @@ export default function OrdersScreen({ navigation }) {
         </View>
 
         <View style={styles.orderItems}>
-          <Text style={styles.itemsTitle}>Items:</Text>
+          <Text style={[styles.itemsTitle, { color: theme.colors.text }]}>Items:</Text>
           {item.items.map((orderItem, index) => (
             <View key={index} style={styles.orderItem}>
-              <Text style={styles.itemName}>{orderItem.name}</Text>
-              <Text style={styles.itemQuantity}>x{orderItem.quantity}</Text>
-              <Text style={styles.itemPrice}>E{orderItem.price}</Text>
+              <Text style={[styles.itemName, { color: theme.colors.text }]}>{orderItem.name}</Text>
+              <Text style={[styles.itemQuantity, { color: theme.colors.placeholder }]}>x{orderItem.quantity}</Text>
+              <Text style={[styles.itemPrice, { color: theme.colors.text }]}>E{orderItem.price}</Text>
             </View>
           ))}
         </View>
@@ -159,65 +161,62 @@ export default function OrdersScreen({ navigation }) {
 
         <View style={styles.orderSummary}>
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>Total:</Text>
-            <Text style={styles.summaryValue}>E{item.total}</Text>
+            <Text style={[styles.summaryLabel, { color: theme.colors.placeholder }]}>Total:</Text>
+            <Text style={[styles.summaryValue, { color: theme.colors.text }]}>E{item.total}</Text>
           </View>
           {item.deliveryAddress && (
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Delivery to:</Text>
-              <Text style={styles.summaryValue}>{item.deliveryAddress}</Text>
+              <Text style={[styles.summaryLabel, { color: theme.colors.placeholder }]}>Delivery to:</Text>
+              <Text style={[styles.summaryValue, { color: theme.colors.text }]}>{item.deliveryAddress}</Text>
             </View>
           )}
           {item.estimatedDelivery && (
             <View style={styles.summaryRow}>
-              <Text style={styles.summaryLabel}>Estimated delivery:</Text>
-              <Text style={styles.summaryValue}>{item.estimatedDelivery}</Text>
+              <Text style={[styles.summaryLabel, { color: theme.colors.placeholder }]}>Estimated delivery:</Text>
+              <Text style={[styles.summaryValue, { color: theme.colors.text }]}>{item.estimatedDelivery}</Text>
             </View>
           )}
         </View>
 
         <View style={styles.orderActions}>
           {item.status === 'in_progress' && (
-            <Button
-              mode="contained"
-              onPress={() => handleOrderAction(item, 'track')}
-              style={styles.actionButton}
-              icon="map"
-            >
-              Track Order
-            </Button>
+            <>
+              <TouchableOpacity
+                onPress={() => handleOrderAction(item, 'cancel')}
+                style={[styles.actionButton, { backgroundColor: theme.colors.indicator }]}
+                buttonColor={theme.colors.error}
+              >
+                <Icons.MaterialCommunityIcons name='book-cancel-outline' size={20} color={'#cccccc'} />
+                <Text style={{ color: '#ccc', textAlign: 'center' }}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                onPress={() => handleOrderAction(item, 'track')}
+                style={[styles.actionButton, { backgroundColor: theme.colors.indicator }]}
+              >
+                <Icons.FontAwesome5 name='map-marked-alt' size={20} color={'#cccccc'} />
+                <Text style={{ color: '#ccc', textAlign: 'center' }}>Track Order</Text>
+              </TouchableOpacity>
+            </>
           )}
           {item.status === 'delivered' && (
             <>
-              <Button
-                mode="outlined"
+              <TouchableOpacity
                 onPress={() => handleOrderAction(item, 'reorder')}
-                style={styles.actionButton}
-                icon="refresh"
+                style={[styles.actionButton, { backgroundColor: theme.colors.indicator }]}
               >
-                Reorder
-              </Button>
-              <Button
-                mode="contained"
+                <Icons.EvilIcons name='refresh' size={24} color={'#cccccc'} />
+                <Text style={{ color: '#ccc', textAlign: 'center' }}>Re-order</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
                 onPress={() => handleOrderAction(item, 'rate')}
-                style={styles.actionButton}
-                icon="star"
+                style={[styles.actionButton, { backgroundColor: theme.colors.indicator }]}
               >
-                Rate
-              </Button>
+                <Icons.FontAwesome name='star-half-full' size={20} color={'#cccccc'} />
+                <Text style={{ color: '#ccc', textAlign: 'center' }}>Give Rating</Text>
+              </TouchableOpacity>
             </>
-          )}
-          {item.status === 'pending' && (
-            <Button
-              mode="outlined"
-              onPress={() => handleOrderAction(item, 'cancel')}
-              style={styles.actionButton}
-              icon="close"
-              buttonColor={theme.colors.error}
-              textColor="white"
-            >
-              Cancel
-            </Button>
           )}
         </View>
       </Card.Content>
@@ -226,20 +225,22 @@ export default function OrdersScreen({ navigation }) {
 
   const renderEmptyState = (type) => (
     <View style={styles.emptyState}>
-      <Ionicons
+      <Icons.Ionicons
         name={type === 'active' ? 'receipt-outline' : 'checkmark-done-outline'}
         size={64}
         color={theme.colors.disabled}
       />
-      <Text style={styles.emptyTitle}>
+      <Text style={[styles.emptyTitle, { color: theme.colors.placeholder }]}>
         {type === 'active' ? 'No Active Orders' : 'No Completed Orders'}
       </Text>
-      <Text style={styles.emptySubtitle}>
+
+      <Text style={[styles.emptySubtitle, { color: theme.colors.placeholder }]}>
         {type === 'active'
           ? 'Start ordering from local vendors to see your orders here'
           : 'Your completed orders will appear here'
         }
       </Text>
+
       {type === 'active' && (
         <Button
           mode="contained"
@@ -286,33 +287,39 @@ export default function OrdersScreen({ navigation }) {
   };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>My Orders</Text>
-        <Text style={styles.headerSubtitle}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
+
+      <View style={[styles.header, { borderColor: theme.colors.border }]}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+          <Icons.Ionicons name='arrow-back' size={24} color={theme.colors.text} />
+        </TouchableOpacity>
+        <Text style={[styles.headerTitle, { color: theme.colors.text }]}>My Orders</Text>
+        <Text style={[styles.headerSubtitle, { color: theme.colors.sub_text }]}>
           Track your orders and delivery status
         </Text>
       </View>
 
       <View style={styles.tabContainer}>
         <TouchableOpacity
-          style={[styles.tab, selectedTab === 'active' && styles.activeTab]}
+          style={[styles.tab, selectedTab === 'active' && styles.activeTab, { borderColor: theme.colors.border }]}
           onPress={() => setSelectedTab('active')}
         >
-          <Ionicons
+          <Icons.Ionicons
             name="receipt-outline"
             size={20}
-            color={selectedTab === 'active' ? 'white' : theme.colors.placeholder}
+            color={selectedTab === 'active' ? '#cccccc' : theme.colors.placeholder}
           />
           <Text style={[styles.tabText, selectedTab === 'active' && styles.activeTabText]}>
             Active ({getActiveOrders().length})
           </Text>
         </TouchableOpacity>
+
         <TouchableOpacity
-          style={[styles.tab, selectedTab === 'completed' && styles.activeTab]}
+          style={[styles.tab, selectedTab === 'completed' && styles.activeTab, { borderColor: theme.colors.border }]}
           onPress={() => setSelectedTab('completed')}
         >
-          <Ionicons
+          <Icons.Ionicons
             name="checkmark-done-outline"
             size={20}
             color={selectedTab === 'completed' ? 'white' : theme.colors.placeholder}
@@ -327,7 +334,7 @@ export default function OrdersScreen({ navigation }) {
 
       <FAB
         icon="plus"
-        style={styles.fab}
+        style={[styles.fab, { backgroundColor: theme.colors.sub_card }]}
         onPress={() => navigation.navigate('SearchScreen')}
         label="New Order"
       />
@@ -338,48 +345,53 @@ export default function OrdersScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
   },
   header: {
-    backgroundColor: theme.colors.primary,
-    paddingTop: 60,
-    paddingBottom: 20,
+    paddingTop: 30,
+    paddingBottom: 10,
     paddingHorizontal: 20,
+    borderBottomWidth: 1
+  },
+  backBtn: {
+    position: 'absolute',
+    left: 20,
+    top: 35
   },
   headerTitle: {
-    color: 'white',
+    marginLeft: '30%',
     fontSize: 24,
     fontWeight: 'bold',
   },
   headerSubtitle: {
-    color: 'white',
     opacity: 0.9,
     marginTop: 4,
+    marginLeft: '15%',
   },
   tabContainer: {
     flexDirection: 'row',
-    backgroundColor: 'white',
-    elevation: 2,
+    paddingVertical: 10,
+    alignItems: 'center',
+    justifyContent: 'center'
   },
   tab: {
-    flex: 1,
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 16,
-    backgroundColor: 'transparent',
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    marginHorizontal: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    gap: 10,
+    backgroundColor: '#F0F4FF'
   },
   activeTab: {
-    backgroundColor: theme.colors.primary,
+    backgroundColor: "#003366"
   },
   tabText: {
     fontSize: 14,
     fontWeight: '500',
-    color: theme.colors.placeholder,
-    marginLeft: 8,
   },
   activeTabText: {
-    color: 'white',
+    color: '#ffffff',
   },
   listContainer: {
     padding: 20,
@@ -412,7 +424,6 @@ const styles = StyleSheet.create({
   },
   orderDate: {
     fontSize: 12,
-    color: theme.colors.placeholder,
   },
   statusBadge: {
     color: 'white',
@@ -425,7 +436,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
     marginBottom: 8,
-    color: theme.colors.text,
   },
   orderItem: {
     flexDirection: 'row',
@@ -436,17 +446,14 @@ const styles = StyleSheet.create({
   itemName: {
     fontSize: 14,
     flex: 1,
-    color: theme.colors.text,
   },
   itemQuantity: {
     fontSize: 12,
-    color: theme.colors.placeholder,
     marginHorizontal: 8,
   },
   itemPrice: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: theme.colors.text,
   },
   divider: {
     marginVertical: 16,
@@ -461,19 +468,22 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontSize: 14,
-    color: theme.colors.placeholder,
   },
   summaryValue: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: theme.colors.text,
   },
   orderActions: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   actionButton: {
-    flex: 1,
+    flexDirection: 'row',
+    gap: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
+    borderRadius: 10,
     marginHorizontal: 4,
   },
   emptyState: {
@@ -482,12 +492,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 40,
   },
   emptyTitle: {
-    color: theme.colors.placeholder,
     marginTop: 16,
     marginBottom: 8,
   },
   emptySubtitle: {
-    color: theme.colors.placeholder,
     textAlign: 'center',
     marginBottom: 24,
   },
@@ -500,6 +508,5 @@ const styles = StyleSheet.create({
     marginVertical: 60,
     right: 0,
     bottom: 0,
-    backgroundColor: theme.colors.accent,
   },
 });

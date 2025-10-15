@@ -12,7 +12,6 @@ import {
   Platform,
   KeyboardAvoidingView
 } from 'react-native';
-import { Appbar, Button, Menu, Divider, } from 'react-native-paper';
 import { Icons } from '../constants/Icons';
 import { Images } from '../constants/Images';
 import * as ImagePicker from 'expo-image-picker';
@@ -25,7 +24,6 @@ import CustomLoader from '../components/customLoader';
 import { addUser, getUserProfile, updateUserProfile } from '../service/getApi';
 
 const generateId = () => `id-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
-const MORE_ICON = Platform.OS === 'ios' ? 'dots-horizontal' : 'dots-vertical';
 
 export default function ProfileScreen({ navigation, route }) {
   const register = route?.params?.register;
@@ -103,11 +101,6 @@ export default function ProfileScreen({ navigation, route }) {
 
   // Function to request permissions on Android
   const requestPermissions = async () => {
-    // console.log('Three Four')
-    // if (Platform.OS !== 'web')
-    //   console.log('It is device')
-    // else
-    //   console.log('It is web')
 
     if (Platform.OS !== 'web') {
       const { status: cameraStatus } = await ImagePicker.requestCameraPermissionsAsync();
@@ -1171,7 +1164,8 @@ const styles = StyleSheet.create({
   },
   addAchievementContainer: {
     marginTop: 12,
-  }, socialInputGroup: {
+  }, 
+  socialInputGroup: {
     marginBottom: 12,
   },
   socialLabel: {

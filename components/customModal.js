@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   Image,
   Modal,
-  Platform,
   StatusBar,
   Animated,
   StyleSheet

@@ -1,4 +1,4 @@
-import { Ionicons } from '@expo/vector-icons';
+import { Icons } from '../../constants/Icons';
 import React, { useEffect, useState } from 'react';
 import {
   Alert,
@@ -7,6 +7,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   View,
+  StatusBar
 } from 'react-native';
 import {
   Avatar,
@@ -19,10 +20,12 @@ import {
   Text,
   Searchbar
 } from 'react-native-paper';
+import VendorCard from '../../components/vendorCard';
 import { mockAreas, mockCategories, mockVendors } from '../../utils/mockData';
-import { theme } from '../../constants/vendorTheme';
+import { AppContext } from '../../context/appContext';
 
 export default function SearchScreen({ navigation, route }) {
+  const { theme, isDarkMode } = React.useContext(AppContext);
   const [searchQuery, setSearchQuery] = useState(route?.params?.query || '');
   const [selectedCategory, setSelectedCategory] = useState(route?.params?.category || '');
   const [selectedArea, setSelectedArea] = useState('');
@@ -79,141 +82,71 @@ export default function SearchScreen({ navigation, route }) {
     setFilteredVendors(filtered);
   };
 
-  const handleVendorPress = (vendor) => {
-    Alert.alert(
-      'Vendor Details',
-      `Name: ${vendor.name}\nType: ${vendor.type}\nCategory: ${vendor.category}\nRating: ${vendor.rating}\nLocation: ${vendor.location.area}\n\nWould you like to place an order?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'View Details', onPress: () => console.log('View vendor details') },
-        { text: 'Place Order', onPress: () => handlePlaceOrder(vendor) }
-      ]
-    );
-  };
-
-  const handlePlaceOrder = (vendor) => {
-    Alert.alert(
-      'Place Order',
-      `Order from ${vendor.name}`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Call Vendor', onPress: () => console.log('Call vendor') },
-        { text: 'WhatsApp', onPress: () => console.log('WhatsApp vendor') }
-      ]
-    );
-  };
-
   const renderVendorCard = ({ item }) => (
-    <TouchableOpacity onPress={() => handleVendorPress(item)}>
-      <Card style={styles.vendorCard}>
-        <Card.Content>
-          <View style={styles.vendorHeader}>
-            <Avatar.Image
-              size={60}
-              source={{ uri: item.profileImage }}
-              style={styles.vendorAvatar}
-            />
-            <View style={styles.vendorInfo}>
-              <Text style={styles.vendorName}>{item.name}</Text>
-              <Text style={styles.vendorType}>{item.type} • {item.category}</Text>
-              <View style={styles.ratingContainer}>
-                <Ionicons name="star" size={16} color="#FFD700" />
-                <Text style={styles.rating}>{item.rating}</Text>
-                <Text style={styles.reviewCount}>({item.reviewCount} reviews)</Text>
-              </View>
-            </View>
-            <Badge style={[styles.statusBadge, { backgroundColor: item.isOnline ? theme.colors.success : theme.colors.disabled }]}>
-              {item.isOnline ? 'Online' : 'Offline'}
-            </Badge>
-          </View>
-
-          <Text style={styles.vendorDescription}>
-            {item.description}
-          </Text>
-
-          <View style={styles.vendorDetails}>
-            <View style={styles.detailItem}>
-              <Ionicons name="location-outline" size={16} color={theme.colors.primary} />
-              <Text style={styles.detailText}>{item.location.area}</Text>
-            </View>
-            <View style={styles.detailItem}>
-              <Ionicons name="car-outline" size={16} color={theme.colors.primary} />
-              <Text style={styles.detailText}>{item.deliveryRadius}km delivery</Text>
-            </View>
-            <View style={styles.detailItem}>
-              <Ionicons name="call-outline" size={16} color={theme.colors.primary} />
-              <Text style={styles.detailText}>{item.contact.phone}</Text>
-            </View>
-          </View>
-
-          <View style={styles.stockContainer}>
-            <Text style={styles.stockTitle}>Available Stock:</Text>
-            <View style={styles.stockItems}>
-              {item.stock.filter(item => item.available).slice(0, 3)?.map((stockItem, index) => (
-                <Chip key={index} style={styles.stockChip} compact>
-                  {stockItem.item} - E{stockItem.price}
-                </Chip>
-              ))}
-            </View>
-          </View>
-        </Card.Content>
-      </Card>
-    </TouchableOpacity>
+    <VendorCard item={item} />
   );
 
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
-      <Ionicons name="search-outline" size={64} color={theme.colors.disabled} />
-      <Text style={styles.emptyTitle}>No vendors found</Text>
-      <Text style={styles.emptySubtitle}>
+      <Icons.Ionicons name="search-outline" size={64} color={theme.colors.disabled} />
+      <Text style={[styles.emptyTitle, { color: theme.colors.placeholder }]}>No vendors found</Text>
+      <Text style={[styles.emptySubtitle, { color: theme.colors.placeholder }]}>
         Try adjusting your search criteria or explore different categories
       </Text>
-      <Button
-        mode="outlined"
+      <TouchableOpacity
         onPress={() => {
           setSearchQuery('');
           setSelectedCategory('');
           setSelectedArea('');
         }}
-        style={styles.clearFiltersButton}
+        style={[styles.clearFiltersButton, { borderColor: theme.colors.primary }]}
       >
-        Clear Filters
-      </Button>
+        <Text style={{ color: '#ccc', textAlign: 'center' }}>Clear Filters</Text>
+      </TouchableOpacity>
     </View>
   );
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
+
+      <View style={[styles.header, { borderColor: theme.colors.border }]}>
+        <View style={styles.headerSearch}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Icons.Ionicons name='arrow-back' size={24} color={theme.colors.text} />
+          </TouchableOpacity>
+
+          <View style={styles.filterContainer}>
+            <Menu
+              visible={sortMenuVisible}
+              onDismiss={() => setSortMenuVisible(false)}
+              anchor={
+                <TouchableOpacity
+                  onPress={() => setSortMenuVisible(true)}
+                  style={[styles.sortButton, { borderColor: theme.colors.border }]}
+                >
+                  <Icons.MaterialCommunityIcons name='sort' size={24} color={theme.colors.sub_text} />
+                  <Text style={{ color: theme.colors.text, textAlign: 'center' }}>
+                    Sort: {sortBy.charAt(0).toUpperCase() + sortBy.slice(1)}
+                  </Text>
+                </TouchableOpacity>
+              }
+            >
+              <Menu.Item onPress={() => { setSortBy('rating'); setSortMenuVisible(false); }} title="Rating" />
+              <Menu.Item onPress={() => { setSortBy('distance'); setSortMenuVisible(false); }} title="Distance" />
+              <Menu.Item onPress={() => { setSortBy('name'); setSortMenuVisible(false); }} title="Name" />
+              <Menu.Item onPress={() => { setSortBy('price'); setSortMenuVisible(false); }} title="Price" />
+            </Menu>
+          </View>
+        </View>
+
         <Searchbar
           placeholder="Search vendors, products, or areas..."
           onChangeText={setSearchQuery}
           value={searchQuery}
-          style={styles.searchBar}
-          iconColor={theme.colors.primary}
+          style={[styles.searchBar, { backgroundColor: theme.colors.sub_card, borderColor: theme.colors.border }]}
+          iconColor={theme.colors.text}
         />
-
-        <View style={styles.filterContainer}>
-          <Menu
-            visible={sortMenuVisible}
-            onDismiss={() => setSortMenuVisible(false)}
-            anchor={
-              <Button
-                mode="outlined"
-                onPress={() => setSortMenuVisible(true)}
-                style={styles.sortButton}
-                icon="sort"
-              >
-                Sort: {sortBy.charAt(0).toUpperCase() + sortBy.slice(1)}
-              </Button>
-            }
-          >
-            <Menu.Item onPress={() => { setSortBy('rating'); setSortMenuVisible(false); }} title="Rating" />
-            <Menu.Item onPress={() => { setSortBy('distance'); setSortMenuVisible(false); }} title="Distance" />
-            <Menu.Item onPress={() => { setSortBy('name'); setSortMenuVisible(false); }} title="Name" />
-            <Menu.Item onPress={() => { setSortBy('price'); setSortMenuVisible(false); }} title="Price" />
-          </Menu>
-        </View>
       </View>
 
       <View style={styles.filtersContainer}>
@@ -266,13 +199,6 @@ export default function SearchScreen({ navigation, route }) {
         ListEmptyComponent={renderEmptyState}
         showsVerticalScrollIndicator={false}
       />
-
-      <FAB
-        icon="map"
-        style={styles.fab}
-        onPress={() => Alert.alert('Map View', 'Map view coming soon!')}
-        label="Map View"
-      />
     </View>
   );
 }
@@ -280,40 +206,47 @@ export default function SearchScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.background,
   },
   header: {
-    backgroundColor: theme.colors.primary,
-    paddingTop: 60,
+    paddingTop: 20,
     paddingBottom: 16,
     paddingHorizontal: 20,
   },
+  headerSearch: {
+    marginVertical: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 5,
+    alignItems: 'center'
+  },
   searchBar: {
-    backgroundColor: 'white',
     elevation: 4,
-    marginBottom: 12,
+    paddingVertical: 2
   },
   filterContainer: {
     alignItems: 'flex-end',
+    paddingHorizontal: 5
   },
   sortButton: {
-    borderColor: 'white',
+    flexDirection: 'row',
+    alignItems: 'center'
   },
   filtersContainer: {
-    backgroundColor: 'white',
-    paddingVertical: 12,
-    elevation: 2,
+    paddingVertical: 12
   },
   filtersScroll: {
     paddingHorizontal: 20,
   },
   filterChip: {
+    backgroundColor: '#F4F0FF',
+    borderRadius: 20,
     marginRight: 8,
     marginBottom: 8,
   },
   vendorList: {
-    padding: 20,
-    paddingBottom: 100,
+    paddingHorizontal: 10,
+    paddingBottom: 50,
   },
   vendorCard: {
     marginBottom: 16,
@@ -337,7 +270,6 @@ const styles = StyleSheet.create({
   },
   vendorType: {
     fontSize: 14,
-    color: theme.colors.placeholder,
     marginBottom: 8,
   },
   ratingContainer: {
@@ -351,7 +283,6 @@ const styles = StyleSheet.create({
   },
   reviewCount: {
     fontSize: 12,
-    color: theme.colors.placeholder,
     marginLeft: 4,
   },
   statusBadge: {
@@ -360,7 +291,6 @@ const styles = StyleSheet.create({
   },
   vendorDescription: {
     fontSize: 14,
-    color: theme.colors.text,
     marginBottom: 12,
   },
   vendorDetails: {
@@ -375,7 +305,6 @@ const styles = StyleSheet.create({
   },
   detailText: {
     fontSize: 12,
-    color: theme.colors.placeholder,
     marginLeft: 4,
   },
   stockContainer: {
@@ -385,7 +314,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
     marginBottom: 8,
-    color: theme.colors.text,
   },
   stockItems: {
     flexDirection: 'row',
@@ -394,31 +322,19 @@ const styles = StyleSheet.create({
   stockChip: {
     marginRight: 8,
     marginBottom: 4,
-    backgroundColor: theme.colors.surface,
   },
   emptyState: {
     alignItems: 'center',
     paddingVertical: 60,
   },
   emptyTitle: {
-    color: theme.colors.placeholder,
     marginTop: 16,
     marginBottom: 8,
   },
   emptySubtitle: {
-    color: theme.colors.placeholder,
     textAlign: 'center',
     marginBottom: 24,
   },
   clearFiltersButton: {
-    borderColor: theme.colors.primary,
-  },
-  fab: {
-    position: 'absolute',
-    marginHorizontal: 16,
-    marginVertical: 60,
-    right: 0,
-    bottom: 0,
-    backgroundColor: theme.colors.accent,
-  },
+  }
 });
