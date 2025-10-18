@@ -113,6 +113,10 @@ export default function VendorRegistrationScreen({ navigation }) {
         category: '',
         area: '',
         address: '',
+        location: {
+          latitude: '',
+          longitude: ''
+        },
         description: '',
         workingHours: {
           monday: '',
@@ -376,6 +380,7 @@ export default function VendorRegistrationScreen({ navigation }) {
               >
                 Back
               </Button>
+              
               <Button
                 mode="contained"
                 onPress={handleNext}

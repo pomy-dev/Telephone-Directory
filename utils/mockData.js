@@ -999,7 +999,7 @@ export const mockOrders = [
 ];
 
 export const mockCategories = [
-  { id: '1', name: 'Vegetables', icon: '🥬', color: '#4CAF50' },
+  { id: '1', name: 'Tilimo', icon: '🥬', color: '#4CAF50' },
   { id: '2', name: 'Food & Beverages', icon: '🍲', color: '#FF9800' },
   { id: '3', name: 'Handicrafts', icon: '🎨', color: '#9C27B0' },
   { id: '4', name: 'Electronics', icon: '📱', color: '#2196F3' },

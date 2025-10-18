@@ -46,18 +46,22 @@ export default function VendorCard({ item }) {
     navigation.navigate('VendorInventory', { vendorId: item._id || item.id || item.id_str, vendor: item });
   }
 
+  const handleViewStock = () => {
+    navigation.navigate('MakertStore', { vendor: item })
+  }
+
   return (
     <TouchableOpacity style={[styles.vendorCard, { borderColor: theme.colors.border, backgroundColor: theme.colors.card }]} onPress={handleVendorPress}>
       <Card.Content>
         <View style={styles.vendorHeader}>
           <Avatar.Image
             size={50}
-            source={{ uri: item.profileImage }}
+            source={{ uri: item.avatar }}
             style={styles.vendorAvatar}
           />
           <View style={styles.vendorInfo}>
-            <Text style={styles.vendorName}>{item.name}</Text>
-            <Text style={[styles.vendorType, { color: theme.colors.placeholder }]}>{item.type}</Text>
+            <Text style={styles.vendorName}>{item.businessName}</Text>
+            <Text style={[styles.vendorType, { color: theme.colors.placeholder }]}>{item.businessType}</Text>
             <View style={styles.ratingContainer}>
               <Icons.Ionicons name="star" size={16} color="#FFD700" />
               <Text style={styles.rating}>{item.rating}</Text>
@@ -69,13 +73,13 @@ export default function VendorCard({ item }) {
           </Badge>
         </View>
 
-        <Text style={[styles.vendorDescription, { color: theme.colors.text }]}>
+        <Text numberOfLines={2} ellipsizeMode={'tail'} style={[styles.vendorDescription, { color: theme.colors.text }]}>
           {item.description}
         </Text>
 
         {/* view my Today's display */}
         <View style={{ backgroundColor: theme.colors.indicator, borderRadius: 10, alignItems: 'center', paddingVertical: 10, marginBottom: 5 }}>
-          <TouchableOpacity onPress={() => { }}>
+          <TouchableOpacity onPress={handleViewStock}>
             <Text style={{ color: '#ccc', fontSize: 15, textAlign: 'center' }}>View my Today's stock</Text>
           </TouchableOpacity>
         </View>
@@ -83,7 +87,7 @@ export default function VendorCard({ item }) {
         <View style={styles.vendorDetails}>
           <View style={styles.detailItem}>
             <Icons.Ionicons name="location-outline" size={16} color={theme.colors.primary} />
-            <Text style={[styles.detailText, { color: theme.colors.placeholder }]}>{item.location.area}</Text>
+            <Text style={[styles.detailText, { color: theme.colors.placeholder }]}>{item.area}</Text>
           </View>
           <View style={styles.detailText}>
             <Icons.Ionicons name="time-outline" size={16} color={theme.colors.primary} />
@@ -92,7 +96,7 @@ export default function VendorCard({ item }) {
             </Text>
           </View>
           <View style={styles.detailText}>
-            <Icons.Ionicons name="car-outline" size={16} color={theme.colors.primary} />
+            <Icons.MaterialIcons name="delivery-dining" size={16} color={theme.colors.primary} />
             <Text style={[styles.detailText, { color: theme.colors.placeholder }]}>{item.deliveryRadius}km delivery</Text>
           </View>
         </View>

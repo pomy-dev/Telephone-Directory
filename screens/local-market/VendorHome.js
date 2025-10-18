@@ -7,6 +7,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   SafeAreaView,
+  Image,
   StatusBar,
   View
 } from 'react-native';
@@ -18,23 +19,98 @@ import {
   Text,
   Searchbar
 } from 'react-native-paper';
-import { mockCategories, mockVendors } from '../../utils/mockData';
+import { mockCategories } from '../../utils/mockData';
 import { AppContext } from '../../context/appContext';
+import { AuthContext } from '../../context/authProvider';
+import * as Location from 'expo-location';
 import VendorCard from '../../components/vendorCard';
+import { getVendorsAndStock } from '../../service/getApi';
+import CustomLorder from '../../components/customLoader';
 
 const { width } = Dimensions.get('window');
 
 export default function HomeScreen({ navigation }) {
   const { theme, isDarkMode } = React.useContext(AppContext)
+  const { user } = React.useContext(AuthContext);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [nearbyVendors, setNearbyVendors] = useState([]);
   const [featuredVendors, setFeaturedVendors] = useState([]);
+  const [userLocation, setUserLocation] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // 🧮 Haversine formula to calculate distance (in km)
+  const getDistance = (lat1, lon1, lat2, lon2) => {
+    const toRad = (value) => (value * Math.PI) / 180;
+    const R = 6371; // Earth radius in km
+    const dLat = toRad(lat2 - lat1);
+    const dLon = toRad(lon2 - lon1);
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(toRad(lat1)) *
+      Math.cos(toRad(lat2)) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+  };
 
   useEffect(() => {
-    // Simulate loading nearby vendors
-    setNearbyVendors(mockVendors.filter(vendor => vendor.isOnline));
-    setFeaturedVendors(mockVendors.filter(vendor => vendor.rating > 4.5));
+    const loadVendors = async () => {
+      try {
+        // 📍 Get device location
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          console.warn('Permission to access location was denied');
+          return;
+        }
+
+        setIsLoading(true);
+
+        const location = await Location.getCurrentPositionAsync({});
+        const { latitude, longitude } = location.coords;
+        setUserLocation({ latitude, longitude });
+
+        // 🌐 Fetch vendors from backend
+        const vendorsData = await getVendorsAndStock();
+        const allVendors = vendorsData.vendors;
+
+        // ⭐ Featured vendors
+        const featured = allVendors.filter((v) => v.rating > 4.5).slice(0, 3);
+
+        // 🧭 Find nearby vendors (sort by distance)
+        const vendorsWithDistance = allVendors
+          .filter(
+            (v) =>
+              v.location &&
+              v.location.latitude &&
+              v.location.longitude
+          )
+          .map((v) => ({
+            ...v,
+            distance: getDistance(
+              latitude,
+              longitude,
+              v.location.latitude,
+              v.location.longitude
+            ),
+          }))
+          .sort((a, b) => a.distance - b.distance); // nearest first
+
+        // 🧮 Get first 4 nearby vendors
+        const nearest = vendorsWithDistance.slice(0, 4);
+
+        // 💾 Save state
+        setNearbyVendors(nearest);
+        setFeaturedVendors(featured);
+      } catch (error) {
+        console.error('Error loading vendors:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadVendors();
   }, []);
 
   const handleSearch = () => {
@@ -57,7 +133,7 @@ export default function HomeScreen({ navigation }) {
   );
 
   const renderCategoryCard = ({ item }) => (
-    <TouchableOpacity style={[styles.categoryCard, { borderColor: theme.colors.border }]} onPress={() => handleCategoryPress(item)}>
+    <TouchableOpacity style={styles.categoryCard} onPress={() => handleCategoryPress(item)}>
       <Card.Content style={styles.categoryContent}>
         <Text style={styles.categoryIcon}>{item.icon}</Text>
         <Text style={[styles.categoryName, { color: theme.colors.text }]}>{item.name}</Text>
@@ -68,24 +144,28 @@ export default function HomeScreen({ navigation }) {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
+
+      {isLoading && <CustomLorder />}
+
       {/* header */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 30 }}>
-            <TouchableOpacity onPress={() => navigation.goBack()}>
-              <Icons.Ionicons name='arrow-back' size={24} color={theme.colors.primary} />
-            </TouchableOpacity>
-            <Text style={[styles.headerTitle, { color: theme.colors.primary }]}>Local Market</Text>
-          </View>
-          <>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Icons.Ionicons name='arrow-back' size={24} color={theme.colors.primary} />
+          </TouchableOpacity>
+
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 20 }}>
             <TouchableOpacity onPress={() => navigation.navigate('ProfileScreen')} style={styles.notificationButton}>
-              <Icons.Ionicons name="person-circle-outline" size={24} color={theme.colors.primary} />
+              {(user.picture !== null || user.picture !== '') ?
+                <Image source={{ uri: user.picture }} style={styles.userImage} />
+                :
+                <Icons.Ionicons name="person-circle-outline" size={24} color={theme.colors.primary} />}
             </TouchableOpacity>
             <TouchableOpacity style={styles.notificationButton}>
               <Icons.Ionicons name="notifications-outline" size={24} color={theme.colors.primary} />
               <Badge style={[styles.notificationBadge, { backgroundColor: theme.colors.error }]}>3</Badge>
             </TouchableOpacity>
-          </>
+          </View>
         </View>
 
         <Searchbar
@@ -126,7 +206,7 @@ export default function HomeScreen({ navigation }) {
           <FlatList
             data={nearbyVendors}
             renderItem={renderVendorCard}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item, index) => `${item._id}-${index}`}
             scrollEnabled={false}
             contentContainerStyle={styles.vendorList}
           />
@@ -147,7 +227,7 @@ export default function HomeScreen({ navigation }) {
           <FlatList
             data={featuredVendors}
             renderItem={renderVendorCard}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item, index) => `${item._id}-${index}`}
             scrollEnabled={false}
             contentContainerStyle={styles.vendorList}
           />
@@ -192,19 +272,18 @@ const styles = StyleSheet.create({
   },
   header: {
     paddingTop: 30,
-    paddingBottom: 20,
+    paddingBottom: 10,
     paddingHorizontal: 20,
   },
   headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 20,
+    alignItems: 'center',
+    marginBottom: 10,
   },
-  headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginTop: 4,
+  userImage: {
+    width: 40, height: 40,
+    borderRadius: 20, marginRight: 12
   },
   notificationButton: {
     position: 'relative',
@@ -239,7 +318,6 @@ const styles = StyleSheet.create({
   },
   categoryCard: {
     backgroundColor: '#F0F4FF',
-    borderWidth: 1,
     borderRadius: 50,
     width: 'auto',
     marginRight: 12,
@@ -250,7 +328,6 @@ const styles = StyleSheet.create({
     gap: 10,
     alignItems: 'center',
     paddingHorizontal: 12,
-    paddingVertical: 5
   },
   categoryIcon: {
     fontSize: 32,

@@ -130,6 +130,29 @@ export const addVendorStock = async (stockData) => {
   }
 }
 
+export const getVendorsAndStock = async () => {
+  try {
+    const vendors = await fetch(`${API_BASE_URL}/api/vendors`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      }
+    });
+    if (!vendors.ok) {
+      console.error('==============\n');
+      console.error(vendors.arrayBuffer);
+      throw new Error(vendors.status);
+    }
+    const data = await vendors.json();
+    console.log(data.totalVendors);
+
+    return data;
+  } catch (error) {
+    console.error("Error fetching vendors:", error);
+    throw error;
+  }
+}
+
 export const getVendorProfile = async (email) => {
   try {
     const response = await fetch(`${API_BASE_URL}/api/vendor-profile?email=${encodeURIComponent(email)}`,

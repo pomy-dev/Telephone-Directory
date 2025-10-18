@@ -14,8 +14,9 @@ import {
   Platform,
   TouchableOpacity,
   View,
+  TextInput,
   StatusBar,
-  SafeAreaView
+  SafeAreaView,
 } from 'react-native';
 import {
   Button,
@@ -24,11 +25,16 @@ import {
   FAB,
   IconButton,
   Menu,
-  Portal,
   Searchbar,
-  Surface,
   Text,
-  TextInput,
+  SegmentedButtons,
+  Divider,
+  Badge,
+  Avatar,
+  List,
+  Switch,
+  HelperText,
+  ActivityIndicator,
 } from 'react-native-paper';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Icons } from '../../constants/Icons';
@@ -36,18 +42,27 @@ import { AuthContext } from '../../context/authProvider';
 import { AppContext } from '../../context/appContext';
 import LoginScreen from '../../components/loginModal';
 import { addVendorStock } from '../../service/getApi';
+import { CustomToast } from '../../components/customToast';
+import CustomLoader from '../../components/customLoader';
 
 const { width, height: screenHeight } = Dimensions.get('window');
 
-export default function VendorInventoryScreen({ navigation }) {
+// Define category groups
+const inventoryCategories = ['Vegetables', 'Fruits', 'Grains', 'Meat', 'Dairy', 'Beverages', 'Snacks', 'General'];
+const serviceCategories = ['Cleaning', 'Repair', 'Consulting', 'Delivery', 'Tutoring', 'Beauty', 'Events', 'General'];
+
+export default function VendorInventoryScreen({ navigation, route }) {
   const { theme, isDarkMode } = React.useContext(AppContext);
   const { user } = React.useContext(AuthContext);
+  const { vendor } = route.params;
+  const [mode, setMode] = useState('inventory'); // 'inventory' or 'services'
   const [items, setItems] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [modalVisible, setModalVisible] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
-  const [unitMenuVisible, setUnitMenuVisible] = useState(false);
+  const [durationMenuVisible, setDurationMenuVisible] = useState(false);
+  const [categoryMenuVisible, setCategoryMenuVisible] = useState(false); // For form category selector
   const [formData, setFormData] = useState({
     itemName: '',
     description: '',
@@ -62,95 +77,111 @@ export default function VendorInventoryScreen({ navigation }) {
     maxOrder: '100',
     discount: '0',
     expiryDate: '',
-    barcode: ''
+    barcode: '',
+    // Service-specific
+    duration: '1',
+    durationUnit: 'hours',
+    availability: true,
+    bookingSlots: '',
   });
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showLogin, setShowLogin] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isTakePhoto, setIsTakePhoto] = useState(false);
+  const [isPickImage, setIsPickImage] = useState(false);
   const sheetAnim = useRef(new Animated.Value(0)).current;
 
-  // handler for expiry date change from native picker
+  // Handler for expiry date change
   const onExpiryDateChange = (event, selectedDate) => {
-    setShowDatePicker(Platform.OS === 'ios'); // keep open on iOS if needed
+    setShowDatePicker(Platform.OS === 'ios');
     if (selectedDate) {
       setFormData(prev => ({ ...prev, expiryDate: selectedDate.toISOString() }));
     }
   };
 
-  const categories = ['All', 'Vegetables', 'Fruits', 'Grains', 'Meat', 'Dairy', 'Beverages', 'Snacks', 'General'];
-  const units = ['pieces', 'kg', 'liters', 'boxes', 'packets', 'bottles'];
+  // Dynamic categories based on mode
+  const categories = ['All', ...(mode === 'inventory' ? inventoryCategories : serviceCategories)];
+  const durationUnits = ['minutes', 'hours', 'days', 'sessions'];
 
   useEffect(() => {
-    // Load saved items from storage
     loadItems();
-  }, []);
+    setSelectedCategory('All');
+    if (modalVisible) {
+      setFormData(prev => ({ ...prev, category: 'General' }));
+    }
+  }, [mode]);
 
   useEffect(() => {
     const toValue = modalVisible ? 1 : 0;
     Animated.timing(sheetAnim, {
       toValue,
-      duration: 280,
+      duration: 300,
       useNativeDriver: true,
-    }).start(() => {
-      if (!modalVisible) {
-        // reset editing state only after hide if needed
-      }
-    });
-  }, [modalVisible, sheetAnim]);
+    }).start();
+  }, [modalVisible]);
 
-  const sheetHeight = Math.min(screenHeight * 0.86, 760);
+  const sheetHeight = Math.min(screenHeight * 0.92, 800);
   const sheetTranslateY = sheetAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [sheetHeight + 20, 0],
+    outputRange: [sheetHeight, 0],
   });
 
   const loadItems = async () => {
-    // In a real app, load from AsyncStorage or API
-    setItems([]);
+    setItems(vendor.stock);
   };
 
   const handleImagePicker = async () => {
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-    if (permissionResult.granted === false) {
-      Alert.alert('Permission required', 'Permission to access camera roll is required!');
-      return;
-    }
-
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images', 'videos'],
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
-    });
-
-    if (!result.canceled && result.assets[0]) {
-      setFormData(prev => ({
-        ...prev,
-        images: [...prev.images, result.assets[0].uri]
-      }));
+    try {
+      setIsPickImage(true)
+      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permissionResult.granted) {
+        Alert.alert('Permission required', 'Access to media library is needed!');
+        return;
+      }
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images', 'videos'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+      if (!result.canceled && result.assets[0]) {
+        addImage(result.assets[0].uri);
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setIsPickImage(false)
     }
   };
 
   const handleCamera = async () => {
-    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
-
-    if (permissionResult.granted === false) {
-      Alert.alert('Permission required', 'Permission to access camera is required!');
-      return;
+    try {
+      setIsTakePhoto(true);
+      const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+      if (!permissionResult.granted) {
+        Alert.alert('Permission required', 'Access to camera is needed!');
+        return;
+      }
+      const result = await ImagePicker.launchCameraAsync({
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+      if (!result.canceled && result.assets[0]) {
+        addImage(result.assets[0].uri);
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setIsTakePhoto(false)
     }
+  };
 
-    const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
-    });
-
-    if (!result.canceled && result.assets[0]) {
-      setFormData(prev => ({
-        ...prev,
-        images: [...prev.images, result.assets[0].uri]
-      }));
-    }
+  const addImage = (uri) => {
+    setFormData(prev => ({
+      ...prev,
+      images: [...prev.images, uri].slice(0, 5), // Limit to 5 images
+    }));
   };
 
   const removeImage = (index) => {
@@ -162,11 +193,11 @@ export default function VendorInventoryScreen({ navigation }) {
 
   const resetForm = () => {
     setFormData({
-      name: '',
+      itemName: '',
       description: '',
       price: '',
       costPrice: '',
-      quantity: '',
+      quantity: mode === 'inventory' ? '' : undefined,
       unit: 'pieces',
       category: 'General',
       images: [],
@@ -175,7 +206,11 @@ export default function VendorInventoryScreen({ navigation }) {
       maxOrder: '100',
       discount: '0',
       expiryDate: '',
-      barcode: ''
+      barcode: '',
+      duration: '1',
+      durationUnit: 'hours',
+      availability: true,
+      bookingSlots: '',
     });
     setEditingItem(null);
   };
@@ -196,517 +231,600 @@ export default function VendorInventoryScreen({ navigation }) {
   };
 
   const validateForm = () => {
-    if (!formData.itemName?.trim()) {
-      Alert.alert('Error', 'Product name is required');
-      return false;
-    }
-    if (!formData.price || parseFloat(formData.price) <= 0) {
-      Alert.alert('Error', 'Valid price is required');
-      return false;
-    }
-    if (!formData.quantity || parseInt(formData.quantity) < 0) {
-      Alert.alert('Error', 'Valid quantity is required');
-      return false;
-    }
+    if (!formData.itemName?.trim()) return falseAlert('Product/Service name is required');
+    if (!formData.price || parseFloat(formData.price) <= 0) return falseAlert('Valid price is required');
+    if (mode === 'inventory' && (!formData.quantity || parseInt(formData.quantity) < 0)) return falseAlert('Valid quantity is required');
     return true;
   };
 
-  // convert images to Base64
+  const falseAlert = (msg) => {
+    Alert.alert('Error', msg);
+    return false;
+  };
+
   const imagesToBase64 = async (images = []) => {
     const results = [];
     const getMime = (uri) => {
-      const ext = (uri.split('.').pop() || '').toLowerCase();
-      switch (ext) {
-        case 'jpg':
-        case 'jpeg':
-          return 'image/jpeg';
-        case 'png':
-          return 'image/png';
-        case 'gif':
-          return 'image/gif';
-        case 'webp':
-          return 'image/webp';
-        case 'heic':
-          return 'image/heic';
-        default:
-          return 'image/jpeg';
-      }
+      const ext = uri.split('.').pop()?.toLowerCase() || 'jpg';
+      const map = { jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp', heic: 'image/heic' };
+      return map[ext] || 'image/jpeg';
     };
-
     for (const uri of images) {
+      if (!uri) continue;
+      if (uri.startsWith('data:')) {
+        results.push(uri);
+        continue;
+      }
       try {
-        if (!uri) continue;
-        // if already a data URI, keep as-is
-        if (typeof uri === 'string' && uri.startsWith('data:')) {
-          results.push(uri);
-          continue;
-        }
-
-        // some URIs may be objects (asset), normalize to string
-        const uriStr = typeof uri === 'string' ? uri : uri.uri || '';
-
-        // read file to base64
-        const base64 = await FileSystem.readAsStringAsync(uriStr, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
-
-        const mime = getMime(uriStr);
-        results.push(`data:${mime};base64,${base64}`);
+        const base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
+        results.push(`data:${getMime(uri)};base64,${base64}`);
       } catch (err) {
-        console.warn('Failed to convert image to base64 for', uri, err);
-        // push null or skip depending on needs — here we push null to preserve index
-        results.push(null);
+        console.warn('Image conversion failed', err);
       }
     }
-
     return results;
   };
 
   const saveItems = async (itemsToSave) => {
-    if (!Array.isArray(itemsToSave) || itemsToSave.length === 0) {
-      return;
-    }
-
+    if (!itemsToSave?.length) return;
+    setIsLoading(true);
     try {
-      // convert images for each item in parallel
-      const converted = await Promise.all(
-        itemsToSave.map(async (it) => {
-          const itemCopy = { ...it };
-          if (itemCopy.images && itemCopy.images.length > 0) {
-            const base64List = await imagesToBase64(itemCopy.images);
-            itemCopy.imagesBase64 = base64List.filter(Boolean); // remove nulls
-          } else {
-            itemCopy.imagesBase64 = [];
-          }
-          return itemCopy;
-        })
-      );
-
-      // persist/set state
-      const newStock = addVendorStock(converted[0])
+      const converted = await Promise.all(itemsToSave.map(async (it) => {
+        const copy = { ...it };
+        if (copy.images?.length) copy.images = await imagesToBase64(copy.images);
+        return copy;
+      }));
+      // API call placeholder
+      await addVendorStock(converted[0]);
       setItems(converted);
-
-      // TODO: persist to AsyncStorage or upload to server here if required
-      // console.log('Saved details', converted);
+      CustomToast('Success', `${mode === 'inventory' ? 'Item' : 'Service'} added successfully.`);
     } catch (error) {
-      console.error('Error saving items and converting images:', error);
-      // fallback: set original items
-      setItems(itemsToSave);
+      console.error('Save error:', error);
+      Alert.alert('Error', 'Failed to save. Try again.');
+    } finally {
+      setIsLoading(false);
+      closeModal();
     }
   };
 
   const handleSave = () => {
-    if (!user && !user?.email) {
-      Alert.alert(
-        'Warning',
-        'Your vendor email was not verified.\nTry Login and come back',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Login', onPress: () => setShowLogin(true) }
-        ]
-      )
+    if (!user?.email) {
+      Alert.alert('Login Required', 'Verify your email by logging in.', [
+        { text: 'Cancel' },
+        { text: 'Login', onPress: () => setShowLogin(true) }
+      ]);
       return;
     }
-
     if (!validateForm()) return;
 
-    const newItem = {
+    const baseItem = {
       ...formData,
-      id: editingItem ? editingItem.id : Date.now().toString(),
+      id: editingItem?.id || Date.now().toString(),
       price: parseFloat(formData.price),
       costPrice: parseFloat(formData.costPrice) || 0,
-      quantity: parseInt(formData.quantity),
-      minOrder: parseInt(formData.minOrder),
-      maxOrder: parseInt(formData.maxOrder),
-      discount: parseFloat(formData.discount),
-      dateAdded: editingItem ? editingItem.dateAdded : new Date().toISOString(),
+      discount: parseFloat(formData.discount) || 0,
+      minOrder: parseInt(formData.minOrder) || 1,
+      maxOrder: parseInt(formData.maxOrder) || 100,
       lastUpdated: new Date().toISOString(),
-      totalSold: editingItem ? editingItem.totalSold : 0,
-      vendorEmail: user.email
+      vendorEmail: 'carolsibandze@gmail.com',
+      type: mode,
     };
 
-    console.log(newItem)
-
-    let updatedItems;
-    if (editingItem) {
-      updatedItems = items.map(item =>
-        item.id === editingItem.id ? newItem : item
-      );
+    if (mode === 'inventory') {
+      baseItem.quantity = parseInt(formData.quantity);
+      baseItem.dateAdded = editingItem?.dateAdded || baseItem.lastUpdated;
+      baseItem.totalSold = editingItem?.totalSold || 0;
     } else {
-      updatedItems = [...items, newItem];
+      baseItem.duration = parseFloat(formData.duration);
+      baseItem.durationUnit = formData.durationUnit;
+      baseItem.availability = formData.availability;
+      baseItem.bookingSlots = formData.bookingSlots;
+      baseItem.totalBookings = editingItem?.totalBookings || 0;
     }
 
+    const updatedItems = editingItem
+      ? items.map(i => i.id === editingItem.id ? baseItem : i)
+      : [...items, baseItem];
 
     saveItems(updatedItems);
-    closeModal();
-    Alert.alert('Success', `Product ${editingItem ? 'updated' : 'added'} successfully!`);
   };
 
   const handleDelete = (itemId) => {
-    Alert.alert(
-      'Delete Product',
-      'Are you sure you want to delete this product?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => {
-            const updatedItems = items.filter(item => item.id !== itemId);
-            saveItems(updatedItems);
-          }
+    Alert.alert('Delete', `Delete this ${mode === 'inventory' ? 'item' : 'service'}?`, [
+      { text: 'Cancel' },
+      {
+        text: 'Delete', style: 'destructive', onPress: () => {
+          const updated = items.filter(i => i.id !== itemId);
+          setItems(updated);
+          // Persist deletion if needed
         }
-      ]
-    );
+      }
+    ]);
   };
 
   const filteredItems = items.filter(item => {
-    const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.description.toLowerCase().includes(searchQuery.toLowerCase());
+    const searchLower = searchQuery.toLowerCase();
+    const matchesSearch = item.itemName?.toLowerCase().includes(searchLower) ||
+      item.description?.toLowerCase().includes(searchLower) ||
+      item.tags?.toLowerCase().includes(searchLower);
     const matchesCategory = selectedCategory === 'All' || item.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
-  const renderItem = ({ item }) => (
-    <Card style={styles.itemCard}>
-      <View style={styles.itemHeader}>
-        {item.images.length > 0 && (
-          <Image source={{ uri: item.images[0] }} style={[styles.itemImage, { backgroundColor: theme.colors.surfaceVariant }]} />
-        )}
-        <View style={styles.itemInfo}>
-          <Text variant="titleMedium" style={styles.itemName}>{item.name}</Text>
-          <Text variant="bodyMedium" style={[styles.itemDescription, { color: theme.colors.onSurfaceVariant }]} numberOfLines={2}>
-            {item.description}
-          </Text>
-          <View style={styles.priceRow}>
-            <Text variant="titleMedium" style={[styles.price, { color: theme.colors.primary }]}>
-              SZL {item.price.toFixed(2)}
-            </Text>
-            {item.discount > 0 && (
-              <Chip mode="outlined" compact style={[styles.discountChip, { backgroundColor: theme.colors.errorContainer }]}>
-                {item.discount}% OFF
-              </Chip>
-            )}
-          </View>
-          <Text variant="bodySmall" style={[styles.stockInfo, { color: theme.colors.onSurfaceVariant }]}>
-            Stock: {item.quantity} {item.unit}
-          </Text>
+  const formCategories = mode === 'inventory' ? inventoryCategories : serviceCategories;
+
+  const renderCategoryCard = ({ item }) => (
+    <TouchableOpacity
+      style={[styles.categoryTouchable, selectedCategory === item && styles.selectedCategory, { borderColor: theme.colors.border }]}
+      onPress={() => setSelectedCategory(item)}>
+      <Text style={[styles.categoryText, selectedCategory === item && { color: "#cccccc" }]}>
+        {item}
+      </Text>
+      {selectedCategory === item && (
+        <Icons.MaterialIcons name="check" size={16} color={'#cccccc'} style={styles.checkIcon} />
+      )}
+    </TouchableOpacity>
+  );
+
+  const renderOverview = () => (
+    <View style={[styles.overviewCard, { backgroundColor: theme.colors.card }]}>
+      <View style={styles.statRow}>
+        <View style={styles.statItem}>
+          <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>Total</Text>
+          <Text variant="headlineSmall">{items.length}</Text>
+        </View>
+        <Divider style={{ height: '100%' }} vertical />
+        <View style={styles.statItem}>
+          <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>Low Stock</Text>
+          <Text variant="headlineSmall">{mode === 'inventory' ? items.filter(i => i.quantity < 10).length : 'N/A'}</Text>
+        </View>
+        <Divider style={{ height: '100%' }} vertical />
+        <View style={styles.statItem}>
+          <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>{mode === 'inventory' ? 'Sold' : 'Booked'}</Text>
+          <Text variant="headlineSmall">{items.reduce((sum, i) => sum + (i.totalSold || i.totalBookings || 0), 0)}</Text>
         </View>
       </View>
+    </View>
+  );
 
-      <Card.Actions style={styles.cardActions}>
-        <View style={styles.statsRow}>
-          <Text variant="bodySmall">Sold: {item.totalSold}</Text>
-          <Text variant="bodySmall">Category: {item.category}</Text>
-        </View>
-        <View style={styles.actionButtons}>
-          <IconButton
-            icon="pencil"
-            size={20}
-            onPress={() => openModal(item)}
-          />
-          <IconButton
-            icon="delete"
-            size={20}
-            iconColor={theme.colors.error}
-            onPress={() => handleDelete(item.id)}
-          />
-        </View>
-      </Card.Actions>
-    </Card>
+  const renderItemCard = ({ item, index }) => (
+    <View key={index}
+      style={[styles.itemWrapper, { backgroundColor: index % 2 === 0 ? theme.colors.card : theme.colors.sub_card, elevation: 2 }]}>
+      <Card mode="elevated" style={[styles.itemCard, { backgroundColor: theme.colors.card }]}>
+        <Card.Content style={styles.cardContent}>
+          <View style={styles.itemHeader}>
+            {item.images?.[0] ? (
+              <Image source={{ uri: item.images[0] }} style={styles.itemImage} />
+            ) : (
+              <Avatar.Icon size={60} icon={mode === 'inventory' ? 'package' : 'tools'} style={{ backgroundColor: theme.colors.surfaceVariant }} />
+            )}
+            <View style={styles.itemInfo}>
+              <Text variant="titleMedium" numberOfLines={1} ellipsizeMode='tail'>{item.itemName}</Text>
+              <Text variant="bodyMedium" numberOfLines={2} ellipsizeMode='tail' style={{ color: theme.colors.onSurfaceVariant }}>{item.description}</Text>
+              <View style={styles.priceRow}>
+                <Text variant="titleSmall" style={{ color: theme.colors.primary }}>SZL {item.price.toFixed(2)}</Text>
+                {item.discount > 0 && <Badge style={{ backgroundColor: theme.colors.errorContainer, marginLeft: 8 }}>{item.discount}% off</Badge>}
+              </View>
+              {mode === 'inventory' ? (
+                <Text variant="bodySmall" style={{ color: item.quantity < 10 ? theme.colors.error : theme.colors.onSurfaceVariant }}>
+                  Stock: {item.quantity} {item.unit}
+                </Text>
+              ) : (
+                <Text variant="bodySmall" style={{ color: item.availability ? theme.colors.primary : theme.colors.error }}>
+                  {item.duration} {item.durationUnit} • {item.availability ? 'Available' : 'Unavailable'}
+                </Text>
+              )}
+            </View>
+          </View>
+        </Card.Content>
+        <Card.Actions style={styles.cardActions}>
+          <Chip compact icon={mode === 'inventory' ? 'shopping' : 'calendar'}>{mode === 'inventory' ? item.totalSold : item.totalBookings || 0}</Chip>
+          <View style={{ flexDirection: 'row' }}>
+            <IconButton icon="pencil" onPress={() => openModal(item)} />
+            <IconButton icon="delete" iconColor={theme.colors.error} onPress={() => handleDelete(item.id)} />
+          </View>
+        </Card.Actions>
+      </Card>
+    </View >
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
-
+    <View style={[styles.container]}>
+      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
       <LoginScreen isLoginVisible={showLogin} onClose={() => setShowLogin(false)} />
+      {isLoading && <CustomLoader />}
 
       <View style={[styles.header, { borderColor: theme.colors.border }]}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <Icons.Ionicons name='arrow-back' size={24} color={theme.colors.text} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>My Inventory</Text>
-        <Text variant="bodyMedium" style={styles.headerSubtitle}>
-          {items.length} products in stock
-        </Text>
+        <IconButton icon="arrow-left" onPress={() => navigation.goBack()} />
+        <View style={{ flex: 1 }}>
+          {user ?
+            <Image source={{ uri: vendor.avatar }} style={styles.userImage} />
+            :
+            <Icons.Ionicons name='person-circle-outline' size={30} color={theme.colors.indicator} />}
+        </View>
+        <SegmentedButtons
+          value={mode}
+          onValueChange={setMode}
+          buttons={[
+            { value: 'inventory', label: 'Inventory', icon: 'package' },
+            { value: 'services', label: 'Services', icon: 'tools' },
+          ]}
+          style={[styles.modeSwitcher]}
+        />
+      </View>
+      <View style={{ paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Text variant="bodyLarge" style={{ textAlign: 'center', paddingHorizontal: 10 }}>{vendor.businessName}</Text>
+        <Text variant="bodyMedium" style={{ textAlign: 'center' }}>{items.length} {mode === 'inventory' ? 'stock items' : 'services counting'}</Text>
       </View>
 
-      <View style={styles.searchContainer}>
-        <Searchbar
-          placeholder="Search products..."
-          onChangeText={setSearchQuery}
-          value={searchQuery}
-          style={styles.searchbar}
+      <Searchbar
+        placeholder={`Search ${mode}...`}
+        onChangeText={setSearchQuery}
+        value={searchQuery}
+        style={[styles.searchbar, { backgroundColor: theme.colors.sub_card, borderColor: theme.colors.border }]}
+        iconColor={theme.colors.text}
+      />
+
+      <View>
+        <FlatList
+          data={categories}
+          renderItem={renderCategoryCard}
+          keyExtractor={(item, index) => `${item.id}-${index}`}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.categoryScroll}
         />
       </View>
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryContainer}>
-        {categories.map((category) => (
-          <Chip
-            key={category}
-            selected={selectedCategory === category}
-            onPress={() => setSelectedCategory(category)}
-            style={styles.categoryChip}
-          >
-            {category}
-          </Chip>
-        ))}
-      </ScrollView>
-
-      <FlatList
-        data={filteredItems}
-        keyExtractor={(item) => item.id}
-        renderItem={renderItem}
-        contentContainerStyle={styles.listContainer}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={() => (
-          <View style={styles.emptyContainer}>
-            <Text variant="titleLarge" style={[styles.emptyText, { color: theme.colors.onSurfaceVariant }]}>No products found</Text>
-            <Text variant="bodyMedium" style={[styles.emptySubtext, { color: theme.colors.onSurfaceVariant }]}>
-              {searchQuery ? 'Try adjusting your search' : 'Add your first product to get started'}
-            </Text>
+      {filteredItems.length > 0 ? (
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 50 }}>
+          <View style={styles.listContainer}>
+            {renderOverview()}
+            {filteredItems.map((item, index) => renderItemCard({ item, index }))}
           </View>
-        )}
-      />
+        </ScrollView>
+      ) : (
+        <View style={styles.emptyState}>
+          <Avatar.Icon size={64} icon="alert-circle" style={{ backgroundColor: theme.colors.placeholder }} />
+          <Text variant="titleMedium" style={{ marginTop: 16, color: theme.colors.text }}>No {mode} found</Text>
+          <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>Add your first {mode === 'inventory' ? 'product' : 'service'} to get started</Text>
+        </View>
+      )}
 
       <FAB
         icon="plus"
-        style={[styles.fab, { backgroundColor: theme.colors.primary }]}
+        iconColor={theme.colors.text}
+        style={[styles.fab, { backgroundColor: theme.colors.card }]}
         onPress={() => openModal()}
-        label="Add Product"
       />
+
       {modalVisible && (
         <TouchableWithoutFeedback onPress={closeModal}>
           <View style={styles.overlay} />
         </TouchableWithoutFeedback>
       )}
 
-      <Animated.View
-        pointerEvents={modalVisible ? 'auto' : 'none'}
-        style={[
-          styles.sheet,
-          {
-            height: sheetHeight,
-            transform: [{ translateY: sheetTranslateY }],
-            backgroundColor: theme.colors.background,
-          }
-        ]}
-      >
+      <Animated.View style={[styles.sheet, { transform: [{ translateY: sheetTranslateY }], backgroundColor: theme.colors.background }]}>
         <SafeAreaView style={{ flex: 1 }}>
-          <KeyboardAvoidingView
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 80 : 0}
-            style={{ flex: 1 }}
-          >
-            <View style={[styles.sheetHeader, {
-              borderBottomWidth: StyleSheet.hairlineWidth,
-              borderBottomColor: theme.colors.surfaceVariant
-            }]}>
-              <View style={[styles.sheetHandle, { backgroundColor: theme.colors.onSurfaceVariant }]} />
-              <Text style={styles.modalTitle}>
-                {editingItem ? 'Edit Product' : 'Add New Product'}
-              </Text>
-              <IconButton icon="close" size={20} onPress={closeModal} />
+          <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1, backgroundColor: theme.colors.card }}>
+            <View style={styles.sheetHeader}>
+              <View style={styles.dragHandle} />
+              <Text variant="titleLarge">{editingItem ? 'Edit' : 'Add'} {mode === 'inventory' ? 'Inventory' : 'Service'}</Text>
+              <TouchableOpacity onPress={closeModal}>
+                <Icons.FontAwesome name="remove" size={20} color={theme.colors.text} />
+              </TouchableOpacity>
             </View>
 
-            <ScrollView contentContainerStyle={styles.modalContent} keyboardShouldPersistTaps="handled">
+            <ScrollView style={styles.modalScroll}>
               <TextInput
-                label="Product Name *"
+                placeholder={`${mode === 'inventory' ? 'Product' : 'Service'} Name *`}
                 value={formData.itemName}
-                onChangeText={(text) => setFormData(prev => ({ ...prev, itemName: text }))}
-                mode="outlined"
-                style={styles.input}
+                onChangeText={text => setFormData(prev => ({ ...prev, itemName: text }))}
+                style={[styles.inputMargin]}
               />
-
               <TextInput
-                label="Description"
+                placeholder="Description"
                 value={formData.description}
-                onChangeText={(text) => setFormData(prev => ({ ...prev, description: text }))}
-                mode="outlined"
+                onChangeText={text => setFormData(prev => ({ ...prev, description: text }))}
                 multiline
-                numberOfLines={3}
-                style={styles.input}
+                style={[styles.inputMargin, {
+                  minHeight: 80,
+                  textAlignVertical: 'top'
+                }]}
               />
 
-              <View style={styles.rowInputs}>
+              <View style={styles.row}>
                 <TextInput
-                  label="Selling Price (SZL) *"
+                  placeholder="Price (SZL) *"
                   value={formData.price}
-                  onChangeText={(text) => setFormData(prev => ({ ...prev, price: text }))}
-                  mode="outlined"
+                  onChangeText={text => setFormData(prev => ({ ...prev, price: text }))}
                   keyboardType="numeric"
-                  style={[styles.input, styles.halfInput]}
+                  style={[styles.flexInput, styles.inputMarginRight]}
+
                 />
                 <TextInput
-                  label="Cost Price (SZL)"
+                  placeholder="Cost Price"
                   value={formData.costPrice}
-                  onChangeText={(text) => setFormData(prev => ({ ...prev, costPrice: text }))}
-                  mode="outlined"
+                  onChangeText={text => setFormData(prev => ({ ...prev, costPrice: text }))}
                   keyboardType="numeric"
-                  style={[styles.input, styles.halfInput]}
+                  style={[styles.flexInput]}
+
                 />
               </View>
 
-              <View style={styles.rowInputs}>
-                <TextInput
-                  label="Quantity in Stock *"
-                  value={formData.quantity}
-                  onChangeText={(text) => setFormData(prev => ({ ...prev, quantity: text }))}
-                  mode="outlined"
-                  keyboardType="numeric"
-                  style={[styles.input, styles.halfInput]}
-                />
+              {mode === 'inventory' ? (
+                <>
+                  <View style={styles.row}>
+                    <TextInput
+                      placeholder="Quantity *"
+                      value={formData.quantity}
+                      onChangeText={text => setFormData(prev => ({ ...prev, quantity: text }))}
+                      style={[styles.flexInput, styles.inputMarginRight]}
+                    />
+                    <TextInput
+                      placeholder="Discount (%)"
+                      value={formData.discount}
+                      onChangeText={text => setFormData(prev => ({ ...prev, discount: text }))}
+                      keyboardType="numeric"
+                      style={[styles.flexInput]}
+                    />
+                  </View>
+                  <TouchableOpacity onPress={() => setShowDatePicker(true)}
+                    style={[styles.datePickerBtn, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}>
+                    <Text style={{ color: '#6b7280' }}>{formData.expiryDate ? new Date(formData.expiryDate).toLocaleDateString() : 'Set Expiry'}</Text>
+                    <Icons.Ionicons name='calendar' size={20} color='#cccc' />
+                  </TouchableOpacity>
+                  {showDatePicker && <DateTimePicker value={formData.expiryDate ? new Date(formData.expiryDate) : new Date()} mode="date" onChange={onExpiryDateChange} />}
+                </>
+              ) : (
+                <>
+                  <View style={styles.row}>
+                    <TextInput
+                      placeholder="Duration *"
+                      value={formData.duration}
+                      onChangeText={text => setFormData(prev => ({ ...prev, duration: text }))}
+                      keyboardType="numeric"
+                      style={[styles.flexInput, styles.inputMarginRight]}
+                    />
 
-                {/* unit menu */}
-                <View style={[styles.input, styles.halfInput]}>
-                  <Menu
-                    visible={unitMenuVisible}
-                    onDismiss={() => setUnitMenuVisible(false)}
-                    anchor={
-                      <TouchableOpacity onPress={() => setUnitMenuVisible(true)} style={[styles.unitSelector, { borderColor: theme.colors.outline }]}>
-                        <Text>{formData.unit}</Text>
-                      </TouchableOpacity>
-                    }
-                  // style={{ height: 5 }}
-                  >
-                    {units.map((u) => (
-                      <Menu.Item
-                        key={u}
-                        onPress={() => {
-                          setFormData(prev => ({ ...prev, unit: u }));
-                          setUnitMenuVisible(false);
-                        }}
-                        title={u}
+                    <Menu
+                      visible={durationMenuVisible}
+                      onDismiss={() => setDurationMenuVisible(false)}
+                      anchorPosition="bottom"
+                      contentStyle={{
+                        backgroundColor: theme.colors.card,
+                        borderRadius: 8,
+                        elevation: 4,
+                      }}
+                      anchor={
+                        <TouchableOpacity
+                          style={[
+                            styles.menuAnchor, styles.menu,
+                            {
+                              width: 160,
+                              backgroundColor: '#f9fafb',
+                              borderWidth: 1,
+                              borderRadius: 8,
+                              color: '#6b7280',
+                              borderColor: '#e5e7eb',
+                            }
+                          ]}
+                          onPress={() => setDurationMenuVisible(true)}
+                          accessibilityLabel="Select duration unit"
+                        >
+                          <Text style={{ color: formData.durationUnit ? theme.colors.primary : theme.colors.onSurfaceVariant }}>
+                            {formData.durationUnit || 'Select Unit'}
+                          </Text>
+                          <IconButton icon="chevron-down" size={20} />
+                        </TouchableOpacity>
+                      }
+                    >
+                      {/* Custom Header */}
+                      <View style={{ padding: 12, backgroundColor: theme.colors.primaryContainer }}>
+                        <Text variant="labelLarge" style={{ color: theme.colors.primary }}>Duration Units</Text>
+                      </View>
+                      <Divider />
 
-                      />
-                    ))}
-                  </Menu>
-                </View>
-              </View>
+                      {/* Custom Items with Radio Icons */}
+                      {durationUnits.map((u, index) => (
+                        <React.Fragment key={`${u}-${index}`}>
+                          <Menu.Item
+                            key={u}
+                            leadingIcon={formData.durationUnit === u ? 'check-circle' : 'circle-outline'} // Use your Icons constant
+                            onPress={() => {
+                              setFormData(prev => ({ ...prev, durationUnit: u }));
+                              setDurationMenuVisible(false);
+                            }}
+                            title={u}
+                            titleStyle={{ fontWeight: formData.durationUnit === u ? 'bold' : 'normal' }}
+                          />
+                          {index < durationUnits.length - 1 && <Divider />}
+                        </React.Fragment>
+                      ))}
 
-              <TextInput
-                label="Category"
-                value={formData.category}
-                onChangeText={(text) => setFormData(prev => ({ ...prev, category: text }))}
-                mode="outlined"
-                style={styles.input}
-              />
+                      {/* Custom Footer */}
+                      <Divider />
+                      <View style={{ padding: 8, alignItems: 'flex-end' }}>
+                        <Button compact onPress={() => setDurationMenuVisible(false)}>Cancel</Button>
+                      </View>
+                    </Menu>
+                  </View>
 
-              <TextInput
-                label="Tags (comma separated)"
-                value={formData.tags}
-                onChangeText={(text) => setFormData(prev => ({ ...prev, tags: text }))}
-                mode="outlined"
-                style={styles.input}
-                placeholder="e.g., organic, fresh, local"
-              />
-
-              <View style={styles.rowInputs}>
-                <TextInput
-                  label="Min Order"
-                  value={formData.minOrder}
-                  onChangeText={(text) => setFormData(prev => ({ ...prev, minOrder: text }))}
-                  mode="outlined"
-                  keyboardType="numeric"
-                  style={[styles.input, styles.halfInput]}
-                />
-                <TextInput
-                  label="Max Order"
-                  value={formData.maxOrder}
-                  onChangeText={(text) => setFormData(prev => ({ ...prev, maxOrder: text }))}
-                  mode="outlined"
-                  keyboardType="numeric"
-                  style={[styles.input, styles.halfInput]}
-                />
-              </View>
-
-              {/* expiry date picker */}
-              <View style={styles.rowInputs}>
-                <TouchableOpacity
-                  style={[styles.dateButton, {
-                    borderColor: theme.colors.outline,
-                    backgroundColor: theme.colors.surface
-                  }]}
-                  onPress={() => setShowDatePicker(true)}
-                >
-                  <Text>
-                    {formData.expiryDate
-                      ? `Expiry: ${new Date(formData.expiryDate).toLocaleDateString()}`
-                      : 'Set expiry date'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              {showDatePicker && (
-                <DateTimePicker
-                  value={formData.expiryDate ? new Date(formData.expiryDate) : new Date()}
-                  mode="date"
-                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                  onChange={onExpiryDateChange}
-                />
+                  <List.Item
+                    title="Is Available"
+                    right={() => <Switch
+                      style={styles.switch}
+                      value={formData.availability}
+                      trackColor={{ false: '#D1D5DB', true: '#60A5FA' }}
+                      thumbColor={isDarkMode ? '#FBBF24' : '#FFFFFF'}
+                      onValueChange={val => setFormData(prev => ({ ...prev, availability: val }))}
+                    />}
+                  />
+                  <TextInput
+                    placeholder="Booking Slots (e.g., Mon-Fri 9-5)"
+                    value={formData.bookingSlots}
+                    onChangeText={text => setFormData(prev => ({ ...prev, bookingSlots: text }))}
+                    style={[styles.inputMargin]}
+                  />
+                </>
               )}
 
-              <TextInput
-                label="Discount (%)"
-                value={formData.discount}
-                onChangeText={(text) => setFormData(prev => ({ ...prev, discount: text }))}
-                mode="outlined"
-                keyboardType="numeric"
-                style={styles.input}
-              />
+              {/* Category Selector in Form */}
+              <Menu
+                visible={categoryMenuVisible}
+                onDismiss={() => setCategoryMenuVisible(false)}
+                anchorPosition="bottom"
+                contentStyle={{
+                  backgroundColor: theme.colors.card,
+                  borderRadius: 8,
+                  elevation: 4,
+                }}
+                anchor={
+                  <TouchableOpacity
+                    style={[
+                      styles.menuAnchor, styles.menu,
+                      {
+                        backgroundColor: '#f9fafb',
+                        borderWidth: 1,
+                        borderRadius: 8,
+                        color: '#6b7280',
+                        borderColor: '#e5e7eb',
+                      }
+                    ]}
+                    onPress={() => setCategoryMenuVisible(true)}
+                    accessibilityLabel="Select category"
+                  >
+                    <Text style={{ color: formData.category ? theme.colors.primary : theme.colors.onSurfaceVariant }}>
+                      {formData.category || 'Select Category'}
+                    </Text>
+                    <IconButton icon="chevron-down" size={20} />
+                  </TouchableOpacity>
+                }
+              >
+                {/* Custom Header */}
+                <View style={{ padding: 12, backgroundColor: theme.colors.primaryContainer }}>
+                  <Text variant="labelLarge" style={{ color: theme.colors.primary }}>Product Category</Text>
+                </View>
+                <Divider />
+
+                {/* Custom Items with Radio Icons */}
+                {formCategories.map((cat, index) => (
+                  <React.Fragment key={`${cat}-${index}`}>
+                    <Menu.Item
+                      key={cat}
+                      leadingIcon={formData.category === cat ? 'check-circle' : 'circle-outline'}
+                      onPress={() => {
+                        setFormData(prev => ({ ...prev, category: cat }));
+                        setCategoryMenuVisible(false);
+                      }}
+                      titleStyle={{ fontWeight: formData.category === cat ? 'bold' : 'normal' }}
+                      title={cat} />
+                    {index < formCategories.length - 1 && <Divider />}
+                  </React.Fragment>
+                ))}
+
+                {/* Custom Footer */}
+                <Divider />
+                <View style={{ padding: 8, alignItems: 'flex-end' }}>
+                  <Button compact onPress={() => setCategoryMenuVisible(false)}>Cancel</Button>
+                </View>
+              </Menu>
+
+              <View style={styles.field}>
+                <TextInput
+                  placeholder="Tags (Local, Organic)"
+                  value={formData.tags}
+                  onChangeText={text => setFormData(prev => ({ ...prev, tags: text }))}
+                  style={[styles.inputMargin, { marginTop: 12 }]}
+                />
+              </View>
+
+              <View style={styles.row}>
+                <TextInput
+                  placeholder="Min Order/Book"
+                  value={formData.minOrder}
+                  onChangeText={text => setFormData(prev => ({ ...prev, minOrder: text }))}
+                  keyboardType="numeric"
+                  style={[styles.flexInput, styles.inputMarginRight]}
+                />
+                <TextInput
+                  label="Max Order/Book"
+                  value={formData.maxOrder}
+                  onChangeText={text => setFormData(prev => ({ ...prev, maxOrder: text }))}
+                  keyboardType="numeric"
+                  style={[styles.flexInput]}
+                />
+              </View>
 
               <TextInput
-                label="Barcode/ID"
+                placeholder="Barcode/ID"
                 value={formData.barcode}
-                onChangeText={(text) => setFormData(prev => ({ ...prev, barcode: text }))}
-                mode="outlined"
-                style={styles.input}
+                onChangeText={text => setFormData(prev => ({ ...prev, barcode: text }))}
+                style={[styles.inputMargin]}
               />
 
               <View style={styles.imageSection}>
-                <Text variant="titleMedium" style={styles.sectionTitle}>Product Images</Text>
-                <View style={styles.imageButtons}>
-                  <Button
-                    mode="outlined"
-                    onPress={handleCamera}
-                    icon="camera"
-                    style={styles.imageButton}
-                  >
-                    Camera
-                  </Button>
-                  <Button
-                    mode="outlined"
-                    onPress={handleImagePicker}
-                    icon="image"
-                    style={styles.imageButton}
-                  >
-                    Gallery
-                  </Button>
+                <Text variant="titleMedium">Images (up to 5)</Text>
+                <View style={[styles.row, { gap: 10, justifyContent: 'space-between' }]}>
+                  <TouchableOpacity style={styles.imageOption} onPress={handleCamera}>
+                    {isTakePhoto
+                      ? <ActivityIndicator animating={true} color='#4F46E5' />
+                      : <Icons.AntDesign name='camerao' size={24} color="#4F46E5" />
+                    }
+                    <Text style={styles.imageOptionText}>Take Photo</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity style={styles.imageOption} onPress={handleImagePicker}>
+                    {isPickImage
+                      ? <ActivityIndicator animating={true} color='#4F46E5' />
+                      : <Icons.Ionicons name='images-outline' size={24} color="#4F46E5" />
+                    }
+                    <Text style={styles.imageOptionText}>Gallery</Text>
+                  </TouchableOpacity>
                 </View>
 
-                <ScrollView horizontal style={styles.imagePreview}>
-                  {formData.images.map((uri, index) => (
-                    <View key={index} style={styles.imageContainer}>
-                      <Image source={{ uri }} style={styles.previewImage} />
-                      <IconButton
-                        icon="close"
-                        size={16}
-                        style={[styles.removeImageButton, { backgroundColor: theme.colors.error }]}
-                        onPress={() => removeImage(index)}
-                      />
+                <ScrollView horizontal>
+                  {formData.images.map((uri, idx) => (
+                    <View key={idx} style={styles.thumbContainer}>
+                      <Image source={{ uri }} style={styles.thumb} />
+                      <View style={[styles.removeThumb, {
+                        backgroundColor: theme.colors.notification
+                      }]}>
+                        <Icons.FontAwesome name="remove" size={20} color={theme.colors.primary} onPress={() => removeImage(idx)} /></View>
                     </View>
                   ))}
                 </ScrollView>
+
+                <HelperText type="info">First image is primary thumbnail</HelperText>
               </View>
 
               <View style={styles.modalActions}>
-                <Button mode="outlined" onPress={closeModal} style={styles.actionButton}>
-                  Cancel
-                </Button>
-                <Button mode="contained" onPress={handleSave} style={styles.actionButton}>
-                  {editingItem ? 'Update' : 'Save'}
-                </Button>
+                {/* cancel button */}
+                <TouchableOpacity
+                  style={[styles.editButton, { borderColor: theme.colors.border }]}
+                  onPress={closeModal}
+                >
+                  <Icons.FontAwesome name='remove' size={16} color={theme.colors.text} />
+                  <Text style={[styles.buttonText, { color: theme.colors.text }]}>Cancel</Text>
+                </TouchableOpacity>
+
+                {/* saved button */}
+                <TouchableOpacity
+                  style={[styles.editButton, !editingItem && styles.saveButton, { borderColor: theme.colors.border }]}
+                  onPress={editingItem ? () => setEditingItem(true) : handleSave}
+                >
+                  {editingItem ? (
+                    <>
+                      <Icons.FontAwesome name='edit' size={16} color={theme.colors.text} />
+                      <Text style={[styles.editButtonText, { color: theme.colors.sub_text }]}>Edit</Text>
+                    </>
+                  ) : (
+                    <>
+                      <Icons.Ionicons name='save-outline' size={16} color='#ffff' />
+                      <Text style={[styles.buttonText]}>Save</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
               </View>
             </ScrollView>
           </KeyboardAvoidingView>
@@ -717,229 +835,241 @@ export default function VendorInventoryScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
+  container: { flex: 1 },
   header: {
-    paddingTop: 30,
-    paddingBottom: 10,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 8,
+    paddingTop: 40,
   },
-  backBtn: {
-    position: 'absolute',
-    left: 20,
-    top: 35
+  userImage: {
+    width: 40, height: 40,
+    borderRadius: 20, marginRight: 12
   },
-  headerTitle: {
-    marginLeft: '30%',
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  headerSubtitle: {
-    opacity: 0.9,
-    marginTop: 4,
-    marginLeft: '15%',
-  },
-  searchContainer: {
-    paddingHorizontal: 16,
-    paddingVertical: 12,
+  modeSwitcher: {
+    width: 200
   },
   searchbar: {
-    elevation: 2,
+    paddingVertical: 2,
+    elevation: 4,
+    margin: 10
   },
-  categoryContainer: {
+  categoryScroll: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    justifyContent: 'center',
+  },
+  categoryTouchable: {
+    height: 40,
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: 16,
-    paddingBottom: 12,
-  },
-  categoryChip: {
+    borderRadius: 50,
     marginRight: 8,
+    backgroundColor: '#F4F0FF',
+    borderColor: 'transparent',
   },
-  listContainer: {
+  selectedCategory: {
+    backgroundColor: '#003366', // Light blue tint for selection, adapt to theme if needed
+    borderColor: '#2196f3',
+  },
+  categoryText: {
+    color: '#7d7d7dff',
+    marginRight: 4,
+  },
+  checkIcon: {
+    marginLeft: 4,
+  },
+  listContainer: { padding: 16 },
+  overviewCard: {
+    marginBottom: 16,
     padding: 16,
-    paddingBottom: 100,
+    borderRadius: 12,
+    elevation: 2
+  },
+  statRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around'
+  },
+  statItem: { alignItems: 'center' },
+  itemWrapper: {
+    marginBottom: 16,
+    borderRadius: 12,
+    overflow: 'hidden',
   },
   itemCard: {
-    marginBottom: 12,
-    elevation: 2,
+    backgroundColor: 'transparent', // Inherit from wrapper
   },
-  itemHeader: {
-    flexDirection: 'row',
-    padding: 16,
-  },
+  cardContent: { paddingBottom: 8 },
+  itemHeader: { flexDirection: 'row' },
   itemImage: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
+    width: 60, height: 60,
+    borderRadius: 8, marginRight: 12
   },
-  itemInfo: {
-    flex: 1,
-    marginLeft: 12,
-  },
-  itemName: {
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  itemDescription: {
-    marginBottom: 8,
-  },
+  itemInfo: {},
   priceRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
+    alignItems: 'center', marginVertical: 4
   },
-  price: {
-    fontWeight: 'bold',
-    marginRight: 8,
-  },
-  stockInfo: {
-  },
-  cardActions: {
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingBottom: 16,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: 16,
-  },
-  actionButtons: {
-    flexDirection: 'row',
-  },
-  emptyContainer: {
-    flex: 1,
+  cardActions: { justifyContent: 'space-between' },
+  emptyState: {
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 60,
-  },
-  emptyText: {
-    marginBottom: 8,
-  },
-  emptySubtext: {
-    textAlign: 'center',
+    paddingTop: 60
   },
   fab: {
     position: 'absolute',
-    margin: 16,
-    right: 0,
-    bottom: 60,
+    right: 16,
+    bottom: '10%'
   },
   overlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.35)',
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.5)'
   },
   sheet: {
     position: 'absolute',
     left: 0,
     right: 0,
     bottom: 0,
-    borderTopLeftRadius: 14,
-    borderTopRightRadius: 14,
-    overflow: 'hidden',
-    elevation: 10,
+    height: screenHeight * 0.92,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    elevation: 10
   },
   sheetHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingTop: 8,
-    paddingBottom: 6,
     justifyContent: 'space-between',
+    padding: 16,
+    borderColor: '#ccc',
+    borderBottomWidth: StyleSheet.hairlineWidth
   },
-  sheetHandle: {
+  dragHandle: {
     position: 'absolute',
     left: '50%',
-    transform: [{ translateX: -18 }],
     top: 8,
-    width: 36,
-    height: 4,
+    width: 40,
+    height: 5,
     borderRadius: 3,
-    opacity: 0.5,
+    backgroundColor: '#ccc',
+    marginLeft: -20
   },
-  modalContainer: {
-    backgroundColor: 'white',
-    margin: 20,
-    borderRadius: 12,
-    maxHeight: '90%',
+  modalScroll: { padding: 16 },
+  menu: {
+    flex: 1,
+    height: 50,
+    borderWidth: 1,
+    borderRadius: 5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingRight: 2,
+    marginTop: 5
   },
-  modalContent: {
-    padding: 16,
-    paddingBottom: 40,
-  },
-  modalTitle: {
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 44,
+    marginBottom: 12
   },
-  input: {
-    marginBottom: 12,
-  },
-  dateButton: {
-    flex: 1,
+  flexInput: {
+    backgroundColor: '#f9fafb',
     borderWidth: 1,
-    borderRadius: 6,
-    paddingVertical: 12,
+    borderRadius: 8,
+    color: '#6b7280',
+    borderColor: '#e5e7eb',
+    flex: 1,
+  },
+  inputMargin: {
+    backgroundColor: '#f9fafb',
+    borderWidth: 1,
+    color: '#6b7280',
+    borderColor: '#e5e7eb',
+    borderRadius: 8,
     paddingHorizontal: 12,
-    justifyContent: 'center',
-    alignItems: 'flex-start',
-    marginBottom: 16,
+    paddingVertical: 10,
+    fontSize: 16,
+    marginBottom: 12
   },
-  rowInputs: {
-    flexDirection: 'row',
-    gap: 12,
+  inputMarginRight: { marginRight: 6 },
+  menuAnchor: {
+    padding: 16,
+    justifyContent: 'center'
   },
-  halfInput: {
-    flex: 1,
-  },
-  unitSelector: {
+  datePickerBtn: {
+    backgroundColor: '#f9fafb',
     borderWidth: 1,
-    borderRadius: 4,
-    paddingHorizontal: 16,
+    borderRadius: 8,
+    color: '#6b7280',
+    borderColor: '#e5e7eb',
+    padding: 16,
+    marginBottom: 12
+  },
+  switch: {
+    transform: [{ scale: 0.85 }], // Slightly smaller switch
+  },
+  imageSection: { marginVertical: 3 },
+  imageOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'center',
-    height: 56,
+    backgroundColor: '#EEF2FF',
+    borderRadius: 12,
+    padding: 8,
+    flex: 0.48,
   },
-  imageSection: {
-    marginBottom: 20,
+  imageOptionText: {
+    marginLeft: 8,
+    color: '#4F46E5',
+    fontWeight: '500',
   },
-  sectionTitle: {
-    marginBottom: 12,
-  },
-  imageButtons: {
-    flexDirection: 'row',
-    gap: 12,
-    marginBottom: 12,
-  },
-  imageButton: {
-    flex: 1,
-  },
-  imagePreview: {
-    flexDirection: 'row',
-  },
-  imageContainer: {
+  thumbContainer: {
     position: 'relative',
     marginRight: 12,
+    paddingVertical: 5
   },
-  previewImage: {
+  thumb: {
     width: 80,
     height: 80,
-    borderRadius: 8,
+    borderRadius: 8
   },
-  removeImageButton: {
+  removeThumb: {
     position: 'absolute',
-    top: -8,
-    right: -8
+    top: 0,
+    right: -5,
+    paddingHorizontal: 5,
+    paddingVertical: 3,
+    borderRadius: 20,
+
   },
   modalActions: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 12,
-    marginBottom: 10,
+    justifyContent: 'space-around',
+    marginTop: 2,
+    marginBottom: 75,
   },
-  actionButton: {
-    flex: 1,
+  editButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1
   },
+  saveButton: {
+    backgroundColor: '#003366',
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  editButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  buttonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '600',
+    marginLeft: 4,
+  }
 });
