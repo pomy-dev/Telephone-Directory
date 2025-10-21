@@ -13,6 +13,7 @@ import {
   Alert,
   RefreshControl,
 } from 'react-native';
+import { Badge } from 'react-native-paper';
 import { useRealm, } from '@realm/react';
 import { Icons } from '../constants/Icons';
 import { fetchAllCompanies, fetchCompaniesWithAge, useEntities } from '../service/getApi';
@@ -53,7 +54,6 @@ const HomeScreen = ({ navigation }) => {
   const [showProfile, setShowProfile] = useState(false);
 
   const categories = ['All', 'Government', 'Emergency', 'More...'];
-
   // Function to schedule and store a notification
   const scheduleNotification = async (title, body, data = {}) => {
     if (!notificationsEnabled) return;
@@ -72,7 +72,6 @@ const HomeScreen = ({ navigation }) => {
 
   // Function to simulate mock notifications one by one
   const syncNotifications = () => {
-    console.log('is notifications enabled?', notificationsEnabled);
     console.log('Notifications #', notifications.length)
     if (!notificationsEnabled && notifications.length === 0) return;
 
@@ -376,30 +375,26 @@ const HomeScreen = ({ navigation }) => {
           <Icons.Ionicons name="menu-outline" size={24} color={theme.colors.text} />
         </TouchableOpacity>
 
-        {/* profile button */}
-        <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center' }}
-          onPress={handleLogin}>
-
-          <Icons.Ionicons name="person-circle-outline" size={24} color={theme.colors.text} />
-          {/* my profile text */}
-          <Text style={{
-            color: theme.colors.text, marginLeft: 8,
-            fontSize: 14, fontWeight: "200",
-            letterSpacing: -0.5
-          }}>
-            My Profile
-          </Text>
-        </TouchableOpacity>
-
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Image
-            source={selectedState === 'BE' ? Images.bs_eswatini : Images.eptc}
-            style={styles.image}
-          />
-          <View style={{ marginLeft: 10 }}>
-            <Text style={[styles.appTitle, { color: theme.colors.text }]}>{selectedState}</Text>
-            <Text style={[styles.appSubTitle, { color: theme.colors.text }]}>Directory</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 20 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Image
+              source={selectedState === 'BE' ? Images.bs_eswatini : Images.eptc}
+              style={styles.image}
+            />
+            <View style={{ marginLeft: 5 }}>
+              <Text style={[styles.appTitle, { color: theme.colors.text }]}>{selectedState}</Text>
+            </View>
           </View>
+          {/* profile button */}
+          <TouchableOpacity onPress={handleLogin}>
+            <Icons.Ionicons name="person-circle-outline" size={24} color={theme.colors.text} />
+          </TouchableOpacity>
+
+          {/* Notifications */}
+          <TouchableOpacity style={styles.notificationButton} onPress={() => { navigation.navigate('Notifications') }}>
+            <Icons.Ionicons name="notifications-outline" size={24} color={theme.colors.primary} />
+            {notifications.length > 0 && <Badge style={[styles.notificationBadge, { backgroundColor: theme.colors.error }]}>{notifications.length}</Badge>}
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -629,6 +624,15 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: "400",
     letterSpacing: -0.5,
+  },
+  notificationButton: {
+    position: 'relative',
+    padding: 8,
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: 4,
+    right: 4,
   },
   appSubTitle: {
     fontSize: 17,

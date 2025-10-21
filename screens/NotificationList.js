@@ -13,7 +13,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import { AppContext } from "../context/appContext";
 import { Icons } from "../constants/Icons";
 
-const NotificationListScreen = () => {
+const NotificationListScreen = ({ navigation }) => {
   const { theme, notifications } = useContext(AppContext);
   const route = useRoute();
   const listRef = useRef(null);
@@ -127,31 +127,31 @@ const NotificationListScreen = () => {
           {item.title}
         </Text>
         <Text
-          style={[styles.notificationBody,  {
-              color:
-                selectedNotificationId === item._id
-                  ? theme.colors.secondary
-                  : theme.colors.text,
-            }]}
+          style={[styles.notificationBody, {
+            color:
+              selectedNotificationId === item._id
+                ? theme.colors.secondary
+                : theme.colors.text,
+          }]}
           numberOfLines={3}
         >
           {item.message}
         </Text>
         {renderCategoryIcon(item.category)}
-        <Text style={[styles.companyInfo,    {
-              color:
-                selectedNotificationId === item._id
-                  ? theme.colors.secondary
-                  : theme.colors.text,
-            },]}>
+        <Text style={[styles.companyInfo, {
+          color:
+            selectedNotificationId === item._id
+              ? theme.colors.secondary
+              : theme.colors.text,
+        },]}>
           {item.company?.company_name} • {item.company?.company_type}
         </Text>
-        <Text style={[styles.notificationTime,     {
-              color:
-                selectedNotificationId === item._id
-                  ? theme.colors.secondary
-                  : theme.colors.text,
-            },]}>
+        <Text style={[styles.notificationTime, {
+          color:
+            selectedNotificationId === item._id
+              ? theme.colors.secondary
+              : theme.colors.text,
+        },]}>
           {new Date(item.startDate).toLocaleString()}
         </Text>
       </View>
@@ -222,6 +222,9 @@ const NotificationListScreen = () => {
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
       <View style={styles.headerContainer}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Icons.Ionicons name='arrow-back' size={24} color={theme.colors.primary} />
+        </TouchableOpacity>
         <Text style={[styles.header, { color: theme.colors.text }]}>
           Notifications
         </Text>
@@ -302,7 +305,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 16,
-    paddingTop: 30,
+    paddingTop: 20,
   },
   header: {
     fontSize: 24,

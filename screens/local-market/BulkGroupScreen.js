@@ -8,8 +8,10 @@ import {
   Image,
   TouchableOpacity,
   StatusBar,
-  TextInput,
+  Animated,
+  TextInput as RNTextInput, // Rename to avoid conflict
   View,
+  Text,
   Dimensions
 } from 'react-native';
 import {
@@ -20,8 +22,9 @@ import {
   Menu,
   Card,
   Chip,
+  Divider,
   FAB,
-  Text,
+  TextInput
 } from 'react-native-paper';
 import Carousel from 'react-native-reanimated-carousel';
 import { Icons } from '../../constants/Icons';
@@ -38,13 +41,22 @@ export default function BulkGroupsScreen({ navigation }) {
   const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [groupForm, setGroupForm] = useState({
     name: '',
+    supaAdmin: '',
     description: '',
     category: 'Sole Trader',
     isPrivate: false,
-    members: [],
+    members: [{
+      name: '',
+      logo: '',
+      role: 'Member'
+    }],
     maxMembers: 100
   });
-  const [isSubmitting, setIsSubmitting] = React.useState(false); // For loading state
+  const [showCategoryMenu, setShowCategoryMenu] = React.useState(false);
+  const [vendorSearch, setVendorSearch] = React.useState('');
+  const [formErrors, setFormErrors] = React.useState({});
+  const [selectedVendorId, setSelectedVendorId] = React.useState(null);
+  const [isSubmitting, setIsSubmitting] = React.useState(false); // New: for loading state
   const shakeAnimation = React.useRef(new Animated.Value(0)).current; // For shake animation on invalid submit
 
   // Trigger shake animation on invalid submit
@@ -103,17 +115,6 @@ export default function BulkGroupsScreen({ navigation }) {
       ]
     );
 
-  };
-
-  const handleViewSuppliers = () => {
-    Alert.alert(
-      'Suppliers',
-      'View available suppliers for bulk orders.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'View Suppliers', onPress: () => console.log('View suppliers') }
-      ]
-    );
   };
 
   const renderGroupCard = ({ item, isUserGroup = false }) => (
@@ -396,17 +397,308 @@ export default function BulkGroupsScreen({ navigation }) {
 
   // Handle form submission
   const handleSubmit = () => {
-    if (validateForm()) {
-      // Add creator as Admin
-      const updatedGroup = {
-        ...groupForm,
-        members: [...groupForm.members, mockUser],
-      };
+    try {
+      if (validateForm()) {
+        setIsSubmitting(true);
+        console.log(groupForm)
+        // setTimeout(() => {
+        //   const updatedGroup = {
+        //     ...groupForm,
+        //     members: [...groupForm.members, mockUser],
+        //   };
+        //   navigation.navigate('GroupManagement', { group: updatedGroup });
+        //   Alert.alert('Success!', 'Group created successfully.');
+        // }, 1000);
+      } else {
+        triggerShake();
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      // reset form afresh
+      setGroupForm({
+        name: '',
+        description: '',
+        category: '',
+        isPrivate: false,
+        members: []
+      })
       setShowCreateGroup(false);
-      navigation.navigate('GroupManagement', { group: updatedGroup });
-      Alert.alert('Success!', 'Group created successfully.');
+      setIsSubmitting(false);
     }
   };
+
+  // Helper functions for FlatList render items
+  const renderGroupNameInput = () => (
+    <View style={styles.inputContainer}>
+      <View style={styles.inputLabelContainer}>
+        <Icons.FontAwesome6 name="people-roof" size={20} color={theme.colors.primary} />
+        <Text style={[styles.inputLabel, { color: theme.colors.text }]}>Group Name *</Text>
+      </View>
+      <RNTextInput
+        placeholder="Enter group name"
+        value={groupForm.name}
+        onChangeText={(text) => setGroupForm((prev) => ({ ...prev, name: text }))}
+        style={styles.input}
+        error={!!formErrors.name}
+        theme={{ colors: { primary: theme.colors.primary, error: theme.colors.error } }}
+        accessibilityLabel="Group name input"
+      />
+      {formErrors.name && (
+        <Text style={[styles.errorText, { color: theme.colors.error }]}>{formErrors.name}</Text>
+      )}
+    </View>
+  );
+
+  const renderDescriptionInput = () => (
+    <View style={styles.inputContainer}>
+      <View style={styles.inputLabelContainer}>
+        <Icons.MaterialIcons name="description" size={20} color={theme.colors.primary} />
+        <Text style={[styles.inputLabel, { color: theme.colors.text }]}>Description *</Text>
+      </View>
+      <RNTextInput
+        placeholder="Enter description"
+        value={groupForm.description}
+        onChangeText={(text) => setGroupForm((prev) => ({ ...prev, description: text }))}
+        multiline
+        numberOfLines={3}
+        style={styles.input}
+        error={!!formErrors.description}
+        theme={{ colors: { primary: theme.colors.primary, error: theme.colors.error } }}
+        accessibilityLabel="Group description input"
+      />
+      {formErrors.description && (
+        <Text style={[styles.errorText, { color: theme.colors.error }]}>{formErrors.description}</Text>
+      )}
+    </View>
+  );
+
+  const renderCategorySelector = () => (
+    <View style={{
+      flexDirection: 'row', alignItems: 'center',
+      justifyContent: 'center', gap: 5
+    }}>
+      <View style={[styles.inputContainer, { flex: 1 }]}>
+        <View style={styles.inputLabelContainer}>
+          <Icons.MaterialIcons name="category" size={20} color={theme.colors.primary} />
+          <Text style={[styles.inputLabel, { color: theme.colors.text }]}>Category *</Text>
+        </View>
+
+        <Menu
+          visible={showCategoryMenu}
+          onDismiss={() => setShowCategoryMenu(false)}
+          anchorPosition="bottom"
+          contentStyle={{
+            backgroundColor: theme.colors.card,
+            borderRadius: 8,
+            elevation: 4,
+          }}
+          anchor={
+            <TouchableOpacity
+              style={[
+                styles.menuAnchor,
+                {
+                  backgroundColor: '#f9fafb',
+                  borderWidth: 1,
+                  borderRadius: 8,
+                  color: '#6b7280',
+                  borderColor: '#e5e7eb',
+                }
+              ]}
+              onPress={() => setShowCategoryMenu(true)}
+              accessibilityLabel="Select category"
+            >
+              <Text style={{ color: groupForm.category ? theme.colors.primary : theme.colors.onSurfaceVariant }}>
+                {groupForm.category || 'Select Category'}
+              </Text>
+              <Icons.Ionicons
+                name={showCategoryMenu ? "chevron-up" : "chevron-down"}
+                size={20}
+                color={showCategoryMenu ? theme.colors.primary : theme.colors.text}
+              />
+
+            </TouchableOpacity>
+          }
+        >
+          {/* Custom Header */}
+          <View style={{ padding: 12, backgroundColor: theme.colors.primaryContainer }}>
+            <Text variant="labelLarge" style={{ color: theme.colors.primary }}>Market Category</Text>
+          </View>
+          <Divider />
+
+          {/* Custom Items with Radio Icons */}
+          {categories.map((cat, index) => (
+            <React.Fragment key={`${cat}-${index}`}>
+              <Menu.Item
+                key={cat}
+                leadingIcon={groupForm.category === cat ? 'check-circle' : 'circle-outline'} // Use your Icons constant
+                onPress={() => {
+                  setGroupForm(prev => ({ ...prev, category: cat }));
+                  setShowCategoryMenu(false);
+                }}
+                title={cat}
+                titleStyle={{ fontWeight: groupForm.category === cat ? 'bold' : 'normal' }}
+              />
+              {index < categories.length - 1 && <Divider />}
+            </React.Fragment>
+          ))}
+
+          {/* Custom Footer */}
+          <Divider />
+          <View style={{ padding: 8, alignItems: 'flex-end' }}>
+            <Button compact onPress={() => setShowCategoryMenu(false)}>Cancel</Button>
+          </View>
+        </Menu>
+      </View>
+
+      <View style={[styles.inputContainer, { flex: 1 }]}>
+        <View style={styles.inputLabelContainer}>
+          <Icons.MaterialIcons name="people-alt" size={20} color={theme.colors.primary} />
+          <Text style={[styles.inputLabel, { color: theme.colors.text }]}>Max Members *</Text>
+        </View>
+        <RNTextInput
+          placeholder="Enter max members"
+          value={groupForm.maxMembers}
+          onChangeText={(text) =>
+            setGroupForm((prev) => ({ ...prev, maxMembers: parseInt(text) || '' }))
+          }
+          keyboardType="numeric"
+          style={styles.input}
+          error={!!formErrors.maxMembers}
+          theme={{ colors: { primary: theme.colors.primary, error: theme.colors.error } }}
+          accessibilityLabel="Max members input"
+        />
+        {formErrors.maxMembers && (
+          <Text style={[styles.errorText, { color: theme.colors.error }]}>{formErrors.maxMembers}</Text>
+        )}
+      </View>
+    </View>
+  );
+
+  const renderVendorSelection = () => (
+    <View style={styles.inputContainer}>
+      <View style={styles.inputLabelContainer}>
+        <Icons.MaterialIcons name="store" size={20} color={theme.colors.primary} />
+        <Text style={[styles.inputLabel, { color: theme.colors.text }]}>
+          Add Vendors (min 3) * <Text style={styles.vendorCount}>({groupForm.members.length})</Text>
+        </Text>
+        {groupForm.members.length > 0 && (
+          <TouchableOpacity onPress={handleClearVendors} style={styles.clearButton}>
+            <Text style={[styles.clearButtonText, { color: theme.colors.primary }]}>Clear All</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+      <TextInput
+        placeholder="Search vendors..."
+        value={vendorSearch}
+        onChangeText={setVendorSearch}
+        style={[styles.input, styles.searchInput]}
+        mode="outlined"
+        left={
+          <TextInput.Icon
+            icon="magnify"
+            color={theme.colors.placeholder}
+            size={20}
+          />
+        }
+        theme={{ colors: { primary: theme.colors.primary } }}
+        accessibilityLabel="Search vendors input"
+      />
+
+      <FlatList
+        data={filteredVendors}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <View
+            style={[
+              styles.vendorItem,
+              groupForm.members.some((m) => m.id === item.id) && styles.selectedVendor,
+              { borderColor: theme.colors.border },
+            ]}
+          >
+            <TouchableOpacity
+              style={styles.vendorInfo}
+              onPress={() => handleVendorToggle(item)}
+              accessibilityLabel={`Select ${item.name}`}
+            >
+              <View style={styles.vendorInfoContent}>
+                <Text style={[styles.vendorName, { color: theme.colors.text }]}>{item.name}</Text>
+                <Text style={[styles.vendorDetail, { color: theme.colors.placeholder }]}>
+                  {item.type} - {item.location}
+                </Text>
+              </View>
+              {groupForm.members.some((m) => m.id === item.id) && (
+                <Icons.MaterialIcons name="check-circle" size={20} color={theme.colors.success} />
+              )}
+            </TouchableOpacity>
+            {groupForm.members.some((m) => m.id === item.id) && (
+              <Menu
+                visible={selectedVendorId === item.id}
+                onDismiss={() => setSelectedVendorId(null)}
+                anchor={
+                  <TouchableOpacity
+                    onPress={() => setSelectedVendorId(item.id)}
+                    style={[styles.roleSelector, { borderColor: theme.colors.border }]}
+                    accessibilityLabel={`Select role for ${item.name}`}
+                  >
+                    <Text style={{ color: theme.colors.text }}>
+                      {groupForm.members.find((m) => m.id === item.id)?.role}
+                    </Text>
+                    <Icons.Ionicons
+                      name={selectedVendorId === item.id ? "chevron-up" : "chevron-down"}
+                      size={16}
+                      color={theme.colors.text}
+                    />
+                  </TouchableOpacity>
+                }
+              >
+                {['Member', 'Moderator'].map((role) => (
+                  <Menu.Item
+                    key={role}
+                    onPress={() => {
+                      handleRoleChange(item.id, role);
+                      setSelectedVendorId(null);
+                    }}
+                    title={role}
+                  />
+                ))}
+              </Menu>
+            )}
+          </View>
+        )}
+        style={styles.vendorList}
+        showsVerticalScrollIndicator={false}
+      />
+      {formErrors.members && (
+        <Text style={[styles.errorText, { color: theme.colors.error }]}>{formErrors.members}</Text>
+      )}
+    </View>
+  );
+
+  const renderFormActions = () => (
+    <View style={styles.modalActions}>
+      <Button
+        mode="outlined"
+        onPress={() => setShowCreateGroup(false)}
+        style={[styles.actionButton, styles.cancelButton, { borderColor: theme.colors.border }]}
+        theme={{ colors: { primary: theme.colors.indicator } }}
+        accessibilityLabel="Cancel group creation"
+      >
+        Cancel
+      </Button>
+      <Button
+        mode="contained"
+        onPress={handleSubmit}
+        style={[styles.actionButton, styles.submitButton]}
+        theme={{ colors: { primary: theme.colors.indicator } }}
+        disabled={Object.keys(formErrors).length > 0 || isSubmitting}
+        loading={isSubmitting}
+        accessibilityLabel="Create group"
+      >
+        Create Group
+      </Button>
+    </View>
+  );
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -479,236 +771,24 @@ export default function BulkGroupsScreen({ navigation }) {
         >
           <Animated.View style={[styles.bottomSheetContent, { transform: [{ translateX: shakeAnimation }] }]}>
             <View style={[styles.handle, { backgroundColor: theme.colors.placeholder }]} />
-            <Text style={[styles.modalTitle, { color: theme.colors.text }]} accessibilityLabel="Create New Bulk Buying Group">
-              Create New Bulk Buying Group
+            <Text style={[styles.modalTitle, { color: theme.colors.text }]} accessibilityLabel="New Group">
+              New Group
             </Text>
 
-            <ScrollView showsVerticalScrollIndicator={false}>
-              {/* Group Name */}
-              <View style={styles.inputContainer}>
-                <View style={styles.inputLabelContainer}>
-                  <Icons.MaterialIcons name="group" size={20} color={theme.colors.primary} />
-                  <Text style={[styles.inputLabel, { color: theme.colors.text }]}>Group Name *</Text>
+            <FlatList
+              data={[1, 2, 3, 4]} // Dummy data to render 5 form sections
+              keyExtractor={(item) => item.toString()}
+              renderItem={({ index }) => (
+                <View>
+                  {index === 0 && renderGroupNameInput()}
+                  {index === 1 && renderDescriptionInput()}
+                  {index === 2 && renderCategorySelector()}
+                  {index === 3 && renderVendorSelection()}
                 </View>
-                <TextInput
-                  label="Enter group name"
-                  value={groupForm.name}
-                  onChangeText={(text) => setGroupForm((prev) => ({ ...prev, name: text }))}
-                  mode="outlined"
-                  style={styles.input}
-                  error={!!formErrors.name}
-                  theme={{ colors: { primary: theme.colors.primary, error: theme.colors.error } }}
-                  accessibilityLabel="Group name input"
-                />
-                {formErrors.name && (
-                  <Text style={[styles.errorText, { color: theme.colors.error }]}>{formErrors.name}</Text>
-                )}
-              </View>
-
-              {/* Description */}
-              <View style={styles.inputContainer}>
-                <View style={styles.inputLabelContainer}>
-                  <Icons.MaterialIcons name="description" size={20} color={theme.colors.primary} />
-                  <Text style={[styles.inputLabel, { color: theme.colors.text }]}>Description *</Text>
-                </View>
-                <TextInput
-                  label="Enter description"
-                  value={groupForm.description}
-                  onChangeText={(text) => setGroupForm((prev) => ({ ...prev, description: text }))}
-                  mode="outlined"
-                  multiline
-                  numberOfLines={3}
-                  style={styles.input}
-                  error={!!formErrors.description}
-                  theme={{ colors: { primary: theme.colors.primary, error: theme.colors.error } }}
-                  accessibilityLabel="Group description input"
-                />
-                {formErrors.description && (
-                  <Text style={[styles.errorText, { color: theme.colors.error }]}>{formErrors.description}</Text>
-                )}
-              </View>
-
-              {/* Category Selector */}
-              <View style={styles.inputContainer}>
-                <View style={styles.inputLabelContainer}>
-                  <Icons.MaterialIcons name="category" size={20} color={theme.colors.primary} />
-                  <Text style={[styles.inputLabel, { color: theme.colors.text }]}>Category *</Text>
-                </View>
-                <Menu
-                  visible={showCategoryMenu}
-                  onDismiss={() => setShowCategoryMenu(false)}
-                  anchor={
-                    <TouchableOpacity
-                      onPress={() => setShowCategoryMenu(true)}
-                      style={[
-                        styles.categorySelector,
-                        { borderColor: showCategoryMenu ? theme.colors.primary : theme.colors.border },
-                        showCategoryMenu && styles.activeCategorySelector,
-                      ]}
-                      accessibilityLabel="Select category"
-                    >
-                      <Text style={{ color: theme.colors.text }}>{groupForm.category}</Text>
-                      <Icons.Ionicons
-                        name={showCategoryMenu ? "chevron-up" : "chevron-down"}
-                        size={20}
-                        color={showCategoryMenu ? theme.colors.primary : theme.colors.text}
-                      />
-                    </TouchableOpacity>
-                  }
-                >
-                  {categories.map((category) => (
-                    <Menu.Item
-                      key={category}
-                      onPress={() => {
-                        setGroupForm((prev) => ({ ...prev, category }));
-                        setShowCategoryMenu(false);
-                      }}
-                      title={category}
-                    />
-                  ))}
-                </Menu>
-              </View>
-
-              {/* Max Members */}
-              <View style={styles.inputContainer}>
-                <View style={styles.inputLabelContainer}>
-                  <Icons.MaterialIcons name="people-alt" size={20} color={theme.colors.primary} />
-                  <Text style={[styles.inputLabel, { color: theme.colors.text }]}>Max Members *</Text>
-                </View>
-                <TextInput
-                  label="Enter max members"
-                  value={groupForm.maxMembers.toString()}
-                  onChangeText={(text) =>
-                    setGroupForm((prev) => ({ ...prev, maxMembers: parseInt(text) || '' }))
-                  }
-                  mode="outlined"
-                  keyboardType="numeric"
-                  style={styles.input}
-                  error={!!formErrors.maxMembers}
-                  theme={{ colors: { primary: theme.colors.primary, error: theme.colors.error } }}
-                  accessibilityLabel="Max members input"
-                />
-                {formErrors.maxMembers && (
-                  <Text style={[styles.errorText, { color: theme.colors.error }]}>{formErrors.maxMembers}</Text>
-                )}
-              </View>
-
-              {/* Vendor Selection */}
-              <View style={styles.inputContainer}>
-                <View style={styles.inputLabelContainer}>
-                  <Icons.MaterialIcons name="store" size={20} color={theme.colors.primary} />
-                  <Text style={[styles.inputLabel, { color: theme.colors.text }]}>
-                    Add Vendors (min 3) * <Text style={styles.vendorCount}>({groupForm.members.length} selected)</Text>
-                  </Text>
-                  {groupForm.members.length > 0 && (
-                    <TouchableOpacity onPress={handleClearVendors} style={styles.clearButton}>
-                      <Text style={[styles.clearButtonText, { color: theme.colors.primary }]}>Clear All</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-                <TextInput
-                  placeholder="Search vendors..."
-                  value={vendorSearch}
-                  onChangeText={setVendorSearch}
-                  style={[styles.input, styles.searchInput]}
-                  mode="outlined"
-                  left={<TextInput.Icon icon={() => <Icons.MaterialIcons name="search" size={20} color={theme.colors.placeholder} />} />}
-                  theme={{ colors: { primary: theme.colors.primary } }}
-                  accessibilityLabel="Search vendors input"
-                />
-                <FlatList
-                  data={filteredVendors}
-                  keyExtractor={(item) => item.id}
-                  renderItem={({ item }) => (
-                    <View
-                      style={[
-                        styles.vendorItem,
-                        groupForm.members.some((m) => m.id === item.id) && styles.selectedVendor,
-                        { borderColor: theme.colors.border },
-                      ]}
-                    >
-                      <TouchableOpacity
-                        style={styles.vendorInfo}
-                        onPress={() => handleVendorToggle(item)}
-                        accessibilityLabel={`Select ${item.name}`}
-                      >
-                        <View style={styles.vendorInfoContent}>
-                          <Text style={[styles.vendorName, { color: theme.colors.text }]}>{item.name}</Text>
-                          <Text style={[styles.vendorDetail, { color: theme.colors.placeholder }]}>
-                            {item.type} - {item.location}
-                          </Text>
-                        </View>
-                        {groupForm.members.some((m) => m.id === item.id) && (
-                          <Icons.MaterialIcons name="check-circle" size={20} color={theme.colors.success} />
-                        )}
-                      </TouchableOpacity>
-                      {groupForm.members.some((m) => m.id === item.id) && (
-                        <Menu
-                          visible={selectedVendorId === item.id}
-                          onDismiss={() => setSelectedVendorId(null)}
-                          anchor={
-                            <TouchableOpacity
-                              onPress={() => setSelectedVendorId(item.id)}
-                              style={[styles.roleSelector, { borderColor: theme.colors.border }]}
-                              accessibilityLabel={`Select role for ${item.name}`}
-                            >
-                              <Text style={{ color: theme.colors.text }}>
-                                {groupForm.members.find((m) => m.id === item.id)?.role}
-                              </Text>
-                              <Icons.Ionicons
-                                name={selectedVendorId === item.id ? "chevron-up" : "chevron-down"}
-                                size={16}
-                                color={theme.colors.text}
-                              />
-                            </TouchableOpacity>
-                          }
-                        >
-                          {['Member', 'Moderator'].map((role) => (
-                            <Menu.Item
-                              key={role}
-                              onPress={() => {
-                                handleRoleChange(item.id, role);
-                                setSelectedVendorId(null);
-                              }}
-                              title={role}
-                            />
-                          ))}
-                        </Menu>
-                      )}
-                    </View>
-                  )}
-                  style={styles.vendorList}
-                  showsVerticalScrollIndicator={false}
-                />
-                {formErrors.members && (
-                  <Text style={[styles.errorText, { color: theme.colors.error }]}>{formErrors.members}</Text>
-                )}
-              </View>
-
-              {/* Form Actions */}
-              <View style={styles.modalActions}>
-                <Button
-                  mode="outlined"
-                  onPress={() => setShowCreateGroup(false)}
-                  style={[styles.actionButton, styles.cancelButton]}
-                  theme={{ colors: { primary: theme.colors.primary } }}
-                  accessibilityLabel="Cancel group creation"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  mode="contained"
-                  onPress={handleSubmit}
-                  style={[styles.actionButton, styles.submitButton]}
-                  theme={{ colors: { primary: theme.colors.primary } }}
-                  disabled={Object.keys(formErrors).length > 0 || isSubmitting}
-                  loading={isSubmitting}
-                  accessibilityLabel="Create group"
-                >
-                  Create Group
-                </Button>
-              </View>
-            </ScrollView>
+              )}
+              showsVerticalScrollIndicator={false}
+              ListFooterComponent={renderFormActions()}
+            />
           </Animated.View>
         </Modal>
       </Portal>
@@ -840,7 +920,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   actionButton: {
-    paddingVertical: 10,
     paddingHorizontal: 10,
     borderRadius: 10,
     marginHorizontal: 4,
@@ -965,21 +1044,21 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   handle: {
+    zIndex: 5,
     width: 50,
     height: 6,
     borderRadius: 3,
     alignSelf: 'center',
-    marginBottom: 16,
   },
   bottomSheetContent: {
-    paddingHorizontal: 24,
+    paddingHorizontal: 15,
     paddingBottom: 48,
   },
   modalTitle: {
     fontSize: 22,
     fontWeight: '700',
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: 5,
   },
   inputContainer: {
     marginBottom: 16,
@@ -1005,10 +1084,26 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
   },
+  menuAnchor: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 10,
+    justifyContent: 'space-between'
+  },
   input: {
-    backgroundColor: 'transparent',
+    backgroundColor: '#f9fafb',
+    borderWidth: 1,
+    color: '#6b7280',
+    borderColor: '#e5e7eb',
+    borderRadius: 8,
+    fontSize: 16,
   },
   searchInput: {
+    backgroundColor: '#f9fafb',
+    borderWidth: 1,
+    color: '#6b7280',
+    borderColor: '#e5e7eb',
+    borderRadius: 8,
     marginBottom: 12,
   },
   categorySelector: {
@@ -1076,15 +1171,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     gap: 16,
-    marginTop: 24,
+    marginTop: 5,
   },
   actionButton: {
     flex: 1,
-    borderRadius: 10,
+    borderRadius: 8,
     paddingVertical: 4,
   },
   cancelButton: {
-    borderWidth: 2,
+    borderWidth: 1,
   },
   submitButton: {
     elevation: 4,

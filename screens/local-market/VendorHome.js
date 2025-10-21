@@ -12,7 +12,6 @@ import {
   View
 } from 'react-native';
 import {
-  Avatar,
   Badge,
   Button,
   Card,
@@ -109,7 +108,7 @@ export default function HomeScreen({ navigation }) {
       }
     };
 
-    loadVendors();
+    // loadVendors();
   }, []);
 
   const handleSearch = () => {

@@ -6,7 +6,6 @@ import HomeStackNavigator from "../navigator/HomeStack"
 import BusinessesStackNavigator from "../navigator/BusinessesStack"
 import FavoritesStackNavigator from "../navigator/FavoritesStack"
 import PeopleStackNavigator from "../navigator/PeopleStack"
-import NotificationsStackNavigator from "../navigator/NotificationStack"
 import { AppContext } from '../context/appContext';
 
 const Tab = createBottomTabNavigator()
@@ -34,13 +33,6 @@ export default function TabNavigator() {
                 component={BusinessesStackNavigator}
                 options={{
                     tabBarLabel: "Business",
-                }}
-            />
-            <Tab.Screen
-                name="Nots"
-                component={NotificationsStackNavigator}
-                options={{
-                    tabBarLabel: "Notifications",
                 }}
             />
             <Tab.Screen
