@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   Alert,
   Dimensions,
@@ -6,18 +7,19 @@ import {
   Linking,
   Share,
   StyleSheet,
+  ScrollView,
   TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
 import {
-  Button,
   Divider,
   IconButton,
   Modal,
   Portal,
   Searchbar,
   List,
+  ActivityIndicator,
   Text,
   Avatar
 } from 'react-native-paper';
@@ -31,13 +33,9 @@ const { width } = Dimensions.get('window');
 export default function CustomerStoreScreen({ navigation, route }) {
   const { user } = React.useContext(AuthContext)
   const { vendor } = route.params
+  const [isSendWhatsApp, setIsSendWhatsApp] = useState(false);
+  const [isSendSMS, setIsSendSMS] = useState(false);
   const { theme, isDarkMode } = React.useContext(AppContext)
-
-  const [products, setProducts] = useState(route?.params?.products || [
-    { id: '1', name: 'Fresh Tomatoes', price: 15, unit: 'kg', stock: 50, description: 'Locally grown fresh tomatoes', images: [], category: 'Vegetables' },
-    { id: '2', name: 'Organic Onions', price: 12, unit: 'kg', stock: 30, description: 'Fresh organic onions', images: [], category: 'Vegetables' },
-    { id: '3', name: 'Carrots', price: 18, unit: 'kg', stock: 25, description: 'Sweet local carrots', images: [], category: 'Vegetables' }
-  ]);
 
   const [cart, setCart] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -48,20 +46,11 @@ export default function CustomerStoreScreen({ navigation, route }) {
     notes: ''
   });
 
-  const withDays = vendor.stock.map(item => {
-    const diffTime = new Date() - new Date(item.purchasedAt);
-    const daysSincePurchase = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    return { ...item._id, daysSincePurchase };
-  });
-
   const filteredProducts = vendor.stock?.filter(product => {
     const matchesSearch = product.itemName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       product.description.toLowerCase().includes(searchQuery.toLowerCase());
-    // const matchesCategory = selectedCategory === 'All' || product.category === selectedCategory;
     return matchesSearch && product.quantity > 0;
   });
-
-  console.log('Stock in #:', filteredProducts.length)
 
   const addToCart = (product) => {
     const existingItem = cart.find(item => item._id === product._id);
@@ -114,7 +103,7 @@ export default function CustomerStoreScreen({ navigation, route }) {
 
   const generateOrderMessage = () => {
     const orderItems = cart.map(item =>
-      `${item.name} x${item.quantity} ${item.unit} - SZL ${(item.price * item.quantity).toFixed(2)}`
+      `${item.itemName} x${item.quantity} ${item.unit} - SZL ${(item.price * item.quantity).toFixed(2)}`
     ).join('\n');
 
     const deliveryInfo = deliveryDetails.address ?
@@ -128,7 +117,7 @@ export default function CustomerStoreScreen({ navigation, route }) {
 
     return `ORDER REQUEST
 
-    Vendor: ${vendor.name}
+    Vendor: ${vendor.ownerName}
     Total Items: ${getTotalItems()}
     Total Amount: SZL ${getTotalPrice().toFixed(2)}
 
@@ -141,44 +130,117 @@ export default function CustomerStoreScreen({ navigation, route }) {
   };
 
   const sendSMS = async () => {
+    setIsSendSMS(true);
     if (cart.length === 0) {
       Alert.alert('Empty Cart', 'Please add items to your cart first');
+      setIsSendSMS(false);
       return;
     }
 
-    if (!vendor.contact.phone) {
+    if (!vendor.phone) {
       Alert.alert('Error', 'Vendor phone number not available');
+      setIsSendSMS(false);
       return;
     }
 
     const message = generateOrderMessage();
     const encodedMessage = encodeURIComponent(message);
 
+    const order = {
+      id: Date.now().toString(),
+      vendorId: vendor.id || vendor._id,
+      vendorName: vendor.businessName,
+      vendorProfile: vendor.avatar,
+      status: 'in_progress',
+      orderDate: new Date().toISOString().split('T')[0],
+      items: cart.map(item => ({
+        name: item.itemName,
+        quantity: item.quantity,
+        price: item.price,
+        unit: item.unit,
+      })),
+      total: getTotalPrice(),
+      deliveryAddress: deliveryDetails.address,
+      estimatedDelivery: null,
+      phone: deliveryDetails.phone,
+      notes: deliveryDetails.notes,
+    };
+
     try {
-      await Linking.openURL(`sms:${vendor.contact.phone}?body=${encodedMessage}`);
+      await Linking.openURL(`sms:${vendor.phone}?body=${encodedMessage}`);
+      // Save order to AsyncStorage after successful SMS send
+      await saveOrder(order);
+      // Clear cart after order is placed
+      setCart([]);
+      setDeliveryDetails({ address: '', phone: '', notes: '' });
+      setShowCartModal(false);
     } catch (error) {
       Alert.alert('Error', 'Could not open SMS app');
+    } finally {
+      setIsSendSMS(false);
     }
   };
 
   const sendWhatsApp = async () => {
+    setIsSendWhatsApp(true)
     if (cart.length === 0) {
       Alert.alert('Empty Cart', 'Please add items to your cart first');
+      setIsSendWhatsApp(false);
       return;
     }
 
-    if (!vendor.whatsapp) {
+    if (!vendor.whatsApp) {
       Alert.alert('Error', 'Vendor WhatsApp number not available');
+      setIsSendWhatsApp(false);
       return;
     }
 
     const message = generateOrderMessage();
     const encodedMessage = encodeURIComponent(message);
 
+    // Create order object
+    const order = {
+      id: Date.now().toString(), // Unique ID based on timestamp
+      vendorId: vendor.id || vendor._id, // Ensure vendor ID is included
+      status: 'pending', // Initial status
+      orderDate: new Date().toISOString().split('T')[0], // Format: YYYY-MM-DD
+      items: cart.map(item => ({
+        name: item.itemName,
+        quantity: item.quantity,
+        price: item.price,
+        unit: item.unit,
+      })),
+      total: getTotalPrice(),
+      deliveryAddress: deliveryDetails.address,
+      estimatedDelivery: null, // Can be updated later
+      phone: deliveryDetails.phone,
+      notes: deliveryDetails.notes,
+    };
+
     try {
-      await Linking.openURL(`whatsapp://send?phone=${vendor.whatsapp}&text=${encodedMessage}`);
+      await Linking.openURL(`whatsapp://send?phone=${vendor.whatsApp}&text=${encodedMessage}`);
+      // Save order to AsyncStorage after successful WhatsApp send
+      await saveOrder(order);
+      // Clear cart after order is placed
+      setCart([]);
+      setDeliveryDetails({ address: '', phone: '', notes: '' });
+      setShowCartModal(false);
     } catch (error) {
       Alert.alert('Error', 'Could not open WhatsApp');
+    } finally {
+      setIsSendWhatsApp(false);
+    }
+  };
+
+  const saveOrder = async (order) => {
+    try {
+      const existingOrders = await AsyncStorage.getItem('orders');
+      const orders = existingOrders ? JSON.parse(existingOrders) : [];
+      orders.push(order);
+      await AsyncStorage.setItem('orders', JSON.stringify(orders));
+    } catch (error) {
+      console.error('Error saving order:', error);
+      Alert.alert('Error', 'Could not save order');
     }
   };
 
@@ -211,10 +273,15 @@ export default function CustomerStoreScreen({ navigation, route }) {
       <View style={styles.productInfo}>
         <View style={styles.priceRow}>
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-            {item.images.length > 0
-              ? <Icons.Feather name='shopping-bag' size={30} color={theme.colors.indicator} />
-              : <Avatar.Image size={40} source={{ uri: item.images[0] }} style={styles.itemAvatar} />
-            }
+            {item.images.length > 0 ? (
+              <Avatar.Image
+                size={40}
+                source={{ uri: item.images[0] }}
+                style={styles.itemAvatar}
+              />
+            ) : (
+              <Icons.Feather name="shopping-bag" size={30} color={theme.colors.indicator} />
+            )}
             <Text variant="titleMedium" style={styles.productName}>{item.itemName}</Text>
           </View>
 
@@ -245,10 +312,10 @@ export default function CustomerStoreScreen({ navigation, route }) {
     </TouchableOpacity>
   );
 
-  const renderCartItem = ({ item }) => (
-    <View style={styles.cartItem}>
+  const renderCartItem = ({ item, index }) => (
+    <View style={styles.cartItem} key={index}>
       <View style={styles.cartItemInfo}>
-        <Text variant="titleSmall">{item.name}</Text>
+        <Text variant="titleSmall">{item.itemName}</Text>
         <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
           SZL {item.price} per {item.unit}
         </Text>
@@ -258,7 +325,7 @@ export default function CustomerStoreScreen({ navigation, route }) {
         <IconButton
           icon="minus"
           size={20}
-          onPress={() => updateQuantity(item.id, item.quantity - 1)}
+          onPress={() => updateQuantity(item._id, item.quantity - 1)}
         />
         <Text variant="bodyMedium" style={styles.quantityText}>
           {item.quantity}
@@ -266,13 +333,13 @@ export default function CustomerStoreScreen({ navigation, route }) {
         <IconButton
           icon="plus"
           size={20}
-          onPress={() => updateQuantity(item.id, item.quantity + 1)}
+          onPress={() => updateQuantity(item._id, item.quantity + 1)}
         />
         <IconButton
           icon="delete"
           size={20}
           iconColor={theme.colors.error}
-          onPress={() => removeFromCart(item.id)}
+          onPress={() => removeFromCart(item._id)}
         />
       </View>
     </View>
@@ -406,98 +473,102 @@ export default function CustomerStoreScreen({ navigation, route }) {
         >
           <View style={styles.cartModalContent}>
             <Text style={styles.cartModalTitle}>Your Order</Text>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {
+                cart.map((item, index) => {
+                  return (
+                    renderCartItem({ item, index })
+                  )
+                })
+              }
 
-            <FlatList
-              data={cart}
-              keyExtractor={(item, index) => `${item._id}-${index}`}
-              renderItem={renderCartItem}
-              showsVerticalScrollIndicator={false}
-              ItemSeparatorComponent={() => <Divider />}
-              ListFooterComponent={() => (
-                <>
-                  <View style={styles.deliverySection}>
-                    <Text variant="titleMedium" style={styles.sectionTitle}>Delivery Details</Text>
+              <View style={styles.deliverySection}>
+                <Text variant="titleMedium" style={styles.sectionTitle}>Delivery Details</Text>
 
-                    <TextInput
-                      value={deliveryDetails.address}
-                      onChangeText={(text) => setDeliveryDetails(prev => ({ ...prev, address: text }))}
-                      multiline
-                      numberOfLines={3}
-                      style={styles.input}
-                      placeholder="Enter your delivery address"
-                      // Prevent focus loss
-                      autoFocus={false}
-                      submitBehavior='blurAndSubmit'
-                      returnKeyType="next"
-                    />
+                <TextInput
+                  value={deliveryDetails.address}
+                  onChangeText={(text) => setDeliveryDetails(prev => ({ ...prev, address: text }))}
+                  multiline
+                  numberOfLines={3}
+                  style={styles.input}
+                  placeholder="Enter your delivery address"
+                  // Prevent focus loss
+                  autoFocus={false}
+                  submitBehavior='blurAndSubmit'
+                  returnKeyType="next"
+                />
 
-                    <TextInput
-                      value={deliveryDetails.phone}
-                      onChangeText={(text) => setDeliveryDetails(prev => ({ ...prev, phone: text }))}
-                      keyboardType="phone-pad"
-                      style={styles.input}
-                      placeholder="Your contact number"
-                      autoFocus={false}
-                      submitBehavior='blurAndSubmit'
-                      returnKeyType="next"
-                    />
+                <TextInput
+                  value={deliveryDetails.phone}
+                  onChangeText={(text) => setDeliveryDetails(prev => ({ ...prev, phone: text }))}
+                  keyboardType="phone-pad"
+                  style={styles.input}
+                  placeholder="Your contact number"
+                  autoFocus={false}
+                  submitBehavior='blurAndSubmit'
+                  returnKeyType="next"
+                />
 
-                    <TextInput
-                      value={deliveryDetails.notes}
-                      onChangeText={(text) => setDeliveryDetails(prev => ({ ...prev, notes: text }))}
-                      multiline
-                      numberOfLines={2}
-                      style={styles.input}
-                      placeholder="Any special instructions or notes"
-                      autoFocus={false}
-                      submitBehavior='blurAndSubmit'
-                      returnKeyType="done"
-                    />
-                  </View>
+                <TextInput
+                  value={deliveryDetails.notes}
+                  onChangeText={(text) => setDeliveryDetails(prev => ({ ...prev, notes: text }))}
+                  multiline
+                  numberOfLines={2}
+                  style={styles.input}
+                  placeholder="Any special instructions or notes"
+                  autoFocus={false}
+                  submitBehavior='blurAndSubmit'
+                  returnKeyType="done"
+                />
+              </View>
 
-                  <View style={[styles.orderSummary, { backgroundColor: theme.colors.surfaceVariant }]}>
-                    <View style={styles.summaryRow}>
-                      <Text variant="bodyMedium">Total Items:</Text>
-                      <Text variant="bodyMedium">{getTotalItems()}</Text>
-                    </View>
-                    <View style={styles.summaryRow}>
-                      <Text variant="titleMedium">Total Amount:</Text>
-                      <Text variant="titleMedium" style={[styles.totalAmount, { color: theme.colors.primary }]}>
-                        SZL {getTotalPrice().toFixed(2)}
-                      </Text>
-                    </View>
-                  </View>
+              <View style={[styles.orderSummary, { backgroundColor: theme.colors.surfaceVariant }]}>
+                <View style={styles.summaryRow}>
+                  <Text variant="bodyMedium">Total Items:</Text>
+                  <Text variant="bodyMedium">{getTotalItems()}</Text>
+                </View>
+                <View style={styles.summaryRow}>
+                  <Text variant="titleMedium">Total Amount:</Text>
+                  <Text variant="titleMedium" style={[styles.totalAmount, { color: theme.colors.primary }]}>
+                    SZL {getTotalPrice().toFixed(2)}
+                  </Text>
+                </View>
+              </View>
 
-                  <View style={styles.orderActions}>
-                    <TouchableOpacity
-                      onPress={() => setShowCartModal(false)}
-                      style={[styles.actionButton, { borderColor: theme.colors.border, backgroundColor: theme.colors.sub_card }]}
-                    >
-                      <Text style={{ textAlign: 'center', color: theme.colors.text }}>Continue Shopping</Text>
-                    </TouchableOpacity>
+              <View style={styles.orderActions}>
+                <TouchableOpacity
+                  onPress={() => setShowCartModal(false)}
+                  style={[styles.actionButton, { borderColor: theme.colors.border, backgroundColor: theme.colors.sub_card }]}
+                >
+                  <Text style={{ textAlign: 'center', color: theme.colors.text }}>Continue Shopping</Text>
+                </TouchableOpacity>
 
-                    <View style={styles.communicationButtons}>
-                      <TouchableOpacity
-                        onPress={sendSMS}
-                        style={[styles.communicationButton, { backgroundColor: '#465be5ff' }]}
-                      >
-                        <Icons.Ionicons name='chatbox' size={20} color='#FFFFFF' />
-                        <Text style={{ textAlign: 'center', color: "#FFFFFF" }}>SMS Order</Text>
-                      </TouchableOpacity>
+                <View style={styles.communicationButtons}>
+                  <TouchableOpacity
+                    onPress={sendSMS}
+                    style={[styles.communicationButton, { backgroundColor: '#465be5ff' }]}
+                  >
+                    {isSendSMS
+                      ? <ActivityIndicator animating={true} size={20} color='#FFFFFF' />
+                      : <Icons.Ionicons name='chatbox' size={20} color='#FFFFFF' />
+                    }
+                    <Text style={{ textAlign: 'center', color: "#FFFFFF" }}>SMS Order</Text>
+                  </TouchableOpacity>
 
-                      <TouchableOpacity
-                        onPress={sendWhatsApp}
-                        icon="chat"
-                        style={[styles.communicationButton, styles.whatsappButton]}
-                      >
-                        <Icons.FontAwesome name='whatsapp' size={20} color='#FFFFFF' />
-                        <Text style={{ textAlign: 'center', color: "#FFFFFF" }}>WhatsApp</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                </>
-              )}
-            />
+                  <TouchableOpacity
+                    onPress={sendWhatsApp}
+                    icon="chat"
+                    style={[styles.communicationButton, styles.whatsappButton]}
+                  >
+                    {isSendWhatsApp
+                      ? <ActivityIndicator animating={true} size={20} color='#FFFFFF' />
+                      : <Icons.FontAwesome name='whatsapp' size={20} color='#FFFFFF' />
+                    }
+                    <Text style={{ textAlign: 'center', color: "#FFFFFF" }}>WhatsApp</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </ScrollView>
           </View>
         </Modal>
       </Portal>

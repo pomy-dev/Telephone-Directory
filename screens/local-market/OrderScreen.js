@@ -6,6 +6,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   View,
+  ScrollView,
   StatusBar
 } from 'react-native';
 import {
@@ -17,16 +18,32 @@ import {
   FAB,
   Text,
 } from 'react-native-paper';
-import { mockOrders, mockVendors } from '../../utils/mockData';
 import { AppContext } from '../../context/appContext';
+import { AuthContext } from '../../context/authProvider';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function OrdersScreen({ navigation }) {
   const { theme, isDarkMode } = React.useContext(AppContext);
+  const { user } = React.useContext(AuthContext);
   const [orders, setOrders] = useState([]);
   const [selectedTab, setSelectedTab] = useState('active');
 
   useEffect(() => {
-    setOrders(mockOrders);
+    const loadOrders = async () => {
+      try {
+        const storedOrders = await AsyncStorage.getItem('orders');
+        if (storedOrders) {
+          setOrders(JSON.parse(storedOrders));
+        } else {
+          setOrders([]);
+        }
+      } catch (error) {
+        console.error('Error loading orders:', error);
+        Alert.alert('Error', 'Could not load orders');
+      }
+    };
+
+    loadOrders();
   }, []);
 
   const getOrderStatusColor = (status) => {
@@ -60,6 +77,44 @@ export default function OrdersScreen({ navigation }) {
         return 'close-circle-outline';
       default:
         return 'help-circle-outline';
+    }
+  };
+
+  const deleteOrder = async (orderId) => {
+    try {
+      const storedOrders = await AsyncStorage.getItem('orders');
+      if (storedOrders) {
+        const updatedOrders = JSON.parse(storedOrders).filter(order => order.id !== orderId);
+        await AsyncStorage.setItem('orders', JSON.stringify(updatedOrders));
+        setOrders(updatedOrders);
+      }
+    } catch (error) {
+      console.error('Error deleting order:', error);
+      Alert.alert('Error', 'Could not delete order');
+    }
+  };
+
+  const deleteAllOrdersInTab = async (tab) => {
+    try {
+      const storedOrders = await AsyncStorage.getItem('orders');
+      if (storedOrders) {
+        let updatedOrders = JSON.parse(storedOrders);
+        if (tab === 'pending') {
+          updatedOrders = updatedOrders.filter(order => {
+            const orderDate = new Date(order.orderDate);
+            const now = new Date();
+            const hoursDiff = (now - orderDate) / (1000 * 60 * 60);
+            return !(order.status === 'pending' && hoursDiff > 24);
+          });
+        } else if (tab === 'completed') {
+          updatedOrders = updatedOrders.filter(order => !['delivered', 'cancelled'].includes(order.status));
+        }
+        await AsyncStorage.setItem('orders', JSON.stringify(updatedOrders));
+        setOrders(updatedOrders);
+      }
+    } catch (error) {
+      console.error('Error deleting orders:', error);
+      Alert.alert('Error', 'Could not delete orders');
     }
   };
 
@@ -101,30 +156,73 @@ export default function OrdersScreen({ navigation }) {
           'Are you sure you want to cancel this order?',
           [
             { text: 'No', style: 'cancel' },
-            { text: 'Yes, Cancel', onPress: () => console.log('Cancel order') }
+            { text: 'Yes, Cancel', onPress: () => updateOrderStatus(order.id, 'cancelled') }
+          ]
+        );
+        break;
+      case 'delete':
+        Alert.alert(
+          'Delete Order',
+          'Are you sure you want to delete this order?',
+          [
+            { text: 'No', style: 'cancel' },
+            { text: 'Yes, Delete', onPress: () => deleteOrder(order.id) }
           ]
         );
         break;
     }
   };
 
+  const updateOrderStatus = async (orderId, newStatus) => {
+    try {
+      const storedOrders = await AsyncStorage.getItem('orders');
+      if (storedOrders) {
+        const updatedOrders = JSON.parse(storedOrders).map(order =>
+          order.id === orderId ? { ...order, status: newStatus } : order
+        );
+        await AsyncStorage.setItem('orders', JSON.stringify(updatedOrders));
+        setOrders(updatedOrders);
+      }
+    } catch (error) {
+      console.error('Error updating order status:', error);
+      Alert.alert('Error', 'Could not update order status');
+    }
+  };
+
   const getVendorName = (vendorId) => {
-    const vendor = mockVendors.find(v => v.id === vendorId);
-    return vendor ? vendor.name : 'Unknown Vendor';
+    // Replace with actual vendor data source if available
+    return 'Vendor Name'; // Placeholder
   };
 
   const getVendorImage = (vendorId) => {
-    const vendor = mockVendors.find(v => v.id === vendorId);
-    return vendor ? vendor.profileImage : 'https://via.placeholder.com/150';
+    // Replace with actual vendor data source if available
+    return 'https://via.placeholder.com/150'; // Placeholder
   };
 
-  const getActiveOrders = () => orders.filter(order =>
-    ['pending', 'confirmed', 'in_progress'].includes(order.status)
-  );
+  const getPendingOrders = () => {
+    return orders.filter(order => {
+      const orderDate = new Date(order.orderDate);
+      const now = new Date();
+      const hoursDiff = (now - orderDate) / (1000 * 60 * 60);
+      return order.status === 'pending' && hoursDiff > 24;
+    });
+  };
 
-  const getCompletedOrders = () => orders.filter(order =>
-    ['delivered', 'cancelled'].includes(order.status)
-  );
+  const getActiveOrders = () => {
+    return orders.filter(order => {
+      const orderDate = new Date(order.orderDate);
+      const now = new Date();
+      const hoursDiff = (now - orderDate) / (1000 * 60 * 60);
+      return (
+        (order.status === 'pending' && hoursDiff <= 24) ||
+        ['confirmed', 'in_progress'].includes(order.status)
+      );
+    });
+  };
+
+  const getCompletedOrders = () => {
+    return orders.filter(order => ['delivered', 'cancelled'].includes(order.status));
+  };
 
   const renderOrderCard = ({ item }) => (
     <Card style={[styles.orderCard, { backgroundColor: theme.colors.card }]}>
@@ -133,14 +231,15 @@ export default function OrdersScreen({ navigation }) {
           <View style={styles.vendorInfo}>
             <Avatar.Image
               size={40}
-              source={{ uri: getVendorImage(item.vendorId) }}
+              source={{ uri: item.vendorProfile }}
               style={styles.vendorAvatar}
             />
             <View style={styles.vendorDetails}>
-              <Text style={styles.vendorName}>{getVendorName(item.vendorId)}</Text>
-              <Text style={[styles.orderDate, { color: theme.colors.placeholder }]}>Order #{item.id} • {item.orderDate}</Text>
+              <Text style={styles.vendorName}>{item.vendorName}</Text>
+              <Text style={[styles.orderDate, { color: theme.colors.placeholder }]}>Order #{item.id?.slice(0, 4)} • {item.orderDate}</Text>
             </View>
           </View>
+
           <Badge style={[styles.statusBadge, { backgroundColor: getOrderStatusColor(item.status) }]}>
             {item.status.replace('_', ' ').toUpperCase()}
           </Badge>
@@ -167,7 +266,9 @@ export default function OrdersScreen({ navigation }) {
           {item.deliveryAddress && (
             <View style={styles.summaryRow}>
               <Text style={[styles.summaryLabel, { color: theme.colors.placeholder }]}>Delivery to:</Text>
-              <Text style={[styles.summaryValue, { color: theme.colors.text }]}>{item.deliveryAddress}</Text>
+              <Text numberOfLines={2} ellipsizeMode='tail' style={[styles.summaryValue,
+              { color: theme.colors.text, width: '80%' }]
+              }>{item.deliveryAddress}</Text>
             </View>
           )}
           {item.estimatedDelivery && (
@@ -184,12 +285,10 @@ export default function OrdersScreen({ navigation }) {
               <TouchableOpacity
                 onPress={() => handleOrderAction(item, 'cancel')}
                 style={[styles.actionButton, { backgroundColor: theme.colors.indicator }]}
-                buttonColor={theme.colors.error}
               >
                 <Icons.MaterialCommunityIcons name='book-cancel-outline' size={20} color={'#cccccc'} />
                 <Text style={{ color: '#ccc', textAlign: 'center' }}>Cancel</Text>
               </TouchableOpacity>
-
               <TouchableOpacity
                 onPress={() => handleOrderAction(item, 'track')}
                 style={[styles.actionButton, { backgroundColor: theme.colors.indicator }]}
@@ -208,7 +307,6 @@ export default function OrdersScreen({ navigation }) {
                 <Icons.EvilIcons name='refresh' size={24} color={'#cccccc'} />
                 <Text style={{ color: '#ccc', textAlign: 'center' }}>Re-order</Text>
               </TouchableOpacity>
-
               <TouchableOpacity
                 onPress={() => handleOrderAction(item, 'rate')}
                 style={[styles.actionButton, { backgroundColor: theme.colors.indicator }]}
@@ -218,6 +316,15 @@ export default function OrdersScreen({ navigation }) {
               </TouchableOpacity>
             </>
           )}
+          {(item.status === 'pending' || item.status === 'delivered' || item.status === 'cancelled') && (
+            <TouchableOpacity
+              onPress={() => handleOrderAction(item, 'delete')}
+              style={[styles.actionButton, { backgroundColor: theme.colors.error }]}
+            >
+              <Icons.MaterialIcons name='delete' size={20} color={'#ffffff'} />
+              <Text style={{ color: '#ffffff', textAlign: 'center' }}>Delete</Text>
+            </TouchableOpacity>
+          )}
         </View>
       </Card.Content>
     </Card>
@@ -225,43 +332,75 @@ export default function OrdersScreen({ navigation }) {
 
   const renderEmptyState = (type) => (
     <View style={styles.emptyState}>
-      <Icons.Ionicons
-        name={type === 'active' ? 'receipt-outline' : 'checkmark-done-outline'}
-        size={64}
-        color={theme.colors.disabled}
-      />
+      {type === 'pending'
+        ? <Icons.MaterialCommunityIcons
+          name='store-clock-outline'
+          size={64}
+          color={theme.colors.disabled}
+        />
+        : <Icons.Ionicons
+          name={type === 'active' ? 'receipt-outline' : 'checkmark-done-outline'}
+          size={64}
+          color={theme.colors.disabled}
+        />
+      }
       <Text style={[styles.emptyTitle, { color: theme.colors.placeholder }]}>
-        {type === 'active' ? 'No Active Orders' : 'No Completed Orders'}
+        {type === 'pending' ? 'No Pending Orders' : type === 'active' ? 'No Active Orders' : 'No Completed Orders'}
       </Text>
-
       <Text style={[styles.emptySubtitle, { color: theme.colors.placeholder }]}>
-        {type === 'active'
-          ? 'Start ordering from local vendors to see your orders here'
-          : 'Your completed orders will appear here'
+        {type === 'pending'
+          ? 'No orders pending for more than 24 hours'
+          : type === 'active'
+            ? 'Start ordering from local vendors to see your orders here'
+            : 'Your completed orders will appear here'
         }
       </Text>
-
       {type === 'active' && (
-        <Button
-          mode="contained"
+        <TouchableOpacity
           onPress={() => navigation.navigate('Search')}
-          style={styles.emptyActionButton}
+          style={[styles.emptyActionButton, { backgroundColor: theme.colors.indicator }]}
         >
-          Find Vendors
-        </Button>
+          <Text style={{ color: '#FFFFFF' }}>Find Vendors</Text>
+        </TouchableOpacity>
       )}
     </View>
   );
 
   const renderTabContent = () => {
+    const pendingOrders = getPendingOrders();
     const activeOrders = getActiveOrders();
     const completedOrders = getCompletedOrders();
 
-    if (selectedTab === 'active') {
-      if (activeOrders.length === 0) {
-        return renderEmptyState('active');
-      }
+    if (selectedTab === 'pending') {
       return (
+        <>
+          {pendingOrders.length > 0 && (
+            <Button
+              mode="outlined"
+              onPress={() => deleteAllOrdersInTab('pending')}
+              style={styles.deleteAllButton}
+              textColor={theme.colors.error}
+            >
+              Delete All Pending Orders
+            </Button>
+          )}
+          {pendingOrders.length === 0 ? (
+            renderEmptyState('pending')
+          ) : (
+            <FlatList
+              data={pendingOrders}
+              renderItem={renderOrderCard}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={styles.listContainer}
+              showsVerticalScrollIndicator={false}
+            />
+          )}
+        </>
+      );
+    } else if (selectedTab === 'active') {
+      return activeOrders.length === 0 ? (
+        renderEmptyState('active')
+      ) : (
         <FlatList
           data={activeOrders}
           renderItem={renderOrderCard}
@@ -271,17 +410,30 @@ export default function OrdersScreen({ navigation }) {
         />
       );
     } else {
-      if (completedOrders.length === 0) {
-        return renderEmptyState('completed');
-      }
       return (
-        <FlatList
-          data={completedOrders}
-          renderItem={renderOrderCard}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContainer}
-          showsVerticalScrollIndicator={false}
-        />
+        <>
+          {completedOrders.length > 0 && (
+            <Button
+              mode="outlined"
+              onPress={() => deleteAllOrdersInTab('completed')}
+              style={styles.deleteAllButton}
+              textColor={theme.colors.error}
+            >
+              Delete All Completed Orders
+            </Button>
+          )}
+          {completedOrders.length === 0 ? (
+            renderEmptyState('completed')
+          ) : (
+            <FlatList
+              data={completedOrders}
+              renderItem={renderOrderCard}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={styles.listContainer}
+              showsVerticalScrollIndicator={false}
+            />
+          )}
+        </>
       );
     }
   };
@@ -294,40 +446,69 @@ export default function OrdersScreen({ navigation }) {
         <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
           <Icons.Ionicons name='arrow-back' size={24} color={theme.colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: theme.colors.text }]}>My Orders</Text>
+
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+          {(user && user.picture)
+            ? (
+              <Avatar.Image
+                size={40}
+                source={{ uri: user.picture }}
+              />
+            ) : (
+              <Icons.Ionicons name="person-circle-outline" size={30} color={theme.colors.indicator} />
+            )}
+          <Text style={[styles.headerTitle, { color: theme.colors.text }]}>My Orders</Text>
+        </View>
+
         <Text style={[styles.headerSubtitle, { color: theme.colors.sub_text }]}>
           Track your orders and delivery status
         </Text>
       </View>
 
-      <View style={styles.tabContainer}>
-        <TouchableOpacity
-          style={[styles.tab, selectedTab === 'active' && styles.activeTab, { borderColor: theme.colors.border }]}
-          onPress={() => setSelectedTab('active')}
-        >
-          <Icons.Ionicons
-            name="receipt-outline"
-            size={20}
-            color={selectedTab === 'active' ? '#cccccc' : theme.colors.placeholder}
-          />
-          <Text style={[styles.tabText, selectedTab === 'active' && styles.activeTabText]}>
-            Active ({getActiveOrders().length})
-          </Text>
-        </TouchableOpacity>
+      <View>
+        <ScrollView horizontal={true} showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabContainer}>
+          <TouchableOpacity
+            style={[styles.tab, selectedTab === 'pending' && styles.activeTab, { borderColor: theme.colors.border }]}
+            onPress={() => setSelectedTab('pending')}
+          >
+            <Icons.MaterialCommunityIcons
+              name="store-clock-outline"
+              size={20}
+              color={selectedTab === 'pending' ? '#cccccc' : theme.colors.placeholder}
+            />
+            <Text style={[styles.tabText, selectedTab === 'pending' && styles.activeTabText]}>
+              Pending ({getPendingOrders().length})
+            </Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.tab, selectedTab === 'completed' && styles.activeTab, { borderColor: theme.colors.border }]}
-          onPress={() => setSelectedTab('completed')}
-        >
-          <Icons.Ionicons
-            name="checkmark-done-outline"
-            size={20}
-            color={selectedTab === 'completed' ? 'white' : theme.colors.placeholder}
-          />
-          <Text style={[styles.tabText, selectedTab === 'completed' && styles.activeTabText]}>
-            Completed ({getCompletedOrders().length})
-          </Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, selectedTab === 'active' && styles.activeTab, { borderColor: theme.colors.border }]}
+            onPress={() => setSelectedTab('active')}
+          >
+            <Icons.Ionicons
+              name="receipt-outline"
+              size={20}
+              color={selectedTab === 'active' ? '#cccccc' : theme.colors.placeholder}
+            />
+            <Text style={[styles.tabText, selectedTab === 'active' && styles.activeTabText]}>
+              Active ({getActiveOrders().length})
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.tab, selectedTab === 'completed' && styles.activeTab, { borderColor: theme.colors.border }]}
+            onPress={() => setSelectedTab('completed')}
+          >
+            <Icons.Ionicons
+              name="checkmark-done-outline"
+              size={20}
+              color={selectedTab === 'completed' ? '#cccccc' : theme.colors.placeholder}
+            />
+            <Text style={[styles.tabText, selectedTab === 'completed' && styles.activeTabText]}>
+              Completed ({getCompletedOrders().length})
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
       </View>
 
       {renderTabContent()}
@@ -358,7 +539,7 @@ const styles = StyleSheet.create({
     top: 35
   },
   headerTitle: {
-    marginLeft: '30%',
+    marginLeft: '10%',
     fontSize: 24,
     fontWeight: 'bold',
   },
@@ -368,7 +549,7 @@ const styles = StyleSheet.create({
     marginLeft: '15%',
   },
   tabContainer: {
-    flexDirection: 'row',
+    height: 70,
     paddingVertical: 10,
     alignItems: 'center',
     justifyContent: 'center'
@@ -477,6 +658,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    flexWrap: 'wrap',
   },
   actionButton: {
     flexDirection: 'row',
@@ -500,6 +682,11 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   emptyActionButton: {
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
     marginTop: 8,
   },
   fab: {
@@ -508,5 +695,9 @@ const styles = StyleSheet.create({
     marginVertical: 60,
     right: 0,
     bottom: 0,
+  },
+  deleteAllButton: {
+    marginBottom: 16,
+    marginHorizontal: 20,
   },
 });

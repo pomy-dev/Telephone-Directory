@@ -9,7 +9,6 @@ import ProfileScreen from "../screens/local-market/ProfileScreen";
 import SupplyChainScreen from "../screens/local-market/SupplyChain";
 import VendorInventoryScreen from "../screens/local-market/VendorInventoryScreen";
 import VendorDashboardScreen from "../screens/local-market/VendorDashBoard";
-import CustomerMarketplaceScreen from "../screens/local-market/CustomerMarketPlaceScreen";
 import CustomerStoreScreen from "../screens/local-market/CustomerStoreScreen";
 import GroupManagementScreen from "../screens/local-market/GroupManagementScreen";
 
@@ -23,14 +22,13 @@ export default function LocalMarketStackNavigator() {
       <LocalMarketStack.Screen name="SearchScreen" component={SearchScreen} options={{ headerShown: false }} />
       <LocalMarketStack.Screen name="AddVendor" component={VendorRegistrationScreen} options={{ headerShown: false }} />
       <LocalMarketStack.Screen name="OrdersScreen" component={OrdersScreen} options={{ headerShown: false }} />
-      {/* <LocalMarketStack.Screen name="LocalMarket" component={LoginScreen} options={{ headerShown: false }} /> */}
       <LocalMarketStack.Screen name="ProfileScreen" component={ProfileScreen} options={{ headerShown: false }} />
+
       <LocalMarketStack.Screen name="BulkGroupsScreen" component={BulkGroupsScreen} options={{ headerShown: false }} />
       <LocalMarketStack.Screen name="SupplyChain" component={SupplyChainScreen} options={{ headerShown: false }} />
 
       <LocalMarketStack.Screen name="VendorInventory" component={VendorInventoryScreen} options={{ headerShown: false }} />
       <LocalMarketStack.Screen name="VendorDashBoard" component={VendorDashboardScreen} options={{ headerShown: false }} />
-      <LocalMarketStack.Screen name="MakertPlace" component={CustomerMarketplaceScreen} options={{ headerShown: false }} />
       <LocalMarketStack.Screen name="MakertStore" component={CustomerStoreScreen} options={{ headerShown: false }} />
       <LocalMarketStack.Screen name="GroupManagement" component={GroupManagementScreen} options={{ headerShown: false }} />
     </LocalMarketStack.Navigator>

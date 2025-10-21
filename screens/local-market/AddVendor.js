@@ -32,6 +32,7 @@ export default function VendorRegistrationScreen({ navigation }) {
     ownerName: '',
     email: user?.email || '',
     phone: '',
+    whatsApp: '',
     businessType: 'street_vendor',
     category: '',
     area: '',
@@ -177,6 +178,17 @@ export default function VendorRegistrationScreen({ navigation }) {
           placeholder="Phone Number *"
           value={formData.phone}
           onChangeText={(value) => handleInputChange('phone', value)}
+          mode="outlined"
+          keyboardType="phone-pad"
+          style={styles.textInput}
+        />
+      </View>
+
+      <View style={styles.field}>
+        <TextInput
+          placeholder="WhatsApp Number"
+          value={formData.whatsApp}
+          onChangeText={(value) => handleInputChange('whatsApp', value)}
           mode="outlined"
           keyboardType="phone-pad"
           style={styles.textInput}
@@ -380,7 +392,7 @@ export default function VendorRegistrationScreen({ navigation }) {
               >
                 Back
               </Button>
-              
+
               <Button
                 mode="contained"
                 onPress={handleNext}

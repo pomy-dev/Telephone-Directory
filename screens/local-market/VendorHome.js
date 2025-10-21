@@ -58,14 +58,13 @@ export default function HomeScreen({ navigation }) {
   useEffect(() => {
     const loadVendors = async () => {
       try {
+        setIsLoading(true);
         // 📍 Get device location
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== 'granted') {
           console.warn('Permission to access location was denied');
           return;
         }
-
-        setIsLoading(true);
 
         const location = await Location.getCurrentPositionAsync({});
         const { latitude, longitude } = location.coords;
@@ -161,6 +160,26 @@ export default function HomeScreen({ navigation }) {
                 :
                 <Icons.Ionicons name="person-circle-outline" size={24} color={theme.colors.primary} />}
             </TouchableOpacity>
+
+            <TouchableOpacity style={styles.actionButton}
+              onPress={() => navigation.navigate('BulkGroupsScreen')}
+            >
+              <Icons.FontAwesome6 name="people-roof" size={24} color={theme.colors.primary} />
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.actionButton}
+              onPress={() => navigation.navigate('OrdersScreen')}
+            >
+              <Icons.Ionicons name="receipt-outline" size={24} color={theme.colors.primary} />
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.actionButton}
+              onPress={() => navigation.navigate('SupplyChain')}
+            >
+              <Icons.FontAwesome6 name="group-arrows-rotate" size={24} color={theme.colors.primary} />
+            </TouchableOpacity>
+
             <TouchableOpacity style={styles.notificationButton}>
               <Icons.Ionicons name="notifications-outline" size={24} color={theme.colors.primary} />
               <Badge style={[styles.notificationBadge, { backgroundColor: theme.colors.error }]}>3</Badge>
@@ -178,7 +197,7 @@ export default function HomeScreen({ navigation }) {
         />
       </View>
 
-      <ScrollView contentContainerStyle={{ justifyContent: 'center' }}>
+      <ScrollView contentContainerStyle={{ justifyContent: 'center', paddingBottom: 60 }}>
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Categories</Text>
           <FlatList
@@ -231,35 +250,6 @@ export default function HomeScreen({ navigation }) {
             scrollEnabled={false}
             contentContainerStyle={styles.vendorList}
           />
-        </View>
-
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Quick Actions</Text>
-          <View style={styles.quickActions}>
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => navigation.navigate('BulkGroupsScreen')}
-            >
-              <Icons.Ionicons name="people" size={32} color={theme.colors.primary} />
-              <Text style={[styles.actionText, { color: theme.colors.text }]}>Join Bulk Groups</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => navigation.navigate('OrdersScreen')}
-            >
-              <Icons.Ionicons name="receipt" size={32} color={theme.colors.primary} />
-              <Text style={[styles.actionText, { color: theme.colors.text }]}>My Orders</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.actionButton}
-              onPress={() => navigation.navigate('SupplyChain')}
-            >
-              <Icons.FontAwesome6 name="group-arrows-rotate" size={32} color={theme.colors.primary} />
-              <Text style={[styles.actionText, { color: theme.colors.text }]}>Supply Chain</Text>
-            </TouchableOpacity>
-          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -348,11 +338,7 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     alignItems: 'center',
-    padding: 16,
-    backgroundColor: 'white',
-    borderRadius: 12,
-    elevation: 2,
-    minWidth: 80,
+    backgroundColor: 'transparent'
   },
   actionText: {
     fontSize: 12,
