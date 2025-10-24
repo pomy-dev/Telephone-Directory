@@ -23,6 +23,7 @@ import MapPickerModal from '../../components/mapPicker';
 import { AppContext } from '../../context/appContext';
 import { AuthContext } from '../../context/authProvider';
 import { addVendor } from '../../service/getApi';
+import { insertVendorProfile } from '../../service/Supabase-Fuctions';
 
 export default function VendorRegistrationScreen({ navigation }) {
   const { theme, isDarkMode } = React.useContext(AppContext);
@@ -77,7 +78,7 @@ export default function VendorRegistrationScreen({ navigation }) {
   };
 
   const validateStep1 = () => {
-    const { businessName, ownerName, email, phone, businessType, category, area } = formData;
+    const { businessName, ownerName, email, phone, businessType, category } = formData;
     if (!businessName || !ownerName || !email || !phone || !businessType || !category || !area) {
       Alert.alert('Error', 'Please fill in all required fields');
       return false;
@@ -96,7 +97,7 @@ export default function VendorRegistrationScreen({ navigation }) {
   const handleSubmit = async () => {
     setIsLoading(true);
     try {
-      const response = await addVendor(formData);
+      const response = await insertVendorProfile(formData);
       if (response)
         Alert.alert('Success', 'Vendor registration submitted successfully');
       else
@@ -112,7 +113,6 @@ export default function VendorRegistrationScreen({ navigation }) {
         phone: '',
         businessType: 'street_vendor',
         category: '',
-        area: '',
         address: '',
         location: {
           latitude: '',
@@ -228,24 +228,6 @@ export default function VendorRegistrationScreen({ navigation }) {
             textStyle={styles.chipText}
           >
             {category.icon} {category.name}
-          </Chip>
-        ))}
-      </View>
-
-      <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Service Area *</Text>
-      <View style={styles.chipContainer}>
-        {mockAreas?.map((area) => (
-          <Chip
-            key={area}
-            selected={formData.area === area}
-            onPress={() => handleInputChange('area', area)}
-            style={[
-              styles.chip,
-              formData.area === area && styles.selectedChip
-            ]}
-            textStyle={styles.chipText}
-          >
-            {area}
           </Chip>
         ))}
       </View>
@@ -396,7 +378,10 @@ export default function VendorRegistrationScreen({ navigation }) {
               <Button
                 mode="contained"
                 onPress={handleNext}
-                style={{ backgroundColor: theme.colors.indicator }}
+                style={{
+                  backgroundColor: theme.colors.indicator,
+                  borderRadius: 8
+                }}
                 contentStyle={styles.buttonContent}
               >
                 {step === 1 ? 'Next' : 'Submit'}
@@ -454,6 +439,8 @@ const styles = StyleSheet.create({
     marginLeft: '15%',
   },
   backNav: {
+    borderRadius: 8,
+    paddingVertical: 4,
     alignItems: 'center',
     justifyContent: 'center'
   },
@@ -571,7 +558,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   buttonContent: {
-    paddingVertical: 8,
+    paddingVertical: 4,
   },
   benefitsCard: {
     marginHorizontal: 20,

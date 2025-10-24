@@ -11,7 +11,7 @@ import { AuthContext } from '../context/authProvider';
 import { Icons } from '../constants/Icons';
 import { useNavigation } from '@react-navigation/native';
 
-export default function VendorCard({ item }) {
+export default function VendorCard({ item, loadStock }) {
   const { theme } = React.useContext(AppContext);
   const { user } = React.useContext(AuthContext);
   const navigation = useNavigation();
@@ -43,7 +43,7 @@ export default function VendorCard({ item }) {
     //     { text: 'Place Order', onPress: () => handlePlaceOrder(item) }
     //   ]
     // );
-    navigation.navigate('VendorInventory', { vendorId: item._id || item.id || item.id_str, vendor: item });
+    navigation.navigate('VendorInventory', { vendorId: item._id, vendor: item });
   }
 
   const handleViewStock = () => {

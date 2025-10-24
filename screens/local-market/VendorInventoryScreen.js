@@ -794,7 +794,6 @@ export default function VendorInventoryScreen({ navigation, route }) {
                     </View>
                   ))}
                 </ScrollView>
-
                 <HelperText type="info">First image is primary thumbnail</HelperText>
               </View>
 

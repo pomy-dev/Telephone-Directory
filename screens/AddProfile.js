@@ -22,6 +22,7 @@ import { AuthContext } from '../context/authProvider';
 import { CustomToast } from '../components/customToast';
 import CustomLoader from '../components/customLoader';
 import { addUser, getUserProfile, updateUserProfile } from '../service/getApi';
+import { insertUserProfile } from '../service/Supabase-Fuctions';
 
 const generateId = () => `id-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
 
@@ -38,7 +39,7 @@ export default function ProfileScreen({ navigation, route }) {
       email: user.email,
       phone: '',
       whatsApp: '',
-      title: '',
+      profession: '',
       company: '',
       location: '',
       industry: '',
@@ -57,14 +58,16 @@ export default function ProfileScreen({ navigation, route }) {
         facebook: ''
       },
       avatar: null,
+      isVendor: false,
       isAvailableForWork: true,
+      VendorProfileId: null
     })
     : useState({
       name: user.name,
       email: user.email,
       phone: user.phone || '',
       whatsApp: '+268 7123456',
-      title: 'Software Developer',
+      profession: 'Software Developer',
       company: 'Tech Solutions Inc.',
       location: 'San Francisco, CA',
       industry: 'Technology',
@@ -202,19 +205,15 @@ export default function ProfileScreen({ navigation, route }) {
               encoding: FileSystem.EncodingType.Base64,
             });
             payload.avatar = `data:${image.type};base64,${imageString}`;
-            // payload.avatarName = image.name;
           } catch (fsErr) {
             console.error('Failed to convert image to base64:', fsErr);
             CustomToast('Error', 'Failed to process image. Please try again.');
           }
         }
-        const newUser = await addUser(payload);
-        // console.log('\n\t\tNew User:', newUser);
-        //   // set the new user in context
-        // } else {
-        //   setIsLoading(true)
-        //   const updatedUser = await updateUserProfile(user.id, profile);
-        //   // set the updated user in context
+
+        // const newUser = await addUser(payload);
+        const newUser = await insertUserProfile(payload);
+        CustomToast('Success', `${newUser.name} was successfully registered.`)
       }
     } catch (error) {
       console.error('Error saving profile:', error);
@@ -226,7 +225,7 @@ export default function ProfileScreen({ navigation, route }) {
         email: '',
         phone: '',
         whatsApp: '',
-        title: '',
+        profession: '',
         company: '',
         location: '',
         industry: '',
@@ -472,12 +471,12 @@ export default function ProfileScreen({ navigation, route }) {
                 {isEditing || register ? (
                   <TextInput
                     style={styles.textInput}
-                    value={profile.title}
-                    onChangeText={(text) => setProfile(prev => ({ ...prev, title: text }))}
+                    value={profile.profession}
+                    onChangeText={(text) => setProfile(prev => ({ ...prev, profession: text }))}
                     placeholder="Your job title"
                   />
                 ) : (
-                  <Text style={[styles.fieldValue, { color: theme.colors.sub_text }]}>{profile.title}</Text>
+                  <Text style={[styles.fieldValue, { color: theme.colors.sub_text }]}>{profile.profession}</Text>
                 )}
               </View>
 
@@ -1164,7 +1163,7 @@ const styles = StyleSheet.create({
   },
   addAchievementContainer: {
     marginTop: 12,
-  }, 
+  },
   socialInputGroup: {
     marginBottom: 12,
   },

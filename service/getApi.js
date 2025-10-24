@@ -130,46 +130,32 @@ export const addVendorStock = async (stockData) => {
   }
 }
 
-export const getVendorsAndStock = async () => {
+export const getVendorsAndStock = async (page = 1, limit = 10) => {
   try {
-    const vendors = await fetch(`${API_BASE_URL}/api/vendors`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-      }
-    });
-    if (!vendors.ok) {
-      console.error('==============\n');
-      console.error(vendors.arrayBuffer);
-      throw new Error(vendors.status);
-    }
-    const data = await vendors.json();
-    console.log(data.totalVendors);
+    const vendors = await fetch(
+      `${API_BASE_URL}/api/vendors?page=${page}&limit=${limit}&stock=count`,
+      { method: "GET" }
+    );
 
-    return data;
+    if (!vendors.ok) throw new Error(vendors.status);
+    return await vendors.json();
   } catch (error) {
     console.error("Error fetching vendors:", error);
     throw error;
   }
 }
 
-export const getVendorProfile = async (email) => {
+export const getVendorProfile = async (vendorId) => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/vendor-profile?email=${encodeURIComponent(email)}`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-        },
-      }
+    const response = await fetch(
+      `${API_BASE_URL}/api/vendors/${vendorId}/stock`,
+      { method: "GET" }
     );
-    if (!response.ok) {
-      throw new Error("Network response was not ok " + response.statusText);
-    }
-    const data = await response.json();
-    return data;
+
+    if (!response.ok) throw new Error(response.status);
+    return await response.json();
   } catch (error) {
-    console.error("Error fetching vendor profile:", error);
+    console.error("Error fetching stock:", error);
     throw error;
   }
 };

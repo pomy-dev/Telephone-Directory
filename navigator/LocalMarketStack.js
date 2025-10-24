@@ -3,6 +3,7 @@ import LoginScreen from "../screens/local-market/VendorLogin";
 import VendorRegistrationScreen from "../screens/local-market/AddVendor";
 import HomeScreen from "../screens/local-market/VendorHome";
 import BulkGroupsScreen from "../screens/local-market/BulkGroupScreen";
+import CustomeVendorGroup from "../components/customeVendorGroup";
 import SearchScreen from "../screens/local-market/SearchScreen";
 import OrdersScreen from "../screens/local-market/OrderScreen";
 import ProfileScreen from "../screens/local-market/ProfileScreen";
@@ -25,6 +26,7 @@ export default function LocalMarketStackNavigator() {
       <LocalMarketStack.Screen name="ProfileScreen" component={ProfileScreen} options={{ headerShown: false }} />
 
       <LocalMarketStack.Screen name="BulkGroupsScreen" component={BulkGroupsScreen} options={{ headerShown: false }} />
+      <LocalMarketStack.Screen name="GroupForm" component={CustomeVendorGroup} options={{ headerShown: false }} />
       <LocalMarketStack.Screen name="SupplyChain" component={SupplyChainScreen} options={{ headerShown: false }} />
 
       <LocalMarketStack.Screen name="VendorInventory" component={VendorInventoryScreen} options={{ headerShown: false }} />

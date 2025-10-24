@@ -1,5 +1,5 @@
 import { Icons } from '../../constants/Icons'
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   Dimensions,
   FlatList,
@@ -23,7 +23,7 @@ import { AppContext } from '../../context/appContext';
 import { AuthContext } from '../../context/authProvider';
 import * as Location from 'expo-location';
 import VendorCard from '../../components/vendorCard';
-import { getVendorsAndStock } from '../../service/getApi';
+import { getVendorsAndStock, getVendorProfile } from '../../service/getApi';
 import CustomLorder from '../../components/customLoader';
 
 const { width } = Dimensions.get('window');
@@ -33,9 +33,13 @@ export default function HomeScreen({ navigation }) {
   const { user } = React.useContext(AuthContext);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [allVendors, setAllVendors] = useState([]);
   const [nearbyVendors, setNearbyVendors] = useState([]);
   const [featuredVendors, setFeaturedVendors] = useState([]);
   const [userLocation, setUserLocation] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(true);
+  const [stockCache, setStockCache] = useState({}); // Cache loaded stock
   const [isLoading, setIsLoading] = useState(false);
 
   // 🧮 Haversine formula to calculate distance (in km)
@@ -55,61 +59,78 @@ export default function HomeScreen({ navigation }) {
   };
 
   useEffect(() => {
-    const loadVendors = async () => {
-      try {
-        setIsLoading(true);
-        // 📍 Get device location
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
-          console.warn('Permission to access location was denied');
-          return;
-        }
-
-        const location = await Location.getCurrentPositionAsync({});
-        const { latitude, longitude } = location.coords;
-        setUserLocation({ latitude, longitude });
-
-        // 🌐 Fetch vendors from backend
-        const vendorsData = await getVendorsAndStock();
-        const allVendors = vendorsData.vendors;
-
-        // ⭐ Featured vendors
-        const featured = allVendors.filter((v) => v.rating > 4.5).slice(0, 3);
-
-        // 🧭 Find nearby vendors (sort by distance)
-        const vendorsWithDistance = allVendors
-          .filter(
-            (v) =>
-              v.location &&
-              v.location.latitude &&
-              v.location.longitude
-          )
-          .map((v) => ({
-            ...v,
-            distance: getDistance(
-              latitude,
-              longitude,
-              v.location.latitude,
-              v.location.longitude
-            ),
-          }))
-          .sort((a, b) => a.distance - b.distance); // nearest first
-
-        // 🧮 Get first 4 nearby vendors
-        const nearest = vendorsWithDistance.slice(0, 4);
-
-        // 💾 Save state
-        setNearbyVendors(nearest);
-        setFeaturedVendors(featured);
-      } catch (error) {
-        console.error('Error loading vendors:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    // loadVendors();
+    loadVendors(1);
   }, []);
+
+  const loadVendors = async (page) => {
+    try {
+      setIsLoading(true);
+      // 📍 Get device location
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        console.warn('Permission to access location was denied');
+        return;
+      }
+
+      const location = await Location.getCurrentPositionAsync({});
+      const { latitude, longitude } = location.coords;
+      setUserLocation({ latitude, longitude });
+
+      // 🌐 Fetch vendors from backend
+      const vendorsData = await getVendorsAndStock(page);
+      // const allVendors = vendorsData.vendors;
+
+      setAllVendors(prev => page === 1 ? vendorsData.vendors : [...prev, ...vendorsData.vendors]);
+
+      // ⭐ Featured vendors
+      const featured = allVendors.filter((v) => v.rating > 4.5).slice(0, 3);
+
+      // 🧭 Find nearby vendors (sort by distance)
+      const vendorsWithDistance = allVendors
+        .filter(
+          (v) =>
+            v.location &&
+            v.location.latitude &&
+            v.location.longitude
+        )
+        .map((v) => ({
+          ...v,
+          distance: getDistance(
+            latitude,
+            longitude,
+            v.location.latitude,
+            v.location.longitude
+          ),
+        }))
+        .sort((a, b) => a.distance - b.distance); // nearest first
+
+      // 🧮 Get first 4 nearby vendors
+      const nearest = vendorsWithDistance.slice(0, 4);
+
+      // 💾 Save state
+      setNearbyVendors(nearest);
+      setFeaturedVendors(featured);
+      setCurrentPage(data.currentPage);
+      setHasMore(data.hasNextPage);
+    } catch (error) {
+      console.error('Error loading vendors:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadStock = useCallback(async (vendorId) => {
+    if (stockCache[vendorId]) return stockCache[vendorId]; // Cached
+
+    try {
+      const { stock } = await getVendorProfile(vendorId);
+      setStockCache(prev => ({ ...prev, [vendorId]: stock }));
+      return stock;
+    } catch (error) {
+      console.error(error);
+      return [];
+    }
+  }, [stockCache]);
 
   const handleSearch = () => {
     navigation.navigate('SearchScreen', {
@@ -117,6 +138,18 @@ export default function HomeScreen({ navigation }) {
       category: selectedCategory
     });
   };
+
+  const handleViewMore = (sort) => {
+    navigation.navigate('SearchScreen', { sortBy: sort })
+  }
+
+  const handleScroll = useCallback(() => {
+    if (isLoading || !hasMore) return;
+    if (window.innerHeight + document.documentElement.scrollTop
+      >= document.documentElement.offsetHeight - 100) {
+      loadVendors(currentPage + 1);
+    }
+  }, [isLoading, hasMore, currentPage]);
 
   const handleCategoryPress = (category) => {
     setSelectedCategory(category.name);
@@ -161,7 +194,7 @@ export default function HomeScreen({ navigation }) {
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.actionButton}
-              onPress={() => navigation.navigate('BulkGroupsScreen')}
+              onPress={() => navigation.navigate('BulkGroupsScreen', { vendors: allVendors })}
             >
               <Icons.FontAwesome6 name="people-roof" size={24} color={theme.colors.primary} />
             </TouchableOpacity>
@@ -214,7 +247,7 @@ export default function HomeScreen({ navigation }) {
             <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Nearby Vendors</Text>
             <Button
               mode="text"
-              onPress={() => navigation.navigate('SearchScreen', { sortBy: 'distance' })}
+              onPress={handleViewMore('distance')}
               compact
             >
               See All
@@ -235,7 +268,7 @@ export default function HomeScreen({ navigation }) {
             <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Top Rated</Text>
             <Button
               mode="text"
-              onPress={() => navigation.navigate('SearchScreen', { sortBy: 'rating' })}
+              onPress={handleViewMore('rating')}
               compact
             >
               See All
