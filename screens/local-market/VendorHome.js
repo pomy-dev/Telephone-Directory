@@ -23,7 +23,7 @@ import { AppContext } from '../../context/appContext';
 import { AuthContext } from '../../context/authProvider';
 import * as Location from 'expo-location';
 import VendorCard from '../../components/vendorCard';
-import { getVendorsAndStock, getVendorProfile } from '../../service/getApi';
+import { getNearestVendors, getTopVendors } from '../../service/Supabase-Fuctions';
 import CustomLorder from '../../components/customLoader';
 
 const { width } = Dimensions.get('window');
@@ -37,32 +37,13 @@ export default function HomeScreen({ navigation }) {
   const [nearbyVendors, setNearbyVendors] = useState([]);
   const [featuredVendors, setFeaturedVendors] = useState([]);
   const [userLocation, setUserLocation] = useState(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
-  const [stockCache, setStockCache] = useState({}); // Cache loaded stock
   const [isLoading, setIsLoading] = useState(false);
 
-  // 🧮 Haversine formula to calculate distance (in km)
-  const getDistance = (lat1, lon1, lat2, lon2) => {
-    const toRad = (value) => (value * Math.PI) / 180;
-    const R = 6371; // Earth radius in km
-    const dLat = toRad(lat2 - lat1);
-    const dLon = toRad(lon2 - lon1);
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(toRad(lat1)) *
-      Math.cos(toRad(lat2)) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  };
-
   useEffect(() => {
-    loadVendors(1);
+    loadVendors();
   }, []);
 
-  const loadVendors = async (page) => {
+  const loadVendors = async () => {
     try {
       setIsLoading(true);
       // 📍 Get device location
@@ -76,61 +57,24 @@ export default function HomeScreen({ navigation }) {
       const { latitude, longitude } = location.coords;
       setUserLocation({ latitude, longitude });
 
+
       // 🌐 Fetch vendors from backend
-      const vendorsData = await getVendorsAndStock(page);
-      // const allVendors = vendorsData.vendors;
+      const nearestVendors = await getNearestVendors(latitude, longitude);
+      const featuredVendors = await getTopVendors();
 
-      setAllVendors(prev => page === 1 ? vendorsData.vendors : [...prev, ...vendorsData.vendors]);
+      const vendorsData = nearbyVendors + featuredVendors;
 
-      // ⭐ Featured vendors
-      const featured = allVendors.filter((v) => v.rating > 4.5).slice(0, 3);
-
-      // 🧭 Find nearby vendors (sort by distance)
-      const vendorsWithDistance = allVendors
-        .filter(
-          (v) =>
-            v.location &&
-            v.location.latitude &&
-            v.location.longitude
-        )
-        .map((v) => ({
-          ...v,
-          distance: getDistance(
-            latitude,
-            longitude,
-            v.location.latitude,
-            v.location.longitude
-          ),
-        }))
-        .sort((a, b) => a.distance - b.distance); // nearest first
-
-      // 🧮 Get first 4 nearby vendors
-      const nearest = vendorsWithDistance.slice(0, 4);
+      setAllVendors(prev => [...prev, ...featuredVendors]);
 
       // 💾 Save state
-      setNearbyVendors(nearest);
-      setFeaturedVendors(featured);
-      setCurrentPage(data.currentPage);
-      setHasMore(data.hasNextPage);
+      setNearbyVendors(nearestVendors?.slice(0, 3));
+      setFeaturedVendors(featuredVendors?.slice(0, 4));
     } catch (error) {
       console.error('Error loading vendors:', error);
     } finally {
       setIsLoading(false);
     }
   };
-
-  const loadStock = useCallback(async (vendorId) => {
-    if (stockCache[vendorId]) return stockCache[vendorId]; // Cached
-
-    try {
-      const { stock } = await getVendorProfile(vendorId);
-      setStockCache(prev => ({ ...prev, [vendorId]: stock }));
-      return stock;
-    } catch (error) {
-      console.error(error);
-      return [];
-    }
-  }, [stockCache]);
 
   const handleSearch = () => {
     navigation.navigate('SearchScreen', {
@@ -142,14 +86,6 @@ export default function HomeScreen({ navigation }) {
   const handleViewMore = (sort) => {
     navigation.navigate('SearchScreen', { sortBy: sort })
   }
-
-  const handleScroll = useCallback(() => {
-    if (isLoading || !hasMore) return;
-    if (window.innerHeight + document.documentElement.scrollTop
-      >= document.documentElement.offsetHeight - 100) {
-      loadVendors(currentPage + 1);
-    }
-  }, [isLoading, hasMore, currentPage]);
 
   const handleCategoryPress = (category) => {
     setSelectedCategory(category.name);
@@ -181,11 +117,13 @@ export default function HomeScreen({ navigation }) {
       {/* header */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
+          {/* back btn */}
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Icons.Ionicons name='arrow-back' size={24} color={theme.colors.primary} />
           </TouchableOpacity>
 
           <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 20 }}>
+            {/* user profile */}
             <TouchableOpacity onPress={() => navigation.navigate('ProfileScreen')} style={styles.notificationButton}>
               {(user.picture !== null || user.picture !== '') ?
                 <Image source={{ uri: user.picture }} style={styles.userImage} />
@@ -193,18 +131,21 @@ export default function HomeScreen({ navigation }) {
                 <Icons.Ionicons name="person-circle-outline" size={24} color={theme.colors.primary} />}
             </TouchableOpacity>
 
+            {/* vendor groups */}
             <TouchableOpacity style={styles.actionButton}
               onPress={() => navigation.navigate('BulkGroupsScreen', { vendors: allVendors })}
             >
               <Icons.FontAwesome6 name="people-roof" size={24} color={theme.colors.primary} />
             </TouchableOpacity>
 
+            {/* user orders */}
             <TouchableOpacity style={styles.actionButton}
               onPress={() => navigation.navigate('OrdersScreen')}
             >
               <Icons.Ionicons name="receipt-outline" size={24} color={theme.colors.primary} />
             </TouchableOpacity>
 
+            {/* market chain */}
             <TouchableOpacity
               style={styles.actionButton}
               onPress={() => navigation.navigate('SupplyChain')}
@@ -247,7 +188,7 @@ export default function HomeScreen({ navigation }) {
             <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Nearby Vendors</Text>
             <Button
               mode="text"
-              onPress={handleViewMore('distance')}
+              onPress={() => handleViewMore('distance')}
               compact
             >
               See All
@@ -268,7 +209,7 @@ export default function HomeScreen({ navigation }) {
             <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Top Rated</Text>
             <Button
               mode="text"
-              onPress={handleViewMore('rating')}
+              onPress={() => handleViewMore('rating')}
               compact
             >
               See All

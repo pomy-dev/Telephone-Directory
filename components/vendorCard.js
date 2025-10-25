@@ -43,7 +43,8 @@ export default function VendorCard({ item, loadStock }) {
     //     { text: 'Place Order', onPress: () => handlePlaceOrder(item) }
     //   ]
     // );
-    navigation.navigate('VendorInventory', { vendorId: item._id, vendor: item });
+    console.log(item.id)
+    navigation.navigate('VendorInventory', { vendorId: item.id, vendor: item });
   }
 
   const handleViewStock = () => {
@@ -56,20 +57,20 @@ export default function VendorCard({ item, loadStock }) {
         <View style={styles.vendorHeader}>
           <Avatar.Image
             size={50}
-            source={{ uri: item.avatar }}
+            source={{ uri: item.user_avatar }}
             style={styles.vendorAvatar}
           />
           <View style={styles.vendorInfo}>
-            <Text style={styles.vendorName}>{item.businessName}</Text>
-            <Text style={[styles.vendorType, { color: theme.colors.placeholder }]}>{item.businessType}</Text>
+            <Text style={styles.vendorName}>{item.business_name}</Text>
+            <Text style={[styles.vendorType, { color: theme.colors.placeholder }]}>{item.business_type}</Text>
             <View style={styles.ratingContainer}>
               <Icons.Ionicons name="star" size={16} color="#FFD700" />
               <Text style={styles.rating}>{item.rating}</Text>
-              <Text style={[styles.reviewCount, { color: theme.colors.placeholder }]}>({item.reviewCount})</Text>
+              <Text style={[styles.reviewCount, { color: theme.colors.placeholder }]}>({item.review_count})</Text>
             </View>
           </View>
           <Badge style={[styles.onlineBadge, { backgroundColor: theme.colors.success }]}>
-            {item.isOnline ? 'Online' : 'Offline'}
+            {item.is_online ? 'Online' : 'Offline'}
           </Badge>
         </View>
 
@@ -80,24 +81,24 @@ export default function VendorCard({ item, loadStock }) {
         {/* view my Today's display */}
         <View style={{ backgroundColor: theme.colors.indicator, borderRadius: 10, alignItems: 'center', paddingVertical: 10, marginBottom: 5 }}>
           <TouchableOpacity onPress={handleViewStock}>
-            <Text style={{ color: '#ccc', fontSize: 15, textAlign: 'center' }}>View my Today's stock</Text>
+            <Text style={{ color: '#ccc', fontSize: 15, textAlign: 'center' }}>View Today's stock</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.vendorDetails}>
           <View style={styles.detailItem}>
             <Icons.Ionicons name="location-outline" size={16} color={theme.colors.primary} />
-            <Text style={[styles.detailText, { color: theme.colors.placeholder }]}>{item.area}</Text>
+            <Text style={[styles.detailText, { color: theme.colors.placeholder }]}>{item.address}</Text>
           </View>
           <View style={styles.detailText}>
             <Icons.Ionicons name="time-outline" size={16} color={theme.colors.primary} />
             <Text style={[styles.detailText, { color: theme.colors.placeholder }]}>
-              {item.workingHours.monday || 'Closed today'}
+              {item.working_hours.monday || 'Closed today'}
             </Text>
           </View>
           <View style={styles.detailText}>
             <Icons.MaterialIcons name="delivery-dining" size={16} color={theme.colors.primary} />
-            <Text style={[styles.detailText, { color: theme.colors.placeholder }]}>{item.deliveryRadius}km delivery</Text>
+            <Text style={[styles.detailText, { color: theme.colors.placeholder }]}>{item.delivery_radius}km delivery</Text>
           </View>
         </View>
       </Card.Content>

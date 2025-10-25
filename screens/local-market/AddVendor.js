@@ -79,7 +79,7 @@ export default function VendorRegistrationScreen({ navigation }) {
 
   const validateStep1 = () => {
     const { businessName, ownerName, email, phone, businessType, category } = formData;
-    if (!businessName || !ownerName || !email || !phone || !businessType || !category || !area) {
+    if (!businessName || !ownerName || !email || !phone || !businessType || !category) {
       Alert.alert('Error', 'Please fill in all required fields');
       return false;
     }
@@ -106,32 +106,32 @@ export default function VendorRegistrationScreen({ navigation }) {
     } catch (error) {
       Alert.alert('Error', 'An error occurred while submitting your registration');
     } finally {
-      setFormData({
-        businessName: '',
-        ownerName: '',
-        email: user?.email || '',
-        phone: '',
-        businessType: 'street_vendor',
-        category: '',
-        address: '',
-        location: {
-          latitude: '',
-          longitude: ''
-        },
-        description: '',
-        workingHours: {
-          monday: '',
-          tuesday: '',
-          wednesday: '',
-          thursday: '',
-          friday: '',
-          saturday: '',
-          sunday: '',
-        },
-        deliveryRadius: 5,
-        acceptsBulkOrders: false,
-        hasLicense: false,
-      });
+      // setFormData({
+      //   businessName: '',
+      //   ownerName: '',
+      //   email: user?.email || '',
+      //   phone: '',
+      //   businessType: 'street_vendor',
+      //   category: '',
+      //   address: '',
+      //   location: {
+      //     latitude: '',
+      //     longitude: ''
+      //   },
+      //   description: '',
+      //   workingHours: {
+      //     monday: '',
+      //     tuesday: '',
+      //     wednesday: '',
+      //     thursday: '',
+      //     friday: '',
+      //     saturday: '',
+      //     sunday: '',
+      //   },
+      //   deliveryRadius: 5,
+      //   acceptsBulkOrders: false,
+      //   hasLicense: false,
+      // });
       setStep(1);
       setIsLoading(false);
     }

@@ -24,7 +24,7 @@ import VendorCard from '../../components/vendorCard';
 import { mockAreas, mockCategories, mockVendors } from '../../utils/mockData';
 import { AppContext } from '../../context/appContext';
 
-export default function SearchScreen({ navigation, route, handleScroll }) {
+export default function SearchScreen({ navigation, route }) {
   const { theme, isDarkMode } = React.useContext(AppContext);
   const [searchQuery, setSearchQuery] = useState(route?.params?.query || '');
   const [selectedCategory, setSelectedCategory] = useState(route?.params?.category || '');
@@ -36,11 +36,6 @@ export default function SearchScreen({ navigation, route, handleScroll }) {
   useEffect(() => {
     filterVendors();
   }, [searchQuery, selectedCategory, selectedArea, sortBy]);
-
-  useEffect(() => {
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [handleScroll]);
 
   const filterVendors = () => {
     let filtered = [...mockVendors];

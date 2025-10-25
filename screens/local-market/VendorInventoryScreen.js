@@ -42,6 +42,7 @@ import { AuthContext } from '../../context/authProvider';
 import { AppContext } from '../../context/appContext';
 import LoginScreen from '../../components/loginModal';
 import { addVendorStock } from '../../service/getApi';
+import { insertVendorStock } from '../../service/Supabase-Fuctions';
 import { CustomToast } from '../../components/customToast';
 import CustomLoader from '../../components/customLoader';
 
@@ -54,7 +55,7 @@ const serviceCategories = ['Cleaning', 'Repair', 'Consulting', 'Delivery', 'Tuto
 export default function VendorInventoryScreen({ navigation, route }) {
   const { theme, isDarkMode } = React.useContext(AppContext);
   const { user } = React.useContext(AuthContext);
-  const { vendor } = route.params;
+  const { vendor, vendorId } = route.params;
   const [mode, setMode] = useState('inventory'); // 'inventory' or 'services'
   const [items, setItems] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -78,7 +79,6 @@ export default function VendorInventoryScreen({ navigation, route }) {
     discount: '0',
     expiryDate: '',
     barcode: '',
-    // Service-specific
     duration: '1',
     durationUnit: 'hours',
     availability: true,
@@ -266,16 +266,22 @@ export default function VendorInventoryScreen({ navigation, route }) {
   };
 
   const saveItems = async (itemsToSave) => {
-    if (!itemsToSave?.length) return;
+    if (itemsToSave?.length === 0) return;
     setIsLoading(true);
+    // console.log('==============\n', itemsToSave)
     try {
       const converted = await Promise.all(itemsToSave.map(async (it) => {
         const copy = { ...it };
+        if (copy.expiryDate === '' && mode === 'services') copy.expiryDate = new Date();
         if (copy.images?.length) copy.images = await imagesToBase64(copy.images);
         return copy;
       }));
+
       // API call placeholder
-      await addVendorStock(converted[0]);
+      const newStock = await insertVendorStock(converted[0]);
+      if (!newStock)
+        return;
+
       setItems(converted);
       CustomToast('Success', `${mode === 'inventory' ? 'Item' : 'Service'} added successfully.`);
     } catch (error) {
@@ -283,7 +289,7 @@ export default function VendorInventoryScreen({ navigation, route }) {
       Alert.alert('Error', 'Failed to save. Try again.');
     } finally {
       setIsLoading(false);
-      closeModal();
+      // closeModal();
     }
   };
 
@@ -306,7 +312,7 @@ export default function VendorInventoryScreen({ navigation, route }) {
       minOrder: parseInt(formData.minOrder) || 1,
       maxOrder: parseInt(formData.maxOrder) || 100,
       lastUpdated: new Date().toISOString(),
-      vendorEmail: 'carolsibandze@gmail.com',
+      vendorId: vendorId,
       type: mode,
     };
 
@@ -322,11 +328,15 @@ export default function VendorInventoryScreen({ navigation, route }) {
       baseItem.totalBookings = editingItem?.totalBookings || 0;
     }
 
-    const updatedItems = editingItem
-      ? items.map(i => i.id === editingItem.id ? baseItem : i)
-      : [...items, baseItem];
+    const currentItems = Array.isArray(items) ? items : [];
 
-    saveItems(updatedItems);
+    const updatedItems = editingItem
+      ? currentItems?.map(i => i.id === editingItem.id ? baseItem : i)
+      : [...currentItems, baseItem];
+
+    console.log(updatedItems.length)
+
+    saveItems([baseItem]);
   };
 
   const handleDelete = (itemId) => {
@@ -342,7 +352,7 @@ export default function VendorInventoryScreen({ navigation, route }) {
     ]);
   };
 
-  const filteredItems = items.filter(item => {
+  const filteredItems = items?.filter(item => {
     const searchLower = searchQuery.toLowerCase();
     const matchesSearch = item.itemName?.toLowerCase().includes(searchLower) ||
       item.description?.toLowerCase().includes(searchLower) ||
@@ -371,12 +381,12 @@ export default function VendorInventoryScreen({ navigation, route }) {
       <View style={styles.statRow}>
         <View style={styles.statItem}>
           <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>Total</Text>
-          <Text variant="headlineSmall">{items.length}</Text>
+          <Text variant="headlineSmall">{items?.length}</Text>
         </View>
         <Divider style={{ height: '100%' }} vertical />
         <View style={styles.statItem}>
           <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>Low Stock</Text>
-          <Text variant="headlineSmall">{mode === 'inventory' ? items.filter(i => i.quantity < 10).length : 'N/A'}</Text>
+          <Text variant="headlineSmall">{mode === 'inventory' ? items?.filter(i => i.quantity < 10)?.length : 'N/A'}</Text>
         </View>
         <Divider style={{ height: '100%' }} vertical />
         <View style={styles.statItem}>
@@ -442,6 +452,7 @@ export default function VendorInventoryScreen({ navigation, route }) {
             :
             <Icons.Ionicons name='person-circle-outline' size={30} color={theme.colors.indicator} />}
         </View>
+
         <SegmentedButtons
           value={mode}
           onValueChange={setMode}
@@ -452,9 +463,10 @@ export default function VendorInventoryScreen({ navigation, route }) {
           style={[styles.modeSwitcher]}
         />
       </View>
+
       <View style={{ paddingHorizontal: 12, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <Text variant="bodyLarge" style={{ textAlign: 'center', paddingHorizontal: 10 }}>{vendor.businessName}</Text>
-        <Text variant="bodyMedium" style={{ textAlign: 'center' }}>{items.length} {mode === 'inventory' ? 'stock items' : 'services counting'}</Text>
+        <Text variant="bodyMedium" style={{ textAlign: 'center' }}>{items?.length} {mode === 'inventory' ? 'stock items' : 'services counting'}</Text>
       </View>
 
       <Searchbar
@@ -476,7 +488,7 @@ export default function VendorInventoryScreen({ navigation, route }) {
         />
       </View>
 
-      {filteredItems.length > 0 ? (
+      {filteredItems?.length > 0 ? (
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 50 }}>
           <View style={styles.listContainer}>
             {renderOverview()}
@@ -626,7 +638,7 @@ export default function VendorInventoryScreen({ navigation, route }) {
                       <Divider />
 
                       {/* Custom Items with Radio Icons */}
-                      {durationUnits.map((u, index) => (
+                      {durationUnits?.map((u, index) => (
                         <React.Fragment key={`${u}-${index}`}>
                           <Menu.Item
                             key={u}
@@ -638,7 +650,7 @@ export default function VendorInventoryScreen({ navigation, route }) {
                             title={u}
                             titleStyle={{ fontWeight: formData.durationUnit === u ? 'bold' : 'normal' }}
                           />
-                          {index < durationUnits.length - 1 && <Divider />}
+                          {index < durationUnits?.length - 1 && <Divider />}
                         </React.Fragment>
                       ))}
 
@@ -656,7 +668,7 @@ export default function VendorInventoryScreen({ navigation, route }) {
                       style={styles.switch}
                       value={formData.availability}
                       trackColor={{ false: '#D1D5DB', true: '#60A5FA' }}
-                      thumbColor={isDarkMode ? '#FBBF24' : '#FFFFFF'}
+                      thumbColor={formData.availability ? '#FBBF24' : '#FFFFFF'}
                       onValueChange={val => setFormData(prev => ({ ...prev, availability: val }))}
                     />}
                   />
@@ -719,7 +731,7 @@ export default function VendorInventoryScreen({ navigation, route }) {
                       }}
                       titleStyle={{ fontWeight: formData.category === cat ? 'bold' : 'normal' }}
                       title={cat} />
-                    {index < formCategories.length - 1 && <Divider />}
+                    {index < formCategories?.length - 1 && <Divider />}
                   </React.Fragment>
                 ))}
 
@@ -756,12 +768,14 @@ export default function VendorInventoryScreen({ navigation, route }) {
                 />
               </View>
 
-              <TextInput
-                placeholder="Barcode/ID"
-                value={formData.barcode}
-                onChangeText={text => setFormData(prev => ({ ...prev, barcode: text }))}
-                style={[styles.inputMargin]}
-              />
+              {mode === 'inventory' && (
+                <TextInput
+                  placeholder="Barcode/ID"
+                  value={formData.barcode}
+                  onChangeText={text => setFormData(prev => ({ ...prev, barcode: text }))}
+                  style={[styles.inputMargin]}
+                />
+              )}
 
               <View style={styles.imageSection}>
                 <Text variant="titleMedium">Images (up to 5)</Text>

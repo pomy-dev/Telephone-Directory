@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import {
-  Alert, FlatList, StyleSheet, TouchableOpacity, Platform,
+  Alert, FlatList, StyleSheet, TouchableOpacity, Platform, SafeAreaView,
   KeyboardAvoidingView, Animated, StatusBar, TextInput as RNTextInput, View,
   Text, Switch, Dimensions
 } from 'react-native';
+import * as FileSystem from 'expo-file-system/legacy';
 import { Button, Menu, Divider, TextInput, Avatar } from 'react-native-paper';
 import * as ImagePicker from 'expo-image-picker';
 import { Icons } from '../constants/Icons';
@@ -19,7 +20,7 @@ const CustomeVendorGroup = ({ navigation, route }) => {
   const [groupForm, setGroupForm] = useState({
     name: '',
     supaAdmin: !!user.email,
-    supaAdminId: { generateId },
+    supaAdminId: generateId(),
     description: '',
     category: 'Sole Trader',
     isPrivate: false,
@@ -33,6 +34,8 @@ const CustomeVendorGroup = ({ navigation, route }) => {
   const [selectedVendorId, setSelectedVendorId] = React.useState(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const shakeAnimation = React.useRef(new Animated.Value(0)).current;
+
+  // console.log('Vendors in form view', vendors.length)
 
   // Trigger shake animation on invalid submit
   const triggerShake = () => {
@@ -51,8 +54,10 @@ const CustomeVendorGroup = ({ navigation, route }) => {
 
   const categories = ['Business', 'Agriculture', 'Food & Beverages', 'Crafts', 'Technology', 'Education', 'Other'];
 
-  const filteredVendors = vendors.filter((vendor) =>
-    vendor.businessName.toLowerCase().includes(vendorSearch.toLowerCase())
+  // const sortedVendors = vendors?.sort(() => Math.random() - 0.5)
+
+  const filteredVendors = vendors?.filter((vendor) =>
+    vendor.business_name?.toLowerCase().includes(vendorSearch?.toLowerCase())
   );
 
   const pickGroupImage = async () => {
@@ -93,22 +98,22 @@ const CustomeVendorGroup = ({ navigation, route }) => {
   // Handle vendor selection with role assignment
   const handleVendorToggle = (vendor) => {
     setGroupForm((prev) => {
-      const isSelected = prev.members.some((m) => m.id === vendor._id);
+      const isSelected = prev.members.some((m) => m.id === vendor.id);
       if (isSelected) {
         return {
           ...prev,
-          members: prev.members.filter((m) => m.id !== vendor._id),
+          members: prev.members.filter((m) => m.id !== vendor.id),
         };
       } else {
         const mappedVendor = {
-          id: vendor._id,
-          vendorBusiness: vendor.businessName,
-          businessType: vendor.businessType,
-          vendorName: vendor.ownerName,
+          id: vendor.id,
+          vendorBusiness: vendor.business_name,
+          businessType: vendor.business_type,
+          vendorName: vendor.owner_name,
           vendorEmail: vendor.email,
           vendorPhone: vendor.phone,
           vendorWhatsapp: vendor.whatsapp,
-          vendorArea: vendor.area,
+          vendorArea: vendor.adress,
           vendorLocation: vendor.location,
           vendorCategory: vendor.category,
           role: 'Member'
@@ -129,12 +134,36 @@ const CustomeVendorGroup = ({ navigation, route }) => {
     }));
   };
 
+  const convertToBase64 = async (image) => {
+    const imgString = '';
+
+    const getMime = (uri) => {
+      const ext = uri.split('.').pop()?.toLowerCase() || 'jpg';
+      const map = { jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp', heic: 'image/heic' };
+      return map[ext] || 'image/jpeg';
+    };
+
+    if (image.uri.startsWith('data:')) return;
+
+    try {
+      const base64 = await FileSystem.readAsStringAsync(image.uri, { encoding: FileSystem.EncodingType.Base64 });
+      imgString = `data:${getMime(uri)};base64,${base64}`;
+    } catch (err) {
+      console.warn('Image conversion failed', err);
+    }
+    return imgString;
+  };
+
   // Handle form submission
   const handleSubmit = () => {
+    console.log('===================\n\t\tOne')
     try {
       if (validateForm()) {
         setIsSubmitting(true);
         console.log(groupForm)
+        if (groupForm.profileImage !== null) {
+          groupForm.profileImage = convertToBase64(groupForm.profileImage)
+        }
         // setTimeout(() => {
         //   const updatedGroup = {
         //     ...groupForm,
@@ -342,10 +371,12 @@ const CustomeVendorGroup = ({ navigation, route }) => {
         <Icons.MaterialIcons name="security" size={20} color={theme.colors.primary} />
         <Text style={[styles.inputLabel, { color: theme.colors.text }]}>Group Visibility</Text>
       </View>
+
       <View style={styles.toggleContainer}>
         <Text style={{ color: theme.colors.text, marginRight: 12 }}>
-          {groupForm.isPrivate ? 'Private' : 'Public'}
+          {groupForm.isPrivate ? 'Is Private' : 'Is Public'}
         </Text>
+
         <Switch
           value={groupForm.isPrivate}
           onValueChange={togglePrivateGroup}
@@ -354,6 +385,7 @@ const CustomeVendorGroup = ({ navigation, route }) => {
           style={{ transform: [{ scale: 0.85 }], }}
         />
       </View>
+
       <Text style={[styles.helperText, { color: theme.colors.placeholder }]}>
         {groupForm.isPrivate
           ? 'Only invited members can join'
@@ -396,7 +428,7 @@ const CustomeVendorGroup = ({ navigation, route }) => {
 
       <FlatList
         data={filteredVendors}
-        keyExtractor={(item) => item._id}
+        keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <View
             style={[
@@ -408,47 +440,44 @@ const CustomeVendorGroup = ({ navigation, route }) => {
             <TouchableOpacity
               style={styles.vendorInfo}
               onPress={() => handleVendorToggle(item)}
-              accessibilityLabel={`Select ${item.businessName}`}
+              accessibilityLabel={`Select ${item.business_name}`}
             >
-              {(item.avata !== null || item.avatar !== '') ? (
+              {(item.user_avata !== null || item.user_avatar !== '') ? (
                 <Avatar.Image
                   size={60}
-                  source={{ uri: item.avatar }}
+                  source={{ uri: item.user_avatar }}
                   style={[styles.avatar, { backgroundColor: theme.colors.primary }]}
                 />
               ) : (
                 <Icons.Ionicons name="person-circle-outline" size={40} color={theme.colors.indicator} />
               )}
               <View style={{}}>
-                <Text style={[styles.vendorName, { color: theme.colors.text }]}>{item.businessName}</Text>
+                <Text style={[styles.vendorName, { color: theme.colors.text }]}>{item.business_name}</Text>
                 <Text style={[styles.vendorDetail, { color: theme.colors.placeholder }]}>
-                  {item.businessType} - {item.area?.slice(0, 8) + `...`}
+                  {item.business_type?.split('_')
+                    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                    .join(' ')}-{item.address?.slice(0, 8) + `...`}
                 </Text>
               </View>
             </TouchableOpacity>
             {
-              groupForm.members.some((m) => m.id === item._id) && (
+              groupForm.members.some((m) => m.id === item.id) && (
                 <>
                   <Icons.MaterialIcons name="check-circle" size={20} color={theme.colors.success} style={styles.checkedVendor} />
                   <Menu
-                    visible={selectedVendorId === item._id}
+                    visible={selectedVendorId === item.id}
                     onDismiss={() => setSelectedVendorId(null)}
-                    contentStyle={{
-                      position: 'absolute',
-                      right: 5,
-                      bottom: 5
-                    }}
                     anchor={
                       <TouchableOpacity
-                        onPress={() => setSelectedVendorId(item._id)}
+                        onPress={() => setSelectedVendorId(item.id)}
                         style={[styles.roleSelector, { borderColor: theme.colors.border }]}
-                        accessibilityLabel={`Select role for ${item.businessName}`}
+                        accessibilityLabel={`Select role for ${item.business_name}`}
                       >
                         <Text style={{ color: theme.colors.text }}>
-                          {groupForm.members.find((m) => m.id === item._id)?.role}
+                          {groupForm.members.find((m) => m.id === item.id)?.role}
                         </Text>
                         <Icons.Ionicons
-                          name={selectedVendorId === item._id ? "chevron-up" : "chevron-down"}
+                          name={selectedVendorId === item.id ? "chevron-up" : "chevron-down"}
                           size={16}
                           color={theme.colors.text}
                         />
@@ -459,7 +488,7 @@ const CustomeVendorGroup = ({ navigation, route }) => {
                       <Menu.Item
                         key={role}
                         onPress={() => {
-                          handleRoleChange(item._id, role);
+                          handleRoleChange(item.id, role);
                           setSelectedVendorId(null);
                         }}
                         title={role}
@@ -508,21 +537,20 @@ const CustomeVendorGroup = ({ navigation, route }) => {
   );
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
+    <KeyboardAvoidingView
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={{ flex: 1 }}
+    >
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
 
-      <View style={[styles.header, { borderColor: theme.colors.border }]}>
-        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
-          <Icons.Ionicons name='arrow-back' size={24} color={theme.colors.text} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: theme.colors.text }]}>New Group</Text>
-      </View>
-
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={{ flex: 1 }}
-      >
-        <Animated.View style={[styles.bottomSheetContent, { transform: [{ translateX: shakeAnimation }] }]}>
+        <View style={[styles.header, { borderColor: theme.colors.border }]}>
+          <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+            <Icons.Ionicons name='arrow-back' size={24} color={theme.colors.text} />
+          </TouchableOpacity>
+          <Text style={[styles.headerTitle, { color: theme.colors.text }]}>New Group</Text>
+        </View>
+        <View style={[styles.bottomSheetContent]}>
           <FlatList
             data={[1, 2, 3, 4, 5, 6]}
             keyExtractor={(item) => item.toString()}
@@ -540,9 +568,9 @@ const CustomeVendorGroup = ({ navigation, route }) => {
             // contentContainerStyle={styles.formContent}
             ListFooterComponent={renderFormActions()}
           />
-        </Animated.View>
-      </KeyboardAvoidingView>
-    </View>
+        </View>
+      </SafeAreaView>
+    </KeyboardAvoidingView>
   )
 }
 
@@ -701,6 +729,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 16,
     marginTop: 5,
+    marginBottom: 60
   },
   imagePicker: {
     alignItems: 'center',
