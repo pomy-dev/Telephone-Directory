@@ -1,13 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import {
   Alert, FlatList, StyleSheet, TouchableOpacity, Platform, SafeAreaView,
   KeyboardAvoidingView, Animated, StatusBar, TextInput as RNTextInput, View,
-  Text, Switch, Dimensions
+  Text, Switch, ActivityIndicator, ScrollView
 } from 'react-native';
+import BottomSheet, { useBottomSheetSpringConfigs, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import * as FileSystem from 'expo-file-system/legacy';
 import { Button, Menu, Divider, TextInput, Avatar } from 'react-native-paper';
 import * as ImagePicker from 'expo-image-picker';
 import { Icons } from '../constants/Icons';
+import { UploadFile } from '../service/uploadFiles';
+import { insertVendorGroup } from '../service/Supabase-Fuctions';
+import CustomLoader from './customLoader'
 import { AppContext } from '../context/appContext';
 import { AuthContext } from '../context/authProvider';
 
@@ -18,8 +22,10 @@ const CustomeVendorGroup = ({ navigation, route }) => {
   const { user } = React.useContext(AuthContext);
   const { vendors } = route.params;
   const [groupForm, setGroupForm] = useState({
-    name: '',
-    supaAdmin: !!user.email,
+    groupName: '',
+    supaAdminName: null,
+    isSupaAdmin: true,
+    supaAdminEmail: null,
     supaAdminId: generateId(),
     description: '',
     category: 'Sole Trader',
@@ -28,14 +34,31 @@ const CustomeVendorGroup = ({ navigation, route }) => {
     members: [],
     maxMembers: 100
   });
+  const [isPickImg, setIsPickImg] = useState(false);
   const [showCategoryMenu, setShowCategoryMenu] = React.useState(false);
   const [vendorSearch, setVendorSearch] = React.useState('');
   const [formErrors, setFormErrors] = React.useState({});
-  const [selectedVendorId, setSelectedVendorId] = React.useState(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const shakeAnimation = React.useRef(new Animated.Value(0)).current;
 
-  // console.log('Vendors in form view', vendors.length)
+  // Bottom Sheet
+  const bottomSheetRef = useRef(null);
+  const snapPoints = useMemo(() => ['25%', '50%', '75%', '80%'], []);
+  const animationConfigs = useBottomSheetSpringConfigs({
+    damping: 80,
+    overshootClamping: true,
+    restDisplacementThreshold: 0.1,
+    restSpeedThreshold: 0.1,
+    stiffness: 500,
+  });
+  const [menuVisible, setMenuVisible] = useState({});
+
+  const openBottomSheet = useCallback(() => {
+    bottomSheetRef.current?.snapToIndex(1);
+  }, []);
+
+  const openMenu = (id) => setMenuVisible(prev => ({ ...prev, [id]: true }));
+  const closeMenu = (id) => setMenuVisible(prev => ({ ...prev, [id]: false }));
 
   // Trigger shake animation on invalid submit
   const triggerShake = () => {
@@ -56,26 +79,37 @@ const CustomeVendorGroup = ({ navigation, route }) => {
 
   // const sortedVendors = vendors?.sort(() => Math.random() - 0.5)
 
-  const filteredVendors = vendors?.filter((vendor) =>
-    vendor.business_name?.toLowerCase().includes(vendorSearch?.toLowerCase())
+  const filteredVendors = useMemo(() =>
+    vendors?.filter(v =>
+      v.business_name?.toLowerCase().includes(vendorSearch.toLowerCase())
+    ) || [],
+    [vendors, vendorSearch]
   );
 
   const pickGroupImage = async () => {
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission needed', 'Please grant permission to access your photos');
-      return;
-    }
+    try {
+      setIsPickImg(true)
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
 
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images', 'videos'],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    });
+      if (status !== 'granted') {
+        Alert.alert('Permission needed', 'Please grant permission to access your photos');
+        return;
+      }
 
-    if (!result.canceled) {
-      setGroupForm(prev => ({ ...prev, profileImage: result.assets[0] }));
+      let result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images', 'videos'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled) {
+        setGroupForm(prev => ({ ...prev, profileImage: result.assets[0] }));
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setIsPickImg(false)
     }
   };
 
@@ -87,7 +121,7 @@ const CustomeVendorGroup = ({ navigation, route }) => {
   // Enhanced validation
   const validateForm = () => {
     const errors = {};
-    if (!groupForm.name.trim()) errors.name = 'Group name is required';
+    if (!groupForm.groupName.trim()) errors.groupName = 'Group name is required';
     if (!groupForm.description.trim()) errors.description = 'Description is required';
     if (!groupForm.maxMembers || groupForm.maxMembers < 1) errors.maxMembers = 'Max members must be at least 1';
     if (groupForm.members.length < 3) errors.members = 'Select at least 3 vendors';
@@ -95,104 +129,95 @@ const CustomeVendorGroup = ({ navigation, route }) => {
     return Object.keys(errors).length === 0;
   };
 
-  // Handle vendor selection with role assignment
-  const handleVendorToggle = (vendor) => {
-    setGroupForm((prev) => {
-      const isSelected = prev.members.some((m) => m.id === vendor.id);
-      if (isSelected) {
-        return {
-          ...prev,
-          members: prev.members.filter((m) => m.id !== vendor.id),
-        };
-      } else {
-        const mappedVendor = {
-          id: vendor.id,
-          vendorBusiness: vendor.business_name,
-          businessType: vendor.business_type,
-          vendorName: vendor.owner_name,
-          vendorEmail: vendor.email,
-          vendorPhone: vendor.phone,
-          vendorWhatsapp: vendor.whatsapp,
-          vendorArea: vendor.adress,
-          vendorLocation: vendor.location,
-          vendorCategory: vendor.category,
-          role: 'Member'
-        };
-
-        return { ...prev, members: [...prev.members, mappedVendor] };
+  // --- Toggle Vendor ---
+  const toggleVendor = (vendor) => {
+    setGroupForm(prev => {
+      const exists = prev.members.some(m => m.id === vendor.id);
+      if (exists) {
+        return { ...prev, members: prev.members.filter(m => m.id !== vendor.id) };
       }
+      const newMember = {
+        id: vendor.id,
+        vendorBusiness: vendor.business_name,
+        businessType: vendor.business_type,
+        vendorName: vendor.owner_name,
+        vendorEmail: vendor.email,
+        vendorPhone: vendor.phone,
+        vendorWhatsapp: vendor.whatsapp,
+        vendorAdress: vendor.address,
+        vendorLocation: vendor.location,
+        vendorCategory: vendor.category,
+        role: 'Member'
+      };
+      return { ...prev, members: [...prev.members, newMember] };
     });
   };
 
-  // Handle role change for a vendor
-  const handleRoleChange = (vendorId, role) => {
-    setGroupForm((prev) => ({
+  // --- Change Role ---
+  const changeRole = (id, role) => {
+    setGroupForm(prev => ({
       ...prev,
-      members: prev.members.map((m) =>
-        m.id === vendorId ? { ...m, role } : m
-      ),
+      members: prev.members.map(m => m.id === id ? { ...m, role } : m)
     }));
   };
 
-  const convertToBase64 = async (image) => {
-    const imgString = '';
-
-    const getMime = (uri) => {
-      const ext = uri.split('.').pop()?.toLowerCase() || 'jpg';
-      const map = { jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif', webp: 'image/webp', heic: 'image/heic' };
-      return map[ext] || 'image/jpeg';
-    };
-
-    if (image.uri.startsWith('data:')) return;
-
-    try {
-      const base64 = await FileSystem.readAsStringAsync(image.uri, { encoding: FileSystem.EncodingType.Base64 });
-      imgString = `data:${getMime(uri)};base64,${base64}`;
-    } catch (err) {
-      console.warn('Image conversion failed', err);
-    }
-    return imgString;
+  // --- Remove Vendor ---
+  const removeVendor = (id) => {
+    setGroupForm(prev => ({
+      ...prev,
+      members: prev.members.filter(m => m.id !== id)
+    }));
   };
 
   // Handle form submission
-  const handleSubmit = () => {
-    console.log('===================\n\t\tOne')
+  const handleSubmit = async () => {
+    if (!validateForm()) {
+      triggerShake();
+      return;
+    }
     try {
-      if (validateForm()) {
-        setIsSubmitting(true);
-        console.log(groupForm)
-        if (groupForm.profileImage !== null) {
-          groupForm.profileImage = convertToBase64(groupForm.profileImage)
-        }
-        // setTimeout(() => {
-        //   const updatedGroup = {
-        //     ...groupForm,
-        //     members: [...groupForm.members, mockUser],
-        //   };
-        //   navigation.navigate('GroupManagement', { group: updatedGroup });
-        //   Alert.alert('Success!', 'Group created successfully.');
-        // }, 1000);
-      } else {
-        triggerShake();
-      }
+      setIsSubmitting(true);
+
+      const imageUrl = groupForm.profileImage
+        ? await UploadFile(groupForm.profileImage)
+        : null;
+
+      const payload = {
+        groupName: groupForm.groupName,
+        supaAdminName: user.name,
+        isSupaAdmin: true,
+        supaAdminEmail: user.email,
+        supaAdminId: groupForm.supaAdminId,
+        description: groupForm.description,
+        category: groupForm.category,
+        isPrivate: groupForm.isPrivate,
+        profileImageUrl: imageUrl,
+        maxMembers: groupForm.maxMembers,
+        members: groupForm.members
+      };
+
+      const newGroup = await insertVendorGroup(payload, user)
+      Alert.alert('Success!', 'Group created.');
+      navigation.navigate('GroupManagement', { groupId: newGroup });
+
     } catch (err) {
-      console.error(err)
+      Alert.alert('Error', err.message);
     } finally {
-      setGroupForm({
-        name: '',
-        supaAdmin: !!user.email,
-        supaAdminId: generateId(),
-        description: '',
-        category: 'Sole Trader',
-        isPrivate: false,
-        profileImage: null,
-        members: [],
-        maxMembers: 100
-      });
       setIsSubmitting(false);
-      setVendorSearch('');
-      setFormErrors({});
-      setSelectedVendorId(null);
+      // Reset form
+      // setGroupForm({
+      //   groupName: '',
+      //   supaAdminName: !!user.name,
+      //   isSupaAdmin: true,
+      //   supaAdminEmail: !!user.email,
+      //   supaAdminId: generateId(),
+      //   description: '',
+      //   category: 'Sole Trader',
+      //   isPrivate: false,
+      //   profileImage: null,
+      //   members: [],
+      //   maxMembers: 100
+      // });
     }
   };
 
@@ -211,8 +236,11 @@ const CustomeVendorGroup = ({ navigation, route }) => {
           </>
         ) : (
           <View style={[styles.avatarPlaceholder, { backgroundColor: theme.colors.surface }]}>
-            <Icons.Ionicons name="image-outline" size={40} color={theme.colors.placeholder} />
-            <Text style={[styles.avatarText, { color: theme.colors.sub_text }]}>Tap to add</Text>
+            {isPickImg
+              ? <ActivityIndicator size={30} color={theme.colors.indicator} />
+              : <Icons.Ionicons name="image-outline" size={40} color={theme.colors.placeholder} />
+            }
+            <Text style={[styles.avatarText, { color: theme.colors.sub_text }]}>{isPickImg ? "waiting..." : "Tap to add"}</Text>
           </View>
         )}
       </TouchableOpacity>
@@ -228,14 +256,14 @@ const CustomeVendorGroup = ({ navigation, route }) => {
       </View>
       <RNTextInput
         placeholder="John Doe"
-        value={groupForm.name}
-        onChangeText={(text) => setGroupForm((prev) => ({ ...prev, name: text }))}
+        value={groupForm.groupName}
+        onChangeText={(text) => setGroupForm((prev) => ({ ...prev, groupName: text }))}
         style={styles.input}
-        error={!!formErrors.name}
+        error={!!formErrors.groupName}
         theme={{ colors: { primary: theme.colors.primary, error: theme.colors.error } }}
         returnKeyType="next"
       />
-      {formErrors.name && <Text style={[styles.errorText, { color: theme.colors.error }]}>{formErrors.name}</Text>}
+      {formErrors.groupName && <Text style={[styles.errorText, { color: theme.colors.error }]}>{formErrors.groupName}</Text>}
     </View>
   );
 
@@ -305,7 +333,6 @@ const CustomeVendorGroup = ({ navigation, route }) => {
                 size={20}
                 color={showCategoryMenu ? theme.colors.primary : theme.colors.text}
               />
-
             </TouchableOpacity>
           }
         >
@@ -395,120 +422,81 @@ const CustomeVendorGroup = ({ navigation, route }) => {
     </View>
   );
 
-  // 7. Enhanced Vendor Selection
+  // --- New: Vendor Selector Outline + Bottom Sheet ---
   const renderVendorSelection = () => (
     <View style={styles.inputContainer}>
-      <View style={styles.inputLabelContainer}>
-        <Icons.MaterialIcons name="store" size={20} color={theme.colors.primary} />
-        <Text style={[styles.inputLabel, { color: theme.colors.text }]}>
-          Add Vendors (min 3) * <Text style={styles.vendorCount}>({groupForm.members.length} selected)</Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Text style={[styles.label]}>
+          Vendors ({groupForm.members.length}) *
         </Text>
         {groupForm.members.length > 0 && (
-          <TouchableOpacity onPress={handleClearVendors} style={styles.clearButton}>
-            <Text style={[styles.clearButtonText, { color: theme.colors.primary }]}>Clear All</Text>
-          </TouchableOpacity>
+          <Text onPress={handleClearVendors} style={[styles.clearText, { fontSize: 14 }]}>
+            Clear All
+          </Text>
         )}
       </View>
-      <TextInput
-        placeholder="Search vendors..."
-        value={vendorSearch}
-        onChangeText={setVendorSearch}
-        style={[styles.input, styles.searchInput]}
-        mode="outlined"
-        left={
-          <TextInput.Icon
-            icon="magnify"
-            color={theme.colors.placeholder}
-            size={20}
-          />
-        }
-        theme={{ colors: { primary: theme.colors.primary } }}
-        accessibilityLabel="Search vendors input"
+
+
+      {/* Pressable Outline */}
+      <TouchableOpacity
+        style={[styles.vendorOutline, { borderColor: theme.colors.indicator }]}
+        onPress={openBottomSheet}
+      >
+        <Icons.MaterialIcons name="add-circle-outline" size={20} color={theme.colors.primary} />
+        <Text style={{ color: theme.colors.primary, marginLeft: 8 }}>
+          {groupForm.members.length === 0 ? 'Select Vendors' : `${groupForm.members.length} selected`}
+        </Text>
+      </TouchableOpacity>
+
+      {/* Selected Vendors */}
+      <FlatList
+        data={groupForm.members}
+        keyExtractor={item => item.id}
+        renderItem={({ item }) => (
+          <View style={styles.selectedCard}>
+            <Avatar.Image
+              size={40}
+              source={{ uri: vendors.find(v => v.id === item.id)?.user_avatar || '' }}
+              fallback={<Icons.Ionicons name="person-outline" size={20} />}
+            />
+            <View style={styles.cardInfo}>
+              <Text style={styles.cardName}>{item.vendorBusiness}</Text>
+              <Text style={styles.cardDetail}>{item.vendorName}</Text>
+            </View>
+
+            <Menu
+              visible={!!menuVisible[item.id]}               // true → show, false → hide
+              onDismiss={() => closeMenu(item.id)}
+              anchor={
+                <TouchableOpacity style={styles.roleBtn}
+                  onPress={() => openMenu(item.id)}
+                >
+                  <Text style={styles.roleText}>{item.role}</Text>
+                  <Icons.Ionicons name="chevron-down" size={16} />
+                </TouchableOpacity>
+              }
+            >
+              {['Member', 'Moderator'].map(role => (
+                <Menu.Item key={role} title={role} onPress={() => {
+                  changeRole(item.id, role);
+                  closeMenu(item.id);
+                }}
+                />
+              ))}
+            </Menu>
+
+            <Icons.FontAwesome
+              name="remove"
+              size={20}
+              onPress={() => removeVendor(item.id)}
+            />
+          </View>
+        )}
+        style={{ maxHeight: 180 }}
       />
 
-      <FlatList
-        data={filteredVendors}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View
-            style={[
-              styles.vendorItem,
-              groupForm.members.some((m) => m.id === item._id) && styles.selectedVendor,
-              { borderColor: theme.colors.border, backgroundColor: theme.colors.card },
-            ]}
-          >
-            <TouchableOpacity
-              style={styles.vendorInfo}
-              onPress={() => handleVendorToggle(item)}
-              accessibilityLabel={`Select ${item.business_name}`}
-            >
-              {(item.user_avata !== null || item.user_avatar !== '') ? (
-                <Avatar.Image
-                  size={60}
-                  source={{ uri: item.user_avatar }}
-                  style={[styles.avatar, { backgroundColor: theme.colors.primary }]}
-                />
-              ) : (
-                <Icons.Ionicons name="person-circle-outline" size={40} color={theme.colors.indicator} />
-              )}
-              <View style={{}}>
-                <Text style={[styles.vendorName, { color: theme.colors.text }]}>{item.business_name}</Text>
-                <Text style={[styles.vendorDetail, { color: theme.colors.placeholder }]}>
-                  {item.business_type?.split('_')
-                    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-                    .join(' ')}-{item.address?.slice(0, 8) + `...`}
-                </Text>
-              </View>
-            </TouchableOpacity>
-            {
-              groupForm.members.some((m) => m.id === item.id) && (
-                <>
-                  <Icons.MaterialIcons name="check-circle" size={20} color={theme.colors.success} style={styles.checkedVendor} />
-                  <Menu
-                    visible={selectedVendorId === item.id}
-                    onDismiss={() => setSelectedVendorId(null)}
-                    anchor={
-                      <TouchableOpacity
-                        onPress={() => setSelectedVendorId(item.id)}
-                        style={[styles.roleSelector, { borderColor: theme.colors.border }]}
-                        accessibilityLabel={`Select role for ${item.business_name}`}
-                      >
-                        <Text style={{ color: theme.colors.text }}>
-                          {groupForm.members.find((m) => m.id === item.id)?.role}
-                        </Text>
-                        <Icons.Ionicons
-                          name={selectedVendorId === item.id ? "chevron-up" : "chevron-down"}
-                          size={16}
-                          color={theme.colors.text}
-                        />
-                      </TouchableOpacity>
-                    }
-                  >
-                    {['Member', 'Moderator'].map((role) => (
-                      <Menu.Item
-                        key={role}
-                        onPress={() => {
-                          handleRoleChange(item.id, role);
-                          setSelectedVendorId(null);
-                        }}
-                        title={role}
-                      />
-                    ))}
-                  </Menu>
-                </>
-              )
-            }
-          </View >
-        )}
-        style={styles.vendorList}
-        showsVerticalScrollIndicator={false}
-      />
-      {
-        formErrors.members && (
-          <Text style={[styles.errorText, { color: theme.colors.error }]}>{formErrors.members}</Text>
-        )
-      }
-    </View >
+      {formErrors.members && <Text style={styles.error}>{formErrors.members}</Text>}
+    </View>
   );
 
   const renderFormActions = () => (
@@ -536,11 +524,78 @@ const CustomeVendorGroup = ({ navigation, route }) => {
     </View>
   );
 
+  // --- Bottom Sheet Content ---
+  const renderBottomSheet = () => (
+    <BottomSheet
+      ref={bottomSheetRef}
+      index={-1}
+      snapPoints={snapPoints}
+      animationConfigs={animationConfigs}
+      animateOnMount={true}
+      enableHandlePanningGesture={true}
+      enableDynamicSizing={false}
+      containerStyle={{ borderColor: theme.colors.border }}
+      backgroundStyle={{ backgroundColor: theme.colors.card }}
+    >
+      <View style={styles.sheetHeader}>
+        <Text style={styles.sheetTitle}>Select Vendors</Text>
+        <Icons.FontAwesome name="remove" size={20} onPress={() => bottomSheetRef.current?.close()} />
+      </View>
+
+      <TextInput
+        mode="outlined"
+        placeholder="Search vendors..."
+        value={vendorSearch}
+        onChangeText={setVendorSearch}
+        left={<TextInput.Icon icon="magnify" />}
+        style={{ margin: 8 }}
+      />
+
+      {/* ==== Scrollable Vendor List ==== */}
+      <BottomSheetScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 40 }}
+      >
+        {filteredVendors?.map(vendor => {
+          const isSelected = groupForm.members.some(m => m.id === vendor.id);
+
+          return (
+            <TouchableOpacity
+              key={vendor.id}
+              style={[
+                styles.sheetItem,
+                isSelected && styles.sheetItemSelected,
+                { borderColor: theme.colors.border, backgroundColor: theme.colors.background },
+              ]}
+              onPress={() => toggleVendor(vendor)}
+            >
+              <Avatar.Image
+                size={50}
+                source={{ uri: vendor.user_avatar || '' }}
+                fallback={<Icons.Ionicons name="person-circle-outline" size={50} />}
+              />
+              <View style={{ flex: 1, marginLeft: 12 }}>
+                <Text style={styles.sheetName}>{vendor.business_name}</Text>
+                <Text style={styles.sheetDetail}>{vendor.email}</Text>
+              </View>
+
+              {isSelected && (
+                <Icons.MaterialIcons name="check" size={24} color={theme.colors.primary} />
+              )}
+            </TouchableOpacity>
+          );
+        })}
+      </BottomSheetScrollView>
+    </BottomSheet>
+  );
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       style={{ flex: 1 }}
     >
+      {isSubmitting && <CustomLoader />}
+
       <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
         <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
 
@@ -550,25 +605,26 @@ const CustomeVendorGroup = ({ navigation, route }) => {
           </TouchableOpacity>
           <Text style={[styles.headerTitle, { color: theme.colors.text }]}>New Group</Text>
         </View>
-        <View style={[styles.bottomSheetContent]}>
-          <FlatList
-            data={[1, 2, 3, 4, 5, 6]}
-            keyExtractor={(item) => item.toString()}
-            renderItem={({ index }) => (
-              <View>
-                {index === 0 && renderProfilePictureInput()}
-                {index === 1 && renderGroupNameInput()}
-                {index === 2 && renderDescriptionInput()}
-                {index === 3 && renderCategorySelector()}
-                {index === 4 && renderPrivacyToggle()}
-                {index === 5 && renderVendorSelection()}
-              </View>
-            )}
-            showsVerticalScrollIndicator={false}
-            // contentContainerStyle={styles.formContent}
-            ListFooterComponent={renderFormActions()}
-          />
-        </View>
+
+        <FlatList
+          data={[0, 1, 2, 3, 4, 5]}
+          keyExtractor={(item) => item.toString()}
+          renderItem={({ index }) => (
+            <View>
+              {index === 0 && renderProfilePictureInput()}
+              {index === 1 && renderGroupNameInput()}
+              {index === 2 && renderDescriptionInput()}
+              {index === 3 && renderCategorySelector()}
+              {index === 4 && renderPrivacyToggle()}
+              {index === 5 && renderVendorSelection()}
+            </View>
+          )}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ padding: 16 }}
+          ListFooterComponent={renderFormActions()}
+        />
+
+        {renderBottomSheet()}
       </SafeAreaView>
     </KeyboardAvoidingView>
   )
@@ -597,7 +653,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   bottomSheetContent: {
-    paddingHorizontal: 15,
+    // paddingHorizontal: 15,
   },
   modalTitle: {
     fontSize: 22,
@@ -729,7 +785,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 16,
     marginTop: 5,
-    marginBottom: 60
+    marginBottom: 40
   },
   imagePicker: {
     alignItems: 'center',
@@ -817,10 +873,34 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   submitButton: {
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+    elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2, shadowRadius: 4,
   },
+
+  // Vendor Selector
+  vendorOutline: {
+    flexDirection: 'row', alignItems: 'center', borderWidth: 2,
+    borderRadius: 12, padding: 16, justifyContent: 'center', marginBottom: 12
+  },
+  selectedCard: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: '#f8fafc',
+    padding: 12, borderRadius: 10, marginBottom: 8
+  },
+  cardInfo: { flex: 1, marginLeft: 12 },
+  cardName: { fontWeight: '600' },
+  cardDetail: { fontSize: 12, color: '#666' },
+  roleBtn: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8 },
+  roleText: { fontSize: 12, fontWeight: '500' },
+
+  // Bottom Sheet
+  sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 5 },
+  sheetTitle: { fontSize: 18, fontWeight: 'bold', textAlign: 'center' },
+  sheetItem: { flexDirection: 'row', alignItems: 'center', padding: 16, borderWidth: 1, elevation: 2 },
+  sheetItemSelected: { backgroundColor: '#e6f0fa' },
+  sheetName: { fontWeight: '600' },
+  sheetDetail: { fontSize: 12, color: '#666' },
+  actions: {
+    flexDirection: 'row', justifyContent: 'space-between',
+    gap: 16, marginTop: 10, marginBottom: 60
+  }
 })

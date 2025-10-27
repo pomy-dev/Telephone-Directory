@@ -30,7 +30,6 @@ import {
   TextInput,
   Avatar,
 } from 'react-native-paper';
-import * as ImagePicker from 'expo-image-picker';
 import Carousel from 'react-native-reanimated-carousel';
 import { Icons } from '../../constants/Icons';
 import { mockBulkGroups, mockSuppliers } from '../../utils/mockData';
@@ -76,14 +75,19 @@ export default function BulkGroupsScreen({ navigation, route }) {
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Create Group',
+          text: 'StokFella',
+          onPress: () => {
+            navigation.navigate('StokfelaHome');
+          }
+        },
+        {
+          text: 'Market Group',
           onPress: () => {
             navigation.navigate('GroupForm', { vendors: vendors });
           }
         }
       ]
     );
-    console.log('vendors in group screen: ', vendors.length)
   };
 
   const renderGroupCard = ({ item, isUserGroup = false }) => (

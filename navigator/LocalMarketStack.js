@@ -13,6 +13,15 @@ import VendorDashboardScreen from "../screens/local-market/VendorDashBoard";
 import CustomerStoreScreen from "../screens/local-market/CustomerStoreScreen";
 import GroupManagementScreen from "../screens/local-market/GroupManagementScreen";
 
+import StockFelaHome from "../screens/stokfella/Stokfela-Home";
+import MakeContributionScreen from "../screens/stokfella/Commit-Contributions";
+import GroupDetailsScreen from "../screens/stokfella/Groups-Details";
+import LoanRequestScreen from "../screens/stokfella/Loan-Details";
+import MemberProfile from "../screens/stokfella/Member-Profile";
+import TransactionsScreen from "../screens/stokfella/Member-Transactions";
+import CreateStokfelaScreen from "../screens/stokfella/Create-Stokfela";
+import ModalScreen from "../screens/stokfella/Modal";
+
 // Create Stack Navigators for Home and Businesses
 const LocalMarketStack = createStackNavigator();
 export default function LocalMarketStackNavigator() {
@@ -33,6 +42,16 @@ export default function LocalMarketStackNavigator() {
       <LocalMarketStack.Screen name="VendorDashBoard" component={VendorDashboardScreen} options={{ headerShown: false }} />
       <LocalMarketStack.Screen name="MakertStore" component={CustomerStoreScreen} options={{ headerShown: false }} />
       <LocalMarketStack.Screen name="GroupManagement" component={GroupManagementScreen} options={{ headerShown: false }} />
+
+      <LocalMarketStack.Screen name="StokfelaHome" component={StockFelaHome} options={{ headerShown: false }} />
+      <LocalMarketStack.Screen name="CreateGroup" component={CreateStokfelaScreen} options={{ headerShown: false }} />
+      <LocalMarketStack.Screen name="Contribute" component={MakeContributionScreen} options={{ headerShown: false }} />
+      <LocalMarketStack.Screen name="GroupDetails" component={GroupDetailsScreen} options={{ headerShown: false }} />
+      <LocalMarketStack.Screen name="MakeLoan" component={LoanRequestScreen} options={{ headerShown: false }} />
+      <LocalMarketStack.Screen name="ViewProfile" component={MemberProfile} options={{ headerShown: false }} />
+
+      <LocalMarketStack.Screen name="Transact" component={TransactionsScreen} options={{ headerShown: false }} />
+      <LocalMarketStack.Screen name="Modal" component={ModalScreen} options={{ headerShown: false }} />
     </LocalMarketStack.Navigator>
   );
 }

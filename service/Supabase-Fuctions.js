@@ -189,3 +189,21 @@ export async function updateVendorStock(stockId, payload) {
     console.error(error)
   }
 }
+
+export async function insertVendorGroup(payload, user) {
+  const { data, error } = await supabase.rpc('insert_vendor_group', {
+    payload
+  }, {
+    headers: {
+      'X-User-Email': user.email,        // for RLS
+      'X-Admin-Email': user.email        // for INSERT check
+    }
+  });
+
+  if (error) {
+    console.error(error)
+    throw error;
+  }
+
+  return data;
+}

@@ -33,7 +33,7 @@ const SplashScreen = ({ onConnectionSuccess }) => {
 
   const theme = {
     background: isDark ? "#121212" : "#FFFFFF",
-    primary: isDark ? "#003366" : "#5D5FEF",
+    primary: isDark ? "#5D5FEF" : "#003366",
     secondary: isDark ? "#2D2D3A" : "#F3F4F8",
     text: isDark ? "#FFFFFF" : "#2D2D3A",
     subtext: isDark ? "#AAAAAA" : "#71727A",

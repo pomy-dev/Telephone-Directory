@@ -57,14 +57,11 @@ export default function HomeScreen({ navigation }) {
       const { latitude, longitude } = location.coords;
       setUserLocation({ latitude, longitude });
 
-
       // 🌐 Fetch vendors from backend
       const nearestVendors = await getNearestVendors(latitude, longitude);
       const featuredVendors = await getTopVendors();
 
-      const vendorsData = nearbyVendors + featuredVendors;
-
-      setAllVendors(prev => [...prev, ...featuredVendors]);
+      setAllVendors(featuredVendors);
 
       // 💾 Save state
       setNearbyVendors(nearestVendors?.slice(0, 3));
