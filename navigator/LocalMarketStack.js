@@ -13,6 +13,8 @@ import VendorDashboardScreen from "../screens/local-market/VendorDashBoard";
 import CustomerStoreScreen from "../screens/local-market/CustomerStoreScreen";
 import GroupManagementScreen from "../screens/local-market/GroupManagementScreen";
 
+import DiscussionThreadScreen from "../screens/local-market/DiscussionThread";
+
 import StockFelaHome from "../screens/stokfella/Stokfela-Home";
 import MakeContributionScreen from "../screens/stokfella/Commit-Contributions";
 import GroupDetailsScreen from "../screens/stokfella/Groups-Details";
@@ -42,6 +44,8 @@ export default function LocalMarketStackNavigator() {
       <LocalMarketStack.Screen name="VendorDashBoard" component={VendorDashboardScreen} options={{ headerShown: false }} />
       <LocalMarketStack.Screen name="MakertStore" component={CustomerStoreScreen} options={{ headerShown: false }} />
       <LocalMarketStack.Screen name="GroupManagement" component={GroupManagementScreen} options={{ headerShown: false }} />
+
+      <LocalMarketStack.Screen name="DiscussionThread" component={DiscussionThreadScreen} options={{ headerShown: false }} />
 
       <LocalMarketStack.Screen name="StokfelaHome" component={StockFelaHome} options={{ headerShown: false }} />
       <LocalMarketStack.Screen name="CreateGroup" component={CreateStokfelaScreen} options={{ headerShown: false }} />

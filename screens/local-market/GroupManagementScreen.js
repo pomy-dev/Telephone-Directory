@@ -1,4 +1,3 @@
-import { File } from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
 import React, { useEffect, useState } from 'react';
 import {
@@ -7,8 +6,11 @@ import {
   FlatList,
   ScrollView,
   StyleSheet,
+  StatusBar,
+  TextInput,
   TouchableOpacity,
-  View
+  ActivityIndicator,
+  View, Image
 } from 'react-native';
 import {
   Avatar,
@@ -22,13 +24,25 @@ import {
   Portal,
   Surface,
   Text,
-  TextInput,
 } from 'react-native-paper';
-import { theme } from '../../constants/vendorTheme';
+import DiscussionThreadScreen from './DiscussionThread';
+import * as DocumentPicker from 'expo-document-picker';
+import { File } from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
+import CustomLoader from '../../components/customLoader';
+import { CustomToast } from '../../components/customToast';
+import { Icons } from '../../constants/Icons';
+import { AppContext } from '../../context/appContext';
+import { AuthContext } from '../../context/authProvider';
+import { uploadAttachments } from '../../service/uploadFiles';
+import { fetchUserGroups, insertDiscussion, fetchDiscussion } from '../../service/Supabase-Fuctions'
 
 const { width } = Dimensions.get('window');
 
-export default function GroupManagementScreen() {
+export default function GroupManagementScreen({ navigation }) {
+  const { theme, isDarkMode } = React.useContext(AppContext)
+  const { user } = React.useContext(AuthContext)
+  const [isLoading, setIsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('discussions');
   const [groups, setGroups] = useState([]);
   const [selectedGroup, setSelectedGroup] = useState(null);
@@ -39,21 +53,16 @@ export default function GroupManagementScreen() {
   const [members, setMembers] = useState([]);
   const [joinRequests, setJoinRequests] = useState([]);
 
-  const [showCreateGroup, setShowCreateGroup] = useState(false);
   const [showCreateDiscussion, setShowCreateDiscussion] = useState(false);
   const [showCreateAnnouncement, setShowCreateAnnouncement] = useState(false);
   const [showCreateVote, setShowCreateVote] = useState(false);
   const [showMemberManagement, setShowMemberManagement] = useState(false);
-
-  const [groupForm, setGroupForm] = useState({
-    name: '',
-    description: '',
-    category: 'Business',
-    isPrivate: false,
-    maxMembers: 100
-  });
+  const [isPickImage, setIsPickImage] = useState(false);
+  const [isTakePhoto, setIsTakePhoto] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [discussionForm, setDiscussionForm] = useState({
+    group_id: null,
     title: '',
     content: '',
     attachments: []
@@ -65,6 +74,7 @@ export default function GroupManagementScreen() {
     priority: 'Normal',
     attachments: []
   });
+  const [announcementReads, setAnnouncementReads] = useState(new Set());
 
   const [voteForm, setVoteForm] = useState({
     question: '',
@@ -72,6 +82,9 @@ export default function GroupManagementScreen() {
     duration: 7, // days
     allowMultiple: false
   });
+  const [moreVisible, setMoreVisible] = React.useState(false);
+  const openMoreMenu = () => setMoreVisible(true);
+  const closeMoreMenu = () => setMoreVisible(false);
 
   const currentUser = {
     id: '1',
@@ -80,48 +93,78 @@ export default function GroupManagementScreen() {
     avatar: null
   };
 
-  const categories = ['Business', 'Agriculture', 'Food & Beverages', 'Crafts', 'Technology', 'Education', 'Other'];
+  useEffect(() => {
+    if (selectedGroup && user?.email) {
+      loadAnnouncementReads();
+    }
+  }, [selectedGroup, user]);
 
   useEffect(() => {
     loadGroups();
     if (selectedGroup) {
       loadGroupData();
     }
-  }, [selectedGroup]);
+  }, [selectedGroup, user]);
 
-  const loadGroups = () => {
-    // In real app, load from API
-    setGroups([
-      {
-        id: '1',
-        name: 'Mbabane Vendors Collective',
-        description: 'A group for vendors in Mbabane area to share resources and bulk purchase',
-        category: 'Business',
-        memberCount: 15,
-        maxMembers: 50,
-        isPrivate: false,
-        adminId: '1',
-        createdAt: '2024-01-01',
-        bannerImage: null
-      }
-    ]);
+  useEffect(() => {
+    const channel = supabase
+      .channel(`discussions_${groupId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'group_discussions',
+          filter: `group_id=eq.${groupId}`,
+        },
+        (payload) => {
+          if (payload.eventType === 'INSERT') {
+            setDiscussions(prev => [payload.new, ...prev]);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => supabase.removeChannel(channel);
+  }, [groupId]);
+
+  const loadAnnouncementReads = async () => {
+    const { data } = await supabase
+      .from('announcement_reads')
+      .select('announcement_id')
+      .eq('user_email', user.email);
+    setAnnouncementReads(new Set(data?.map(d => d.announcement_id) || []));
   };
 
-  const loadGroupData = () => {
+  const loadGroups = async () => {
+    try {
+      setIsLoading(true)
+      const groups = await fetchUserGroups(user.email);
+      // console.log('My Groups:', groups.length);
+      setGroups(groups);
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setIsLoading(false)
+    }
+  };
+
+  const loadGroupData = async () => {
     if (!selectedGroup) return;
 
-    // Load discussions, announcements, media, votes, members, join requests
-    setDiscussions([
-      {
-        id: '1',
-        title: 'Weekly Bulk Order Meeting',
-        content: 'Let\'s discuss our weekly bulk order for vegetables. Who\'s interested in joining?',
-        author: { name: 'Thabo Dlamini', avatar: null },
-        createdAt: '2024-01-15',
-        replies: 5,
-        attachments: []
-      }
-    ]);
+    const discussions = await fetchDiscussion(selectedGroup.id)
+    setDiscussions(discussions || []);
+    // setDiscussions([
+    //   {
+    //     id: '1',
+    //     title: 'Weekly Bulk Order Meeting',
+    //     content: 'Let\'s discuss our weekly bulk order for vegetables. Who\'s interested in joining?',
+    //     author: { name: 'Thabo Dlamini', avatar: null },
+    //     createdAt: '2024-01-15',
+    //     replies: 5,
+    //     attachments: []
+    //   }
+    // ]);
 
     setAnnouncements([
       {
@@ -209,45 +252,39 @@ export default function GroupManagementScreen() {
     ]);
   };
 
-  const createGroup = () => {
-    if (!groupForm.name.trim()) {
-      Alert.alert('Error', 'Group name is required');
-      return;
+  const createDiscussion = async () => {
+    try {
+      setIsSubmitting(true)
+      if (!discussionForm.title.trim()) {
+        Alert.alert('Error', 'Discussion title is required');
+        return;
+      }
+
+      const uploadedAttachments = await uploadAttachments(discussionForm.attachments);
+
+      const newDiscussion = {
+        ...discussionForm,
+        groupId: selectedGroup.id,
+        attachments: uploadedAttachments.map(a => a.url),
+        authorEmail: user.email
+      };
+
+      uploadedAttachments.map(a => console.log(a.url))
+
+      const response = await insertDiscussion(newDiscussion);
+
+      // setDiscussions(prev => [...prev, newDiscussion]);
+
+      if (response.status === 200) CustomToast('Success', 'Discussion Started successful');
+
+    } catch (err) {
+      console.error('Create discussion error:', err);
+      Alert.alert('Error', err.message || 'Failed to create discussion');
+    } finally {
+      setIsSubmitting(false)
+      setShowCreateDiscussion(false);
+      setDiscussionForm({ title: '', content: '', attachments: [] });
     }
-
-    const newGroup = {
-      ...groupForm,
-      id: Date.now().toString(),
-      memberCount: 1,
-      adminId: currentUser.id,
-      createdAt: new Date().toISOString()
-    };
-
-    setGroups(prev => [...prev, newGroup]);
-    setSelectedGroup(newGroup);
-    setShowCreateGroup(false);
-    setGroupForm({ name: '', description: '', category: 'Business', isPrivate: false, maxMembers: 100 });
-    Alert.alert('Success', 'Group created successfully!');
-  };
-
-  const createDiscussion = () => {
-    if (!discussionForm.title.trim()) {
-      Alert.alert('Error', 'Discussion title is required');
-      return;
-    }
-
-    const newDiscussion = {
-      ...discussionForm,
-      id: Date.now().toString(),
-      author: { name: currentUser.name, avatar: currentUser.avatar },
-      createdAt: new Date().toISOString(),
-      replies: 0
-    };
-
-    setDiscussions(prev => [...prev, newDiscussion]);
-    setShowCreateDiscussion(false);
-    setDiscussionForm({ title: '', content: '', attachments: [] });
-    Alert.alert('Success', 'Discussion created successfully!');
   };
 
   const createAnnouncement = () => {
@@ -342,42 +379,23 @@ export default function GroupManagementScreen() {
   };
 
   const pickImage = async () => {
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images', 'videos'],
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
-    });
-
-    if (!result.canceled && result.assets[0]) {
-      const attachment = {
-        id: Date.now().toString(),
-        name: `Image_${Date.now()}.jpg`,
-        type: 'image',
-        uri: result.assets[0].uri,
-        size: 'Unknown'
-      };
-
-      if (activeTab === 'discussions') {
-        setDiscussionForm(prev => ({ ...prev, attachments: [...prev.attachments, attachment] }));
-      } else if (activeTab === 'announcements') {
-        setAnnouncementForm(prev => ({ ...prev, attachments: [...prev.attachments, attachment] }));
-      }
-    }
-  };
-
-  const pickDocument = async () => {
     try {
-      const file = new File.pickFileAsync();
-      console.log(file.textSync());
+      setIsPickImage(true)
+
+      let result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images', 'videos'],
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 1,
+      });
 
       if (!result.canceled && result.assets[0]) {
         const attachment = {
           id: Date.now().toString(),
-          name: file.name,
-          type: 'document',
-          uri: file.uri,
-          size: `${(file.size / 1024 / 1024).toFixed(2)} MB`
+          name: result.assets[0]?.fileName,
+          type: result.assets[0].mimeType,
+          uri: result.assets[0].uri,
+          size: result.assets[0].fileSize
         };
 
         if (activeTab === 'discussions') {
@@ -386,8 +404,57 @@ export default function GroupManagementScreen() {
           setAnnouncementForm(prev => ({ ...prev, attachments: [...prev.attachments, attachment] }));
         }
       }
+    } catch (err) {
+      console.log(err)
+    } finally {
+      setIsPickImage(false)
+    }
+  };
+
+  const pickDocument = async () => {
+    try {
+      setIsTakePhoto(true)
+      // Step 1: Open document picker
+      const result = await DocumentPicker.getDocumentAsync({
+        type: '*/*',
+        copyToCacheDirectory: true,
+      });
+
+      if (result.canceled) return;
+
+      const file = new File(result.assets[0]);
+      if (!file) return;
+
+      // Step 2: Get file info using FileSystem
+      // console.log(file.name);
+
+      // Step 3: Build your attachment object
+      const attachment = {
+        id: Date.now(),
+        name: file.name,
+        type: 'document',
+        uri: file.uri,
+        size: file.size
+          ? `${(file.size / 1024 / 1024).toFixed(2)} MB`
+          : 'Unknown size',
+      };
+
+      // Step 4: Add attachment based on active tab
+      if (activeTab === 'discussions') {
+        setDiscussionForm(prev => ({
+          ...prev,
+          attachments: [...prev.attachments, attachment],
+        }));
+      } else if (activeTab === 'announcements') {
+        setAnnouncementForm(prev => ({
+          ...prev,
+          attachments: [...prev.attachments, attachment],
+        }));
+      }
     } catch (error) {
-      console.error(error);
+      console.error('Error picking or reading file:', error);
+    } finally {
+      setIsTakePhoto(false)
     }
   };
 
@@ -399,36 +466,40 @@ export default function GroupManagementScreen() {
             data={discussions}
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
-              <Card style={styles.contentCard}>
-                <Card.Content>
-                  <View style={styles.contentHeader}>
-                    <Avatar.Text size={32} label={item.author.name[0]} />
-                    <View style={styles.contentMeta}>
-                      <Text variant="titleSmall">{item.title}</Text>
-                      <Text variant="bodySmall" style={styles.metaText}>
-                        by {item.author.name} • {new Date(item.createdAt).toLocaleDateString()}
-                      </Text>
+              <TouchableOpacity onPress={() => { }}>
+                <Card style={[styles.contentCard, { backgroundColor: theme.colors.card }]}
+                  onPress={() => navigation.navigate('DiscussionThread', { discussion: item })}
+                >
+                  <Card.Content>
+                    <View style={styles.contentHeader}>
+                      <Avatar.Text size={32} label={item.author.name[0]} />
+                      <View style={styles.contentMeta}>
+                        <Text variant="titleSmall">{item.title}</Text>
+                        <Text variant="bodySmall" style={[styles.metaText, { color: theme.colors.onSurfaceVariant }]}>
+                          by {item.author.name} • {new Date(item.createdAt).toLocaleDateString()}
+                        </Text>
+                      </View>
                     </View>
-                  </View>
-                  <Text variant="bodyMedium" style={styles.contentText}>
-                    {item.content}
-                  </Text>
-                  {item.attachments.length > 0 && (
-                    <View style={styles.attachmentsContainer}>
-                      <Text variant="bodySmall" style={styles.attachmentsLabel}>Attachments:</Text>
-                      {item.attachments.map((attachment) => (
-                        <Chip key={attachment.id} mode="outlined" compact style={styles.attachmentChip}>
-                          {attachment.name}
-                        </Chip>
-                      ))}
-                    </View>
-                  )}
-                </Card.Content>
-                <Card.Actions>
-                  <Button mode="text" icon="comment">Reply ({item.replies})</Button>
-                  <Button mode="text" icon="share">Share</Button>
-                </Card.Actions>
-              </Card>
+                    <Text variant="bodyMedium" style={styles.contentText}>
+                      {item.content}
+                    </Text>
+                    {item.attachments.length > 0 && (
+                      <View style={styles.attachmentsContainer}>
+                        <Text variant="bodySmall" style={styles.attachmentsLabel}>Attachments:</Text>
+                        {item.attachments.map((attachment) => (
+                          <Chip key={attachment.id} mode="outlined" compact style={styles.attachmentChip}>
+                            {attachment.name}
+                          </Chip>
+                        ))}
+                      </View>
+                    )}
+                  </Card.Content>
+                  <Card.Actions>
+                    <Button mode="text" icon="comment">Reply ({item.replies})</Button>
+                    <Button mode="text" icon="share">Share</Button>
+                  </Card.Actions>
+                </Card>
+              </TouchableOpacity>
             )}
             contentContainerStyle={styles.contentList}
           />
@@ -447,10 +518,10 @@ export default function GroupManagementScreen() {
                     <View style={styles.contentMeta}>
                       <Text variant="titleSmall">{item.title}</Text>
                       <View style={styles.announcementMeta}>
-                        <Chip mode="outlined" compact style={styles.priorityChip}>
+                        <Chip mode="outlined" compact style={[styles.priorityChip, { backgroundColor: theme.colors.errorContainer, }]}>
                           {item.priority}
                         </Chip>
-                        <Text variant="bodySmall" style={styles.metaText}>
+                        <Text variant="bodySmall" style={[styles.metaText, { color: theme.colors.onSurfaceVariant }]}>
                           by {item.author.name} • {new Date(item.createdAt).toLocaleDateString()}
                         </Text>
                       </View>
@@ -471,7 +542,17 @@ export default function GroupManagementScreen() {
                   )}
                 </Card.Content>
                 <Card.Actions>
-                  <Button mode="text" icon="check">Mark as Read</Button>
+                  <Button mode="text" icon={announcementReads.has(item.id) ? "check" : "eye"}
+                    onPress={async () => {
+                      await supabase.rpc('mark_announcement_read', {
+                        p_announcement_id: item.id,
+                        p_user_email: user.email
+                      });
+                      setAnnouncementReads(prev => new Set(prev).add(item.id));
+                    }}
+                  >
+                    {announcementReads.has(item.id) ? "Read" : "Mark as Read"}
+                  </Button>
                   <Button mode="text" icon="share">Share</Button>
                 </Card.Actions>
               </Card>
@@ -496,10 +577,10 @@ export default function GroupManagementScreen() {
                     />
                     <View style={styles.mediaInfo}>
                       <Text variant="titleSmall">{item.name}</Text>
-                      <Text variant="bodySmall" style={styles.metaText}>
+                      <Text variant="bodySmall" style={[styles.metaText, { color: theme.colors.onSurfaceVariant }]}>
                         {item.type} • {item.size} • by {item.uploadedBy.name}
                       </Text>
-                      <Text variant="bodySmall" style={styles.metaText}>
+                      <Text variant="bodySmall" style={[styles.metaText, { color: theme.colors.onSurfaceVariant }]}>
                         {new Date(item.uploadedAt).toLocaleDateString()}
                       </Text>
                     </View>
@@ -527,7 +608,7 @@ export default function GroupManagementScreen() {
                     <Avatar.Text size={32} label={item.createdBy.name[0]} />
                     <View style={styles.contentMeta}>
                       <Text variant="titleSmall">{item.question}</Text>
-                      <Text variant="bodySmall" style={styles.metaText}>
+                      <Text variant="bodySmall" style={[styles.metaText, { color: theme.colors.onSurfaceVariant }]}>
                         by {item.createdBy.name} • Expires {new Date(item.expiresAt).toLocaleDateString()}
                       </Text>
                     </View>
@@ -541,13 +622,13 @@ export default function GroupManagementScreen() {
                         onPress={() => !item.hasVoted && handleVote(item.id, index)}
                         disabled={item.hasVoted}
                       >
-                        <View style={styles.voteOptionContent}>
+                        <View style={[styles.voteOptionContent, { backgroundColor: theme.colors.surfaceVariant }]}>
                           <Text variant="bodyMedium">{option.text}</Text>
-                          <Text variant="bodySmall" style={styles.voteCount}>
+                          <Text variant="bodySmall" style={[styles.voteCount, { color: theme.colors.onSurfaceVariant }]}>
                             {option.votes} votes
                           </Text>
                         </View>
-                        <View style={[styles.voteProgress, { width: `${(option.votes / Math.max(item.totalVotes, 1)) * 100}%` }]} />
+                        <View style={[styles.voteProgress, { width: `${(option.votes / Math.max(item.totalVotes, 1)) * 100}%`, backgroundColor: theme.colors.primary, }]} />
                       </TouchableOpacity>
                     ))}
                   </View>
@@ -574,7 +655,7 @@ export default function GroupManagementScreen() {
                     <Avatar.Text size={40} label={item.name[0]} />
                     <View style={styles.memberInfo}>
                       <Text variant="titleSmall">{item.name}</Text>
-                      <Text variant="bodySmall" style={styles.metaText}>
+                      <Text variant="bodySmall" style={[styles.metaText, { color: theme.colors.onSurfaceVariant }]}>
                         {item.role} • Joined {new Date(item.joinedAt).toLocaleDateString()}
                       </Text>
                     </View>
@@ -608,17 +689,17 @@ export default function GroupManagementScreen() {
               <Card style={styles.contentCard}>
                 <Card.Content>
                   <Text variant="titleMedium">{item.name}</Text>
-                  <Text variant="bodyMedium" style={styles.metaText}>
+                  <Text variant="bodyMedium" style={[styles.metaText, { color: theme.colors.onSurfaceVariant }]}>
                     Business: {item.businessType} • Location: {item.location}
                   </Text>
-                  <Text variant="bodyMedium" style={styles.metaText}>
+                  <Text variant="bodyMedium" style={[styles.metaText, { color: theme.colors.onSurfaceVariant }]}>
                     Experience: {item.experience}
                   </Text>
                   <Text variant="bodyMedium" style={styles.contentText}>
                     {item.reason}
                   </Text>
 
-                  <View style={styles.verificationInfo}>
+                  <View style={[styles.verificationInfo, { backgroundColor: theme.colors.surfaceVariant }]}>
                     <Text variant="titleSmall" style={styles.verificationTitle}>Verification Status:</Text>
                     <Text variant="bodySmall">Business License: {item.vendorProfile.businessLicense}</Text>
                     <Text variant="bodySmall">References: {item.vendorProfile.references}</Text>
@@ -646,14 +727,54 @@ export default function GroupManagementScreen() {
     }
   };
 
+  const handleRemoveAttachment = (id) => {
+    setDiscussionForm((prev) => ({
+      ...prev,
+      attachments: prev.attachments.filter((item) => item.id !== id),
+    }));
+  };
+
   return (
-    <View style={styles.container}>
-      <Surface style={styles.header} elevation={4}>
-        <Text style={styles.headerTitle}>Group Management</Text>
-        <Text variant="bodyMedium" style={styles.headerSubtitle}>
-          Manage your groups and communities
-        </Text>
-      </Surface>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
+      {isLoading && <CustomLoader />}
+
+      <View style={[styles.header, { borderColor: theme.colors.border }]}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Icons.Ionicons name='arrow-back' size={24} color={theme.colors.text} />
+        </TouchableOpacity>
+
+        <View style={styles.headerUtils}>
+          {(user && user.picture)
+            ? (
+              <Avatar.Image
+                size={30}
+                source={{ uri: user.picture }}
+              />
+            ) : (
+              <Icons.Ionicons name="person-circle-outline" size={30} color={theme.colors.indicator} />
+            )}
+
+          <TouchableOpacity style={{}} onPress={() => { }}>
+            <Icons.MaterialCommunityIcons name='magnify' size={30} color={theme.colors.text} />
+          </TouchableOpacity>
+
+          <Menu
+            visible={moreVisible}
+            onDismiss={closeMoreMenu}
+            contentStyle={{ backgroundColor: theme.colors.card }}
+            anchor={
+              <TouchableOpacity style={{}} onPress={openMoreMenu}>
+                <Icons.Entypo name='dots-three-vertical' size={24} color={theme.colors.text} />
+              </TouchableOpacity>
+            }
+          >
+            <Menu.Item onPress={() => { /* Handle action 1 */ }} title="Item 1" titleStyle={{ color: theme.colors.text }} />
+            <Menu.Item onPress={() => { /* Handle action 2 */ }} title="Item 2" titleStyle={{ color: theme.colors.text }} />
+            <Menu.Item onPress={() => { /* Handle action 3 */ }} title="Item 3" titleStyle={{ color: theme.colors.text }} />
+          </Menu>
+        </View>
+      </View>
 
       {!selectedGroup ? (
         <View style={styles.groupsList}>
@@ -661,79 +782,92 @@ export default function GroupManagementScreen() {
             data={groups}
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => (
-              <Card style={styles.groupCard} onPress={() => setSelectedGroup(item)}>
-                <Card.Content>
-                  <View style={styles.groupHeader}>
-                    <View style={styles.groupInfo}>
-                      <Text variant="titleMedium">{item.name}</Text>
-                      <Text variant="bodyMedium" style={styles.groupDescription}>
-                        {item.description}
-                      </Text>
-                      <View style={styles.groupMeta}>
-                        <Chip mode="outlined" compact>{item.category}</Chip>
-                        <Text variant="bodySmall" style={styles.memberCount}>
-                          {item.memberCount}/{item.maxMembers} members
-                        </Text>
+              <TouchableOpacity style={[styles.groupItem, { borderColor: theme.colors.border, backgroundColor: theme.colors.card }]}
+                onPress={() => setSelectedGroup(item)}
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start' }}>
+                  {(item.profile_image_url !== null && item.profile_image_url !== '')
+                    ? (
+                      <Avatar.Image
+                        source={{ uri: item.profile_image_url }}
+                        style={[styles.groupImg, { backgroundColor: theme.colors.primary }]}
+                        resizeMode="contain"
+                      />
+                    ) : (
+                      <View style={[styles.groupImg, { backgroundColor: theme.colors.primary }]}>
+                        <Icons.FontAwesome6 name="people-group" size={60} color={theme.colors.indicator} />
                       </View>
-                    </View>
+                    )}
+                  <View style={{ flexDirection: 'column', justifyContent: 'flex-start', gap: 10, padding: 10 }}>
+                    <Text variant="titleMedium">{item.group_name}</Text>
+                    {item.is_private && <Icons.MaterialCommunityIcons name='book-lock-outline' size={15} color={theme.colors.error} />}
                   </View>
-                </Card.Content>
-              </Card>
+                </View>
+
+                <>
+                  <Text variant="bodyMedium" style={[styles.groupDescription, { color: theme.colors.onSurfaceVariant }]}>
+                    {item.description}
+                  </Text>
+                  <View style={styles.groupMeta}>
+                    <Chip mode="outlined" compact>{item.category}</Chip>
+                    <Text variant="bodySmall" style={[styles.memberCount, { color: theme.colors.onSurfaceVariant, }]}>
+                      {item.members.length}/{item.max_members} members
+                    </Text>
+                  </View>
+                </>
+              </TouchableOpacity>
             )}
             contentContainerStyle={styles.groupsListContent}
-          />
-
-          <FAB
-            icon="plus"
-            style={styles.createGroupFab}
-            onPress={() => setShowCreateGroup(true)}
-            label="Create Group"
           />
         </View>
       ) : (
         <View style={styles.groupView}>
-          <Surface style={styles.groupHeader} elevation={2}>
+          <Surface style={[styles.groupHeader, { backgroundColor: theme.colors.primary, }]} elevation={2}>
             <View style={styles.groupHeaderContent}>
-              <IconButton
-                icon="arrow-left"
-                onPress={() => setSelectedGroup(null)}
-                iconColor="white"
-              />
-              <View style={styles.groupHeaderInfo}>
-                <Text style={styles.groupTitle}>{selectedGroup.name}</Text>
+              <View>
+                <Text style={styles.groupTitle}>{selectedGroup.group_name}</Text>
                 <Text variant="bodyMedium" style={styles.groupSubtitle}>
-                  {selectedGroup.memberCount} members • {selectedGroup.category}
+                  {selectedGroup.members?.length} members • {selectedGroup.category}
                 </Text>
               </View>
-              <IconButton
-                icon="account-group"
+              {/* <TouchableOpacity onPress={() => navigation.goBack()}> */}
+              <Icons.FontAwesome6
+                name="people-group"
+                size={20}
                 onPress={() => setShowMemberManagement(true)}
-                iconColor="white"
+                color="#FFFFFF"
               />
+              {/* </TouchableOpacity> */}
+
             </View>
+            <Avatar.Image source={{ uri: selectedGroup.profile_image_url }} style={{ marginRight: 16 }} />
           </Surface>
 
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabContainer}>
-            {[
-              { key: 'discussions', label: 'Discussions', icon: 'chat' },
-              { key: 'announcements', label: 'Announcements', icon: 'bullhorn' },
-              { key: 'media', label: 'Media', icon: 'folder' },
-              { key: 'votes', label: 'Votes', icon: 'poll' },
-              { key: 'members', label: 'Members', icon: 'account-group' },
-              { key: 'requests', label: 'Requests', icon: 'account-plus' }
-            ].map((tab) => (
-              <TouchableOpacity
-                key={tab.key}
-                style={[styles.tab, activeTab === tab.key && styles.activeTab]}
-                onPress={() => setActiveTab(tab.key)}
-              >
-                <IconButton icon={tab.icon} size={20} iconColor={activeTab === tab.key ? theme.colors.primary : theme.colors.onSurfaceVariant} />
-                <Text variant="bodySmall" style={[styles.tabLabel, activeTab === tab.key && styles.activeTabLabel]}>
-                  {tab.label}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+          <View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={[{ backgroundColor: theme.colors.surface }]}>
+              {[
+                { key: 'discussions', label: 'Discussions', icon: 'chat' },
+                { key: 'announcements', label: 'Announcements', icon: 'bullhorn' },
+                { key: 'media', label: 'Media', icon: 'folder' },
+                { key: 'votes', label: 'Votes', icon: 'poll' },
+                { key: 'members', label: 'Members', icon: 'account-group' },
+                { key: 'requests', label: 'Requests', icon: 'account-plus' }
+              ].map((tab) => (
+                <TouchableOpacity
+                  key={tab.key}
+                  style={[styles.tab, activeTab === tab.key && styles.activeTab, {
+                    backgroundColor: theme.colors.primaryContainer
+                  }]}
+                  onPress={() => setActiveTab(tab.key)}
+                >
+                  <IconButton icon={tab.icon} size={20} iconColor={activeTab === tab.key ? theme.colors.primary : theme.colors.sub_text} />
+                  <Text variant="bodySmall" style={[activeTab === tab.key ? styles.activeTabLabel : styles.tabLabel]}>
+                    {tab.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
 
           {renderTabContent()}
 
@@ -741,7 +875,7 @@ export default function GroupManagementScreen() {
             {activeTab === 'discussions' && (
               <FAB
                 icon="plus"
-                style={styles.fab}
+                style={[styles.fab, { backgroundColor: theme.colors.sub_card }]}
                 onPress={() => setShowCreateDiscussion(true)}
                 label="New Discussion"
               />
@@ -749,15 +883,36 @@ export default function GroupManagementScreen() {
             {activeTab === 'announcements' && currentUser.role === 'admin' && (
               <FAB
                 icon="bullhorn"
-                style={styles.fab}
+                style={[styles.fab, { backgroundColor: theme.colors.sub_card }]}
                 onPress={() => setShowCreateAnnouncement(true)}
                 label="New Announcement"
+              />
+            )}
+            {activeTab === 'media' && currentUser.role === 'admin' && (
+              <FAB
+                icon="upload"
+                style={styles.fab}
+                onPress={async () => {
+                  const file = await DocumentPicker.getDocumentAsync({ type: '*/*' });
+                  if (file.type === 'success') {
+                    const { data } = await supabase.storage
+                      .from('group-media')
+                      .upload(`group_${selectedGroup.id}/${Date.now()}_${file.name}`, {
+                        uri: file.uri,
+                        type: file.mimeType,
+                        name: file.name,
+                      });
+                    // Refresh media
+                    loadGroupData();
+                  }
+                }}
+                label="Upload Media"
               />
             )}
             {activeTab === 'votes' && currentUser.role === 'admin' && (
               <FAB
                 icon="poll"
-                style={styles.fab}
+                style={[styles.fab, { backgroundColor: theme.colors.sub_card }]}
                 onPress={() => setShowCreateVote(true)}
                 label="New Vote"
               />
@@ -765,76 +920,6 @@ export default function GroupManagementScreen() {
           </View>
         </View>
       )}
-
-      {/* Create Group Modal */}
-      <Portal>
-        <Modal
-          visible={showCreateGroup}
-          onDismiss={() => setShowCreateGroup(false)}
-          contentContainerStyle={styles.modal}
-        >
-          <ScrollView style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Create New Group</Text>
-
-            <TextInput
-              label="Group Name"
-              value={groupForm.name}
-              onChangeText={(text) => setGroupForm(prev => ({ ...prev, name: text }))}
-              mode="outlined"
-              style={styles.input}
-            />
-
-            <TextInput
-              label="Description"
-              value={groupForm.description}
-              onChangeText={(text) => setGroupForm(prev => ({ ...prev, description: text }))}
-              mode="outlined"
-              multiline
-              numberOfLines={3}
-              style={styles.input}
-            />
-
-            <View style={styles.inputRow}>
-              <TextInput
-                label="Max Members"
-                value={groupForm.maxMembers.toString()}
-                onChangeText={(text) => setGroupForm(prev => ({ ...prev, maxMembers: parseInt(text) || 100 }))}
-                mode="outlined"
-                keyboardType="numeric"
-                style={[styles.input, styles.halfInput]}
-              />
-              <View style={[styles.input, styles.halfInput]}>
-                <Menu
-                  visible={false}
-                  onDismiss={() => { }}
-                  anchor={
-                    <TouchableOpacity onPress={() => { }} style={styles.categorySelector}>
-                      <Text>{groupForm.category}</Text>
-                    </TouchableOpacity>
-                  }
-                >
-                  {categories.map((category) => (
-                    <Menu.Item
-                      key={category}
-                      onPress={() => setGroupForm(prev => ({ ...prev, category }))}
-                      title={category}
-                    />
-                  ))}
-                </Menu>
-              </View>
-            </View>
-
-            <View style={styles.modalActions}>
-              <Button mode="outlined" onPress={() => setShowCreateGroup(false)} style={styles.actionButton}>
-                Cancel
-              </Button>
-              <Button mode="contained" onPress={createGroup} style={styles.actionButton}>
-                Create Group
-              </Button>
-            </View>
-          </ScrollView>
-        </Modal>
-      </Portal>
 
       {/* Create Discussion Modal */}
       <Portal>
@@ -847,7 +932,7 @@ export default function GroupManagementScreen() {
             <Text style={styles.modalTitle}>Start Discussion</Text>
 
             <TextInput
-              label="Discussion Text"
+              placeholder="Discussion Text"
               value={discussionForm.title}
               onChangeText={(text) => setDiscussionForm(prev => ({ ...prev, title: text }))}
               mode="outlined"
@@ -855,38 +940,55 @@ export default function GroupManagementScreen() {
             />
 
             <TextInput
-              label="Content"
+              placeholder="Content"
               value={discussionForm.content}
               onChangeText={(text) => setDiscussionForm(prev => ({ ...prev, content: text }))}
               mode="outlined"
               multiline
-              numberOfLines={5}
-              style={styles.input}
+              style={[styles.input, { textAlignVertical: 'top', minHeight: 60, maxHeight: 80 }]}
             />
 
             <View style={styles.attachmentSection}>
               <Text variant="titleSmall">Attachments</Text>
               <View style={styles.attachmentButtons}>
-                <Button mode="outlined" onPress={pickImage} icon="image" style={styles.attachmentButton}>
-                  Image
-                </Button>
-                <Button mode="outlined" onPress={pickDocument} icon="file-document" style={styles.attachmentButton}>
-                  Document
-                </Button>
+                <TouchableOpacity style={styles.imageOption} onPress={pickImage}>
+                  {isPickImage
+                    ? <ActivityIndicator animating={true} color='#4F46E5' />
+                    : <Icons.Ionicons name='images-outline' size={24} color="#4F46E5" />
+                  }
+                  <Text style={styles.imageOptionText}>Gallery</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.imageOption} onPress={pickDocument}>
+                  {isTakePhoto
+                    ? <ActivityIndicator animating={true} color='#4F46E5' />
+                    : <Icons.Ionicons name='document-attach-outline' size={24} color="#4F46E5" />
+                  }
+                  <Text style={styles.imageOptionText}>Files</Text>
+                </TouchableOpacity>
               </View>
 
               {discussionForm.attachments.map((attachment) => (
-                <Chip key={attachment.id} mode="outlined" onClose={() => { }} style={styles.attachmentChip}>
+                <Chip key={attachment.id} mode="outlined" onClose={() => handleRemoveAttachment(attachment.id)} style={styles.attachmentChip}>
                   {attachment.name}
                 </Chip>
               ))}
             </View>
 
             <View style={styles.modalActions}>
-              <Button mode="outlined" onPress={() => setShowCreateDiscussion(false)} style={styles.actionButton}>
+              <Button mode="outlined" onPress={() => setShowCreateDiscussion(false)}
+                style={[styles.actionButton, styles.cancelButton, { borderColor: theme.colors.border, backgroundColor: theme.colors.sub_card }]}
+                theme={{ colors: { primary: theme.colors.indicator } }}
+              >
                 Cancel
               </Button>
-              <Button mode="contained" onPress={createDiscussion} style={styles.actionButton}>
+
+              <Button mode="contained" onPress={createDiscussion}
+                style={[styles.actionButton, styles.submitButton]}
+                theme={{ colors: { primary: theme.colors.indicator } }}
+                disabled={isSubmitting}
+                loading={isSubmitting}
+              >
                 Post Discussion
               </Button>
             </View>
@@ -928,7 +1030,7 @@ export default function GroupManagementScreen() {
                   visible={false}
                   onDismiss={() => { }}
                   anchor={
-                    <TouchableOpacity onPress={() => { }} style={styles.prioritySelector}>
+                    <TouchableOpacity onPress={() => { }} style={[styles.prioritySelector, { borderColor: theme.colors.outline }]}>
                       <Text>{announcementForm.priority}</Text>
                     </TouchableOpacity>
                   }
@@ -1035,43 +1137,51 @@ export default function GroupManagementScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: theme.colors.background,
+    flex: 1
   },
   header: {
-    backgroundColor: theme.colors.primary,
-    paddingTop: 60,
-    paddingBottom: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 30,
+    paddingBottom: 10,
     paddingHorizontal: 20,
+    borderBottomWidth: 1
+  },
+  headerUtils: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-around',
+    gap: 30
   },
   headerTitle: {
     color: 'white',
     fontSize: 24,
     fontWeight: 'bold',
   },
-  headerSubtitle: {
-    color: 'white',
-    opacity: 0.9,
-    marginTop: 4,
-  },
   groupsList: {
     flex: 1,
+    marginBottom: 40
+  },
+  groupImg: {
+    borderRadius: 10
   },
   groupsListContent: {
-    padding: 16,
+    paddingVertical: 16,
+    marginBottom: 20
   },
-  groupCard: {
-    marginBottom: 12,
-    elevation: 2,
+  groupItem: {
+    marginBottom: 5,
+    elevation: 1,
+    borderBottomWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 10
   },
   groupHeader: {
     flexDirection: 'row',
-  },
-  groupInfo: {
-    flex: 1,
+    justifyContent: 'space-between',
+    paddingTop: 20,
+    paddingBottom: 16,
   },
   groupDescription: {
-    color: theme.colors.onSurfaceVariant,
     marginVertical: 8,
   },
   groupMeta: {
@@ -1079,60 +1189,43 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  memberCount: {
-    color: theme.colors.onSurfaceVariant,
-  },
   createGroupFab: {
     position: 'absolute',
     margin: 16,
     right: 0,
     bottom: 0,
-    backgroundColor: theme.colors.primary,
   },
   groupView: {
     flex: 1,
-  },
-  groupHeader: {
-    backgroundColor: theme.colors.primary,
-    paddingTop: 60,
-    paddingBottom: 16,
   },
   groupHeaderContent: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 16,
-  },
-  groupHeaderInfo: {
-    flex: 1,
-    marginLeft: 8,
+    gap: 12
   },
   groupTitle: {
-    color: 'white',
+    color: '#FFFFFF',
     fontSize: 20,
     fontWeight: 'bold',
   },
   groupSubtitle: {
-    color: 'white',
+    color: '#FFFFFF',
     opacity: 0.9,
-  },
-  tabContainer: {
-    backgroundColor: theme.colors.surface,
-    paddingVertical: 8,
   },
   tab: {
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 16
   },
   activeTab: {
-    backgroundColor: theme.colors.primaryContainer,
     borderRadius: 20,
   },
   tabLabel: {
-    marginTop: 4,
+    color: '#747373dd',
+    marginTop: 1,
   },
   activeTabLabel: {
-    color: theme.colors.primary,
+    color: '#003366',
     fontWeight: 'bold',
   },
   contentList: {
@@ -1151,9 +1244,6 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: 12,
   },
-  metaText: {
-    color: theme.colors.onSurfaceVariant,
-  },
   contentText: {
     marginBottom: 12,
   },
@@ -1165,17 +1255,13 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   attachmentChip: {
-    marginRight: 8,
-    marginBottom: 4,
+    margin: 4,
   },
   announcementMeta: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     marginTop: 4,
-  },
-  priorityChip: {
-    backgroundColor: theme.colors.errorContainer,
   },
   mediaItem: {
     flexDirection: 'row',
@@ -1197,18 +1283,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: 12,
-    backgroundColor: theme.colors.surfaceVariant,
     borderRadius: 8,
-  },
-  voteCount: {
-    color: theme.colors.onSurfaceVariant,
   },
   voteProgress: {
     position: 'absolute',
     top: 0,
     left: 0,
     height: '100%',
-    backgroundColor: theme.colors.primary,
     opacity: 0.3,
     borderRadius: 8,
   },
@@ -1228,7 +1309,6 @@ const styles = StyleSheet.create({
   verificationInfo: {
     marginTop: 12,
     padding: 12,
-    backgroundColor: theme.colors.surfaceVariant,
     borderRadius: 8,
   },
   verificationTitle: {
@@ -1241,11 +1321,8 @@ const styles = StyleSheet.create({
   },
   floatingActions: {
     position: 'absolute',
-    bottom: 16,
+    bottom: 60,
     right: 16,
-  },
-  fab: {
-    backgroundColor: theme.colors.primary,
   },
   modal: {
     backgroundColor: 'white',
@@ -1257,10 +1334,18 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   modalTitle: {
-    marginBottom: 20,
+    marginBottom: 10,
     textAlign: 'center',
   },
   input: {
+    backgroundColor: '#f9fafb',
+    borderWidth: 1,
+    color: '#6b7280',
+    borderColor: '#e5e7eb',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 16,
     marginBottom: 16,
   },
   inputRow: {
@@ -1272,7 +1357,6 @@ const styles = StyleSheet.create({
   },
   categorySelector: {
     borderWidth: 1,
-    borderColor: theme.colors.outline,
     borderRadius: 4,
     padding: 16,
     justifyContent: 'center',
@@ -1280,7 +1364,6 @@ const styles = StyleSheet.create({
   },
   prioritySelector: {
     borderWidth: 1,
-    borderColor: theme.colors.outline,
     borderRadius: 4,
     padding: 16,
     justifyContent: 'center',
@@ -1294,8 +1377,19 @@ const styles = StyleSheet.create({
     gap: 12,
     marginTop: 8,
   },
-  attachmentButton: {
-    flex: 1,
+  imageOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#EEF2FF',
+    borderRadius: 12,
+    padding: 8,
+    flex: 0.48,
+  },
+  imageOptionText: {
+    marginLeft: 8,
+    color: '#4F46E5',
+    fontWeight: '500',
   },
   voteOptionsSection: {
     marginBottom: 16,
@@ -1317,5 +1411,14 @@ const styles = StyleSheet.create({
   },
   actionButton: {
     flex: 1,
+    borderRadius: 8,
+    paddingVertical: 4,
+  },
+  cancelButton: {
+    borderWidth: 1,
+  },
+  submitButton: {
+    elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2, shadowRadius: 4,
   },
 });

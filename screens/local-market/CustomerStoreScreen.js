@@ -347,6 +347,7 @@ export default function CustomerStoreScreen({ navigation, route }) {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      
       <View style={[styles.header]}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <TouchableOpacity onPress={() => { navigation.goBack() }}>

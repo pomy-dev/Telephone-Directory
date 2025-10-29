@@ -55,7 +55,8 @@ export default function LoginScreen({ navigation }) {
         {/* Continue Button */}
         <Button
           mode="contained"
-          onPress={() => navigation.navigate('VendorHome')}
+          // onPress={() => navigation.navigate('VendorHome')}
+          onPress={() => navigation.navigate('GroupManagement')}
           style={styles.loginButton}
           contentStyle={styles.buttonContent}
         >

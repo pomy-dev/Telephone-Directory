@@ -194,11 +194,6 @@ export default function OrdersScreen({ navigation }) {
     return 'Vendor Name'; // Placeholder
   };
 
-  const getVendorImage = (vendorId) => {
-    // Replace with actual vendor data source if available
-    return 'https://via.placeholder.com/150'; // Placeholder
-  };
-
   const getPendingOrders = () => {
     return orders.filter(order => {
       const orderDate = new Date(order.orderDate);

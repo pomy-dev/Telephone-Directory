@@ -41,7 +41,6 @@ import { Icons } from '../../constants/Icons';
 import { AuthContext } from '../../context/authProvider';
 import { AppContext } from '../../context/appContext';
 import LoginScreen from '../../components/loginModal';
-import { addVendorStock } from '../../service/getApi';
 import { insertVendorStock } from '../../service/Supabase-Fuctions';
 import { CustomToast } from '../../components/customToast';
 import CustomLoader from '../../components/customLoader';

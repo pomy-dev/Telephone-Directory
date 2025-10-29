@@ -69,25 +69,26 @@ export default function BulkGroupsScreen({ navigation, route }) {
   };
 
   const handleCreateGroup = () => {
-    Alert.alert(
-      'Create Bulk Group',
-      'Start your own bulk buying group to get better prices with other vendors.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'StokFella',
-          onPress: () => {
-            navigation.navigate('StokfelaHome');
-          }
-        },
-        {
-          text: 'Market Group',
-          onPress: () => {
-            navigation.navigate('GroupForm', { vendors: vendors });
-          }
-        }
-      ]
-    );
+    navigation.navigate('GroupManagement');
+    // Alert.alert(
+    //   'Create Bulk Group',
+    //   'Start your own bulk buying group to get better prices with other vendors.',
+    //   [
+    //     { text: 'Cancel', style: 'cancel' },
+    //     {
+    //       text: 'StokFella',
+    //       onPress: () => {
+    //         navigation.navigate('StokfelaHome');
+    //       }
+    //     },
+    //     {
+    //       text: 'Market Group',
+    //       onPress: () => {
+    //         navigation.navigate('GroupForm', { vendors: vendors });
+    //       }
+    //     }
+    //   ]
+    // );
   };
 
   const renderGroupCard = ({ item, isUserGroup = false }) => (

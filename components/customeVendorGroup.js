@@ -177,10 +177,21 @@ const CustomeVendorGroup = ({ navigation, route }) => {
     }
     try {
       setIsSubmitting(true);
+      let imageString = null;
 
-      const imageUrl = groupForm.profileImage
-        ? await UploadFile(groupForm.profileImage)
-        : null;
+      if (groupForm.profileImage && groupForm.profileImage?.uri) {
+        const image = groupForm.profileImage
+        try {
+          // read image as base64
+          convertedImg = await FileSystem.readAsStringAsync(image?.uri, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+          imageString = `data:${image?.type};base64,${convertedImg}`;
+        } catch (fsErr) {
+          console.error('Failed to convert image to base64:', fsErr);
+          CustomToast('Error', 'Failed to process image. Please try again.');
+        }
+      }
 
       const payload = {
         groupName: groupForm.groupName,
@@ -191,7 +202,7 @@ const CustomeVendorGroup = ({ navigation, route }) => {
         description: groupForm.description,
         category: groupForm.category,
         isPrivate: groupForm.isPrivate,
-        profileImageUrl: imageUrl,
+        profileImageUrl: imageString,
         maxMembers: groupForm.maxMembers,
         members: groupForm.members
       };
@@ -232,7 +243,8 @@ const CustomeVendorGroup = ({ navigation, route }) => {
               source={{ uri: groupForm.profileImage.uri }}
               style={[styles.avatar, { backgroundColor: theme.colors.primary }]}
             />
-            <Icons.MaterialIcons name="flip-camera-ios" size={20} color={theme.colors.primary} />
+
+            {isPickImg ? <ActivityIndicator size={20} color={theme.colors.indicator} /> : <Icons.MaterialIcons name="flip-camera-ios" size={20} color={theme.colors.primary} />}
           </>
         ) : (
           <View style={[styles.avatarPlaceholder, { backgroundColor: theme.colors.surface }]}>
@@ -784,8 +796,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     gap: 16,
-    marginTop: 5,
-    marginBottom: 40
+    marginTop: 5
   },
   imagePicker: {
     alignItems: 'center',
@@ -884,7 +895,7 @@ const styles = StyleSheet.create({
   },
   selectedCard: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: '#f8fafc',
-    padding: 12, borderRadius: 10, marginBottom: 8
+    padding: 12, borderRadius: 10, marginBottom: 1
   },
   cardInfo: { flex: 1, marginLeft: 12 },
   cardName: { fontWeight: '600' },

@@ -1,5 +1,6 @@
 // utils/upsertUserProfile.js
 import { supabase } from './Supabase-Client';
+import { UploadFile } from './uploadFiles';
 
 
 export async function subscribeRealtime() {
@@ -206,4 +207,48 @@ export async function insertVendorGroup(payload, user) {
   }
 
   return data;
+}
+
+export const fetchUserGroups = async (userEmail) => {
+  const { data, error } = await supabase
+    .rpc('get_vendor_groups_by_email', { p_email: userEmail });
+
+  if (error) {
+    console.error('Error fetching user groups:', error);
+    throw error;
+  }
+
+  return data; // Array of groups
+};
+
+export const insertDiscussion = async (discussionData) => {
+  const resp = await supabase.rpc('pomy_add_discussion', {
+    p_group_id: discussionData.groupId,
+    p_title: discussionData.title,
+    p_content: discussionData.content,
+    p_author_email: discussionData.authorEmail,
+    p_attachments: discussionData.attachments
+  });
+
+  if (!resp) {
+    console.error(err)
+    return;
+  }
+
+  return resp
+}
+
+export const fetchDiscussion = async (groupId) => {
+  try {
+    const { data, error } = await supabase
+      .from('vw_group_discussions')
+      .select('*')
+      .eq('group_id', groupId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data
+  } catch (err) {
+    console.error('Fetch error:', err);
+  }
 }
