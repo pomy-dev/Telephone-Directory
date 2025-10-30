@@ -5,9 +5,11 @@ import {
   Dimensions,
   FlatList,
   ScrollView,
+  SafeAreaView,
   StyleSheet,
   StatusBar,
   TextInput,
+  Share,
   TouchableOpacity,
   ActivityIndicator,
   View, Image
@@ -23,19 +25,23 @@ import {
   Modal,
   Portal,
   Surface,
-  Text,
+  Text, Divider
 } from 'react-native-paper';
-import DiscussionThreadScreen from './DiscussionThread';
 import * as DocumentPicker from 'expo-document-picker';
-import { File } from 'expo-file-system';
 import * as FileSystem from 'expo-file-system/legacy';
+import { File } from 'expo-file-system';
+import * as MediaLibrary from 'expo-media-library';
 import CustomLoader from '../../components/customLoader';
 import { CustomToast } from '../../components/customToast';
 import { Icons } from '../../constants/Icons';
 import { AppContext } from '../../context/appContext';
 import { AuthContext } from '../../context/authProvider';
+import { supabase } from '../../service/Supabase-Client';
 import { uploadAttachments } from '../../service/uploadFiles';
-import { fetchUserGroups, insertDiscussion, fetchDiscussion } from '../../service/Supabase-Fuctions'
+import {
+  fetchUserGroups, insertDiscussion, markAnnouncementRead,
+  fetchDiscussion, makeAnnouncement, getGroupAnnouncements
+} from '../../service/Supabase-Fuctions'
 
 const { width } = Dimensions.get('window');
 
@@ -61,6 +67,9 @@ export default function GroupManagementScreen({ navigation }) {
   const [isTakePhoto, setIsTakePhoto] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+
   const [discussionForm, setDiscussionForm] = useState({
     group_id: null,
     title: '',
@@ -71,8 +80,7 @@ export default function GroupManagementScreen({ navigation }) {
   const [announcementForm, setAnnouncementForm] = useState({
     title: '',
     content: '',
-    priority: 'Normal',
-    attachments: []
+    priority: 'Normal'
   });
   const [announcementReads, setAnnouncementReads] = useState(new Set());
 
@@ -82,6 +90,7 @@ export default function GroupManagementScreen({ navigation }) {
     duration: 7, // days
     allowMultiple: false
   });
+  const [priorityVisible, setPriorityVisible] = useState(false)
   const [moreVisible, setMoreVisible] = React.useState(false);
   const openMoreMenu = () => setMoreVisible(true);
   const closeMoreMenu = () => setMoreVisible(false);
@@ -93,6 +102,8 @@ export default function GroupManagementScreen({ navigation }) {
     avatar: null
   };
 
+  const priorities = ['Low', 'Normal', 'High', 'Urgent'];
+  console.log(announcements)
   useEffect(() => {
     if (selectedGroup && user?.email) {
       loadAnnouncementReads();
@@ -108,14 +119,14 @@ export default function GroupManagementScreen({ navigation }) {
 
   useEffect(() => {
     const channel = supabase
-      .channel(`discussions_${groupId}`)
+      .channel(`discussions_${selectedGroup?.id}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'group_discussions',
-          filter: `group_id=eq.${groupId}`,
+          filter: `group_id=eq.${selectedGroup?.id}`,
         },
         (payload) => {
           if (payload.eventType === 'INSERT') {
@@ -126,7 +137,19 @@ export default function GroupManagementScreen({ navigation }) {
       .subscribe();
 
     return () => supabase.removeChannel(channel);
-  }, [groupId]);
+  }, [selectedGroup]);
+
+  useEffect(() => {
+    if (!isRead && user?.email) {
+      supabase
+        .rpc('mark_announcement_read', {
+          p_announcement_id: ann.id,
+          p_reader_email: user.email,
+        })
+        .catch(console.warn);
+      setIsRead(true);
+    }
+  }, [ann.id, isRead]);
 
   const loadAnnouncementReads = async () => {
     const { data } = await supabase
@@ -152,31 +175,12 @@ export default function GroupManagementScreen({ navigation }) {
   const loadGroupData = async () => {
     if (!selectedGroup) return;
 
-    const discussions = await fetchDiscussion(selectedGroup.id)
+    const discussions = await fetchDiscussion(selectedGroup?.id)
     setDiscussions(discussions || []);
-    // setDiscussions([
-    //   {
-    //     id: '1',
-    //     title: 'Weekly Bulk Order Meeting',
-    //     content: 'Let\'s discuss our weekly bulk order for vegetables. Who\'s interested in joining?',
-    //     author: { name: 'Thabo Dlamini', avatar: null },
-    //     createdAt: '2024-01-15',
-    //     replies: 5,
-    //     attachments: []
-    //   }
-    // ]);
 
-    setAnnouncements([
-      {
-        id: '1',
-        title: 'New Supplier Partnership',
-        content: 'We have partnered with Swazi Fresh Produce for better prices. Check the details in our media section.',
-        priority: 'High',
-        author: { name: 'John Doe', avatar: null },
-        createdAt: '2024-01-14',
-        attachments: []
-      }
-    ]);
+    const announces = await getGroupAnnouncements(selectedGroup?.id)
+    // console.log(announces?.length || 0)
+    setAnnouncements(announces || [])
 
     setMedia([
       {
@@ -252,6 +256,14 @@ export default function GroupManagementScreen({ navigation }) {
     ]);
   };
 
+  const getFileIcon = (url) => {
+    const ext = url.split('.').pop()?.toLowerCase();
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) return 'image';
+    if (['mp4', 'mov', 'avi'].includes(ext)) return 'video';
+    if (ext === 'pdf') return 'file-pdf-box';
+    return 'file-document';
+  };
+
   const createDiscussion = async () => {
     try {
       setIsSubmitting(true)
@@ -266,16 +278,15 @@ export default function GroupManagementScreen({ navigation }) {
         ...discussionForm,
         groupId: selectedGroup.id,
         attachments: uploadedAttachments.map(a => a.url),
-        authorEmail: user.email
+        authorEmail: user.email,
+        authorName: user.name
       };
-
-      uploadedAttachments.map(a => console.log(a.url))
 
       const response = await insertDiscussion(newDiscussion);
 
-      // setDiscussions(prev => [...prev, newDiscussion]);
+      response && setDiscussions(prev => [...prev, response]);
 
-      if (response.status === 200) CustomToast('Success', 'Discussion Started successful');
+      if (response) CustomToast('Success', 'Discussion Started successful');
 
     } catch (err) {
       console.error('Create discussion error:', err);
@@ -287,23 +298,34 @@ export default function GroupManagementScreen({ navigation }) {
     }
   };
 
-  const createAnnouncement = () => {
-    if (!announcementForm.title.trim()) {
-      Alert.alert('Error', 'Announcement title is required');
-      return;
+  const createAnnouncement = async () => {
+    try {
+      setIsLoading(true)
+      if (!announcementForm.title.trim()) {
+        Alert.alert('Error', 'Announcement title is required');
+        return;
+      }
+
+      const newAnnouncement = {
+        ...announcementForm,
+        groupId: selectedGroup.id,
+        authorName: user.name,
+        authorEmail: user.email,
+        isRead: false
+      };
+
+      const newInput = await makeAnnouncement(newAnnouncement)
+
+      newInput && setAnnouncements(prev => [...prev, newAnnouncement]);
+
+      newInput && CustomToast('Success', 'Announcement created successfully!');
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setIsLoading(false)
+      setShowCreateAnnouncement(false);
+      setAnnouncementForm({ title: '', content: '', priority: 'Normal', attachments: [] });
     }
-
-    const newAnnouncement = {
-      ...announcementForm,
-      id: Date.now().toString(),
-      author: { name: currentUser.name, avatar: currentUser.avatar },
-      createdAt: new Date().toISOString()
-    };
-
-    setAnnouncements(prev => [...prev, newAnnouncement]);
-    setShowCreateAnnouncement(false);
-    setAnnouncementForm({ title: '', content: '', priority: 'Normal', attachments: [] });
-    Alert.alert('Success', 'Announcement created successfully!');
   };
 
   const createVote = () => {
@@ -458,48 +480,153 @@ export default function GroupManagementScreen({ navigation }) {
     }
   };
 
+  const handleActionImage = (item, isImage) => {
+    {
+      isImage ?
+        Alert.alert('Actions', ' Do you Want To View or Download',
+          [
+            {
+              text: 'Cancel',
+              style: 'cancel',
+            },
+            {
+              text: 'View',
+              onPress: () => {
+                setSelectedImage(item);
+                setShowImageModal(true);
+              },
+              style: 'default'
+            },
+            {
+              text: 'Download',
+              onPress: () => handleSaveImage(item),
+              style: 'default',
+            },
+          ],
+          {
+            cancelable: true
+          }
+        )
+        :
+        Alert.alert('Actions', ' Do you Want To Download',
+          [
+            {
+              text: 'Cancel',
+              style: 'cancel',
+            },
+            {
+              text: 'Download',
+              onPress: () => handleSaveImage(item),
+              style: 'ok',
+            },
+          ],
+          {
+            cancelable: true
+          }
+        )
+    }
+  };
+
+  const handleShare = async (item) => {
+    try {
+      const shareContent = {
+        message: `${item.title}\n${item.content}`,
+      };
+      await Share.share(shareContent);
+    } catch (error) {
+      console.error('Error sharing:', error);
+      CustomToast('Error', 'Failed to share')
+    }
+  };
+
+  const handleSaveImage = async (item) => {
+    try {
+      const { status } = await MediaLibrary.requestPermissionsAsync();
+      if (status !== 'granted') {
+        alert('Permission to access media library is required!');
+        return;
+      }
+
+      // Create a local file path inside the app's document directory
+      const fileName = item.split('/').pop(); // e.g. "photo.jpg" or "video.mp4"
+      const localUri = FileSystem.documentDirectory + fileName;
+
+      // Download file from the remote URL
+      const { uri } = await FileSystem.downloadAsync(item, localUri);
+
+      // Save the downloaded file to the device's media library
+      await MediaLibrary.saveToLibraryAsync(uri);
+      CustomToast('Success', 'File saved')
+    } catch (error) {
+      console.error('❌ Error saving item:', error);
+    }
+  };
+
   const renderTabContent = () => {
     switch (activeTab) {
       case 'discussions':
         return (
           <FlatList
             data={discussions}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item) => item?.id}
             renderItem={({ item }) => (
-              <TouchableOpacity onPress={() => { }}>
-                <Card style={[styles.contentCard, { backgroundColor: theme.colors.card }]}
-                  onPress={() => navigation.navigate('DiscussionThread', { discussion: item })}
-                >
-                  <Card.Content>
-                    <View style={styles.contentHeader}>
-                      <Avatar.Text size={32} label={item.author.name[0]} />
-                      <View style={styles.contentMeta}>
-                        <Text variant="titleSmall">{item.title}</Text>
-                        <Text variant="bodySmall" style={[styles.metaText, { color: theme.colors.onSurfaceVariant }]}>
-                          by {item.author.name} • {new Date(item.createdAt).toLocaleDateString()}
-                        </Text>
+              <Card style={[styles.contentCard, { backgroundColor: theme.colors.card }]}
+                onPress={() => navigation.navigate('DiscussionThread', { discussion: item })}
+              >
+                <Card.Content>
+                  <View style={styles.contentHeader}>
+                    <Avatar.Text size={32} label={item?.author_name[0]} />
+                    <View style={styles.contentMeta}>
+                      <Text variant="titleSmall">{item?.title}</Text>
+                      <Text variant="bodySmall" style={[styles.metaText, { color: theme.colors.onSurfaceVariant }]}>
+                        by {item?.author_name} • {new Date(item?.created_at).toLocaleDateString()}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text variant="bodyMedium" style={styles.contentText}>
+                    {item?.content}
+                  </Text>
+                  {item?.attachments.length > 0 && (
+                    <View style={styles.attachmentsContainer}>
+                      <Text variant="bodySmall" style={styles.attachmentsLabel}>Attachments:</Text>
+                      <View style={styles.attachments}>
+                        {item?.attachments.map((attachment, index) => {
+                          const icon = getFileIcon(attachment);
+                          const isImage = icon === 'image';
+                          return (
+                            <View key={index}>
+                              {isImage
+                                ? (
+                                  <TouchableOpacity
+                                    onPress={() => handleActionImage(attachment, isImage)}
+                                    style={[styles.attachmentItem, { padding: 20 }]}
+                                  >
+                                    <Image
+                                      source={{ uri: attachment }}
+                                      style={{ width: 60, height: 60, borderRadius: 8 }}
+                                    />
+                                  </TouchableOpacity>
+                                )
+                                : (
+                                  <TouchableOpacity
+                                    onPress={() => handleActionImage(attachment, isImage)}
+                                    style={[styles.attachmentItem]}
+                                  >
+                                    <IconButton icon={icon} size={70} />
+                                  </TouchableOpacity>
+                                )}
+                            </View>
+                          )
+                        })}
                       </View>
                     </View>
-                    <Text variant="bodyMedium" style={styles.contentText}>
-                      {item.content}
-                    </Text>
-                    {item.attachments.length > 0 && (
-                      <View style={styles.attachmentsContainer}>
-                        <Text variant="bodySmall" style={styles.attachmentsLabel}>Attachments:</Text>
-                        {item.attachments.map((attachment) => (
-                          <Chip key={attachment.id} mode="outlined" compact style={styles.attachmentChip}>
-                            {attachment.name}
-                          </Chip>
-                        ))}
-                      </View>
-                    )}
-                  </Card.Content>
-                  <Card.Actions>
-                    <Button mode="text" icon="comment">Reply ({item.replies})</Button>
-                    <Button mode="text" icon="share">Share</Button>
-                  </Card.Actions>
-                </Card>
-              </TouchableOpacity>
+                  )}
+                </Card.Content>
+                <Card.Actions>
+                  <Button mode="text" icon="comment" onPress={() => navigation.navigate('DiscussionThread', { discussion: item })}>Reply ({item.reply_count})</Button>
+                  <Button mode="text" icon="share" onPress={() => handleShare(item)}>Share</Button>
+                </Card.Actions>
+              </Card>
             )}
             contentContainerStyle={styles.contentList}
           />
@@ -514,7 +641,7 @@ export default function GroupManagementScreen({ navigation }) {
               <Card style={[styles.contentCard, { borderLeftColor: item.priority === 'High' ? theme.colors.error : theme.colors.primary, borderLeftWidth: 4 }]}>
                 <Card.Content>
                   <View style={styles.contentHeader}>
-                    <Avatar.Text size={32} label={item.author.name[0]} />
+                    <Avatar.Text size={32} label={item.author_name[0]} />
                     <View style={styles.contentMeta}>
                       <Text variant="titleSmall">{item.title}</Text>
                       <View style={styles.announcementMeta}>
@@ -522,7 +649,7 @@ export default function GroupManagementScreen({ navigation }) {
                           {item.priority}
                         </Chip>
                         <Text variant="bodySmall" style={[styles.metaText, { color: theme.colors.onSurfaceVariant }]}>
-                          by {item.author.name} • {new Date(item.createdAt).toLocaleDateString()}
+                          by {item.author_name} • {new Date(item.created_at).toLocaleDateString()}
                         </Text>
                       </View>
                     </View>
@@ -530,24 +657,11 @@ export default function GroupManagementScreen({ navigation }) {
                   <Text variant="bodyMedium" style={styles.contentText}>
                     {item.content}
                   </Text>
-                  {item.attachments.length > 0 && (
-                    <View style={styles.attachmentsContainer}>
-                      <Text variant="bodySmall" style={styles.attachmentsLabel}>Attachments:</Text>
-                      {item.attachments.map((attachment) => (
-                        <Chip key={attachment.id} mode="outlined" compact style={styles.attachmentChip}>
-                          {attachment.name}
-                        </Chip>
-                      ))}
-                    </View>
-                  )}
                 </Card.Content>
                 <Card.Actions>
                   <Button mode="text" icon={announcementReads.has(item.id) ? "check" : "eye"}
                     onPress={async () => {
-                      await supabase.rpc('mark_announcement_read', {
-                        p_announcement_id: item.id,
-                        p_user_email: user.email
-                      });
+                      await markAnnouncementRead(item?.id, user?.email)
                       setAnnouncementReads(prev => new Set(prev).add(item.id));
                     }}
                   >
@@ -834,7 +948,10 @@ export default function GroupManagementScreen({ navigation }) {
               <Icons.FontAwesome6
                 name="people-group"
                 size={20}
-                onPress={() => setShowMemberManagement(true)}
+                onPress={() => {
+                  console.log('Go back')
+                  setShowMemberManagement(true)
+                }}
                 color="#FFFFFF"
               />
               {/* </TouchableOpacity> */}
@@ -920,6 +1037,28 @@ export default function GroupManagementScreen({ navigation }) {
           </View>
         </View>
       )}
+
+      {/* Image modal */}
+      <Modal
+        visible={showImageModal}
+        animationType="fade"
+        transparent={true}
+        onRequestClose={() => setShowImageModal(false)}
+      >
+        <SafeAreaView style={styles.imageModalContainer}>
+          <Image
+            source={{ uri: selectedImage }}
+            style={styles.fullScreenImage}
+            resizeMode="contain"
+          />
+          <TouchableOpacity
+            style={styles.imageModalCloseButton}
+            onPress={() => setShowImageModal(false)}
+          >
+            <Icons.FontAwesome name="remove" size={24} color="#ffffff" />
+          </TouchableOpacity>
+        </SafeAreaView>
+      </Modal>
 
       {/* Create Discussion Modal */}
       <Portal>
@@ -1007,7 +1146,7 @@ export default function GroupManagementScreen({ navigation }) {
             <Text style={styles.modalTitle}>Create Announcement</Text>
 
             <TextInput
-              label="Announcement Text"
+              placeholder="Announcement Title"
               value={announcementForm.title}
               onChangeText={(text) => setAnnouncementForm(prev => ({ ...prev, title: text }))}
               mode="outlined"
@@ -1015,7 +1154,7 @@ export default function GroupManagementScreen({ navigation }) {
             />
 
             <TextInput
-              label="Content"
+              placeholder="Content"
               value={announcementForm.content}
               onChangeText={(text) => setAnnouncementForm(prev => ({ ...prev, content: text }))}
               mode="outlined"
@@ -1024,33 +1163,79 @@ export default function GroupManagementScreen({ navigation }) {
               style={styles.input}
             />
 
-            <View style={styles.inputRow}>
-              <View style={[styles.input, styles.halfInput]}>
-                <Menu
-                  visible={false}
-                  onDismiss={() => { }}
-                  anchor={
-                    <TouchableOpacity onPress={() => { }} style={[styles.prioritySelector, { borderColor: theme.colors.outline }]}>
-                      <Text>{announcementForm.priority}</Text>
-                    </TouchableOpacity>
-                  }
+            <Menu
+              visible={priorityVisible}
+              onDismiss={() => setPriorityVisible(false)}
+              anchorPosition="bottom"
+              contentStyle={{
+                backgroundColor: theme.colors.card,
+                borderRadius: 8,
+                elevation: 4,
+              }}
+              anchor={
+                <TouchableOpacity
+                  style={[
+                    styles.menuAnchor, styles.menu,
+                    {
+                      backgroundColor: '#f9fafb',
+                      borderWidth: 1,
+                      borderRadius: 8,
+                      color: '#6b7280',
+                      borderColor: '#e5e7eb',
+                    }
+                  ]}
+                  onPress={() => setPriorityVisible(true)}
+                  accessibilityLabel="Select Priority"
                 >
-                  {['Low', 'Normal', 'High', 'Urgent'].map((priority) => (
-                    <Menu.Item
-                      key={priority}
-                      onPress={() => setAnnouncementForm(prev => ({ ...prev, priority }))}
-                      title={priority}
-                    />
-                  ))}
-                </Menu>
+                  <Text style={{ color: priorities ? theme.colors.primary : theme.colors.onSurfaceVariant }}>
+                    {announcementForm.priority || 'Select Priority'}
+                  </Text>
+                  <IconButton icon="chevron-down" size={20} />
+                </TouchableOpacity>
+              }
+            >
+              {/* Custom Header */}
+              <View style={{ padding: 12, backgroundColor: theme.colors.primaryContainer }}>
+                <Text variant="labelLarge" style={{ color: theme.colors.primary }}>Priorities</Text>
               </View>
-            </View>
+              <Divider />
+
+              {/* Custom Items with Radio Icons */}
+              {priorities.map((priority, index) => (
+                <React.Fragment key={`${priority}-${index}`}>
+                  <Menu.Item
+                    key={priority}
+                    leadingIcon={announcementForm.priority === priority ? 'check-circle' : 'circle-outline'} // Use your Icons constant
+                    onPress={() => {
+                      setAnnouncementForm(prev => ({ ...prev, priority }))
+                      setPriorityVisible(false)
+                    }}
+                    title={priority}
+                    titleStyle={{ fontWeight: announcementForm.priority === priority ? 'bold' : 'normal' }}
+                  />
+                  {index < priorities?.length - 1 && <Divider />}
+                </React.Fragment>
+              ))}
+
+              {/* Custom Footer */}
+              <Divider />
+              <View style={{ padding: 8, alignItems: 'flex-end' }}>
+                <Button compact onPress={() => setPriorityVisible(false)}>Cancel</Button>
+              </View>
+            </Menu>
 
             <View style={styles.modalActions}>
-              <Button mode="outlined" onPress={() => setShowCreateAnnouncement(false)} style={styles.actionButton}>
+              <Button mode="outlined" onPress={() => setShowCreateAnnouncement(false)}
+                style={[styles.actionButton, styles.cancelButton, { borderColor: theme.colors.border, backgroundColor: theme.colors.sub_card }]}
+                theme={{ colors: { primary: theme.colors.indicator } }}
+              >
                 Cancel
               </Button>
-              <Button mode="contained" onPress={createAnnouncement} style={styles.actionButton}>
+              <Button mode="contained" onPress={createAnnouncement} style={[styles.actionButton, styles.submitButton]}
+                theme={{ colors: { primary: theme.colors.indicator } }}
+                disabled={isSubmitting}
+                loading={isSubmitting}
+              >
                 Post Announcement
               </Button>
             </View>
@@ -1131,7 +1316,7 @@ export default function GroupManagementScreen({ navigation }) {
           </ScrollView>
         </Modal>
       </Portal>
-    </View>
+    </View >
   );
 }
 
@@ -1250,12 +1435,37 @@ const styles = StyleSheet.create({
   attachmentsContainer: {
     marginTop: 12,
   },
+  attachments: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-evenly',
+    alignItems: 'center'
+  },
+  attachmentItem: {
+    borderRadius: 8,
+    backgroundColor: '#F8F4FF'
+  },
   attachmentsLabel: {
     marginBottom: 8,
     fontWeight: 'bold',
   },
   attachmentChip: {
     margin: 4,
+  },
+  menuAnchor: {
+    padding: 16,
+    justifyContent: 'center'
+  },
+  menu: {
+    flex: 1,
+    height: 50,
+    borderWidth: 1,
+    borderRadius: 5,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingRight: 2,
+    marginTop: 5
   },
   announcementMeta: {
     flexDirection: 'row',
@@ -1348,13 +1558,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 16,
   },
-  inputRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  halfInput: {
-    flex: 1,
-  },
   categorySelector: {
     borderWidth: 1,
     borderRadius: 4,
@@ -1420,5 +1623,24 @@ const styles = StyleSheet.create({
   submitButton: {
     elevation: 4, shadowColor: '#000', shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2, shadowRadius: 4,
+  },
+  imageModalContainer: {
+    // flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  fullScreenImage: {
+    width: '100%',
+    height: '100%',
+  },
+  imageModalCloseButton: {
+    position: 'absolute',
+    top: 10,
+    right: 20,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 20,
   },
 });

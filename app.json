@@ -70,6 +70,24 @@
         }
       ],
       [
+        "expo-media-library",
+        {
+          "photosPermission": "Allow this app to access your photos.",
+          "savePhotosPermission": "Allow this app to save photos.",
+          "isAccessMediaLocationEnabled": true,
+          "granularPermissions": [
+            "audio",
+            "photo"
+          ]
+        }
+      ],
+      [
+        "expo-web-browser",
+        {
+          "experimentalLauncherActivity": true
+        }
+      ],
+      [
         "react-native-auth0",
         {
           "clientId": "wuNnffEgLMLYx1G6ZSBL6ci2rL8b1VOT",

@@ -345,7 +345,6 @@ export default function VendorInventoryScreen({ navigation, route }) {
         text: 'Delete', style: 'destructive', onPress: () => {
           const updated = items.filter(i => i.id !== itemId);
           setItems(updated);
-          // Persist deletion if needed
         }
       }
     ]);

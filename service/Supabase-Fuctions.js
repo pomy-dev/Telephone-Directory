@@ -1,6 +1,6 @@
 // utils/upsertUserProfile.js
 import { supabase } from './Supabase-Client';
-import { UploadFile } from './uploadFiles';
+import { useState, useEffect } from 'react';
 
 
 export async function subscribeRealtime() {
@@ -222,20 +222,20 @@ export const fetchUserGroups = async (userEmail) => {
 };
 
 export const insertDiscussion = async (discussionData) => {
-  const resp = await supabase.rpc('pomy_add_discussion', {
+  const { data, error } = await supabase.rpc('pomy_add_discussion', {
     p_group_id: discussionData.groupId,
     p_title: discussionData.title,
     p_content: discussionData.content,
     p_author_email: discussionData.authorEmail,
-    p_attachments: discussionData.attachments
+    p_author_name: discussionData.authorName,
+    p_attachments: discussionData.attachments,
   });
 
-  if (!resp) {
-    console.error(err)
-    return;
-  }
+  if (error) throw error;
 
-  return resp
+  console.log(data)
+
+  return data
 }
 
 export const fetchDiscussion = async (groupId) => {
@@ -247,8 +247,104 @@ export const fetchDiscussion = async (groupId) => {
       .order('created_at', { ascending: false });
 
     if (error) throw error;
+    // console.log(
+    //   '=================================\n',
+    //   data,
+    //   '\n================================'
+    // )
     return data
   } catch (err) {
     console.error('Fetch error:', err);
   }
 }
+
+export const replyDiscussion = async (memberReply) => {
+  try {
+    const { data, error } = await supabase.rpc('add_reply', {
+      p_discussion_id: memberReply.discussionId,
+      p_content: memberReply.content,
+      p_attachments: memberReply.attachments,
+      p_author_name: memberReply.author,
+      p_author_email: memberReply.userEmail,
+    });
+
+    if (error) throw error;
+
+    console.log('Discussion: \n', data)
+
+    return data;
+  } catch (err) {
+    console.error('Reply error:', err);
+    throw err;
+  }
+}
+
+export const getDiscussionReplies = async (discussionId) => {
+  const [replies, setReplies] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchReplies = async () => {
+    if (!discussionId) return;
+
+    try {
+      setLoading(true);
+      setError(null);
+
+      const { data, error } = await supabase
+        .rpc('pomy_get_replies', { p_discussion_id: discussionId });
+
+      if (error) throw error;
+
+      setReplies(data || []);
+    } catch (err) {
+      setError(err.message);
+      console.error('Fetch replies error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchReplies();
+  }, [discussionId]);
+
+  return { replies, loading, error, refetch: fetchReplies };
+};
+
+export const makeAnnouncement = async (announcement) => {
+  const { data, error } = await supabase.rpc('pomy_add_announcement', {
+    p_group_id: announcement.groupId,
+    p_title: announcement.title,
+    p_content: announcement.content,
+    p_priority: announcement.priority,
+    p_author_name: announcement.authorName,
+    p_author_email: announcement.authorEmail,
+    p_is_read: announcement.isRead
+  });
+
+  if (error) throw error;
+  return data;
+}
+
+export const getGroupAnnouncements = async (groupId) => {
+  if (!groupId) return;
+
+  const { data, error } = await supabase
+    .rpc('pomy_get_announcements', { p_group_id: groupId });
+
+  if (error) throw error;
+  console.log(data)
+  return data;
+};
+
+export const markAnnouncementRead = async (announcementId, userEmail) => {
+  if (!announcementId && !userEmail) return;
+  
+  const { error } = await supabase.rpc('mark_announcement_read', {
+    p_announcement_id: announcementId,
+    p_reader_email: userEmail,
+  });
+
+  if (error) throw error;
+};
