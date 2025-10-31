@@ -10,7 +10,6 @@ import { uploadAttachments } from '../../service/uploadFiles';
 import { AppContext } from '../../context/appContext';
 import { AuthContext } from '../../context/authProvider';
 import * as DocumentPicker from 'expo-document-picker';
-import * as FileSystem from 'expo-file-system/legacy';
 import * as WebBrowser from 'expo-web-browser';
 import { File } from 'expo-file-system';
 import { Icons } from '../../constants/Icons';
@@ -18,7 +17,6 @@ import * as ImagePicker from 'expo-image-picker';
 import CustomLoader from '../../components/customLoader';
 import { replyDiscussion, getDiscussionReplies } from '../../service/Supabase-Fuctions';
 import { CustomToast } from '../../components/customToast';
-import { supabase } from '../../service/Supabase-Client';
 
 export default function DiscussionThreadScreen({ navigation, route }) {
   const { discussion } = route.params;
@@ -27,7 +25,7 @@ export default function DiscussionThreadScreen({ navigation, route }) {
   const [replyText, setReplyText] = useState('');
   const [attachments, setAttachments] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const { replies, loading, error } = getDiscussionReplies(discussion.id);
+  const [replies, setReplies] = useState([]);
   const [isPickImage, setIsPickImage] = useState(false);
   const [isTakePhoto, setIsTakePhoto] = useState(false);
   const [moreVisible, setMoreVisible] = React.useState(false);
@@ -39,7 +37,20 @@ export default function DiscussionThreadScreen({ navigation, route }) {
 
   useEffect(() => {
     if (!discussion?.id) return;
+    loadReplies()
   }, [discussion?.id]);// Re-run when discussionId changes
+
+  const loadReplies = async () => {
+    try {
+      setIsLoading(true)
+      const replies = await getDiscussionReplies(discussion.id)
+      replies.length > 0 ? setReplies(replies) : setReplies([])
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const pickMedia = async () => {
     try {
@@ -214,7 +225,7 @@ export default function DiscussionThreadScreen({ navigation, route }) {
       <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
         <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
 
-        {isPickImage || isTakePhoto || loading && <CustomLoader />}
+        {isPickImage || isTakePhoto || isLoading && <CustomLoader />}
 
         <View style={[styles.header, { borderColor: theme.colors.border }]}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -265,7 +276,7 @@ export default function DiscussionThreadScreen({ navigation, route }) {
 
         <View>
           <ScrollView showsVerticalScrollIndicator={false} style={{ maxHeight: 350 }}>
-            {replies.map((reply, index) => {
+            {replies?.map((reply, index) => {
               return (
                 <Card style={{ margin: 8 }} key={index}>
                   <Card.Content>

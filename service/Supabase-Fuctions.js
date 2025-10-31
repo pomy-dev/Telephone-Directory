@@ -280,36 +280,14 @@ export const replyDiscussion = async (memberReply) => {
 }
 
 export const getDiscussionReplies = async (discussionId) => {
-  const [replies, setReplies] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  if (!discussionId) return;
 
-  const fetchReplies = async () => {
-    if (!discussionId) return;
+  const { data, error } = await supabase
+    .rpc('pomy_get_replies', { p_discussion_id: discussionId });
 
-    try {
-      setLoading(true);
-      setError(null);
+  if (error) throw error;
 
-      const { data, error } = await supabase
-        .rpc('pomy_get_replies', { p_discussion_id: discussionId });
-
-      if (error) throw error;
-
-      setReplies(data || []);
-    } catch (err) {
-      setError(err.message);
-      console.error('Fetch replies error:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchReplies();
-  }, [discussionId]);
-
-  return { replies, loading, error, refetch: fetchReplies };
+  return data;
 };
 
 export const makeAnnouncement = async (announcement) => {
@@ -331,19 +309,23 @@ export const getGroupAnnouncements = async (groupId) => {
   if (!groupId) return;
 
   const { data, error } = await supabase
-    .rpc('pomy_get_announcements', { p_group_id: groupId });
+    .from('group_announcements_with_read')
+    .select('*')
+    .eq('group_id', groupId)
+    .order('created_at', { ascending: false });
 
   if (error) throw error;
-  console.log(data)
+
+  console.log('=====Announcements====\n\t', data.length)
   return data;
 };
 
 export const markAnnouncementRead = async (announcementId, userEmail) => {
   if (!announcementId && !userEmail) return;
-  
+
   const { error } = await supabase.rpc('mark_announcement_read', {
     p_announcement_id: announcementId,
-    p_reader_email: userEmail,
+    p_user_email: userEmail,
   });
 
   if (error) throw error;

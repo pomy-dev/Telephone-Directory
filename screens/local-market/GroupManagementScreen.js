@@ -41,7 +41,7 @@ import { uploadAttachments } from '../../service/uploadFiles';
 import {
   fetchUserGroups, insertDiscussion, markAnnouncementRead,
   fetchDiscussion, makeAnnouncement, getGroupAnnouncements
-} from '../../service/Supabase-Fuctions'
+} from '../../service/Supabase-Fuctions';
 
 const { width } = Dimensions.get('window');
 
@@ -103,7 +103,8 @@ export default function GroupManagementScreen({ navigation }) {
   };
 
   const priorities = ['Low', 'Normal', 'High', 'Urgent'];
-  console.log(announcements)
+  // console.log(announcements)
+
   useEffect(() => {
     if (selectedGroup && user?.email) {
       loadAnnouncementReads();
@@ -117,6 +118,7 @@ export default function GroupManagementScreen({ navigation }) {
     }
   }, [selectedGroup, user]);
 
+  // real-time channel on create discussion
   useEffect(() => {
     const channel = supabase
       .channel(`discussions_${selectedGroup?.id}`)
@@ -138,18 +140,6 @@ export default function GroupManagementScreen({ navigation }) {
 
     return () => supabase.removeChannel(channel);
   }, [selectedGroup]);
-
-  useEffect(() => {
-    if (!isRead && user?.email) {
-      supabase
-        .rpc('mark_announcement_read', {
-          p_announcement_id: ann.id,
-          p_reader_email: user.email,
-        })
-        .catch(console.warn);
-      setIsRead(true);
-    }
-  }, [ann.id, isRead]);
 
   const loadAnnouncementReads = async () => {
     const { data } = await supabase
@@ -316,7 +306,7 @@ export default function GroupManagementScreen({ navigation }) {
 
       const newInput = await makeAnnouncement(newAnnouncement)
 
-      newInput && setAnnouncements(prev => [...prev, newAnnouncement]);
+      // newInput && setAnnouncements(prev => [...prev, newAnnouncement]);
 
       newInput && CustomToast('Success', 'Announcement created successfully!');
     } catch (err) {
@@ -590,7 +580,7 @@ export default function GroupManagementScreen({ navigation }) {
                     <View style={styles.attachmentsContainer}>
                       <Text variant="bodySmall" style={styles.attachmentsLabel}>Attachments:</Text>
                       <View style={styles.attachments}>
-                        {item?.attachments.map((attachment, index) => {
+                        {item?.attachments?.map((attachment, index) => {
                           const icon = getFileIcon(attachment);
                           const isImage = icon === 'image';
                           return (
@@ -648,9 +638,14 @@ export default function GroupManagementScreen({ navigation }) {
                         <Chip mode="outlined" compact style={[styles.priorityChip, { backgroundColor: theme.colors.errorContainer, }]}>
                           {item.priority}
                         </Chip>
-                        <Text variant="bodySmall" style={[styles.metaText, { color: theme.colors.onSurfaceVariant }]}>
-                          by {item.author_name} • {new Date(item.created_at).toLocaleDateString()}
-                        </Text>
+                        <View style={{ flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start' }}>
+                          <Text variant="bodySmall" numberOfLines={2} ellipsizeMode='tail' style={[styles.metaText, { color: theme.colors.onSurfaceVariant }]}>
+                            by {item.author_name}
+                          </Text>
+                          <Text variant="bodySmall" numberOfLines={2} ellipsizeMode='tail' style={[styles.metaText, { color: theme.colors.onSurfaceVariant }]}>
+                            Dated {new Date(item.created_at).toLocaleDateString()}
+                          </Text>
+                        </View>
                       </View>
                     </View>
                   </View>
