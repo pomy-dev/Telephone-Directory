@@ -1,10 +1,10 @@
 import { createStackNavigator } from "@react-navigation/stack";
-import HomeScreen from "../screens/Home"
-import ProfileScreen from "../screens/AddProfile"
-import BusinessDetailsScreen from "../screens/BusinessDetailsScreen"
-import FeaturedScreen from "../screens/FeaturedScreen"
-import BusinessArticlesScreen from "../screens/BusinessArticlesScreen"
-import NotificationList from "../screens/NotificationList"
+import HomeScreen from "../screens/directory/DirectoryHome"
+import ProfileScreen from "../screens/directory/AddProfile"
+import BusinessDetailsScreen from "../screens/directory/BusinessDetailsScreen"
+import FeaturedScreen from "../screens/directory/FeaturedScreen"
+import BusinessArticlesScreen from "../screens/directory/BusinessArticlesScreen"
+import NotificationList from "../screens/directory/NotificationList"
 
 
 

@@ -1,7 +1,7 @@
 // AppContext.js
 import { createContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { CustomDarkTheme, CustomLightTheme } from '../constants/colors';
+import { CustomDarkTheme, CustomLightTheme } from '../constants/theme';
 import { fetchNotifications } from '../service/getApi'; // <-- your API call
 
 export const AppContext = createContext();

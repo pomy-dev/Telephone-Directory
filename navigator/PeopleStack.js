@@ -1,6 +1,6 @@
 import { createStackNavigator } from "@react-navigation/stack";
-import PeopleScreen from "../screens/PeopleProfiles"
-import ProfileScreen from "../screens/AddProfile"
+import PeopleScreen from "../screens/directory/PeopleProfiles"
+import ProfileScreen from "../screens/directory/AddProfile"
 
 
 

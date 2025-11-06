@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
-import { StyleSheet, ScrollView, View, Text, TouchableOpacity, Alert } from 'react-native';
+import { StyleSheet, StatusBar, ScrollView, View, Text, TouchableOpacity, Alert } from 'react-native';
+import { Avatar } from 'react-native-paper';
 import { Icons } from '../../constants/Icons';
+import { Images } from '../../constants/Images';
+import { MoreDropdown } from '../../components/moreDropDown';
 import { AppContext } from '../../context/appContext';
 import { AuthContext } from '../../context/authProvider';
 
@@ -77,8 +80,10 @@ const mockGroupDetails = {
   ],
 };
 
-export default function GroupDetailsScreen() {
-  const [activeTab, setActiveTab] = useState < 'overview' | 'members' | 'transactions' > ('overview');
+export default function GroupDetailsScreen({ navigation }) {
+  const { theme, isDarkMode } = React.useContext(AppContext)
+  const { user } = React.useContext(AuthContext)
+  const [activeTab, setActiveTab] = useState('overview');
 
   const handleMemberPress = (member) => {
     Alert.alert(
@@ -101,14 +106,6 @@ export default function GroupDetailsScreen() {
         { text: 'Cancel', style: 'cancel' },
         { text: 'Vote', onPress: () => console.log(`Voted for ${memberId} as ${role}`) },
       ]
-    );
-  };
-
-  const handleRequestLoan = () => {
-    Alert.alert(
-      'Request Loan',
-      'Loan request functionality would be implemented here. You can request to borrow from the group funds.',
-      [{ text: 'OK' }]
     );
   };
 
@@ -149,6 +146,25 @@ export default function GroupDetailsScreen() {
         </View>
       </View>
 
+      {/* Group Accruals */}
+      <View style={styles.statsContainer}>
+        <View style={styles.statCard}>
+          <Icons.MaterialCommunityIcons name="cash-refund" size={24} color="#2908bdff" />
+          <View style={styles.statContent}>
+            <Text style={styles.statValue}>E9000</Text>
+            <Text style={styles.statLabel}>Accruals</Text>
+          </View>
+        </View>
+
+        <View style={styles.statCard}>
+          <Icons.AntDesign name="aim" size={24} color="#ba097fff" />
+          <View style={styles.statContent}>
+            <Text style={styles.statValue}>E24000</Text>
+            <Text style={styles.statLabel}>Targeted Amount</Text>
+          </View>
+        </View>
+      </View>
+
       {/* Progress Bar */}
       <View style={styles.progressSection}>
         <Text style={styles.sectionTitle}>Group Progress</Text>
@@ -170,33 +186,46 @@ export default function GroupDetailsScreen() {
       {/* Group Info */}
       <View style={styles.infoSection}>
         <Text style={styles.sectionTitle}>Group Information</Text>
+
         <View style={styles.infoItem}>
           <Text style={styles.infoLabel}>Monthly Contribution</Text>
           <Text style={styles.infoValue}>E{mockGroupDetails.monthlyContribution}</Text>
         </View>
+
         <View style={styles.infoItem}>
           <Text style={styles.infoLabel}>Savings Account</Text>
           <Text style={styles.infoValue}>{mockGroupDetails.savingsAccount}</Text>
         </View>
+
         <View style={styles.infoItem}>
-          <Text style={styles.infoLabel}>Next Contribution</Text>
-          <Text style={styles.infoValue}>{mockGroupDetails.nextContribution}</Text>
+          <Text style={styles.infoLabel}>Is Account Transferable</Text>
+          <Text style={styles.infoValue}>Yes/No</Text>
         </View>
-        <View style={styles.infoItem}>
-          <Text style={styles.infoLabel}>Description</Text>
+
+        <View style={[styles.cardDescription, { backgroundColor: theme.colors.sub_card }]}>
+          <Text style={[{ textAlign: 'center', color: theme.colors.text, fontSize: 20 }]}>Description</Text>
           <Text style={styles.infoDescription}>{mockGroupDetails.description}</Text>
         </View>
+
       </View>
 
       {/* Action Buttons */}
       <View style={styles.actionButtons}>
-        <TouchableOpacity style={styles.actionButton} onPress={handleRequestLoan}>
-          <Icons.Entypo name="hand" size={20} color="#fff" />
-          <Text style={styles.actionButtonText}>Request Loan</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.actionButtonSecondary}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+          <TouchableOpacity style={[styles.actionButton, { backgroundColor: '#ce701dff' }]} onPress={() => navigation.navigate('MakeLoan', { mode: 'request' })}>
+            <Icons.Entypo name="hand" size={20} color="#fff" />
+            <Text style={styles.actionButtonText}>Request Loan</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.actionButton, { backgroundColor: '#954cafff' }]} onPress={() => navigation.navigate('MakeLoan', { mode: 'repay', loadId: 2 })}>
+            <Icons.MaterialCommunityIcons name="cash-refund" size={24} color="#fff" />
+            <Text style={styles.actionButtonText}>Manage Loan</Text>
+          </TouchableOpacity>
+        </View>
+
+        <TouchableOpacity style={styles.actionButtonSecondary} onPress={() => navigation.navigate('PaySubscription')}>
           <Icons.Feather name="plus" size={20} color="#4CAF50" />
-          <Text style={styles.actionButtonTextSecondary}>Make Contribution</Text>
+          <Text style={styles.actionButtonTextSecondary}>Make Subscription</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -226,9 +255,6 @@ export default function GroupDetailsScreen() {
             <View style={styles.memberDetails}>
               <Text style={styles.memberName}>{member.name}</Text>
               <Text style={styles.memberRole}>{member.role}</Text>
-              <Text style={styles.memberStats}>
-                Contributions: {member.contributions}/{mockGroupDetails.currentMonth} | E{member.totalContributed}
-              </Text>
             </View>
           </View>
           <View style={styles.memberActions}>
@@ -281,14 +307,63 @@ export default function GroupDetailsScreen() {
   );
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
+
       <View style={styles.header}>
-        <Text type="title" style={styles.headerTitle}>
-          {mockGroupDetails.name}
-        </Text>
-        <Text style={styles.headerSubtitle}>
-          Admin: {mockGroupDetails.admin}
-        </Text>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Icons.Ionicons name='arrow-back' size={24} color='#0000' />
+        </TouchableOpacity>
+
+        <View style={{ flexDirection: 'row', gap: '10', alignItems: 'center' }}>
+          <Avatar.Image source={Images.stokfela} width={40} size={40} />
+          <Text type="title" style={styles.headerTitle}>
+            {mockGroupDetails.name}
+          </Text>
+        </View>
+
+        <MoreDropdown
+          items={[
+            {
+              title: 'Group Account',
+              icon: 'Entypo',
+              iconName: 'credit-card',
+              onPress: () => console.log('Group Account'),
+            },
+            {
+              title: 'Set Conditions',
+              icon: 'MaterialIcons',
+              iconName: 'display-settings',
+              onPress: () => console.log('Set Rules'),
+            },
+            {
+              title: 'Admin Outline',
+              icon: 'MaterialCommunityIcons',
+              iconName: 'account-cog-outline',
+              onPress: () => console.log('Admin Outline'),
+            },
+            {
+              title: 'Add Member',
+              icon: 'AntDesign',
+              iconName: 'user-add',
+              onPress: () => console.log('Add user')
+            },
+            {
+              title: 'Leave Group',
+              icon: 'AntDesign',
+              iconName: 'logout',
+              onPress: () =>
+                Alert.alert(
+                  'Leave Group',
+                  'Are you sure you want to leave this group?',
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Leave', style: 'destructive' },
+                  ]
+                ),
+            },
+          ]}
+        />
       </View>
 
       {/* Tab Navigation */}
@@ -329,20 +404,20 @@ export default function GroupDetailsScreen() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
+    flex: 1
   },
   header: {
-    padding: 20,
-    paddingTop: 60,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 30,
     backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
   },
   headerTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 4,
+    fontSize: 15,
+    fontWeight: 200,
+    marginBottom: 4
   },
   headerSubtitle: {
     fontSize: 16,
@@ -374,8 +449,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   scrollView: {
-    flex: 1,
-    padding: 16,
+    paddingHorizontal: 10,
+    paddingTop: 10,
+    paddingBottom: 20
   },
   tabContent: {
     flex: 1,
@@ -391,7 +467,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#fff',
     borderRadius: 8,
-    padding: 12,
+    padding: 8,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -427,7 +503,6 @@ const styles = StyleSheet.create({
     },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    elevation: 3,
   },
   sectionTitle: {
     fontSize: 18,
@@ -453,18 +528,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   infoSection: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
+    padding: 5,
     marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   infoItem: {
     flexDirection: 'row',
@@ -472,7 +537,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: '#d0ceceff',
   },
   infoLabel: {
     fontSize: 14,
@@ -483,6 +548,12 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#333',
   },
+  cardDescription: {
+    marginTop: 8,
+    borderRadius: 8,
+    overflow: 'hidden',
+    padding: 6
+  },
   infoDescription: {
     fontSize: 14,
     color: '#666',
@@ -491,13 +562,13 @@ const styles = StyleSheet.create({
   },
   actionButtons: {
     gap: 12,
-    marginBottom: 20,
+    marginBottom: 60,
   },
   actionButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#4CAF50',
     padding: 16,
     borderRadius: 8,
   },
@@ -538,21 +609,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   memberCard: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
     padding: 16,
-    marginBottom: 12,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    borderBottomColor: '#c3c1c1ff',
+    borderBottomWidth: 1,
   },
   memberInfo: {
     flexDirection: 'row',
@@ -563,7 +625,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#dbdbdbff',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 12,

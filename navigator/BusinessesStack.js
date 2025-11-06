@@ -1,8 +1,8 @@
 import { createStackNavigator } from '@react-navigation/stack';
-import BusinessesScreen from '../screens/BusinessesScreen';
-import BusinessDetailsScreen from "../screens/BusinessDetailsScreen"
-import BusinessList from "../screens/BusinessListScreen"
-import BusinessArticlesScreen from "../screens/BusinessArticlesScreen"
+import BusinessesScreen from '../screens/directory/BusinessesScreen';
+import BusinessDetailsScreen from "../screens/directory/BusinessDetailsScreen"
+import BusinessList from "../screens/directory/BusinessListScreen"
+import BusinessArticlesScreen from "../screens/directory/BusinessArticlesScreen"
 
 const BusinessesStack = createStackNavigator();
 export default function BusinessesStackNavigator() {

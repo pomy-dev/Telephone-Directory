@@ -60,17 +60,63 @@ import event5 from '../assets/events/5.jpeg'
 import google from '../assets/pics/google.png'
 import facebook from '../assets/pics/facebook.png'
 
+// stokfella accounts
+import buildingSociety from '../assets/custom-pics/buildingsociety.png'
+import instacash from '../assets/custom-pics/instacash.png'
+import momo from '../assets/custom-pics/momo.png'
+import cash from '../assets/custom-pics/cash.png'
+
+// stokfella group icon
+import stokfela from '../assets/custom-pics/informal-group.png'
+
 // no image placeholder
 import noImage from '../assets/no-image.jpg';
+
+// app icon
+import appLogo from '../assets/logo.png'
 
 // default user
 import default_user from '../assets/default-user.png';
 
+// services
+import groceries from '../assets/icons/Groceries.png'
+import houses from '../assets/icons/houses.png'
+import newsroom from '../assets/icons/newsroom.png'
+import Phonebook from '../assets/icons/Phonebook.png'
+import piecejob from '../assets/icons/piece-jobs.png'
+import ride from '../assets/icons/Ride.png'
+import taxi from '../assets/icons/taxi.png'
+import tender from '../assets/icons/tender.png'
+import vacancies from '../assets/icons/vacancies.png'
+
 // export the images
 export const Images = {
+  // App icon
+  appLogo,
+
+  // home screen services
+  groceries,
+  houses,
+  newsroom,
+  Phonebook,
+  piecejob,
+  ride,
+  taxi,
+  tender,
+  vacancies,
+
   // state flags
   bs_eswatini,
   eptc,
+
+  // stokfella accounts
+  buildingSociety,
+  momo,
+  instacash,
+  cash,
+
+  // stokfela
+  stokfela,
 
   // companies
   RES,

@@ -1,393 +1,526 @@
-import React, { useState } from 'react';
-import { StyleSheet, ScrollView, View, Text, TouchableOpacity, Alert, TextInput } from 'react-native';
+import React, { useState, useContext, useCallback, useMemo } from 'react';
+import {
+  StyleSheet,
+  StatusBar,
+  ScrollView,
+  Image,
+  View,
+  Text,
+  TouchableOpacity,
+  Alert,
+  TextInput,
+  FlatList,
+  Modal,
+  ActivityIndicator
+} from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { Menu, Portal } from 'react-native-paper';
 import { Icons } from '../../constants/Icons';
+import { Images } from '../../constants/Images';
 import { AppContext } from '../../context/appContext';
 import { AuthContext } from '../../context/authProvider';
+import BottomSheet, { useBottomSheetSpringConfigs, BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
-export default function MakeContributionScreen() {
-  const { theme, isDarkMode } = React.useContext(AppContext)
-  const { user } = React.useContext(AuthContext)
+const MOCK_TRANSACTIONS = [
+  { id: '1', date: '2025-10-28', amount: 'E500.00', status: 'Success', reference: 'XMAS2024-001' },
+  { id: '2', date: '2025-10-15', amount: 'E500.00', status: 'Success', reference: 'XMAS2024-002' },
+  { id: '3', date: '2025-10-01', amount: 'E250.00', status: 'Pending', reference: 'XMAS2024-003' },
+  { id: '4', date: '2025-09-20', amount: 'E500.00', status: 'Success', reference: 'XMAS2024-004' },
+];
+
+const PAYMENT_METHODS = [
+  { id: 'momo', name: 'MoMo', image: Images.momo || Images.cash, account: '+268 7612 3456' },
+  { id: 'instacash', name: 'InstaCash', image: Images.instacash || Images.cash, account: '1234567890' },
+  { id: 'society', name: 'Building Society', image: Images.buildingSociety || Images.cash, account: '1234567890' },
+  { id: 'cash', name: 'Cash', image: Images.cash || Images.cash, account: 'Treasurer' },
+];
+
+export default function MakeContributionScreen({ navigation }) {
+  const { theme, isDarkMode } = useContext(AppContext);
+  const { user } = useContext(AuthContext);
+
   const [contributionAmount, setContributionAmount] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState < 'momo' | 'instacash' | 'cash' > ('momo');
   const [reference, setReference] = useState('');
-  const [notes, setNotes] = useState('');
+  const [attchment, setAttachment] = useState(null);
+  const [paymentMethod, setPaymentMethod] = useState(PAYMENT_METHODS[0]);
+
+  const [moreVisible, setMoreVisible] = useState(false);
+  const [methodModalVisible, setMethodModalVisible] = useState(false);
+  const [accordionOpen, setAccordionOpen] = useState(false);
+
+  // Bottom Sheet
+  const bottomSheetRef = React.useRef(null);
+  const [sheetAmount, setSheetAmount] = useState('');
+  const [sheetReference, setSheetReference] = useState('');
+  const [sheetPin, setSheetPin] = useState('');
+  const snapPoints = useMemo(() => ['25%', '50%', '65%'], []);
+  const animationConfigs = useBottomSheetSpringConfigs({
+    damping: 80,
+    overshootClamping: true,
+    restDisplacementThreshold: 0.1,
+    restSpeedThreshold: 0.1,
+    stiffness: 500,
+  });
+
+  const [isPickImg, setIsPickImg] = useState(false);
+
+  const openMoreMenu = () => setMoreVisible(true);
+  const closeMoreMenu = () => setMoreVisible(false);
+
+  const openBottomSheet = useCallback(() => {
+    setSheetAmount(contributionAmount);
+    setSheetReference(reference);
+    bottomSheetRef.current?.snapToIndex(1);
+  }, []);
+
+  const pickImage = async () => {
+    try {
+      setIsPickImg(true)
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+
+      if (status !== 'granted') {
+        Alert.alert('Permission needed', 'Please grant permission to access your photos');
+        return;
+      }
+
+      let result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images', 'videos'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled) {
+        console.log(result.assets[0])
+        setAttachment(result.assets[0]);
+      }
+
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setIsPickImg(false)
+    }
+  };
 
   const handleMakeContribution = () => {
-    if (!contributionAmount || !reference) {
-      Alert.alert('Error', 'Please fill in all required fields');
+    if (!sheetAmount || !sheetReference || !sheetPin) {
+      Alert.alert('Error', 'Please fill all fields in the payment sheet');
       return;
     }
 
     Alert.alert(
       'Contribution Submitted',
-      `Your contribution of E${contributionAmount} has been submitted. Please upload your payment proof to complete the transaction.`,
+      `Your contribution of E${sheetAmount} has been submitted via ${paymentMethod.name}.`,
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Upload Proof', onPress: () => console.log('Upload proof') },
-      ]
-    );
-
-    // Reset form
-    setContributionAmount('');
-    setReference('');
-    setNotes('');
-  };
-
-  const handleUploadProof = () => {
-    Alert.alert(
-      'Upload Payment Proof',
-      'Payment proof upload functionality would be implemented here. You can take a photo of your receipt or upload from gallery.',
-      [
-        { text: 'Take Photo', onPress: () => console.log('Take photo') },
-        { text: 'Choose from Gallery', onPress: () => console.log('Choose from gallery') },
-        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'OK', onPress: () => {
+            setContributionAmount('');
+            setReference('');
+            setSheetAmount('');
+            setSheetReference('');
+            setSheetPin('');
+            bottomSheetRef.current?.close();
+          }
+        },
       ]
     );
   };
 
-  return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text type="title" style={styles.headerTitle}>
-          Make Contribution
-        </Text>
-        <Text style={styles.headerSubtitle}>
-          Contribute to your group savings
+  const renderTransaction = ({ item }) => (
+    <View style={[styles.transactionItem, { backgroundColor: theme.colors.card }]}>
+      <View>
+        <Text style={{ fontWeight: '600', color: theme.colors.text }}>{item.amount}</Text>
+        <Text style={{ fontSize: 12, color: '#666' }}>{item.reference}</Text>
+      </View>
+      <View style={{ alignItems: 'flex-end' }}>
+        <Text style={{ fontSize: 12, color: '#666' }}>{item.date}</Text>
+        <Text style={{
+          fontSize: 12,
+          color: item.status === 'Success' ? '#4CAF50' : '#FF9800',
+          fontWeight: '600'
+        }}>
+          {item.status}
         </Text>
       </View>
+    </View>
+  );
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        <View style={styles.formContainer}>
-          {/* Group Info */}
-          <View style={styles.groupInfoCard}>
-            <Icons.Ionicons name="person-circle-outline" size={24} color="#4CAF50" />
-            <View style={styles.groupInfoContent}>
-              <Text style={styles.groupName}>Christmas Savings 2024</Text>
-              <Text style={styles.groupDetails}>
-                Monthly Contribution: E500 | Next Due: 2024-07-15
-              </Text>
-            </View>
-          </View>
+  return (
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
 
-          {/* Contribution Amount */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Contribution Amount (E) *</Text>
-            <TextInput
-              style={[
-                styles.textInput
-              ]}
-              value={contributionAmount}
-              onChangeText={setContributionAmount}
-              placeholder="500"
-              keyboardType="numeric"
-              placeholderTextColor="#999"
-            />
-            <Text style={styles.inputHint}>
-              Standard monthly contribution: E500
-            </Text>
-          </View>
-
-          {/* Payment Method */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Payment Method *</Text>
-            <View style={styles.paymentMethodSelector}>
-              <TouchableOpacity
-                style={[
-                  styles.paymentMethodOption,
-                  paymentMethod === 'momo' && styles.paymentMethodOptionSelected,
-                ]}
-                onPress={() => setPaymentMethod('momo')}
-              >
-                <Icons.Feather name="phone" size={20} color={paymentMethod === 'momo' ? '#fff' : '#2196F3'} />
-                <Text
-                  style={[
-                    styles.paymentMethodText,
-                    paymentMethod === 'momo' && styles.paymentMethodTextSelected,
-                  ]}
-                >
-                  MoMo Stofella
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.paymentMethodOption,
-                  paymentMethod === 'instacash' && styles.paymentMethodOptionSelected,
-                ]}
-                onPress={() => setPaymentMethod('instacash')}
-              >
-                <Icons.Entypo name="credit-card" size={20} color={paymentMethod === 'instacash' ? '#fff' : '#4CAF50'} />
-                <Text
-                  style={[
-                    styles.paymentMethodText,
-                    paymentMethod === 'instacash' && styles.paymentMethodTextSelected,
-                  ]}
-                >
-                  InstaCash
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[
-                  styles.paymentMethodOption,
-                  paymentMethod === 'cash' && styles.paymentMethodOptionSelected,
-                ]}
-                onPress={() => setPaymentMethod('cash')}
-              >
-                <Icons.FontAwesome name="money" size={20} color={paymentMethod === 'cash' ? '#fff' : '#FF9800'} />
-                <Text
-                  style={[
-                    styles.paymentMethodText,
-                    paymentMethod === 'cash' && styles.paymentMethodTextSelected,
-                  ]}
-                >
-                  Cash
-                </Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* Reference Number */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Transaction Reference *</Text>
-            <TextInput
-              style={[
-                styles.textInput,
-              ]}
-              value={reference}
-              onChangeText={setReference}
-              placeholder="Enter transaction reference number"
-              placeholderTextColor="#999"
-            />
-            <Text style={styles.inputHint}>
-              This is the reference number from your payment receipt
-            </Text>
-          </View>
-
-          {/* Notes */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.inputLabel}>Notes (Optional)</Text>
-            <TextInput
-              style={[
-                styles.textArea,
-              ]}
-              value={notes}
-              onChangeText={setNotes}
-              placeholder="Add any additional notes..."
-              multiline
-              numberOfLines={3}
-              placeholderTextColor="#999"
-            />
-          </View>
-
-          {/* Payment Instructions */}
-          <View style={styles.instructionsCard}>
-            <Text style={styles.instructionsTitle}>Payment Instructions</Text>
-            {paymentMethod === 'momo' && (
-              <View style={styles.instructionsContent}>
-                <Text style={styles.instructionStep}>1. Open MoMo Stofella app</Text>
-                <Text style={styles.instructionStep}>2. Select "Send Money"</Text>
-                <Text style={styles.instructionStep}>3. Enter group account: +268 7612 3456</Text>
-                <Text style={styles.instructionStep}>4. Enter amount: E{contributionAmount || '500'}</Text>
-                <Text style={styles.instructionStep}>5. Add reference: {reference || 'Your reference'}</Text>
-                <Text style={styles.instructionStep}>6. Complete transaction</Text>
-              </View>
-            )}
-            {paymentMethod === 'instacash' && (
-              <View style={styles.instructionsContent}>
-                <Text style={styles.instructionStep}>1. Open InstaCash app</Text>
-                <Text style={styles.instructionStep}>2. Select "Transfer"</Text>
-                <Text style={styles.instructionStep}>3. Enter group account: 1234567890</Text>
-                <Text style={styles.instructionStep}>4. Enter amount: E{contributionAmount || '500'}</Text>
-                <Text style={styles.instructionStep}>5. Add reference: {reference || 'Your reference'}</Text>
-                <Text style={styles.instructionStep}>6. Complete transaction</Text>
-              </View>
-            )}
-            {paymentMethod === 'cash' && (
-              <View style={styles.instructionsContent}>
-                <Text style={styles.instructionStep}>1. Contact group treasurer</Text>
-                <Text style={styles.instructionStep}>2. Arrange cash handover</Text>
-                <Text style={styles.instructionStep}>3. Get receipt with reference number</Text>
-                <Text style={styles.instructionStep}>4. Upload receipt as proof</Text>
-              </View>
-            )}
-          </View>
-
-          {/* Action Buttons */}
-          <View style={styles.actionButtons}>
-            <TouchableOpacity style={styles.contributeButton} onPress={handleMakeContribution}>
-              <Text style={styles.contributeButtonText}>Submit Contribution</Text>
-              <Icons.MaterialIcons name="keyboard-arrow-right" size={20} color="#fff" />
+        {/* Header */}
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Icons.Ionicons name='arrow-back' size={24} color={theme.colors.text} />
+          </TouchableOpacity>
+          <Text style={styles.groupName}>Christmas Savings 2024</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 20 }}>
+            <TouchableOpacity>
+              <Icons.Ionicons name="notifications-outline" size={24} color={theme.colors.text} />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.uploadButton} onPress={handleUploadProof}>
-              <Icons.AntDesign name="camerao" size={20} color="#4CAF50" />
-              <Text style={styles.uploadButtonText}>Upload Payment Proof</Text>
-            </TouchableOpacity>
+            <Menu
+              visible={moreVisible}
+              onDismiss={closeMoreMenu}
+              anchor={
+                <TouchableOpacity onPress={openMoreMenu}>
+                  <Icons.Entypo name='dots-three-vertical' size={24} color={theme.colors.text} />
+                </TouchableOpacity>
+              }
+            >
+              <Menu.Item title="Group Account" />
+              <Menu.Item title="Repay Loans" />
+              <Menu.Item title="Admin Outline" />
+              <Menu.Item title="Leave Group" />
+            </Menu>
           </View>
         </View>
-      </ScrollView>
-    </View>
+
+        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+          {/* Group Info */}
+          <View style={[styles.groupInfoCard, { backgroundColor: theme.colors.card }]}>
+            <View style={styles.groupInfoContent}>
+              <Text style={styles.groupDetails}>Current Balance</Text>
+              <Text style={{ fontSize: 24, color: theme.colors.error, textAlign: 'center' }}>E1,750.00</Text>
+              <Text style={styles.groupDetails}>Standard Contribution: E500</Text>
+              <View style={{ borderRadius: 20, backgroundColor: theme.colors.sub_card, paddingHorizontal: 10, paddingVertical: 5, marginTop: 10 }}>
+                <Text style={styles.groupDetails}>Next Due: 2025-07-15</Text>
+              </View>
+            </View>
+            <View style={[styles.quickActionContainer, { backgroundColor: theme.colors.sub_card }]}>
+
+              <TouchableOpacity style={{ alignItems: 'center' }}>
+                <Icons.EvilIcons name='plus' size={20} color={theme.colors.text} />
+                <Text style={styles.groupDetails}>Top Up</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={{ alignItems: 'center' }}>
+                <Icons.MaterialCommunityIcons name='transfer-up' size={15} color={theme.colors.text} />
+                <Text style={styles.groupDetails}>Transfer</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={{ alignItems: 'center' }}>
+                <Icons.FontAwesome5 name='layer-group' size={15} color={theme.colors.text} />
+                <Text style={styles.groupDetails}>Bills</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity style={{ alignItems: 'center' }}>
+                <Icons.MaterialIcons name='dashboard-customize' size={15} color={theme.colors.text} />
+                <Text style={styles.groupDetails}>Other</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+
+          {/* Payment Method Selector */}
+          <View style={{ paddingHorizontal: 16, marginBottom: 16 }}>
+            <Text style={styles.inputLabel}>Payment Method</Text>
+            <View style={styles.paymentMethodSelector}>
+              <TouchableOpacity
+                style={[styles.paymentMethodOption, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
+                onPress={openBottomSheet}
+              >
+                <Image source={paymentMethod.image} style={{ height: 50, width: 50 }} />
+                <View style={{ marginLeft: 8 }}>
+                  <Text style={[styles.paymentMethodText, { color: theme.colors.text }]}>{paymentMethod.name}</Text>
+                  <Text style={{ fontSize: 11, color: '#666' }}>{paymentMethod.account}</Text>
+                </View>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.changeMethodOption}
+                onPress={() => setMethodModalVisible(true)}
+              >
+                <Icons.MaterialIcons name="change-circle" size={20} color='#FF9800' />
+                <Text style={styles.paymentMethodText}>Change</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* Recent Transactions */}
+          <View style={styles.section}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Text style={styles.sectionTitle}>Recent Transactions</Text>
+              <TouchableOpacity onPress={() => { }}>
+                <Text style={styles.viewAll}>View All</Text>
+              </TouchableOpacity>
+            </View>
+
+            <FlatList
+              data={MOCK_TRANSACTIONS?.slice(0, 2)}
+              renderItem={renderTransaction}
+              keyExtractor={item => item.id}
+              scrollEnabled={false}
+            />
+          </View>
+
+          <View style={styles.formContainer}>
+            {/* Accordion: Payment Instructions */}
+            <View style={styles.accordion}>
+              <TouchableOpacity
+                style={styles.accordionHeader}
+                onPress={() => setAccordionOpen(!accordionOpen)}
+              >
+                <Text style={styles.accordionTitle}>Payment Instructions</Text>
+                <Icons.Ionicons
+                  name={accordionOpen ? 'chevron-up' : 'chevron-down'}
+                  size={20}
+                  color={theme.colors.text}
+                />
+              </TouchableOpacity>
+              {accordionOpen && (
+                <View style={[styles.accordionContent, { backgroundColor: theme.colors.card }]}>
+                  {paymentMethod.id === 'momo' && (
+                    <>
+                      <Text style={styles.instructionStep}>1. Open MoMo app</Text>
+                      <Text style={styles.instructionStep}>2. Select "Send Money"</Text>
+                      <Text style={styles.instructionStep}>3. Enter: {paymentMethod.account}</Text>
+                      <Text style={styles.instructionStep}>4. Amount: E{sheetAmount || '500'}</Text>
+                      <Text style={styles.instructionStep}>5. Reference: {sheetReference || 'XMAS2024-XXX'}</Text>
+                      <Text style={styles.instructionStep}>6. Enter PIN & approve</Text>
+                    </>
+                  )}
+                  {paymentMethod.id === 'instacash' && (
+                    <>
+                      <Text style={styles.instructionStep}>1. Open InstaCash</Text>
+                      <Text style={styles.instructionStep}>2. Transfer to: {paymentMethod.account}</Text>
+                      <Text style={styles.instructionStep}>3. Add reference</Text>
+                    </>
+                  )}
+                  {paymentMethod.id === 'cash' && (
+                    <>
+                      <Text style={styles.instructionStep}>1. Contact treasurer</Text>
+                      <Text style={styles.instructionStep}>2. Hand over cash</Text>
+                      <Text style={styles.instructionStep}>3. Get receipt</Text>
+                    </>
+                  )}
+                </View>
+              )}
+            </View>
+
+            {attchment !== null && (
+              <View style={[styles.attachmentContainer, { backgroundColor: theme.colors.sub_card }]}>
+                <Image source={{ uri: attchment.uri }} style={styles.attachment} />
+                <View>
+                  <Text style={styles.groupDetails}>Size: {attchment.fileSize}</Text>
+                  <Text style={styles.groupDetails}>File Type: {attchment.type}</Text>
+                </View>
+                <TouchableOpacity style={styles.removeAttachment} onPress={() => setAttachment(null)}>
+                  <Icons.FontAwesome name='remove' size={20} color={theme.colors.error} />
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* Upload Proof */}
+            <TouchableOpacity style={styles.uploadButton} onPress={pickImage}>
+              {isPickImg ?
+                <ActivityIndicator size={20} color='#4CAF50' />
+                :
+                <Icons.FontAwesome5 name="paperclip" size={20} color="#4CAF50" />}
+              <Text style={styles.uploadButtonText}>Attach Proof</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+
+        {/* Bottom Sheet for MoMo Payment */}
+        <BottomSheet
+          ref={bottomSheetRef}
+          index={-1}
+          enablePanDownToClose={true}
+          snapPoints={snapPoints}
+          animationConfigs={animationConfigs}
+          animateOnMount={true}
+          enableHandlePanningGesture={true}
+          enableDynamicSizing={false}
+          containerStyle={{ borderColor: theme.colors.border }}
+          backgroundStyle={{ backgroundColor: theme.colors.sub_card }}
+        >
+          <View style={styles.bottomSheetContent}>
+            <Text style={styles.bottomSheetTitle}>Pay with {paymentMethod.name}</Text>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Amount</Text>
+              <TextInput
+                style={[styles.textInput, { backgroundColor: theme.colors.background, color: theme.colors.text }]}
+                placeholder="E500.00"
+                value={sheetAmount}
+                onChangeText={setSheetAmount}
+                keyboardType="numeric"
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>Reference</Text>
+              <TextInput
+                style={[styles.textInput, { backgroundColor: theme.colors.background, color: theme.colors.text }]}
+                placeholder="XMAS2024-XXX"
+                value={sheetReference}
+                onChangeText={setSheetReference}
+              />
+            </View>
+
+            <View style={styles.inputGroup}>
+              <Text style={styles.inputLabel}>PIN - {paymentMethod.name}</Text>
+              <TextInput
+                style={[styles.textInput, { backgroundColor: theme.colors.background, color: theme.colors.text }]}
+                placeholder="••••"
+                value={sheetPin}
+                onChangeText={setSheetPin}
+                secureTextEntry
+                keyboardType="numeric"
+                maxLength={4}
+              />
+            </View>
+
+            <TouchableOpacity style={styles.contributeButton} onPress={handleMakeContribution}>
+              <Text style={styles.contributeButtonText}>Submit Contribution</Text>
+            </TouchableOpacity>
+          </View>
+        </BottomSheet>
+
+        {/* Payment Method Modal */}
+        <Portal>
+          <Modal
+            visible={methodModalVisible}
+            transparent
+            animationType="slide"
+            onRequestClose={() => setMethodModalVisible(false)}
+          >
+            <View style={styles.modalOverlay}>
+              <View style={[styles.modalContent, { backgroundColor: theme.colors.card }]}>
+                <Text style={styles.modalTitle}>Choose Payment Method</Text>
+                {PAYMENT_METHODS.map(method => (
+                  <TouchableOpacity
+                    key={method.id}
+                    style={styles.methodOption}
+                    onPress={() => {
+                      setPaymentMethod(method);
+                      setMethodModalVisible(false);
+                    }}
+                  >
+                    <Image source={method.image} style={{ width: 40, height: 40 }} />
+                    <View style={{ marginLeft: 12, flex: 1 }}>
+                      <Text style={{ fontWeight: '600', color: theme.colors.text }}>{method.name}</Text>
+                      <Text style={{ fontSize: 12, color: '#666' }}>{method.account}</Text>
+                    </View>
+                    {paymentMethod.id === method.id && (
+                      <Icons.Ionicons name="checkmark-circle" size={24} color="#4CAF50" />
+                    )}
+                  </TouchableOpacity>
+                ))}
+                <TouchableOpacity
+                  style={styles.modalCloseButton}
+                  onPress={() => setMethodModalVisible(false)}
+                >
+                  <Text style={{ color: '#666' }}>Cancel</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </Modal>
+        </Portal>
+      </View>
+    </GestureHandlerRootView>
   );
 }
 
+// === STYLES ===
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
+  container: { flex: 1 },
   header: {
-    padding: 20,
-    paddingTop: 60,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  headerSubtitle: {
-    fontSize: 16,
-    color: '#666',
-  },
-  scrollView: {
-    flex: 1,
-    padding: 16,
-  },
-  formContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  groupInfoCard: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 40,
+    paddingBottom: 10,
+    backgroundColor: '#fff',
+  },
+  scrollView: { flex: 1 },
+  groupName: { fontSize: 16, fontWeight: '600', color: '#333' },
+  groupInfoCard: {
+    alignItems: 'center',
     backgroundColor: '#f8f9fa',
-    padding: 16,
+    paddingHorizontal: 10,
+    paddingBottom: 20,
     borderRadius: 8,
     marginBottom: 20,
+    borderBottomRightRadius: 30,
+    borderBottomLeftRadius: 30,
   },
-  groupInfoContent: {
-    marginLeft: 12,
-    flex: 1,
+  groupInfoContent: { marginLeft: 12, flex: 1, alignItems: 'center' },
+  quickActionContainer: {
+    marginTop: 10,
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
   },
-  groupName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 4,
-  },
-  groupDetails: {
+  groupDetails: { fontSize: 14, textAlign: 'center', color: '#666' },
+  section: { paddingHorizontal: 16, marginBottom: 16 },
+  sectionTitle: { fontSize: 16, fontWeight: '600', marginBottom: 8, color: '#333' },
+  viewAll: {
     fontSize: 14,
-    color: '#666',
+    textAlign: 'center'
   },
-  inputGroup: {
-    marginBottom: 20,
-  },
-  inputLabel: {
-    fontSize: 16,
-    fontWeight: '600',
+  transactionItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 12,
+    borderRadius: 8,
     marginBottom: 8,
-    color: '#333',
   },
+  formContainer: { paddingHorizontal: 16 },
+  inputGroup: { marginBottom: 16 },
+  inputLabel: { fontSize: 16, fontWeight: '600', marginBottom: 8, color: '#333' },
   textInput: {
     borderWidth: 1,
     borderColor: '#e0e0e0',
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
-    backgroundColor: '#fff',
   },
-  textArea: {
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    backgroundColor: '#fff',
-    height: 80,
-    textAlignVertical: 'top',
-  },
-  inputHint: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 4,
-  },
-  paymentMethodSelector: {
-    flexDirection: 'row',
-    gap: 8,
-  },
+  paymentMethodSelector: { flexDirection: 'row', gap: 8 },
   paymentMethodOption: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
     padding: 12,
     borderRadius: 8,
-    borderWidth: 2,
-    borderColor: '#e0e0e0',
+    borderWidth: 1,
   },
-  paymentMethodOptionSelected: {
-    backgroundColor: '#4CAF50',
-    borderColor: '#4CAF50',
-  },
-  paymentMethodText: {
-    fontSize: 14,
-    fontWeight: '500',
-    marginLeft: 6,
-    color: '#333',
-  },
-  paymentMethodTextSelected: {
-    color: '#fff',
-  },
-  instructionsCard: {
-    backgroundColor: '#f8f9fa',
+  changeMethodOption: {
+    backgroundColor: '#000000',
+    padding: 12,
     borderRadius: 8,
-    padding: 16,
-    marginBottom: 20,
-  },
-  instructionsTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 12,
-  },
-  instructionsContent: {
-    gap: 6,
-  },
-  instructionStep: {
-    fontSize: 14,
-    color: '#666',
-    lineHeight: 20,
-  },
-  actionButtons: {
-    gap: 12,
-  },
-  contributeButton: {
-    backgroundColor: '#4CAF50',
-    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 16,
+  },
+  paymentMethodText: { fontSize: 14, fontWeight: '500', color: '#fff' },
+
+  // Accordion
+  accordion: {
+    backgroundColor: '#f8f9fa',
     borderRadius: 8,
+    marginBottom: 20,
+    overflow: 'hidden',
   },
-  contributeButtonText: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '600',
-    marginRight: 8,
+  accordionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#e9ecef',
   },
+  accordionTitle: { fontSize: 16, fontWeight: '600', color: '#333' },
+  accordionContent: { padding: 16, paddingTop: 8 },
+  instructionStep: { fontSize: 14, color: '#666', lineHeight: 20 },
+
+  // Buttons
   uploadButton: {
     backgroundColor: '#fff',
     borderWidth: 2,
@@ -397,11 +530,62 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 16,
     borderRadius: 8,
+    marginBottom: 40
   },
-  uploadButtonText: {
-    color: '#4CAF50',
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: 8,
+  uploadButtonText: { color: '#4CAF50', fontSize: 16, fontWeight: '600', marginLeft: 8 },
+  attachmentContainer: {
+    flex: 1,
+    borderRadius: 50,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    marginBottom: 15,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-start'
   },
+  attachment: {
+    width: 60,
+    height: 60,
+    borderRadius: 10,
+    objectFit: 'cover',
+    marginRight: 10
+  },
+  removeAttachment: {
+    position: 'absolute',
+    top: 28,
+    right: 20,
+  },
+  contributeButton: {
+    backgroundColor: '#4CAF50',
+    padding: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  contributeButtonText: { color: '#fff', fontSize: 18, fontWeight: '600' },
+
+  // Bottom Sheet
+  bottomSheetContent: { padding: 20, flex: 1 },
+  bottomSheetTitle: { fontSize: 18, fontWeight: '600', marginBottom: 20, textAlign: 'center' },
+
+  // Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    maxHeight: '80%',
+  },
+  modalTitle: { fontSize: 18, fontWeight: '600', marginBottom: 16, textAlign: 'center' },
+  methodOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 8,
+    backgroundColor: '#f8f9fa',
+    marginBottom: 8,
+  },
+  modalCloseButton: { alignItems: 'center', padding: 12 },
 });

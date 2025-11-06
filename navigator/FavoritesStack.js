@@ -1,7 +1,7 @@
 import { createStackNavigator } from '@react-navigation/stack';
-import FavoritesScreen from '../screens/FavoritesScreen';
-import BusinessDetailsScreen from "../screens/BusinessDetailsScreen";
-import BusinessArticlesScreen from "../screens/BusinessArticlesScreen"
+import FavoritesScreen from '../screens/directory/FavoritesScreen';
+import BusinessDetailsScreen from "../screens/directory/BusinessDetailsScreen";
+import BusinessArticlesScreen from "../screens/directory/BusinessArticlesScreen"
 
 const FavoriteStack = createStackNavigator();
 export default function FavoritesStackNavigator() {

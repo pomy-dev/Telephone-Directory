@@ -956,7 +956,7 @@ export default function GroupManagementScreen({ navigation }) {
           </Surface>
 
           <View>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={[{ backgroundColor: theme.colors.surface }]}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={[{ gap: 10, alignItems: 'center', backgroundColor: theme.colors.card }]}>
               {[
                 { key: 'discussions', label: 'Discussions', icon: 'chat' },
                 { key: 'announcements', label: 'Announcements', icon: 'bullhorn' },
@@ -967,9 +967,7 @@ export default function GroupManagementScreen({ navigation }) {
               ].map((tab) => (
                 <TouchableOpacity
                   key={tab.key}
-                  style={[styles.tab, activeTab === tab.key && styles.activeTab, {
-                    backgroundColor: theme.colors.primaryContainer
-                  }]}
+                  style={[styles.tab, activeTab === tab.key && styles.activeTab]}
                   onPress={() => setActiveTab(tab.key)}
                 >
                   <IconButton icon={tab.icon} size={20} iconColor={activeTab === tab.key ? theme.colors.primary : theme.colors.sub_text} />
@@ -1395,17 +1393,18 @@ const styles = StyleSheet.create({
   },
   tab: {
     alignItems: 'center',
-    paddingHorizontal: 16
+    paddingHorizontal: 16,
+    borderRadius: 20,
   },
   activeTab: {
-    borderRadius: 20,
+    backgroundColor: '#003366',
   },
   tabLabel: {
     color: '#747373dd',
     marginTop: 1,
   },
   activeTabLabel: {
-    color: '#003366',
+    color: '#fff',
     fontWeight: 'bold',
   },
   contentList: {

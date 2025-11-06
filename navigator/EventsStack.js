@@ -1,5 +1,5 @@
 import { createStackNavigator } from "@react-navigation/stack";
-import EventsScreen from "../screens/Events";
+import EventsScreen from "../screens/directory/Events";
 
 // Create Stack Navigators for Home and Businesses
 const EventsStack = createStackNavigator();

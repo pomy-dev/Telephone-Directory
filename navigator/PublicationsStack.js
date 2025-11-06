@@ -1,6 +1,6 @@
 import { createStackNavigator } from '@react-navigation/stack';
-import PublicationScreen from "../screens/PublicationScreen";
-import BusinessArticlesScreen from "../screens/BusinessArticlesScreen";
+import PublicationScreen from "../screens/directory/PublicationScreen";
+import BusinessArticlesScreen from "../screens/directory/BusinessArticlesScreen";
 
 const PublicationsStack = createStackNavigator();
 export default function PublicationsStackNavigator() {

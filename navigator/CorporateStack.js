@@ -1,5 +1,5 @@
 import { createStackNavigator } from "@react-navigation/stack";
-import CorporatesScreen from "../screens/Corporate"
+// import CorporatesScreen from "../screens/directory/Corporate"
 
 
 
@@ -8,7 +8,7 @@ const CorporateStack = createStackNavigator();
 export default function CorporateStackNavigator() {
   return (
     <CorporateStack.Navigator>
-      <CorporateStack.Screen name="Corporates" component={CorporatesScreen} options={{ headerShown: false }} />
+      {/* <CorporateStack.Screen name="Corporates" component={CorporatesScreen} options={{ headerShown: false }} /> */}
     </CorporateStack.Navigator>
   );
 }
