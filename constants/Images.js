@@ -79,7 +79,7 @@ import appLogo from '../assets/logo.png'
 import default_user from '../assets/default-user.png';
 
 // services
-import groceries from '../assets/icons/Groceries.png'
+import forhire from '../assets/icons/forhire.jpg'
 import houses from '../assets/icons/houses.png'
 import newsroom from '../assets/icons/newsroom.png'
 import Phonebook from '../assets/icons/Phonebook.png'
@@ -95,13 +95,10 @@ export const Images = {
   appLogo,
 
   // home screen services
-  groceries,
+  forhire,
   houses,
-  newsroom,
   Phonebook,
   piecejob,
-  ride,
-  taxi,
   tender,
   vacancies,
 

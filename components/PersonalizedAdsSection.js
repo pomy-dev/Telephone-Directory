@@ -208,10 +208,11 @@ const PersonalizedAdsSection = ({ ads = [], maxAdsToShow = 10 }) => {
 const styles = StyleSheet.create({
     container: {
         backgroundColor: '#fff',
-        paddingVertical: 16,
+        paddingTop: 16,
+        paddingBottom: 80,
     },
     header: {
-        paddingHorizontal: 24,
+        paddingHorizontal: 10,
         marginBottom: 12,
     },
     headerTitle: {
@@ -225,7 +226,7 @@ const styles = StyleSheet.create({
         color: '#666',
     },
     scrollContent: {
-        paddingHorizontal: 24,
+        paddingHorizontal: 16,
     },
     adCard: {
         width: width * 0.45,

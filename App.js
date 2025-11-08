@@ -14,14 +14,6 @@ import { RealmProvider } from '@realm/react';
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs"
 import { createNativeStackNavigator } from "@react-navigation/native-stack"
 
-// Publications
-import PublicationsStackNavigator from "./navigator/PublicationsStack";
-import CorporateStackNavigator from "./navigator/CorporateStack";
-import EventsStackNavigator from "./navigator/EventsStack";
-
-// Local Market
-import LocalMarketStackNavigator from "./navigator/LocalMarketStack";
-
 // screens
 import HomeScreen from "./screens/HomeScreen"
 import VendorHomeScreen from './screens/VendorHome'
@@ -30,18 +22,13 @@ import NewsScreen from "./screens/NewsScreen"
 import SettingsScreen from "./screens/SettingsScreen"
 import MapScreen from "./screens/MapScreen"
 
-// ride screen
-import RideRequestScreen from "./screens/ride/RideRequestScreen"
-// business directory
-import DirectoryScreen from "./screens/directory/DirectoryHome"
-// Food ordering
-import FoodOrderingScreen from "./screens/ordering/FoodOrderingScreen"
-// news
-import NewsroomScreen from "./screens/news/NewsroomScreen"
-import NewsDetailsScreen from "./screens/news/NewsDetailsScreen"
-
 // business tenders
-import BusinessTendersScreen from "./screens/tenders/BusinessTendersScreen"
+import AddTenderScreen from "./screens/tenders/AddTenderScreen"
+import TenderDetailsScreen from "./screens/tenders/TenderDetailsScreen"
+import PublishedTendersScreen from "./screens/tenders/PublishedTendersScreen"
+import BidTenderScreen from "./screens/tenders/BidTenderScreen"
+import MyBidsScreen from "./screens/tenders/MyBidsScreen"
+
 // vancancies screens
 import VacanciesScreen from "./screens/vacancies/VacanciesScreen"
 
@@ -52,8 +39,21 @@ import PostJobScreen from "./screens/piece-jobs/PostJobScreen"
 import JobDetailScreen from "./screens/piece-jobs/JobDetailScreen"
 
 // houses
-import HouseScreen from "./screens/houses/HouseScreen"
-import HouseDetailsScreen from "./screens/houses/HouseDetailsScreen"
+import PropertyScreen from "./screens/houses/PropertyScreen"
+import RentalHousesScreen from "./screens/houses/RentalHousesScreen"
+import RentalHouseDetailsScreen from "./screens/houses/RentalHouseDetailsScreen"
+import PostRentalHouseScreen from "./screens/houses/PostRentalHouseScreen"
+import ApplyRentalScreen from "./screens/houses/ApplyRentalScreen"
+import MyRentalApplicationsScreen from "./screens/houses/MyRentalApplicationsScreen"
+import LeaseItemsScreen from "./screens/houses/LeaseItemsScreen"
+import PostLeaseItemScreen from "./screens/houses/PostLeaseItemScreen"
+import LeaseItemDetailsScreen from "./screens/houses/LeaseItemDetailsScreen"
+
+// forehires (transportation)
+import TransportationListScreen from "./screens/forehires/TransportationListScreen"
+import TransportationDetailsScreen from "./screens/forehires/TransportationDetailsScreen"
+import PostTransportationScreen from "./screens/forehires/PostTransportationScreen"
+import BookTransportationScreen from "./screens/forehires/BookTransportationScreen"
 
 // stokfella
 import CreateStokfelaScreen from "./screens/stokfella/Create-Stokfela"
@@ -62,22 +62,6 @@ import GroupDetailsScreen from "./screens/stokfella/Groups-Details"
 import LoanRequestScreen from "./screens/stokfella/Loan-Details"
 import MemberProfile from "./screens/stokfella/Member-Profile"
 import TransactionsScreen from "./screens/stokfella/Member-Transactions"
-
-// vendor chain
-import BulkGroupsScreen from './screens/vendor-chain/BulkGroupScreen'
-import GroupManagementScreen from './screens/vendor-chain/GroupManagementScreen'
-import SearchScreen from './screens/vendor-chain/SearchScreen'
-import VendorInventoryScreen from './screens/vendor-chain/VendorInventoryScreen'
-import SupplyChainScreen from './screens/vendor-chain/SupplyChain'
-import OrdersScreen from './screens/vendor-chain/OrderScreen'
-import VendorProfileScreen from './screens/vendor-chain/ProfileScreen'
-import CustomerStoreScreen from './screens/vendor-chain/CustomerStoreScreen'
-import DiscussionThreadScreen from './screens/vendor-chain/DiscussionThread'
-import VendorRegistrationScreen from './screens/vendor-chain/AddVendor'
-import CreateVendorGroup from './components/createVendorGroup'
-
-
-import TabNavigator from "./components/TabNavigator";
 
 // Splash Screen 
 import SplashScreen from "./screens/directory/SplashScreen";
@@ -92,9 +76,6 @@ import { AuthProvider } from "./context/authProvider";
 
 // Directory Model
 import { Entity, PhoneObject, SocialMediaObject, WorkingHoursObject, TeamMember, GeoPoint, Review } from './models/Entity';
-
-// theme
-import { theme as VTheme } from './constants/vendorTheme';
 
 // Configure notification handler
 Notifications.setNotificationHandler({
@@ -395,21 +376,12 @@ function AppContent() {
                       <Stack.Screen name="MapScreen" component={MapScreen} />
                       <Stack.Screen name="NewsScreen" component={NewsScreen} />
 
-                      {/* ride */}
-                      <Stack.Screen name="RideRequestScreen" component={RideRequestScreen} />
-
-                      {/* food */}
-                      <Stack.Screen name="FoodOrderingScreen" component={FoodOrderingScreen} />
-
-                      {/* business directory */}
-                      <Stack.Screen name="DirectoryScreen" component={DirectoryScreen} />
-
-                      {/* news room */}
-                      <Stack.Screen name="NewsroomScreen" component={NewsroomScreen} />
-                      <Stack.Screen name="NewsDetailsScreen" component={NewsDetailsScreen} />
-
                       {/* Tenders  */}
-                      <Stack.Screen name="BusinessTendersScreen" component={BusinessTendersScreen} />
+                      <Stack.Screen name="AddTenderScreen" component={AddTenderScreen} />
+                      <Stack.Screen name="TenderDetailsScreen" component={TenderDetailsScreen} />
+                      <Stack.Screen name="PublishedTendersScreen" component={PublishedTendersScreen} />
+                      <Stack.Screen name="BidTenderScreen" component={BidTenderScreen} />
+                      <Stack.Screen name="MyBidsScreen" component={MyBidsScreen} />
 
                       {/* Piece Jobs  */}
                       <Stack.Screen name="GigsScreen" component={GigsScreen} />
@@ -419,9 +391,24 @@ function AppContent() {
                       {/* vacancies */}
                       <Stack.Screen name="VacanciesScreen" component={VacanciesScreen} />
 
-                      {/* houses */}
-                      <Stack.Screen name="HouseScreen" component={HouseScreen} />
-                      <Stack.Screen name="HouseDetailsScreen" component={HouseDetailsScreen} />
+                      {/* rental houses */}
+                      <Stack.Screen name="PropertyScreen" component={PropertyScreen} />
+                      <Stack.Screen name="RentalHousesScreen" component={RentalHousesScreen} />
+                      <Stack.Screen name="RentalHouseDetailsScreen" component={RentalHouseDetailsScreen} />
+                      <Stack.Screen name="PostRentalHouseScreen" component={PostRentalHouseScreen} />
+                      <Stack.Screen name="ApplyRentalScreen" component={ApplyRentalScreen} />
+                      <Stack.Screen name="MyRentalApplicationsScreen" component={MyRentalApplicationsScreen} />
+
+                      {/* lease items */}
+                      <Stack.Screen name="LeaseItemsScreen" component={LeaseItemsScreen} />
+                      <Stack.Screen name="PostLeaseItemScreen" component={PostLeaseItemScreen} />
+                      <Stack.Screen name="LeaseItemDetailsScreen" component={LeaseItemDetailsScreen} />
+
+                      {/* transportation for hire */}
+                      <Stack.Screen name="TransportationListScreen" component={TransportationListScreen} />
+                      <Stack.Screen name="TransportationDetailsScreen" component={TransportationDetailsScreen} />
+                      <Stack.Screen name="PostTransportationScreen" component={PostTransportationScreen} />
+                      <Stack.Screen name="BookTransportationScreen" component={BookTransportationScreen} />
 
                       {/* stokfella */}
                       <Stack.Screen name="StokFellaGroups" component={StockFelaHome} />
@@ -431,20 +418,6 @@ function AppContent() {
                       <Stack.Screen name="MyProfile" component={MemberProfile} />
                       <Stack.Screen name="MakeLoan" component={LoanRequestScreen} />
                       <Stack.Screen name="MyTransactions" component={TransactionsScreen} />
-
-                      {/* vendor Chain */}
-                      <Stack.Screen name="VendorHome" component={VendorHomeScreen} />
-                      <Stack.Screen name="BulkGroupsScreen" component={BulkGroupsScreen} />
-                      <Stack.Screen name="GroupManagement" component={GroupManagementScreen} />
-                      <Stack.Screen name="SearchScreen" component={SearchScreen} />
-                      <Stack.Screen name="VendorInventoryScreen" component={VendorInventoryScreen} />
-                      <Stack.Screen name="SupplyChainScreen" component={SupplyChainScreen} />
-                      <Stack.Screen name="OrdersScreen" component={OrdersScreen} />
-                      <Stack.Screen name="VendorProfileScreen" component={VendorProfileScreen} />
-                      <Stack.Screen name="CustomerStoreScreen" component={CustomerStoreScreen} />
-                      <Stack.Screen name="DiscussionThreadScreen" component={DiscussionThreadScreen} />
-                      <Stack.Screen name="AddVendor" component={VendorRegistrationScreen} />
-                      <Stack.Screen name="CreateVendorGroup" component={CreateVendorGroup} />
 
                     </Stack.Navigator>
                     <StatusBar style={isDarkMode ? "light" : "dark"} />

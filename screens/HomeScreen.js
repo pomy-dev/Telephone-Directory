@@ -48,14 +48,12 @@ export default function HomeScreen({ navigation }) {
   ]
 
   const services = [
-    { id: "1", screen: "NewsroomScreen", name: "News", image: Images.newsroom },
-    { id: "2", screen: "RideRequestScreen", name: "Ride", image: Images.ride },
-    { id: "3", screen: "GigsScreen", name: "Quick Jobs", image: Images.piecejob },
-    { id: "4", screen: "FoodOrderingScreen", name: "Food & Groceries", image: Images.groceries },
-    { id: "5", screen: "HouseScreen", name: "House Hunting", image: Images.houses },
-    { id: "6", screen: "VacanciesScreen", name: "Vacancies", image: Images.vacancies },
-    { id: "7", screen: "BusinessTendersScreen", name: "Tenders", image: Images.tender },
-    { id: "8", screen: "DirectoryScreen", name: "Phonebook", image: Images.Phonebook },
+    { id: "1", screen: "GigsScreen", name: "Quick Jobs", image: Images.piecejob },
+    { id: "2", screen: "TransportationListScreen", name: "For-Hire", image: Images.forhire },
+    { id: "3", screen: "PropertyScreen", name: "Property Rental", image: Images.houses },
+    { id: "4", screen: "VacanciesScreen", name: "Vacancies", image: Images.vacancies },
+    { id: "5", screen: "PublishedTendersScreen", name: "Tenders", image: Images.tender },
+    { id: "6", screen: "DirectoryScreen", name: "Phonebook", image: Images.Phonebook },
   ]
 
   useEffect(() => {
@@ -117,7 +115,7 @@ export default function HomeScreen({ navigation }) {
           data={services}
           renderItem={renderService}
           keyExtractor={(item) => item.id}
-          numColumns={4}
+          numColumns={3}
           columnWrapperStyle={styles.gridRow}
           scrollEnabled={false}
           showsVerticalScrollIndicator={false}
@@ -125,8 +123,6 @@ export default function HomeScreen({ navigation }) {
       </View>
 
       <PersonalizedAdsSection ads={sampleAds} maxAdsToShow={10} />
-
-      <View style={styles.bottomSpacer} />
     </ScrollView>
   )
 }
@@ -138,26 +134,26 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 50,
   },
   greetingSection: {
-    paddingHorizontal: 24,
+    paddingHorizontal: 10,
     paddingTop: 24,
     paddingBottom: 20,
   },
   greetingText: {
     fontSize: 16,
-    // fontWeight: "700",
+    fontWeight: "200",
     color: "#0f172a",
     letterSpacing: -0.5,
     marginBottom: 8,
   },
   startingText: {
-    fontSize: 28,
+    fontSize: 20,
     color: "#64748b",
     fontWeight: "700",
     lineHeight: 24,
     letterSpacing: 0.2,
   },
   servicesSection: {
-    paddingHorizontal: 24,
+    paddingHorizontal: 10,
     backgroundColor: "#fff",
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
@@ -172,8 +168,8 @@ const styles = StyleSheet.create({
     marginVertical: 8,
   },
   serviceIconContainer: {
-    width: 55,
-    height: 55,
+    width: 65,
+    height: 65,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: "#e2e8f0",
@@ -188,8 +184,8 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   serviceIcon: {
-    width: 55,
-    height: 55,
+    width: '100%',
+    height: '100%',
     borderRadius: 20,
   },
   serviceText: {

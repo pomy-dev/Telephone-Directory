@@ -80,7 +80,7 @@ export default function TopNav({ onCartPress, onSearch, onNotificationPress }) {
         <TouchableOpacity style={styles.locationButton} onPress={handleLocationPress} activeOpacity={0.7}>
           <Ionicons name="location" size={20} color="#1A1A1A" style={{ marginRight: 8 }} />
           <View style={styles.locationTextContainer}>
-            <Text style={styles.locationLabel}>Deliver to</Text>
+            <Text style={styles.locationLabel}>Current Location</Text>
             <View style={styles.locationRow}>
               <Text style={styles.locationText} numberOfLines={1}>
                 {location}
@@ -171,7 +171,7 @@ export default function TopNav({ onCartPress, onSearch, onNotificationPress }) {
 const styles = StyleSheet.create({
   container: {
     backgroundColor: "#FFFFFF",
-    paddingHorizontal: 16,
+    paddingHorizontal: 10,
     paddingTop: 12,
     paddingBottom: 12,
     ...Platform.select({
