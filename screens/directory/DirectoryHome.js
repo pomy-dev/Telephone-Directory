@@ -11,16 +11,22 @@ import {
   StatusBar,
   StyleSheet,
   Alert,
+  Animated,
+  Dimensions,
   RefreshControl,
 } from 'react-native';
 import { Badge } from 'react-native-paper';
 import { useRealm, } from '@realm/react';
 import { Icons } from '../../constants/Icons';
-import { fetchAllCompanies, fetchCompaniesWithAge, useEntities } from '../../service/getApi';
+import {
+  fetchAllCompanies, fetchCompaniesWithAge,
+  useEntities, fetchAllCompaniesOffline
+} from '../../service/getApi';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { checkNetworkConnectivity } from '../../service/checkNetwork';
 import CustomLoader from '../../components/customLoader';
 import { Images } from '../../constants/Images';
+import { API_BASE_URL } from '../../config/env';
 import { CustomToast } from '../../components/customToast';
 import { CustomModal } from '../../components/customModal';
 import LoginScreen from '../../components/loginModal';
@@ -30,6 +36,8 @@ import * as Notifications from 'expo-notifications';
 import { handleLocation, handleBusinessPress, handleEmail, handleWhatsapp, filterAllBusinesses } from '../../utils/callFunctions';
 import CustomCard from '../../components/customCard';
 import { AuthContext } from '../../context/authProvider';
+
+const { width } = Dimensions.get("window");
 
 const DirectoryScreen = ({ navigation }) => {
   const { isDarkMode, theme, selectedState, isOnline, notificationsEnabled, notifications } = useContext(AppContext);
@@ -43,15 +51,23 @@ const DirectoryScreen = ({ navigation }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState('');
   const [favorites, setFavorites] = useState([]);
+
   const [featuredBusinesses, setFeaturedBusinesses] = useState([]);
   const [filteredBusinesses, setFilteredBusinesses] = useState([]);
   const [searchedBusinesses, setSearchedBusinesses] = useState([]);
   const [allBusinesses, setAllBusinesses] = useState([]);
+  const [companyData, setCompanyData] = useState([]);
+
   const [businesses, setBusinesses] = useState([]);
+  const [error, setError] = useState(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { handleCall, AlertUI } = useCallFunction();
   const [showLogin, setShowLogin] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+
+  const fadeAnim = useState(new Animated.Value(0))[0];
+  const scaleAnim = useState(new Animated.Value(0.9))[0];
+  const loadingOpacity = useState(new Animated.Value(0))[0];
 
   const categories = ['All', 'Government', 'Emergency', 'More...'];
   // Function to schedule and store a notification
@@ -177,6 +193,7 @@ const DirectoryScreen = ({ navigation }) => {
 
   useEffect(() => {
     loadBusinesses(isRefreshing);
+    addEmergencyToFavorites(companyData);
   }, [isOnline]); // Add selectedState as a dependency to reload businesses when state changes
 
   useEffect(() => {
@@ -187,6 +204,26 @@ const DirectoryScreen = ({ navigation }) => {
     filterALLBs(searchQuery);
   }, [searchQuery]);
 
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleAnim, {
+        toValue: 1,
+        friction: 8,
+        tension: 40,
+        useNativeDriver: true,
+      }),
+    ]).start();
+
+    setTimeout(() => {
+      checkNetworkAndApi();
+    }, 5000);
+  }, []);
+
   const filterALLBs = async (query = searchQuery) => {
     setSearchedBusinesses([]);
     try {
@@ -195,6 +232,30 @@ const DirectoryScreen = ({ navigation }) => {
     } catch (error) {
       console.log('Error in filterALLBs:', error);
       setSearchedBusinesses([]);
+    }
+  };
+
+  const addEmergencyToFavorites = async (companies) => {
+    try {
+      const emergencyCompanies = companies.filter(
+        (company) => company.company_type === "Emergency" && company.paid
+      );
+      const existingFavoritesJson = await AsyncStorage.getItem("favorites");
+      const existingFavorites = existingFavoritesJson
+        ? JSON.parse(existingFavoritesJson)
+        : [];
+      const existingFavoriteIds = new Set(
+        existingFavorites.map((fav) => fav._id)
+      );
+      const newFavorites = emergencyCompanies.filter(
+        (company) => !existingFavoriteIds.has(company._id)
+      );
+      if (newFavorites.length) {
+        const updated = [...existingFavorites, ...newFavorites];
+        await AsyncStorage.setItem("favorites", JSON.stringify(updated));
+      }
+    } catch (err) {
+      console.error("Error adding emergency businesses:", err);
     }
   };
 
@@ -227,14 +288,11 @@ const DirectoryScreen = ({ navigation }) => {
           CustomToast('Offline Mode', 'Using cached data as app is in offline mode.')
       }
 
-      console.log(`Fetched ${companyData.length} companies from API or cache.`);
+      setCompanyData(companyData);
 
       const featuredBusinesses = companyData.filter(
         (company) => company.subscription_type === 'Gold'
       );
-
-      console.log(`Found ${featuredBusinesses.length} featured (Gold) businesses.`);
-
       const shuffledFeatured = featuredBusinesses.sort(() => Math.random() - 0.5);
 
       const nonGoldCompanies = companyData.filter(
@@ -242,8 +300,6 @@ const DirectoryScreen = ({ navigation }) => {
       );
 
       setAllBusinesses(nonGoldCompanies);
-
-      console.log(`Found ${nonGoldCompanies.length} non-Gold businesses.`);
 
       const shuffledNonGold = nonGoldCompanies.sort(() => Math.random() - 0.5);
       const regularBusinesses = shuffledNonGold.slice(0, 5);
@@ -259,7 +315,7 @@ const DirectoryScreen = ({ navigation }) => {
         CustomToast('Error', 'Failed to load businesses. Using cached data if available.');
       }
     } finally {
-      isRefresh ? setIsRefreshing(true) : setIsLoading(false);
+      isRefresh ? setIsRefreshing(false) : setIsLoading(false);
     }
   };
 
@@ -338,6 +394,149 @@ const DirectoryScreen = ({ navigation }) => {
     }
   };
 
+  const handleRetry = () => {
+    loadingOpacity.setValue(0);
+    Animated.timing(loadingOpacity, {
+      toValue: 1,
+      duration: 500,
+      useNativeDriver: true,
+    }).start();
+    checkNetworkAndApi();
+  };
+
+  const openNetworkSettings = () => {
+    Alert.alert(
+      "Network Required",
+      "Please turn on mobile data or connect to Wi-Fi.",
+      [{ text: "Retry", onPress: handleRetry }, { text: "OK" }]
+    );
+  };
+
+  const proceedOffline = async () => {
+    const cachedCompanies = entities;
+    if (cachedCompanies && cachedCompanies.length > 0) {
+      await addEmergencyToFavorites(cachedCompanies);
+      Alert.alert("Offline Mode", "Proceeding with offline data.", [
+        {
+          text: "Continue", onPress: () => {
+            setIsLoading(true);
+            loadBusinesses(isLoading)
+          }
+        },
+      ]);
+    } else {
+      Alert.alert("No Cached Data", "Please connect to internet first.");
+    }
+  };
+
+  const checkApiConnection = async () => {
+    try {
+      let page = 1;
+      const limit = 20;
+      let allCompanies = [];
+      let totalPages = 1;
+
+      setIsLoading(true);
+      setError(null);
+
+      Animated.timing(loadingOpacity, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }).start();
+
+      // fetch the first page (fastest response)
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+      const response = await fetch(`${API_BASE_URL}/api/companies?page=${page}&limit=${limit}`, {
+        signal: controller.signal,
+      });
+
+      if (!response.ok) throw new Error(`Server error: ${response.status}`);
+
+      const data = await response.json();
+
+      // Filter for paid companies only
+      const paidCompanies = data.companies.filter((c) => c.paid === true);
+      allCompanies = [...allCompanies, ...paidCompanies];
+
+      totalPages = data.totalPages;
+
+      // save immediately so splash can proceed
+      await AsyncStorage.setItem("companiesList", JSON.stringify(allCompanies));
+      await AsyncStorage.setItem("companies_timestamp", new Date().toISOString());
+      await addEmergencyToFavorites(allCompanies);
+
+      // ✅ proceed to app after splash
+      setTimeout(() => {
+        setIsLoading(false);
+        loadBusinesses(isLoading);
+      }, 2000);
+
+      // 🔄 background fetch for remaining pages
+      if (totalPages > 1) {
+        for (let p = 2; p <= totalPages; p++) {
+          try {
+            const res = await fetch(`${API_BASE_URL}/api/companies?page=${p}&limit=${limit}`);
+            if (!res.ok) continue;
+
+            const pageData = await res.json();
+            const morePaid = pageData.companies.filter((c) => c.paid === true);
+
+            // merge new companies into AsyncStorage
+            allCompanies = [...allCompanies, ...morePaid];
+            await AsyncStorage.setItem("companiesList", JSON.stringify(allCompanies));
+            await AsyncStorage.setItem("companies_timestamp", new Date().toISOString());
+          } catch (bgErr) {
+            console.warn(`Failed to fetch page ${p}:`, bgErr.message);
+          }
+        }
+      }
+
+    } catch (err) {
+      console.log("API Connection Error:", err.message);
+      setError(err.message);
+      setIsLoading(false);
+
+      Animated.timing(loadingOpacity, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    }
+  };
+
+  const checkNetworkAndApi = async () => {
+    const isConnected = await checkNetworkConnectivity();
+    if (isConnected) {
+      checkApiConnection();
+    } else {
+      const cachedCompanies = await fetchAllCompaniesOffline();
+      if (cachedCompanies && cachedCompanies.length > 0) {
+        await addEmergencyToFavorites(cachedCompanies);
+        Alert.alert(
+          "Offline Mode",
+          "You're in offline mode. Data may be outdated.",
+          [{
+            text: "Continue", onPress: () => {
+              setIsLoading(true);
+              loadBusinesses(isLoading)
+            }
+          }]
+        );
+      } else {
+        setError("No internet connection and no offline data available.");
+        setIsLoading(false);
+        Animated.timing(loadingOpacity, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }).start();
+      }
+    }
+  };
+
   const hide = searchQuery.length > 0;
 
   return (
@@ -386,14 +585,18 @@ const DirectoryScreen = ({ navigation }) => {
             </View>
           </View>
           {/* profile button */}
-          <TouchableOpacity onPress={handleLogin}>
+          {/* <TouchableOpacity onPress={handleLogin}>
             <Icons.Ionicons name="person-circle-outline" size={24} color={theme.colors.text} />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
 
           {/* Notifications */}
-          <TouchableOpacity style={styles.notificationButton} onPress={() => { navigation.navigate('Notifications') }}>
+          {/* <TouchableOpacity style={styles.notificationButton} onPress={() => { navigation.navigate('Notifications') }}>
             <Icons.Ionicons name="notifications-outline" size={24} color={theme.colors.primary} />
             {notifications.length > 0 && <Badge style={[styles.notificationBadge, { backgroundColor: theme.colors.error }]}>{notifications.length}</Badge>}
+          </TouchableOpacity> */}
+          {/* Notifications */}
+          <TouchableOpacity style={styles.notificationButton} onPress={() => { navigation.navigate('BusinessesScreen') }}>
+            <Icons.Ionicons name="list-outline" size={24} color={theme.colors.primary} />
           </TouchableOpacity>
         </View>
       </View>
@@ -425,162 +628,214 @@ const DirectoryScreen = ({ navigation }) => {
         </Text>
       </View>
 
-      {!hide ? (
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
-          refreshControl={
-            <RefreshControl
-              refreshing={isRefreshing}
-              onRefresh={onRefresh}
-              colors={[theme.colors.primary]}
-              progressBackgroundColor={theme.colors.card}
-            />
-          }>
-          {/* Featured Businesses */}
-          < View style={styles.sectionContainer}>
-            <View style={styles.sectionHeader}>
-              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Exclusive</Text>
-              <TouchableOpacity
-                onPress={() => navigation.navigate("Featured", { featuredBusinesses })}
+      {!hide
+        ? (
+          error
+            ? (
+              <Animated.View
+                style={[
+                  styles.errorContainer,
+                  {
+                    backgroundColor: theme.card,
+                    borderColor: theme.border,
+                    shadowColor: isDarkMode ? "#000000" : "#CCCCCC",
+                  },
+                ]}
               >
-                <Text style={[styles.viewAllText, { color: theme.colors.text }]}>View all</Text>
-              </TouchableOpacity>
-            </View>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.featuredListContent}
-            >
-              {featuredBusinesses.map((item) => (
+                <Text style={[styles.errorText, { color: theme.error }]}>
+                  Connection Error
+                </Text>
+                <Text style={[styles.errorDetails, { color: theme.subtext }]}>
+                  {error}
+                </Text>
+                <Text style={[styles.helpText, { color: theme.text }]}>
+                  Try turning on mobile data or connecting to Wi-Fi.
+                </Text>
+                <View style={styles.buttonContainer}>
+                  <TouchableOpacity
+                    style={[styles.button, { backgroundColor: theme.primary }]}
+                    onPress={handleRetry}
+                  >
+                    <Text style={styles.buttonText}>Retry</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.button,
+                      { backgroundColor: theme.primary + "90" },
+                    ]}
+                    onPress={openNetworkSettings}
+                  >
+                    <Text style={styles.buttonText}>Network Help</Text>
+                  </TouchableOpacity>
+                </View>
                 <TouchableOpacity
-                  key={item._id}
-                  style={styles.featuredItem}
-                  onPress={() => onBusinessPress(item)}
-                  activeOpacity={0.7}
+                  style={[styles.offlineButton, { borderColor: theme.primary }]}
+                  onPress={proceedOffline}
                 >
-                  <View style={[styles.featuredImageContainer, { backgroundColor: theme.colors.secondary }]}>
-                    {item.logo ? (
-                      <Image
-                        source={{ uri: item.logo }}
-                        style={styles.featuredImage}
-                        resizeMode="contain"
-                      />
-                    ) : (
-                      <View style={[styles.placeholderContent, { backgroundColor: theme.colors.indicator }]}>
-                        <Text style={[styles.placeholderText, { color: theme.colors.background }]}>
-                          {item.company_name.charAt(0)}
+                  <Text
+                    style={[styles.offlineButtonText, { color: theme.primary }]}
+                  >
+                    Continue in Offline Mode
+                  </Text>
+                </TouchableOpacity>
+              </Animated.View>)
+            : (
+              <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.scrollContent}
+                refreshControl={
+                  <RefreshControl
+                    refreshing={isRefreshing}
+                    onRefresh={onRefresh}
+                    colors={[theme.colors.primary]}
+                    progressBackgroundColor={theme.colors.card}
+                  />
+                }>
+                {/* Featured Businesses */}
+                < View style={styles.sectionContainer}>
+                  <View style={styles.sectionHeader}>
+                    <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Exclusive</Text>
+                    <TouchableOpacity
+                      onPress={() => navigation.navigate("Featured", { featuredBusinesses })}
+                    >
+                      <Text style={[styles.viewAllText, { color: theme.colors.text }]}>View all</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.featuredListContent}
+                  >
+                    {featuredBusinesses.map((item) => (
+                      <TouchableOpacity
+                        key={item._id}
+                        style={styles.featuredItem}
+                        onPress={() => onBusinessPress(item)}
+                        activeOpacity={0.7}
+                      >
+                        <View style={[styles.featuredImageContainer, { backgroundColor: theme.colors.secondary }]}>
+                          {item.logo ? (
+                            <Image
+                              source={{ uri: item.logo }}
+                              style={styles.featuredImage}
+                              resizeMode="contain"
+                            />
+                          ) : (
+                            <View style={[styles.placeholderContent, { backgroundColor: theme.colors.indicator }]}>
+                              <Text style={[styles.placeholderText, { color: theme.colors.background }]}>
+                                {item.company_name.charAt(0)}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
+                        <Text style={[styles.featuredName, { color: theme.colors.text }]} numberOfLines={1}>
+                          {item.company_name}
                         </Text>
+                        <Text style={[styles.featuredCategory, { color: theme.colors.text }]} numberOfLines={1}>
+                          {item.company_type}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+
+                {/* Categories */}
+                <View style={styles.categoriesContainer}>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.categoriesScrollContent}
+                  >
+                    {categories.map((category, index) => (
+                      <TouchableOpacity
+                        key={index}
+                        style={[
+                          styles.categoryButton,
+                          { backgroundColor: theme.colors.sub_card, borderColor: theme.colors.border },
+                          activeCategory === category && { backgroundColor: theme.colors.primary },
+                        ]}
+                        onPress={() => setActiveCategory(category)}
+                        activeOpacity={0.7}
+                      >
+                        <Text
+                          style={[
+                            styles.categoryText,
+                            { color: theme.colors.text },
+                            activeCategory === category && { color: theme.colors.card },
+                          ]}
+                        >
+                          {category}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+
+                {/* All Businesses */}
+                <View style={styles.businessesContainer}>
+                  <Text style={[styles.businessesTitle, { color: theme.colors.text }]}>Featured</Text>
+                  <View>
+                    {filteredBusinesses.length > 0 ? (
+                      filteredBusinesses.map((item, index) => (
+                        <CustomCard
+                          key={item._id}
+                          business={item}
+                          index={index}
+                          theme={theme}
+                          onBusinessPress={onBusinessPress}
+                          toggleFavorite={toggleFavorite}
+                          isInFavorites={isInFavorites}
+                          handleCall={handleCall}
+                          handleEmail={handleEmail}
+                          handleWhatsapp={handleWhatsapp}
+                          handleLocation={handleLocation}
+                        />
+                      ))
+                    ) : (
+                      <View style={styles.noResultsContainer}>
+                        <Icons.Ionicons name="search" size={48} color={theme.colors.text} />
+                        <Text style={[styles.noResultsText, { color: theme.colors.text }]}>No businesses found</Text>
+                        <Text style={[styles.noResultsSubtext, { color: theme.colors.text }]}>Try a different search or category</Text>
                       </View>
                     )}
                   </View>
-                  <Text style={[styles.featuredName, { color: theme.colors.text }]} numberOfLines={1}>
-                    {item.company_name}
-                  </Text>
-                  <Text style={[styles.featuredCategory, { color: theme.colors.text }]} numberOfLines={1}>
-                    {item.company_type}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-
-          {/* Categories */}
-          <View style={styles.categoriesContainer}>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.categoriesScrollContent}
-            >
-              {categories.map((category, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={[
-                    styles.categoryButton,
-                    { backgroundColor: theme.colors.sub_card, borderColor: theme.colors.border },
-                    activeCategory === category && { backgroundColor: theme.colors.primary },
-                  ]}
-                  onPress={() => setActiveCategory(category)}
-                  activeOpacity={0.7}
-                >
-                  <Text
-                    style={[
-                      styles.categoryText,
-                      { color: theme.colors.text },
-                      activeCategory === category && { color: theme.colors.card },
-                    ]}
-                  >
-                    {category}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-
-          {/* All Businesses */}
-          <View style={styles.businessesContainer}>
-            <Text style={[styles.businessesTitle, { color: theme.colors.text }]}>Featured</Text>
-            <View>
-              {filteredBusinesses.length > 0 ? (
-                filteredBusinesses.map((item, index) => (
-                  <CustomCard
-                    key={item._id}
-                    business={item}
-                    index={index}
-                    theme={theme}
-                    onBusinessPress={onBusinessPress}
-                    toggleFavorite={toggleFavorite}
-                    isInFavorites={isInFavorites}
-                    handleCall={handleCall}
-                    handleEmail={handleEmail}
-                    handleWhatsapp={handleWhatsapp}
-                    handleLocation={handleLocation}
-                  />
-                ))
-              ) : (
-                <View style={styles.noResultsContainer}>
-                  <Icons.Ionicons name="search" size={48} color={theme.colors.text} />
-                  <Text style={[styles.noResultsText, { color: theme.colors.text }]}>No businesses found</Text>
-                  <Text style={[styles.noResultsSubtext, { color: theme.colors.text }]}>Try a different search or category</Text>
                 </View>
-              )}
+              </ScrollView>
+            ))
+        : (
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.scrollContent}
+          >
+            <View style={styles.businessesContainer}>
+              <View>
+                {searchedBusinesses.length > 0 ? (
+                  searchedBusinesses.map((item, index) => (
+                    <CustomCard
+                      key={item._id}
+                      business={item}
+                      index={index}
+                      theme={theme}
+                      onBusinessPress={onBusinessPress}
+                      toggleFavorite={toggleFavorite}
+                      isInFavorites={isInFavorites}
+                      handleCall={handleCall}
+                      handleEmail={handleEmail}
+                      handleWhatsapp={handleWhatsapp}
+                      handleLocation={handleLocation}
+                    />
+                  ))
+                ) : (
+                  <View style={styles.noResultsContainer}>
+                    <Icons.Ionicons name="search" size={48} color={theme.colors.text} />
+                    <Text style={[styles.noResultsText, { color: theme.colors.text }]}>No businesses found</Text>
+                    <Text style={[styles.noResultsSubtext, { color: theme.colors.text }]}>Try a different search or category</Text>
+                  </View>
+                )}
+              </View>
             </View>
-          </View>
-        </ScrollView>
-      ) : (
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.scrollContent}
-        >
-          <View style={styles.businessesContainer}>
-            <View>
-              {searchedBusinesses.length > 0 ? (
-                searchedBusinesses.map((item, index) => (
-                  <CustomCard
-                    key={item._id}
-                    business={item}
-                    index={index}
-                    theme={theme}
-                    onBusinessPress={onBusinessPress}
-                    toggleFavorite={toggleFavorite}
-                    isInFavorites={isInFavorites}
-                    handleCall={handleCall}
-                    handleEmail={handleEmail}
-                    handleWhatsapp={handleWhatsapp}
-                    handleLocation={handleLocation}
-                  />
-                ))
-              ) : (
-                <View style={styles.noResultsContainer}>
-                  <Icons.Ionicons name="search" size={48} color={theme.colors.text} />
-                  <Text style={[styles.noResultsText, { color: theme.colors.text }]}>No businesses found</Text>
-                  <Text style={[styles.noResultsSubtext, { color: theme.colors.text }]}>Try a different search or category</Text>
-                </View>
-              )}
-            </View>
-          </View>
-        </ScrollView >
-      )
+          </ScrollView >
+        )
       }
     </SafeAreaView >
   );
@@ -588,6 +843,58 @@ const DirectoryScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
+  // connection error container
+  errorContainer: {
+    width: width * 0.9,
+    maxWidth: 400,
+    alignItems: "center",
+    padding: 24,
+    borderRadius: 16,
+    borderWidth: 1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+    alignSelf: "center",
+    marginTop: 50,
+  },
+  errorText: { fontSize: 22, fontWeight: "bold", marginBottom: 12 },
+  errorDetails: {
+    fontSize: 16,
+    textAlign: "center",
+    marginBottom: 16,
+    paddingHorizontal: 10,
+  },
+  helpText: { fontSize: 14, textAlign: "center", marginBottom: 24 },
+  buttonContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    marginBottom: 20,
+  },
+  button: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    minWidth: 120,
+    alignItems: "center",
+    marginHorizontal: 8,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  buttonText: { color: "#FFFFFF", fontWeight: "bold", fontSize: 16 },
+  offlineButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    minWidth: 200,
+    alignItems: "center",
+    borderWidth: 1,
+  },
+  offlineButtonText: { fontWeight: "bold", fontSize: 16 },
+
   // that has always been there
   container: {
     flex: 1,

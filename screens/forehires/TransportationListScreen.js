@@ -430,8 +430,6 @@ export default function TransportationListScreen({ navigation }) {
                         </View>
                     </View>
                 )}
-
-                <View style={styles.bottomPadding} />
             </ScrollView>
         </View>
     );
@@ -447,7 +445,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#fff',
-        marginHorizontal: 20,
+        marginHorizontal: 10,
         marginTop: 20,
         marginBottom: 16,
         paddingHorizontal: 10,

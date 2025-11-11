@@ -197,7 +197,7 @@ export default function BidTenderScreen({ navigation, route }) {
     return (
         <View style={styles.container}>
             <StatusBar barStyle="dark-content" />
-            <SecondaryNav title="Submit Bid" />
+            <SecondaryNav title="Make Your Bid" />
 
             <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollView}>
                 {/* Tender Info */}
@@ -379,7 +379,8 @@ const styles = StyleSheet.create({
     },
     tenderInfoCard: {
         backgroundColor: '#fff',
-        margin: 20,
+        marginHorizontal: 10,
+        marginVertical: 20,
         padding: 20,
         borderRadius: 16,
         shadowColor: '#000',
@@ -415,7 +416,7 @@ const styles = StyleSheet.create({
     },
     section: {
         backgroundColor: '#fff',
-        marginHorizontal: 20,
+        marginHorizontal: 10,
         marginTop: 20,
         padding: 20,
         borderRadius: 16,
@@ -548,10 +549,11 @@ const styles = StyleSheet.create({
         lineHeight: 20,
     },
     footer: {
-        padding: 20,
+        padding: 10,
         backgroundColor: '#fff',
         borderTopWidth: 1,
         borderTopColor: '#e2e8f0',
+        marginBottom: 40,
     },
     submitButton: {
         backgroundColor: '#2563eb',

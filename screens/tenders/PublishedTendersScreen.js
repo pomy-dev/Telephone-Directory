@@ -10,6 +10,7 @@ import {
     Image,
     TextInput,
 } from 'react-native';
+import { Icons } from '../../constants/Icons';
 import { Ionicons } from '@expo/vector-icons';
 import SecondaryNav from '../../components/SecondaryNav';
 import { mockTenders, allIndustries } from '../../utils/mockData';
@@ -101,17 +102,17 @@ export default function PublishedTendersScreen({ navigation }) {
                     <View style={styles.gridContent}>
                         <Text style={styles.gridTitle} numberOfLines={2}>{tender.title}</Text>
                         <Text style={styles.gridOrganization} numberOfLines={1}>{tender.organization}</Text>
-                            <View style={styles.gridFooter}>
-                                <View style={styles.gridFooterLeft}>
-                                    <Text style={styles.gridBudget}>{tender.budget}</Text>
-                                    <View style={styles.gridIndustryTag}>
-                                        <Text style={styles.gridIndustryText}>{tender.industry}</Text>
-                                    </View>
+                        <View style={styles.gridFooter}>
+                            <View style={styles.gridFooterLeft}>
+                                <Text style={styles.gridBudget}>{tender.budget}</Text>
+                                <View style={styles.gridIndustryTag}>
+                                    <Text style={styles.gridIndustryText}>{tender.industry}</Text>
                                 </View>
-                                {tender.urgent && (
-                                    <View style={styles.urgentDot} />
-                                )}
                             </View>
+                            {tender.urgent && (
+                                <View style={styles.urgentDot} />
+                            )}
+                        </View>
                     </View>
                 </TouchableOpacity>
             ))}
@@ -155,10 +156,10 @@ export default function PublishedTendersScreen({ navigation }) {
     return (
         <View style={styles.container}>
             <StatusBar barStyle="dark-content" />
-            <SecondaryNav 
-                title="Published Tenders" 
-                rightIcon="filter-outline"
-                onRightPress={() => setShowFilters(!showFilters)}
+            <SecondaryNav
+                title="Published Tenders"
+                rightIcon={'add-circle-outline'}
+                onRightPress={() => navigation.navigate('AddTenderScreen')}
             />
 
             {/* Search Bar */}
@@ -175,6 +176,13 @@ export default function PublishedTendersScreen({ navigation }) {
 
             {/* Layout Toggle */}
             <View style={styles.controlsContainer}>
+                <TouchableOpacity
+                    style={styles.sortBy}
+                    onPress={() => setShowFilters(!showFilters)}
+                >
+                    <Text style={{ color: '#64748b', fontSize: 20, fontWeight: 400 }}>Sort By:</Text>
+                    <Ionicons name="options-outline" size={20} color='#31373eff' />
+                </TouchableOpacity>
                 <View style={styles.layoutToggle}>
                     <TouchableOpacity
                         style={[styles.layoutButton, layout === 'list' && styles.layoutButtonActive]}
@@ -297,7 +305,7 @@ export default function PublishedTendersScreen({ navigation }) {
             </View>
 
             {/* Tenders List */}
-            <ScrollView showsVerticalScrollIndicator={false}>
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingTop: 10 }}>
                 {layout === 'list' && renderListLayout()}
                 {layout === 'grid' && renderGridLayout()}
                 {layout === 'compact' && renderCompactLayout()}
@@ -338,6 +346,9 @@ const styles = StyleSheet.create({
         color: '#000',
     },
     controlsContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
         paddingHorizontal: 20,
         marginBottom: 16,
         gap: 12,
@@ -394,6 +405,9 @@ const styles = StyleSheet.create({
         borderRadius: 10,
         padding: 4,
         gap: 4,
+    },
+    sortBy: {
+        flexDirection: 'row', alignItems: 'center', gap: 6,
     },
     layoutButton: {
         padding: 8,
@@ -462,7 +476,7 @@ const styles = StyleSheet.create({
         padding: 2,
     },
     tendersContainer: {
-        paddingHorizontal: 20,
+        paddingHorizontal: 10,
     },
     tenderCard: {
         backgroundColor: '#fff',
@@ -717,7 +731,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#ef4444',
     },
     bottomPadding: {
-        height: 20,
+        height: 40,
     },
 });
 

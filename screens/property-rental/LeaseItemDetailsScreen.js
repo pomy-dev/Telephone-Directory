@@ -11,47 +11,48 @@ import {
     Linking,
     Share,
     Dimensions,
+    Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import SecondaryNav from '../../components/SecondaryNav';
-import { mockRentalHouses } from '../../utils/mockData';
+import { mockLeaseItems } from '../../utils/mockData';
 
 const { width } = Dimensions.get('window');
 
-export default function RentalHouseDetailsScreen({ navigation, route }) {
-    const { houseId } = route.params;
-    const house = mockRentalHouses.find(h => h.id === houseId);
+export default function LeaseItemDetailsScreen({ navigation, route }) {
+    const { itemId } = route.params;
+    const item = mockLeaseItems.find(i => i.id === itemId);
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [isBookmarked, setIsBookmarked] = useState(false);
 
-    if (!house) {
+    if (!item) {
         return (
             <View style={styles.container}>
-                <SecondaryNav title="House Details" />
+                <SecondaryNav title="Item Details" />
                 <View style={styles.errorContainer}>
-                    <Text style={styles.errorText}>House not found</Text>
+                    <Text style={styles.errorText}>Item not found</Text>
                 </View>
             </View>
         );
     }
 
     const handleCall = () => {
-        Linking.openURL(`tel:${house.landlord.phone}`);
+        Linking.openURL(`tel:${item.owner.phone}`);
     };
 
     const handleWhatsApp = () => {
-        Linking.openURL(`whatsapp://send?phone=${house.landlord.whatsapp.replace(/[^0-9]/g, '')}`);
+        Linking.openURL(`whatsapp://send?phone=${item.owner.whatsapp.replace(/[^0-9]/g, '')}`);
     };
 
     const handleEmail = () => {
-        Linking.openURL(`mailto:${house.landlord.email}`);
+        Linking.openURL(`mailto:${item.owner.email}`);
     };
 
     const handleShare = async () => {
         try {
             await Share.share({
-                message: `Check out this rental: ${house.title}\nPrice: E ${house.price}/month\nLocation: ${house.address}`,
-                title: house.title,
+                message: `Check out this item for lease: ${item.title}\nPrice: E ${item.price}/${item.leaseType}\nDeposit: E ${item.deposit}`,
+                title: item.title,
             });
         } catch (error) {
             console.log('Error sharing:', error);
@@ -59,13 +60,23 @@ export default function RentalHouseDetailsScreen({ navigation, route }) {
     };
 
     const handleApply = () => {
-        navigation.navigate('ApplyRentalScreen', { houseId: house.id });
+        // Navigate to application screen or show contact options
+        Alert.alert(
+            'Contact Owner',
+            'Would you like to contact the owner to lease this item?',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Call', onPress: handleCall },
+                { text: 'WhatsApp', onPress: handleWhatsApp },
+                { text: 'Email', onPress: handleEmail },
+            ]
+        );
     };
 
     return (
         <View style={styles.container}>
-            <StatusBar barStyle="light-content" />
-            <SecondaryNav title="House Details" />
+            <StatusBar barStyle="dark-content" />
+            <SecondaryNav title="Details" />
 
             <ScrollView showsVerticalScrollIndicator={false}>
                 {/* Image Carousel */}
@@ -79,12 +90,12 @@ export default function RentalHouseDetailsScreen({ navigation, route }) {
                             setCurrentImageIndex(index);
                         }}
                     >
-                        {house.images.map((image, index) => (
-                            <Image key={index} source={{ uri: image }} style={styles.houseImage} resizeMode="cover" />
+                        {item.images.map((image, index) => (
+                            <Image key={index} source={{ uri: image }} style={styles.itemImage} resizeMode="cover" />
                         ))}
                     </ScrollView>
                     <View style={styles.imageIndicator}>
-                        {house.images.map((_, index) => (
+                        {item.images.map((_, index) => (
                             <View
                                 key={index}
                                 style={[
@@ -107,67 +118,63 @@ export default function RentalHouseDetailsScreen({ navigation, route }) {
                     {/* Header Info */}
                     <View style={styles.header}>
                         <View style={styles.headerLeft}>
-                            <Text style={styles.title}>{house.title}</Text>
+                            <Text style={styles.title}>{item.title}</Text>
                             <View style={styles.locationRow}>
                                 <Ionicons name="location" size={16} color="#64748b" />
-                                <Text style={styles.address}>{house.address}</Text>
+                                <Text style={styles.address}>
+                                    {item.location.city || item.location.village || item.location.area}
+                                    {item.location.township && `, ${item.location.township}`}
+                                </Text>
                             </View>
                         </View>
                     </View>
 
                     {/* Price */}
                     <View style={styles.priceContainer}>
-                        <Text style={styles.price}>E {house.price.toLocaleString()}</Text>
-                        <Text style={styles.pricePeriod}>/month</Text>
+                        <View>
+                            <Text style={styles.price}>E {item.price.toLocaleString()}</Text>
+                            <Text style={styles.pricePeriod}>/{item.leaseType}</Text>
+                        </View>
+                        <View style={styles.depositContainer}>
+                            <Text style={styles.depositLabel}>Deposit:</Text>
+                            <Text style={styles.depositAmount}>E {item.deposit.toLocaleString()}</Text>
+                        </View>
                     </View>
 
                     {/* Key Details */}
                     <View style={styles.detailsGrid}>
                         <View style={styles.detailBox}>
-                            <Ionicons name="bed-outline" size={24} color="#2563eb" />
-                            <Text style={styles.detailValue}>{house.bedrooms}</Text>
-                            <Text style={styles.detailLabel}>Bedrooms</Text>
+                            <Ionicons name="pricetag-outline" size={24} color="#2563eb" />
+                            <Text style={styles.detailValue}>{item.category}</Text>
+                            <Text style={styles.detailLabel}>Category</Text>
                         </View>
                         <View style={styles.detailBox}>
-                            <Ionicons name="water-outline" size={24} color="#2563eb" />
-                            <Text style={styles.detailValue}>{house.bathrooms}</Text>
-                            <Text style={styles.detailLabel}>Bathrooms</Text>
-                        </View>
-                        <View style={styles.detailBox}>
-                            <Ionicons name="resize-outline" size={24} color="#2563eb" />
-                            <Text style={styles.detailValue}>{house.size}m²</Text>
-                            <Text style={styles.detailLabel}>Size</Text>
+                            <Ionicons name="shield-checkmark-outline" size={24} color="#2563eb" />
+                            <Text style={styles.detailValue}>{item.condition}</Text>
+                            <Text style={styles.detailLabel}>Condition</Text>
                         </View>
                         <View style={styles.detailBox}>
                             <Ionicons name="calendar-outline" size={24} color="#2563eb" />
-                            <Text style={styles.detailValue}>{house.availableDate}</Text>
+                            <Text style={styles.detailValue}>{item.availableFrom}</Text>
                             <Text style={styles.detailLabel}>Available</Text>
+                        </View>
+                        <View style={styles.detailBox}>
+                            <Ionicons name="time-outline" size={24} color="#2563eb" />
+                            <Text style={styles.detailValue}>{item.leaseType}</Text>
+                            <Text style={styles.detailLabel}>Lease Type</Text>
                         </View>
                     </View>
 
                     {/* Description */}
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Description</Text>
-                        <Text style={styles.description}>{house.description}</Text>
-                    </View>
-
-                    {/* Amenities */}
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Amenities</Text>
-                        <View style={styles.amenitiesGrid}>
-                            {house.amenities.map((amenity, index) => (
-                                <View key={index} style={styles.amenityItem}>
-                                    <Ionicons name="checkmark-circle" size={18} color="#10b981" />
-                                    <Text style={styles.amenityText}>{amenity}</Text>
-                                </View>
-                            ))}
-                        </View>
+                        <Text style={styles.description}>{item.description}</Text>
                     </View>
 
                     {/* Rules */}
                     <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>House Rules</Text>
-                        {house.rules.map((rule, index) => (
+                        <Text style={styles.sectionTitle}>Rules</Text>
+                        {item.rules.map((rule, index) => (
                             <View key={index} style={styles.ruleItem}>
                                 <Ionicons name="information-circle-outline" size={18} color="#f59e0b" />
                                 <Text style={styles.ruleText}>{rule}</Text>
@@ -178,7 +185,7 @@ export default function RentalHouseDetailsScreen({ navigation, route }) {
                     {/* Requirements */}
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Requirements</Text>
-                        {house.requirements.map((req, index) => (
+                        {item.requirements.map((req, index) => (
                             <View key={index} style={styles.requirementItem}>
                                 <View style={styles.requirementDot} />
                                 <Text style={styles.requirementText}>{req}</Text>
@@ -186,14 +193,14 @@ export default function RentalHouseDetailsScreen({ navigation, route }) {
                         ))}
                     </View>
 
-                    {/* Landlord Info */}
+                    {/* Owner Info */}
                     <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Landlord Information</Text>
-                        <View style={styles.landlordCard}>
-                            <View style={styles.landlordHeader}>
-                                <View style={styles.landlordInfo}>
-                                    <Text style={styles.landlordName}>{house.landlord.name}</Text>
-                                    {house.landlord.verified && (
+                        <Text style={styles.sectionTitle}>Owner Information</Text>
+                        <View style={styles.ownerCard}>
+                            <View style={styles.ownerHeader}>
+                                <View style={styles.ownerInfo}>
+                                    <Text style={styles.ownerName}>{item.owner.name}</Text>
+                                    {item.owner.verified && (
                                         <View style={styles.verifiedBadge}>
                                             <Ionicons name="checkmark-circle" size={16} color="#10b981" />
                                             <Text style={styles.verifiedText}>Verified</Text>
@@ -202,47 +209,23 @@ export default function RentalHouseDetailsScreen({ navigation, route }) {
                                 </View>
                                 <View style={styles.ratingContainer}>
                                     <Ionicons name="star" size={16} color="#fbbf24" />
-                                    <Text style={styles.rating}>{house.landlord.rating}</Text>
+                                    <Text style={styles.rating}>{item.owner.rating}</Text>
                                 </View>
                             </View>
-                            <Text style={styles.responseTime}>Response Time: {house.landlord.responseTime}</Text>
+                            <Text style={styles.responseTime}>Response Time: {item.owner.responseTime}</Text>
                             <View style={styles.contactButtons}>
                                 <TouchableOpacity style={styles.contactButton} onPress={handleCall}>
-                                    <Ionicons name="call-outline" size={20} color="#2563eb" />
-                                    <Text style={styles.contactButtonText}>Call</Text>
+                                    <Ionicons name="call-outline" size={30} color="#2563eb" />
                                 </TouchableOpacity>
                                 <TouchableOpacity style={styles.contactButton} onPress={handleWhatsApp}>
-                                    <Ionicons name="logo-whatsapp" size={20} color="#25D366" />
-                                    <Text style={styles.contactButtonText}>WhatsApp</Text>
+                                    <Ionicons name="logo-whatsapp" size={30} color="#25D366" />
                                 </TouchableOpacity>
                                 <TouchableOpacity style={styles.contactButton} onPress={handleEmail}>
-                                    <Ionicons name="mail-outline" size={20} color="#2563eb" />
-                                    <Text style={styles.contactButtonText}>Email</Text>
+                                    <Ionicons name="mail-outline" size={30} color="#2563eb" />
                                 </TouchableOpacity>
                             </View>
                         </View>
                     </View>
-
-                    {/* Stats */}
-                    <View style={styles.statsContainer}>
-                        <View style={styles.statItem}>
-                            <Ionicons name="eye-outline" size={20} color="#64748b" />
-                            <Text style={styles.statValue}>{house.views}</Text>
-                            <Text style={styles.statLabel}>Views</Text>
-                        </View>
-                        <View style={styles.statItem}>
-                            <Ionicons name="document-text-outline" size={20} color="#64748b" />
-                            <Text style={styles.statValue}>{house.applications}</Text>
-                            <Text style={styles.statLabel}>Applications</Text>
-                        </View>
-                        <View style={styles.statItem}>
-                            <Ionicons name="calendar-outline" size={20} color="#64748b" />
-                            <Text style={styles.statValue}>{house.postedDate}</Text>
-                            <Text style={styles.statLabel}>Posted</Text>
-                        </View>
-                    </View>
-
-                    <View style={styles.bottomPadding} />
                 </View>
             </ScrollView>
 
@@ -251,9 +234,9 @@ export default function RentalHouseDetailsScreen({ navigation, route }) {
                 <TouchableOpacity style={styles.shareButton} onPress={handleShare}>
                     <Ionicons name="share-outline" size={20} color="#2563eb" />
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.applyButton} onPress={handleApply}>
-                    <Text style={styles.applyButtonText}>Apply Now</Text>
-                    <Ionicons name="arrow-forward" size={20} color="#fff" />
+                <TouchableOpacity style={[styles.contactButton, { borderWidth: 1, flexDirection: 'row', alignItems: 'center', gap: 10 }]} onPress={handleApply}>
+                    <Text style={styles.contactButtonText}>Contact Owner</Text>
+                    <Ionicons name="arrow-forward" size={20} color='#475569' />
                 </TouchableOpacity>
             </View>
         </View>
@@ -280,7 +263,7 @@ const styles = StyleSheet.create({
         height: 300,
         position: 'relative',
     },
-    houseImage: {
+    itemImage: {
         width: width,
         height: 300,
     },
@@ -315,7 +298,8 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     contentContainer: {
-        padding: 20,
+        paddingVertical: 20,
+        paddingHorizontal: 10,
     },
     header: {
         marginBottom: 16,
@@ -341,6 +325,7 @@ const styles = StyleSheet.create({
     },
     priceContainer: {
         flexDirection: 'row',
+        justifyContent: 'space-between',
         alignItems: 'baseline',
         marginBottom: 24,
     },
@@ -353,6 +338,18 @@ const styles = StyleSheet.create({
         fontSize: 16,
         color: '#64748b',
         marginLeft: 8,
+    },
+    depositContainer: {
+        alignItems: 'flex-end',
+    },
+    depositLabel: {
+        fontSize: 12,
+        color: '#64748b',
+    },
+    depositAmount: {
+        fontSize: 18,
+        fontWeight: '700',
+        color: '#f59e0b',
     },
     detailsGrid: {
         flexDirection: 'row',
@@ -373,15 +370,17 @@ const styles = StyleSheet.create({
         elevation: 2,
     },
     detailValue: {
-        fontSize: 20,
+        fontSize: 14,
         fontWeight: '700',
         color: '#000',
         marginTop: 8,
         marginBottom: 4,
+        textAlign: 'center',
     },
     detailLabel: {
-        fontSize: 12,
+        fontSize: 11,
         color: '#64748b',
+        textAlign: 'center',
     },
     section: {
         backgroundColor: '#fff',
@@ -404,22 +403,6 @@ const styles = StyleSheet.create({
         fontSize: 15,
         color: '#475569',
         lineHeight: 24,
-    },
-    amenitiesGrid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 12,
-    },
-    amenityItem: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        width: '48%',
-        gap: 8,
-    },
-    amenityText: {
-        fontSize: 14,
-        color: '#475569',
-        flex: 1,
     },
     ruleItem: {
         flexDirection: 'row',
@@ -452,21 +435,21 @@ const styles = StyleSheet.create({
         color: '#475569',
         lineHeight: 20,
     },
-    landlordCard: {
+    ownerCard: {
         backgroundColor: '#f8fafc',
         borderRadius: 12,
         padding: 16,
     },
-    landlordHeader: {
+    ownerHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'flex-start',
         marginBottom: 8,
     },
-    landlordInfo: {
+    ownerInfo: {
         flex: 1,
     },
-    landlordName: {
+    ownerName: {
         fontSize: 18,
         fontWeight: '700',
         color: '#000',
@@ -499,18 +482,15 @@ const styles = StyleSheet.create({
     },
     contactButtons: {
         flexDirection: 'row',
-        gap: 12,
+        gap: 6,
     },
     contactButton: {
         flex: 1,
-        flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: '#fff',
         padding: 12,
-        borderRadius: 10,
-        gap: 6,
-        borderWidth: 1,
+        borderRadius: 50,
         borderColor: '#e2e8f0',
     },
     contactButtonText: {
@@ -547,11 +527,13 @@ const styles = StyleSheet.create({
     },
     footer: {
         flexDirection: 'row',
-        padding: 20,
+        paddingHorizontal: 20,
+        paddingVertical: 10,
         backgroundColor: '#fff',
         borderTopWidth: 1,
         borderTopColor: '#e2e8f0',
         gap: 12,
+        marginBottom: 40
     },
     shareButton: {
         width: 56,
@@ -561,24 +543,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
     },
-    applyButton: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#2563eb',
-        borderRadius: 12,
-        padding: 16,
-        gap: 8,
-    },
-    applyButtonText: {
-        color: '#fff',
-        fontSize: 16,
-        fontWeight: '700',
-    },
     bottomPadding: {
         height: 20,
     },
 });
-
 

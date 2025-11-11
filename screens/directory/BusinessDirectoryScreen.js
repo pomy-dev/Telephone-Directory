@@ -112,7 +112,6 @@ export default function BusinessDirectoryScreen({ navigation }) {
 
             <SecondaryNav title="Business Directory" rightIcon="filter-outline" onRightPress={() => alert("Notifications!")} />
 
-
             {/* Search Bar */}
             <View style={styles.searchContainer}>
                 <Ionicons name="search" size={20} color="#999" style={styles.searchIcon} />

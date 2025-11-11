@@ -11,11 +11,11 @@ import {
   TextInput
 } from 'react-native';
 import { Modal } from 'react-native';
-import { Icons } from "../../constants/Icons";
-import { AppContext } from '../../context/appContext';
-import { AuthContext } from '../../context/authProvider';
-import LoginScreen from '../../components/loginModal';
-import { mockProfiles, allIndustries } from '../../utils/mockData';
+import { Icons } from "../constants/Icons";
+import { AppContext } from '../context/appContext';
+import { AuthContext } from '../context/authProvider';
+import LoginScreen from '../components/loginModal';
+import { mockProfiles, allIndustries } from '../utils/mockData';
 
 export default function PeopleScreen({ navigation }) {
   const { theme, isDarkMode } = React.useContext(AppContext);
@@ -158,30 +158,32 @@ export default function PeopleScreen({ navigation }) {
       {!isSearching ?
         <View style={styles.header}>
           <TouchableOpacity onPress={startSearch}>
-            <View>
-              <View style={[styles.searchWrapper, { backgroundColor: theme.colors.sub_card, borderColor: theme.colors.border, paddingVertical: 10 }]}>
-                <Icons.Ionicons
-                  name="search-outline"
-                  size={20}
-                  color={theme.colors.text}
-                  style={styles.searchIcon}
-                />
-              </View>
+            <View style={[styles.searchPlacholder, { backgroundColor: theme.colors.sub_card, borderColor: theme.colors.border }]}>
+              {/* <View style={[styles.searchWrapper, { backgroundColor: theme.colors.sub_card, borderColor: theme.colors.border, paddingVertical: 10 }]}> */}
+              <Icons.Ionicons
+                name="search-outline"
+                size={20}
+                color={theme.colors.text}
+                style={styles.searchIcon}
+              />
+              {/* </View> */}
             </View>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            onPress={handleFilter}
-            style={[styles.filterProfile, { backgroundColor: isFiltering ? theme.colors.highlight : 'transparent', borderColor: theme.colors.highlight }]}>
-            <Icons.MaterialCommunityIcons name="account-filter-outline" size={24} color={theme.colors.indicator} />
-          </TouchableOpacity>
+          <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center', borderColor: theme.colors.highlight, padding: 5 }}>
+            <TouchableOpacity
+              onPress={handleFilter}
+              style={[styles.filterProfile, { backgroundColor: isFiltering ? theme.colors.highlight : 'transparent' }]}>
+              <Icons.Ionicons name="options-outline" size={24} color={theme.colors.indicator} />
+            </TouchableOpacity>
 
-          <TouchableOpacity
-            onPress={() => handleAddProfile()}
-            style={[styles.addProfile, { backgroundColor: theme.colors.indicator, borderColor: theme.colors.indicator }]}>
-            <Icons.Feather name="user-plus" size={18} color='#ffff' />
-            <Text style={{ color: '#ffff' }}>Create Profile</Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              onPress={() => handleAddProfile()}
+              style={[styles.addProfile, { backgroundColor: theme.colors.indicator, borderColor: theme.colors.indicator }]}>
+              <Icons.Ionicons name="person-add" size={18} color='#ffff' />
+            </TouchableOpacity>
+          </View>
+
         </View>
         :
         <View style={styles.searchContainer}>
@@ -428,7 +430,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
+    // justifyContent: 'space-between',
     paddingHorizontal: 20,
     paddingVertical: 10,
     marginTop: 30,
@@ -449,6 +451,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 5,
   },
+  searchPlacholder: {
+    flex: 1, width: 200,
+    marginRight: 40,
+    paddingVertical: 10, paddingHorizontal: 16, borderRadius: 50, flexDirection: 'row', alignItems: 'center'
+  },
   searchIcon: {
     marginRight: 10,
   },
@@ -460,7 +467,7 @@ const styles = StyleSheet.create({
   filterProfile: {
     borderWidth: 1,
     borderRadius: 8,
-    paddingVertical: 5,
+    paddingVertical: 3,
     paddingHorizontal: 5,
   },
   addProfile: {

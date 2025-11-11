@@ -72,7 +72,7 @@ export default function PostRentalHouseScreen({ navigation }) {
         }
 
         const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            mediaTypes: ['images', 'videos'],
             allowsEditing: true,
             aspect: [16, 9],
             quality: 0.8,
@@ -158,7 +158,7 @@ export default function PostRentalHouseScreen({ navigation }) {
     return (
         <View style={styles.container}>
             <StatusBar barStyle="dark-content" />
-            <SecondaryNav title="Post Rental House" />
+            <SecondaryNav title="Post House To Let" />
 
             <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollView}>
                 {/* Images Section */}
@@ -538,7 +538,7 @@ const styles = StyleSheet.create({
     },
     section: {
         backgroundColor: '#fff',
-        marginHorizontal: 20,
+        marginHorizontal: 10,
         marginTop: 20,
         padding: 20,
         borderRadius: 16,
@@ -729,10 +729,11 @@ const styles = StyleSheet.create({
         color: '#475569',
     },
     footer: {
-        padding: 20,
+        padding: 10,
         backgroundColor: '#fff',
         borderTopWidth: 1,
         borderTopColor: '#e2e8f0',
+        marginBottom: 40
     },
     submitButton: {
         backgroundColor: '#2563eb',

@@ -257,7 +257,7 @@ export default function PostTransportationScreen({ navigation }) {
                                     onPress={() => handleInputChange('category', category)}
                                 >
                                     <Text style={[styles.categoryText, formData.category === category && styles.categoryTextActive]}>
-                                        {category.replace('_', ' ').toUpperCase()}
+                                        {category.replace('_', '/').toUpperCase()}
                                     </Text>
                                 </TouchableOpacity>
                             ))}
@@ -266,7 +266,7 @@ export default function PostTransportationScreen({ navigation }) {
                     </View>
 
                     <View style={styles.detailsRow}>
-                        <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
+                        <View style={[styles.inputGroup, { flex: 1 }]}>
                             <Text style={styles.label}>Make *</Text>
                             <TextInput
                                 style={[styles.input, errors.make && styles.inputError]}
@@ -278,7 +278,7 @@ export default function PostTransportationScreen({ navigation }) {
                             {errors.make && <Text style={styles.errorText}>{errors.make}</Text>}
                         </View>
 
-                        <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
+                        <View style={[styles.inputGroup, { flex: 1 }]}>
                             <Text style={styles.label}>Model *</Text>
                             <TextInput
                                 style={[styles.input, errors.model && styles.inputError]}
@@ -292,7 +292,7 @@ export default function PostTransportationScreen({ navigation }) {
                     </View>
 
                     <View style={styles.detailsRow}>
-                        <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
+                        <View style={[styles.inputGroup, { flex: 1 }]}>
                             <Text style={styles.label}>Year *</Text>
                             <TextInput
                                 style={[styles.input, errors.year && styles.inputError]}
@@ -305,7 +305,7 @@ export default function PostTransportationScreen({ navigation }) {
                             {errors.year && <Text style={styles.errorText}>{errors.year}</Text>}
                         </View>
 
-                        <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
+                        <View style={[styles.inputGroup, { flex: 1 }]}>
                             <Text style={styles.label}>Registration *</Text>
                             <TextInput
                                 style={[styles.input, errors.registration && styles.inputError]}
@@ -319,7 +319,7 @@ export default function PostTransportationScreen({ navigation }) {
                     </View>
 
                     <View style={styles.detailsRow}>
-                        <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
+                        <View style={[styles.inputGroup, { flex: 1 }]}>
                             <Text style={styles.label}>Price (SZL) *</Text>
                             <TextInput
                                 style={[styles.input, errors.price && styles.inputError]}
@@ -332,7 +332,7 @@ export default function PostTransportationScreen({ navigation }) {
                             {errors.price && <Text style={styles.errorText}>{errors.price}</Text>}
                         </View>
 
-                        <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
+                        <View style={[styles.inputGroup, { flex: 1 }]}>
                             <Text style={styles.label}>Price Type</Text>
                             <View style={styles.priceTypeContainer}>
                                 {priceTypes.map((type) => (
@@ -342,7 +342,7 @@ export default function PostTransportationScreen({ navigation }) {
                                         onPress={() => handleInputChange('priceType', type)}
                                     >
                                         <Text style={[styles.priceTypeText, formData.priceType === type && styles.priceTypeTextActive]}>
-                                            {type.replace('_', ' ')}
+                                            {type.replace('_', '/')}
                                         </Text>
                                     </TouchableOpacity>
                                 ))}
@@ -351,7 +351,7 @@ export default function PostTransportationScreen({ navigation }) {
                     </View>
 
                     <View style={styles.detailsRow}>
-                        <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
+                        <View style={[styles.inputGroup, { flex: 1 }]}>
                             <Text style={styles.label}>Capacity (Seats)</Text>
                             <TextInput
                                 style={styles.input}
@@ -363,7 +363,7 @@ export default function PostTransportationScreen({ navigation }) {
                             />
                         </View>
 
-                        <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
+                        <View style={[styles.inputGroup, { flex: 1 }]}>
                             <Text style={styles.label}>Cargo Capacity (Tons)</Text>
                             <TextInput
                                 style={styles.input}
@@ -414,7 +414,7 @@ export default function PostTransportationScreen({ navigation }) {
                     </View>
 
                     <View style={styles.detailsRow}>
-                        <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
+                        <View style={[styles.inputGroup, { flex: 1 }]}>
                             <Text style={styles.label}>Start Time</Text>
                             <TextInput
                                 style={styles.input}
@@ -425,7 +425,7 @@ export default function PostTransportationScreen({ navigation }) {
                             />
                         </View>
 
-                        <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
+                        <View style={[styles.inputGroup, { flex: 1 }]}>
                             <Text style={styles.label}>End Time</Text>
                             <TextInput
                                 style={styles.input}
@@ -443,7 +443,7 @@ export default function PostTransportationScreen({ navigation }) {
                     <Text style={styles.sectionTitle}>Routes (Optional)</Text>
                     <View style={styles.routeForm}>
                         <View style={styles.detailsRow}>
-                            <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
+                            <View style={[styles.inputGroup, { flex: 1 }]}>
                                 <Text style={styles.label}>Origin</Text>
                                 <TextInput
                                     style={styles.input}
@@ -453,7 +453,7 @@ export default function PostTransportationScreen({ navigation }) {
                                     placeholderTextColor="#94a3b8"
                                 />
                             </View>
-                            <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
+                            <View style={[styles.inputGroup, { flex: 1 }]}>
                                 <Text style={styles.label}>Destination</Text>
                                 <TextInput
                                     style={styles.input}
@@ -465,7 +465,7 @@ export default function PostTransportationScreen({ navigation }) {
                             </View>
                         </View>
                         <View style={styles.detailsRow}>
-                            <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
+                            <View style={[styles.inputGroup, { flex: 1 }]}>
                                 <Text style={styles.label}>Distance</Text>
                                 <TextInput
                                     style={styles.input}
@@ -475,7 +475,7 @@ export default function PostTransportationScreen({ navigation }) {
                                     placeholderTextColor="#94a3b8"
                                 />
                             </View>
-                            <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
+                            <View style={[styles.inputGroup, { flex: 1 }]}>
                                 <Text style={styles.label}>Duration</Text>
                                 <TextInput
                                     style={styles.input}
@@ -700,7 +700,7 @@ const styles = StyleSheet.create({
     },
     section: {
         backgroundColor: '#fff',
-        marginHorizontal: 20,
+        marginHorizontal: 10,
         marginTop: 20,
         padding: 20,
         borderRadius: 16,
@@ -831,7 +831,7 @@ const styles = StyleSheet.create({
     },
     detailsRow: {
         flexDirection: 'row',
-        gap: 12,
+        gap: 6,
     },
     priceTypeContainer: {
         flexDirection: 'row',
@@ -1020,10 +1020,11 @@ const styles = StyleSheet.create({
         color: '#10b981',
     },
     footer: {
-        padding: 20,
+        padding: 10,
         backgroundColor: '#fff',
         borderTopWidth: 1,
         borderTopColor: '#e2e8f0',
+        marginBottom: 40,
     },
     submitButton: {
         backgroundColor: '#2563eb',

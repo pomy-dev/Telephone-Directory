@@ -13,11 +13,11 @@ import {
     RefreshControl,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Icons } from '../../constants/Icons';
-import { CustomModal } from '../../components/customModal';
-import { useCallFunction } from '../../components/customCallAlert';
-import { AppContext } from '../../context/appContext';
-import { handleBusinessPress, handleEmail, handleWhatsapp, handleLocation } from '../../utils/callFunctions';
+import { Icons } from '../constants/Icons';
+import { CustomModal } from '../components/customModal';
+import { useCallFunction } from '../components/customCallAlert';
+import { AppContext } from '../context/appContext';
+import { handleBusinessPress, handleEmail, handleWhatsapp, handleLocation } from '../utils/callFunctions';
 
 export default function FavoritesScreen({ navigation }) {
     const { theme, isDarkMode } = React.useContext(AppContext);
@@ -207,9 +207,9 @@ export default function FavoritesScreen({ navigation }) {
             </Text>
             <TouchableOpacity
                 style={styles.browseButton}
-                onPress={() => navigation.navigate("Home")}
+                onPress={() => navigation.navigate("DirectoryScreen")}
             >
-                <Text style={[styles.browseButtonText, { color: theme.colors.text }]}>Browse Businesses</Text>
+                <Text style={[styles.browseButtonText, { color: '#fff' }]}>Browse Businesses</Text>
             </TouchableOpacity>
         </View>
     );
@@ -243,7 +243,7 @@ export default function FavoritesScreen({ navigation }) {
             />
 
             <View style={styles.header}>
-                <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Favorites</Text>
+                <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Favorite Businesses</Text>
                 {favorites.length > 0 && (
                     <Text style={[styles.favoriteCount, { color: theme.colors.text }]}>{favorites.length} {favorites.length === 1 ? 'business' : 'businesses'}</Text>
                 )}
@@ -259,7 +259,7 @@ export default function FavoritesScreen({ navigation }) {
             ) : (
                 <FlatList
                     data={favorites}
-                    keyExtractor={(item) => item._id}
+                    keyExtractor={(item, index) => `${item._id}-${index}`}
                     renderItem={renderFavoriteItem}
                     contentContainerStyle={styles.listContainer}
                     showsVerticalScrollIndicator={false}

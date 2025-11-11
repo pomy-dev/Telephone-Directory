@@ -204,8 +204,6 @@ export default function TenderDetailsScreen({ navigation, route }) {
                             </View>
                         </View>
                     </View>
-
-                    <View style={styles.bottomPadding} />
                 </View>
             </ScrollView>
 
@@ -248,7 +246,8 @@ const styles = StyleSheet.create({
         height: '100%',
     },
     contentContainer: {
-        padding: 20,
+        paddingVertical: 20,
+        paddingHorizontal: 10,
     },
     header: {
         flexDirection: 'row',
@@ -437,11 +436,13 @@ const styles = StyleSheet.create({
     },
     footer: {
         flexDirection: 'row',
-        padding: 20,
+        paddingHorizontal: 20,
+        paddingVertical: 10,
         backgroundColor: '#fff',
         borderTopWidth: 1,
         borderTopColor: '#e2e8f0',
         gap: 12,
+        marginBottom: 40,
     },
     shareButton: {
         width: 56,

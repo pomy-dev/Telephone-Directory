@@ -13,6 +13,7 @@ import {
     Dimensions,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { Icons } from '../../constants/Icons';
 import SecondaryNav from '../../components/SecondaryNav';
 import { mockTransportationVehicles } from '../../utils/mockData';
 
@@ -274,16 +275,13 @@ export default function TransportationDetailsScreen({ navigation, route }) {
                             <Text style={styles.responseTime}>Response Time: {vehicle.owner.responseTime}</Text>
                             <View style={styles.contactButtons}>
                                 <TouchableOpacity style={styles.contactButton} onPress={handleCall}>
-                                    <Ionicons name="call-outline" size={20} color="#2563eb" />
-                                    <Text style={styles.contactButtonText}>Call</Text>
+                                    <Ionicons name="call-outline" size={30} color="#2563eb" />
                                 </TouchableOpacity>
                                 <TouchableOpacity style={styles.contactButton} onPress={handleWhatsApp}>
-                                    <Ionicons name="logo-whatsapp" size={20} color="#25D366" />
-                                    <Text style={styles.contactButtonText}>WhatsApp</Text>
+                                    <Ionicons name="logo-whatsapp" size={30} color="#25D366" />
                                 </TouchableOpacity>
                                 <TouchableOpacity style={styles.contactButton} onPress={handleEmail}>
-                                    <Ionicons name="mail-outline" size={20} color="#2563eb" />
-                                    <Text style={styles.contactButtonText}>Email</Text>
+                                    <Ionicons name="mail-outline" size={30} color="#2563eb" />
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -317,23 +315,16 @@ export default function TransportationDetailsScreen({ navigation, route }) {
                     {/* Stats */}
                     <View style={styles.statsContainer}>
                         <View style={styles.statItem}>
-                            <Ionicons name="eye-outline" size={20} color="#64748b" />
-                            <Text style={styles.statValue}>{vehicle.views}</Text>
-                            <Text style={styles.statLabel}>Views</Text>
+                            <Ionicons name='heart' size={16} color='#ef4444' />
+                            <Text style={styles.statValue}>{vehicle.totalRatings || 0}</Text>
+                            <Text style={styles.statLabel}>Ratings</Text>
                         </View>
                         <View style={styles.statItem}>
-                            <Ionicons name="calendar-outline" size={20} color="#64748b" />
-                            <Text style={styles.statValue}>{vehicle.bookings}</Text>
-                            <Text style={styles.statLabel}>Bookings</Text>
-                        </View>
-                        <View style={styles.statItem}>
-                            <Ionicons name="calendar-outline" size={20} color="#64748b" />
-                            <Text style={styles.statValue}>{vehicle.postedDate}</Text>
-                            <Text style={styles.statLabel}>Posted</Text>
+                            <Icons.EvilIcons name="like" size={20} color="#64748b" />
+                            <Text style={styles.statValue}>{vehicle.likes || 0}</Text>
+                            <Text style={styles.statLabel}>Likes</Text>
                         </View>
                     </View>
-
-                    <View style={styles.bottomPadding} />
                 </View>
             </ScrollView>
 
@@ -702,9 +693,8 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         backgroundColor: '#fff',
         padding: 12,
-        borderRadius: 10,
+        borderRadius: 50,
         gap: 6,
-        borderWidth: 1,
         borderColor: '#e2e8f0',
     },
     contactButtonText: {

@@ -258,7 +258,7 @@ export default function PropertyScreen({ navigation }) {
             <View style={styles.categorySection} key={categoryName}>
                 <View style={styles.sectionHeader}>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <Text style={styles.sectionTitle}>{categoryName}</Text>
+                        <Text style={styles.sectionTitle}>{(categoryName === 'Houses' || categoryName === 'Farms') ? categoryName + ' To Let' : categoryName + ' For Lease'}</Text>
                         <Text style={styles.sectionCount}>({properties.length})</Text>
                     </View>
                     <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center' }}

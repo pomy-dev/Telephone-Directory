@@ -75,7 +75,7 @@ export default function PostLeaseItemScreen({ navigation }) {
         }
 
         const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            mediaTypes: ['images', 'videos'],
             allowsEditing: true,
             aspect: [16, 9],
             quality: 0.8,
@@ -449,7 +449,7 @@ export default function PostLeaseItemScreen({ navigation }) {
                 </View>
 
                 {/* Owner Information */}
-                <View style={styles.section}>
+                <View style={[styles.section, { marginBottom: 30 }]}>
                     <Text style={styles.sectionTitle}>Your Contact Information</Text>
 
                     <View style={styles.inputGroup}>
@@ -503,8 +503,6 @@ export default function PostLeaseItemScreen({ navigation }) {
                         />
                     </View>
                 </View>
-
-                <View style={styles.bottomPadding} />
             </ScrollView>
 
             {/* Submit Button */}
@@ -529,7 +527,7 @@ const styles = StyleSheet.create({
     },
     section: {
         backgroundColor: '#fff',
-        marginHorizontal: 20,
+        marginHorizontal: 10,
         marginTop: 20,
         padding: 20,
         borderRadius: 16,
@@ -744,10 +742,11 @@ const styles = StyleSheet.create({
         color: '#475569',
     },
     footer: {
-        padding: 20,
+        padding: 10,
         backgroundColor: '#fff',
         borderTopWidth: 1,
         borderTopColor: '#e2e8f0',
+        marginBottom: 40
     },
     submitButton: {
         backgroundColor: '#2563eb',

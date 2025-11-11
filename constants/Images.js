@@ -13,19 +13,6 @@ import Emergency from "../assets/pics/emergency.png"
 import Government from "../assets/pics/government.jpg"
 import Education from "../assets/pics/education.jpg"
 
-// Vacancies
-import vacancy1 from '../assets/vacancies/1.jpg';
-import vacancy2 from '../assets/vacancies/2.jpg';
-import vacancy3 from '../assets/vacancies/3.jpg';
-import vacancy4 from '../assets/vacancies/4.jpg';
-import vacancy5 from '../assets/vacancies/5.jpg';
-import vacancy6 from '../assets/vacancies/6.jpg';
-import vacancy7 from '../assets/vacancies/7.jpg';
-import vacancy8 from '../assets/vacancies/8.jpg';
-import vacancy9 from '../assets/vacancies/9.jpg';
-import vacancy10 from '../assets/vacancies/10.jpg';
-import vacancy11 from '../assets/vacancies/11.jpg';
-
 // Tenders
 import tender1 from '../assets/tenders/1.jpeg';
 import tender2 from '../assets/tenders/2.png';
@@ -39,22 +26,6 @@ import tender9 from '../assets/tenders/9.jpeg';
 import tender10 from '../assets/tenders/10.jpeg';
 import tender11 from '../assets/tenders/11.jpeg';
 import tender12 from '../assets/tenders/12.jpg';
-
-// Internships
-import intern1 from '../assets/internships/1.jpeg'
-import intern2 from '../assets/internships/2.jpeg'
-import intern3 from '../assets/internships/3.jpeg'
-import intern4 from '../assets/internships/4.jpeg'
-import intern5 from '../assets/internships/5.jpeg'
-import intern6 from '../assets/internships/6.jpeg'
-import intern7 from '../assets/internships/7.png'
-
-// Events
-import event1 from '../assets/events/1.jpeg'
-import event2 from '../assets/events/2.jpg'
-import event3 from '../assets/events/3.jpeg'
-import event4 from '../assets/events/4.jpeg'
-import event5 from '../assets/events/5.jpeg'
 
 // Social login icons
 import google from '../assets/pics/google.png'
@@ -71,6 +42,9 @@ import stokfela from '../assets/custom-pics/informal-group.png'
 
 // no image placeholder
 import noImage from '../assets/no-image.jpg';
+
+// logo
+import logo from '../assets/logo.png';
 
 // app icon
 import appLogo from '../assets/logo.png'
@@ -91,6 +65,9 @@ import vacancies from '../assets/icons/vacancies.png'
 
 // export the images
 export const Images = {
+  // logo
+  logo,
+
   // App icon
   appLogo,
 
@@ -126,19 +103,6 @@ export const Images = {
   Emergency,
   Healthcare,
 
-  // Vacancies
-  vacancy1,
-  vacancy2,
-  vacancy3,
-  vacancy4,
-  vacancy5,
-  vacancy6,
-  vacancy7,
-  vacancy8,
-  vacancy9,
-  vacancy10,
-  vacancy11,
-
   // Tenders
   tender1,
   tender2,
@@ -152,22 +116,6 @@ export const Images = {
   tender10,
   tender11,
   tender12,
-
-  // Internships
-  intern1,
-  intern2,
-  intern3,
-  intern4,
-  intern5,
-  intern6,
-  intern7,
-
-  // Events
-  event1,
-  event2,
-  event3,
-  event4,
-  event5,
 
   // Socials
   google,

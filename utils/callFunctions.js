@@ -218,7 +218,7 @@ export async function handleBusinessPress(business, navigation, setSelectedBronz
     setUpgradeModalVisible(true);
   } else {
     // For Silver and Gold, navigate to business detail
-    navigation.navigate("BusinessDetail", { business });
+    navigation.navigate("BusinessDetails", { business });
   }
 };
 

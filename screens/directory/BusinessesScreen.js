@@ -192,6 +192,11 @@ export default function BusinessScreen({ navigation }) {
 
             {/* App Title */}
             <View style={styles.titleContainer}>
+                <TouchableOpacity style={styles.alphabetButton} onPress={() => { navigation.navigate('AlphabeticalList') }}>
+                    <Icons.Ionicons name='arrow-back' size={24} color={theme.colors.text}
+                        onPress={() => navigation.goBack()}
+                    />
+                </TouchableOpacity>
                 <Text style={[styles.appTitle, { color: theme.colors.text }]}>Directory</Text>
                 <Text style={[styles.appSubTitle, { color: theme.colors.text }]}>{selectedState}</Text>
             </View>
