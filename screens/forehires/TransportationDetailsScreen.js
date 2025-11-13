@@ -11,6 +11,7 @@ import {
     Linking,
     Share,
     Dimensions,
+    Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Icons } from '../../constants/Icons';
@@ -60,8 +61,12 @@ export default function TransportationDetailsScreen({ navigation, route }) {
     };
 
     const handleBook = () => {
-        navigation.navigate('BookTransportationScreen', { vehicleId: vehicle.id });
-    };
+        Alert.alert('Booking', 'Choose booking methods.', [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Call', onPress: () => handleCall() },
+            { text: 'Fill From', onPress: () => navigation.navigate('BookTransportationScreen', { vehicleId: vehicle.id }) },
+        ]);
+    }
 
     const getPriceLabel = (priceType) => {
         const labels = {
@@ -311,27 +316,13 @@ export default function TransportationDetailsScreen({ navigation, route }) {
                             )}
                         </View>
                     </View>
-
-                    {/* Stats */}
-                    <View style={styles.statsContainer}>
-                        <View style={styles.statItem}>
-                            <Ionicons name='heart' size={16} color='#ef4444' />
-                            <Text style={styles.statValue}>{vehicle.totalRatings || 0}</Text>
-                            <Text style={styles.statLabel}>Ratings</Text>
-                        </View>
-                        <View style={styles.statItem}>
-                            <Icons.EvilIcons name="like" size={20} color="#64748b" />
-                            <Text style={styles.statValue}>{vehicle.likes || 0}</Text>
-                            <Text style={styles.statLabel}>Likes</Text>
-                        </View>
-                    </View>
                 </View>
             </ScrollView>
 
             {/* Action Buttons */}
             <View style={styles.footer}>
                 <TouchableOpacity style={styles.shareButton} onPress={handleShare}>
-                    <Ionicons name="share-outline" size={20} color="#2563eb" />
+                    <Icons.Feather name="share-2" size={20} color="#2563eb" />
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.bookButton} onPress={handleBook}>
                     <Text style={styles.bookButtonText}>Book Now</Text>
@@ -691,11 +682,12 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#fff',
-        padding: 12,
+        backgroundColor: '#F8F4FF',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
         borderRadius: 50,
         gap: 6,
-        borderColor: '#e2e8f0',
+        borderColor: '#e3e3e3ff',
     },
     contactButtonText: {
         fontSize: 13,
