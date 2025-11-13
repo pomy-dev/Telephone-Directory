@@ -185,7 +185,7 @@ export default function BookTransportationScreen({ navigation, route }) {
                     <Text style={styles.sectionTitle}>Booking Details</Text>
 
                     <View style={styles.detailsRow}>
-                        <View style={[styles.inputGroup, { flex: 1, marginRight: 8 }]}>
+                        <View style={[styles.inputGroup, { flex: 1}]}>
                             <Text style={styles.label}>
                                 Booking Date * <Text style={styles.required}>({vehicle.operatingDays.join(', ')})</Text>
                             </Text>
@@ -199,7 +199,7 @@ export default function BookTransportationScreen({ navigation, route }) {
                             {errors.bookingDate && <Text style={styles.errorText}>{errors.bookingDate}</Text>}
                         </View>
 
-                        <View style={[styles.inputGroup, { flex: 1, marginLeft: 8 }]}>
+                        <View style={[styles.inputGroup, { flex: 1}]}>
                             <Text style={styles.label}>
                                 Booking Time * <Text style={styles.required}>({vehicle.operatingHours.start} - {vehicle.operatingHours.end})</Text>
                             </Text>
@@ -484,7 +484,7 @@ const styles = StyleSheet.create({
     },
     detailsRow: {
         flexDirection: 'row',
-        gap: 12,
+        gap: 6,
     },
     inputGroup: {
         marginBottom: 20,

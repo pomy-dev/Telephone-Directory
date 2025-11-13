@@ -2347,8 +2347,8 @@ export const mockTransportationVehicles = [
   {
     id: 'tv1',
     title: 'Comfortable 15-Seater Minibus - Cross Border',
-    type: 'minibus', // 'minibus', 'bus', 'van', 'truck', 'sedan', 'suv'
-    category: 'public_transport', // 'public_transport', 'cargo', 'passenger', 'luxury'
+    type: 'minibus',
+    category: 'public_transport',
     images: [
       'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=800',
       'https://images.unsplash.com/photo-1544620347-c4fd4a3d5958?w=800',
@@ -2358,8 +2358,8 @@ export const mockTransportationVehicles = [
     model: 'Hiace',
     year: 2020,
     registration: 'SD 1234 AB',
-    price: 2500, // per trip or per day
-    priceType: 'per_trip', // 'per_trip', 'per_day', 'per_hour', 'per_km'
+    price: 2500,
+    priceType: 'per_trip',
     currency: 'SZL',
     available: true,
     description: 'Comfortable 15-seater minibus perfect for cross-border trips. Regular service between Eswatini and South Africa. Air-conditioned, well-maintained vehicle with experienced driver.',
