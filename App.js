@@ -13,6 +13,12 @@ import * as NavigationBar from "expo-navigation-bar";
 import { RealmProvider } from '@realm/react';
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs"
 import { createNativeStackNavigator } from "@react-navigation/native-stack"
+// loan assist
+import LoanDetails from "./screens/loans/LoanDetails"
+import LoanCompare from "./screens/loans/LoanCompare"
+import LoanCalculator from "./screens/loans/LoanCalculator"
+import LoanAssist from "./screens/loans/LoanAssist"
+
 
 // screens
 import HomeScreen from "./screens/HomeScreen"
@@ -373,6 +379,15 @@ function AppContent() {
                       <Stack.Screen name="TransportationDetailsScreen" component={TransportationDetailsScreen} />
                       <Stack.Screen name="PostTransportationScreen" component={PostTransportationScreen} />
                       <Stack.Screen name="BookTransportationScreen" component={BookTransportationScreen} />
+                      
+                      
+
+                      <Stack.Screen name="LoanDetails" component={LoanDetails} />
+                      <Stack.Screen name="LoanCompare" component={LoanCompare} />
+                      <Stack.Screen name="LoanCalculator" component={LoanCalculator} />
+                      <Stack.Screen name="LoanAssist" component={LoanAssist} />
+
+
 
                     </Stack.Navigator>
                     <StatusBar style={isDarkMode ? "light" : "dark"} />

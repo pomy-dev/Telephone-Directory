@@ -62,6 +62,7 @@ import ride from '../assets/icons/Ride.png'
 import taxi from '../assets/icons/taxi.png'
 import tender from '../assets/icons/tender.png'
 import vacancies from '../assets/icons/vacancies.png'
+import Loans from '../assets/icons/Stokvel.png'
 
 // export the images
 export const Images = {
@@ -82,6 +83,9 @@ export const Images = {
   // state flags
   bs_eswatini,
   eptc,
+
+  //loans screen : 
+  Loans,
 
   // stokfella accounts
   buildingSociety,
