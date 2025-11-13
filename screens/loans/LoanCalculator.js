@@ -56,6 +56,7 @@ export default function LoanCalculator({ navigation }) {
 
   return (
     <View style={styles.container}>
+      <View style={{ height: 25 }} />
       <SecondaryNav title="Loan Calculator" />
 
       <View style={styles.content}>

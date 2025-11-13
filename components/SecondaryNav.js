@@ -1,7 +1,9 @@
 "use client"
 
+import React from "react"
 import { StyleSheet, Text, View, TouchableOpacity, Platform } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
+import { AppContext } from "../context/appContext"
 import { useNavigation } from "@react-navigation/native"
 import { useState, useEffect } from "react"
 import AsyncStorage from "@react-native-async-storage/async-storage"
@@ -12,6 +14,7 @@ export default function SecondaryNav({
     onRightPress,
     showLocation = false,
 }) {
+    const { theme } = React.useContext(AppContext)
     const navigation = useNavigation()
     const [location, setLocation] = useState("")
 
@@ -29,7 +32,7 @@ export default function SecondaryNav({
     }
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: theme.background }]}>
             {/* Left Back Button */}
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconButton} activeOpacity={0.7}>
                 <Ionicons name="chevron-back" size={26} color="#1A1A1A" />
@@ -65,12 +68,11 @@ export default function SecondaryNav({
 
 const styles = StyleSheet.create({
     container: {
-        backgroundColor: "#FFFFFF",
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "space-between",
         paddingHorizontal: 16,
-        paddingVertical: 12,
+        paddingVertical: 6,
         ...Platform.select({
             ios: {
                 shadowColor: "#000",
@@ -79,7 +81,7 @@ const styles = StyleSheet.create({
                 shadowRadius: 2,
             },
             android: {
-                elevation: 2,
+                elevation: 1,
             },
         }),
     },

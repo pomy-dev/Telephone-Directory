@@ -61,6 +61,7 @@ export default function LoanDetails({ route, navigation }) {
 
   return (
     <View style={styles.container}>
+      <View style={{ height: 25 }} />
       <SecondaryNav title="Loan Details" />
 
       <ScrollView

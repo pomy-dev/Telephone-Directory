@@ -446,7 +446,8 @@ export default function LoansScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <SecondaryNav title="Loans" />
+      <View style={{ height: 25 }} />
+      <SecondaryNav title="Loan Entities" />
 
       <FlatList
         data={filteredLoans}
@@ -508,7 +509,7 @@ const styles = StyleSheet.create({
     color: "#111827",
     paddingHorizontal: 16,
     marginBottom: 10,
-    marginTop:10,
+    marginTop: 10,
   },
 
   featuredCard: {

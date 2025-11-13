@@ -176,6 +176,7 @@ export default function LoanCompare({ route, navigation }) {
 
   return (
     <View style={styles.container}>
+      <View style={{ height: 25 }} />
       <SecondaryNav title={`Compare (${loans.length})`} />
 
       <ScrollView
@@ -295,10 +296,10 @@ const styles = StyleSheet.create({
   },
   lastRow: { borderBottomWidth: 0 },
   labelCell: { paddingLeft: 16, justifyContent: "center" },
-  label: { 
-    fontWeight: "600", 
-    color: "#374151", 
-    fontSize: 14 
+  label: {
+    fontWeight: "600",
+    color: "#374151",
+    fontSize: 14
   },
   values: { flexDirection: "row" },
   cell: {
@@ -315,20 +316,20 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   rate: { color: "#DC2626" },
-  highlight: { 
-    color: COLORS.primary, 
-    fontWeight: "600", 
-    fontSize: 14 
+  highlight: {
+    color: COLORS.primary,
+    fontWeight: "600",
+    fontSize: 14
   },
-  valueText: { 
-    fontSize: 14, 
-    color: "#374151", 
-    textAlign: "center" 
+  valueText: {
+    fontSize: 14,
+    color: "#374151",
+    textAlign: "center"
   },
-  descriptionText: { 
-    fontSize: 13, 
-    color: COLORS.textSecondary, 
-    textAlign: "center" 
+  descriptionText: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    textAlign: "center"
   },
 
   // SCROLL TIP
@@ -364,10 +365,10 @@ const styles = StyleSheet.create({
     gap: 8,
     marginTop: 8,
   },
-  backText: { 
-    color: "#FFFFFF", 
-    fontWeight: "600", 
-    fontSize: 15 
+  backText: {
+    color: "#FFFFFF",
+    fontWeight: "600",
+    fontSize: 15
   },
 
   // LOGO FALLBACK
@@ -377,8 +378,8 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderRadius: 12,
   },
-  logoText: { 
-    fontWeight: "700", 
-    color: "#4B5563" 
+  logoText: {
+    fontWeight: "700",
+    color: "#4B5563"
   },
 });
