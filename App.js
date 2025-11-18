@@ -52,7 +52,10 @@ import JobDetailScreen from "./screens/piece-jobs/JobDetailScreen"
 
 // Property Rental
 import PropertyScreen from "./screens/property-rental/PropertyScreen"
-import RentalHousesScreen from "./screens/property-rental/RentalHousesScreen"
+// import RentalHousesScreen from "./screens/property-rental/RentalHousesScreen"
+import MoreHouses from "./screens/property-rental/MoreHouses"
+import HouseDetailsScreen from "./screens/property-rental/HouseDetailsScreen"
+import HouseMapScreen from "./screens/property-rental/HouseMapScreen"
 import RentalHouseDetailsScreen from "./screens/property-rental/RentalHouseDetailsScreen"
 import PostRentalHouseScreen from "./screens/property-rental/PostRentalHouseScreen"
 import ApplyRentalScreen from "./screens/property-rental/ApplyRentalScreen"
@@ -60,6 +63,8 @@ import MyRentalApplicationsScreen from "./screens/property-rental/MyRentalApplic
 import LeaseItemsScreen from "./screens/property-rental/LeaseItemsScreen"
 import PostLeaseItemScreen from "./screens/property-rental/PostLeaseItemScreen"
 import LeaseItemDetailsScreen from "./screens/property-rental/LeaseItemDetailsScreen"
+
+import AgentDetailsScreen from "./screens/property-rental/AgentDetailsScreen"
 
 // forehires (transportation)
 import TransportationListScreen from "./screens/forehires/TransportationListScreen"
@@ -363,8 +368,12 @@ function AppContent() {
 
                       {/* rental houses */}
                       <Stack.Screen name="PropertyScreen" component={PropertyScreen} />
-                      <Stack.Screen name="RentalHousesScreen" component={RentalHousesScreen} />
-                      <Stack.Screen name="RentalHouseDetailsScreen" component={RentalHouseDetailsScreen} />
+                      {/* <Stack.Screen name="RentalHousesScreen" component={RentalHousesScreen} /> */}
+                      <Stack.Screen name="MoreHouses" component={MoreHouses} />
+                      <Stack.Screen name="HouseDetailsScreen" component={HouseDetailsScreen} />
+                      <Stack.Screen name="HouseMapScreen" component={HouseMapScreen} />
+                      <Stack.Screen name="AgentDetailsScreen" component={AgentDetailsScreen} />
+                      {/* <Stack.Screen name="RentalHouseDetailsScreen" component={RentalHouseDetailsScreen} /> */}
                       <Stack.Screen name="PostRentalHouseScreen" component={PostRentalHouseScreen} />
                       <Stack.Screen name="ApplyRentalScreen" component={ApplyRentalScreen} />
                       <Stack.Screen name="MyRentalApplicationsScreen" component={MyRentalApplicationsScreen} />
@@ -379,15 +388,11 @@ function AppContent() {
                       <Stack.Screen name="TransportationDetailsScreen" component={TransportationDetailsScreen} />
                       <Stack.Screen name="PostTransportationScreen" component={PostTransportationScreen} />
                       <Stack.Screen name="BookTransportationScreen" component={BookTransportationScreen} />
-                      
-                      
 
                       <Stack.Screen name="LoanDetails" component={LoanDetails} />
                       <Stack.Screen name="LoanCompare" component={LoanCompare} />
                       <Stack.Screen name="LoanCalculator" component={LoanCalculator} />
                       <Stack.Screen name="LoanAssist" component={LoanAssist} />
-
-
 
                     </Stack.Navigator>
                     <StatusBar style={isDarkMode ? "light" : "dark"} />

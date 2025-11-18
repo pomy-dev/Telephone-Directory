@@ -48,6 +48,7 @@
     "react-native": "0.79.5",
     "react-native-auth0": "^5.0.1",
     "react-native-element-dropdown": "^2.12.4",
+    "react-native-feather": "^1.1.2",
     "react-native-gesture-handler": "~2.24.0",
     "react-native-loader-kit": "^3.0.0",
     "react-native-maps": "1.20.1",

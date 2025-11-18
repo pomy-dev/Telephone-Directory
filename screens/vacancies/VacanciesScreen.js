@@ -1,570 +1,460 @@
-import React, { useState } from 'react';
+"use client"
+
+import { useMemo, useState } from "react"
 import {
     View,
     Text,
     StyleSheet,
-    ScrollView,
+    FlatList,
     TouchableOpacity,
+    Dimensions,
     TextInput,
-    StatusBar,
-    Linking,
     Platform,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import SecondaryNav from '../../components/SecondaryNav';
+    Image,
+} from "react-native"
+import { Ionicons } from "@expo/vector-icons"
+import SecondaryNav from "../../components/SecondaryNav"
+import NativeAd from "../../components/NativeAd"
 
-export default function VacanciesScreen({ navigation }) {
-    const [selectedCategory, setSelectedCategory] = useState('All');
-    const [searchQuery, setSearchQuery] = useState('');
+const WINDOW_HEIGHT = Dimensions.get("window").height
+const ACCENT = "#000"
+const SURFACE = "#FFFFFF"
+const BACKGROUND = "#FFF"
+const MUTED = "#9CA3AF"
+const TEXT_PRIMARY = "#0F172A"
 
-    const categories = ['All', 'Design', 'Technology', 'Finance', 'Marketing'];
+const JOBS = [
+    {
+        id: "1",
+        title: "UX Designer",
+        company: "TechHub Eswatini",
+        location: "Mbabane, Eswatini",
+        logo: null,
+        initials: "T",
+        color: "#f62222",
+        salary: "E8,000 - E15,000",
+        salaryFreq: "/month",
+        experience: "3-5 years",
+        jobType: "Full Time",
+        description: "Join our UX team at TechHub Eswatini to craft amazing digital experiences for local businesses.",
+        fullDescription: "TechHub Eswatini's UX team works across multiple projects to deliver user-centered design solutions, from research to prototypes, focusing on intuitive and accessible design.",
+        qualifications: [
+            "Bachelor's degree in Design, HCI, or a related field.",
+            "3-5 years of UX design experience.",
+            "Ability to lead end-to-end design projects."
+        ],
+    },
+    {
+        id: "2",
+        title: "Copywriter",
+        company: "MediaWorks Swaziland",
+        location: "Manzini, Eswatini",
+        logo: null,
+        initials: "M",
+        color: "#1E90FF",
+        salary: "E6,000 - E12,000",
+        salaryFreq: "/month",
+        experience: "2-4 years",
+        jobType: "Full Time",
+        description: "Create compelling copy for digital and print campaigns for various brands in Swaziland.",
+        fullDescription: "MediaWorks Swaziland requires a creative copywriter to craft impactful messaging across social media, web, and print, ensuring brand consistency and engagement.",
+        qualifications: [
+            "Bachelor's degree in Marketing, Communications, or related field.",
+            "2-4 years of professional writing experience.",
+            "Excellent grammar and storytelling skills."
+        ],
+    },
+    {
+        id: "3",
+        title: "Chef",
+        company: "Royal Swazi Hotel",
+        location: "Mbabane, Eswatini",
+        logo: null,
+        initials: "R",
+        color: "#FF8C00",
+        salary: "E4,000 - E8,000",
+        salaryFreq: "/month",
+        experience: "3-5 years",
+        jobType: "Full Time",
+        description: "Prepare high-quality dishes in a luxury hotel setting.",
+        fullDescription: "Royal Swazi Hotel is seeking a talented chef to create memorable culinary experiences, manage kitchen operations, and maintain the highest standards of hygiene and quality.",
+        qualifications: [
+            "Culinary degree or equivalent experience.",
+            "3-5 years working in professional kitchens.",
+            "Ability to manage a small team of kitchen staff."
+        ],
+    },
+    {
+        id: "4",
+        title: "Product Manager",
+        company: "SwaziTech Solutions",
+        location: "Manzini, Eswatini",
+        logo: null,
+        initials: "S",
+        color: "#32CD32",
+        salary: "E10,000 - E20,000",
+        salaryFreq: "/month",
+        experience: "5-7 years",
+        jobType: "Full Time",
+        description: "Lead product strategy and development for software solutions in Swaziland.",
+        fullDescription: "SwaziTech Solutions requires an experienced Product Manager to drive product vision, coordinate development, and ensure successful delivery of software projects that meet client needs.",
+        qualifications: [
+            "Bachelor's degree in Business, IT, or related field.",
+            "5-7 years product management experience.",
+            "Strong leadership and communication skills."
+        ],
+    },
+    {
+        id: "5",
+        title: "Retail Store Manager",
+        company: "Shoprite Swaziland",
+        location: "Mbabane, Eswatini",
+        logo: "https://www.shoprite.co.za/favicon.ico",
+        initials: "S",
+        color: "#FFD700",
+        salary: "E5,000 - E10,000",
+        salaryFreq: "/month",
+        experience: "3-6 years",
+        jobType: "Full Time",
+        description: "Manage daily operations of a retail store and lead a team of staff.",
+        fullDescription: "Shoprite Swaziland is looking for an organized and motivated Store Manager to oversee store operations, ensure excellent customer service, and drive sales performance.",
+        qualifications: [
+            "Proven retail management experience.",
+            "Strong leadership skills.",
+            "Good organizational and communication skills."
+        ],
+    },
+    {
+        id: "6",
+        title: "Logistics Specialist",
+        company: "Swazi Logistics",
+        location: "Manzini, Eswatini",
+        logo: null,
+        initials: "S",
+        color: "#8A2BE2",
+        salary: "E6,000 - E12,000",
+        salaryFreq: "/month",
+        experience: "2-5 years",
+        jobType: "Full Time",
+        description: "Coordinate and optimize supply chain and transport operations.",
+        fullDescription: "Swazi Logistics is seeking a Logistics Specialist to plan, coordinate, and improve logistics processes, ensuring timely and cost-effective delivery of goods.",
+        qualifications: [
+            "Degree in Logistics, Supply Chain, or related field.",
+            "2-5 years of logistics experience.",
+            "Excellent problem-solving skills."
+        ],
+    },
+    {
+        id: "7",
+        title: "Nurse",
+        company: "Mbabane Hospital",
+        location: "Mbabane, Eswatini",
+        logo: null,
+        initials: "M",
+        color: "#FF1493",
+        salary: "E7,000 - E14,000",
+        salaryFreq: "/month",
+        experience: "2-6 years",
+        jobType: "Full Time",
+        description: "Provide patient care and assist in medical procedures at the hospital.",
+        fullDescription: "Mbabane Hospital is looking for a compassionate and skilled nurse to deliver high-quality care, manage patient needs, and support doctors in clinical settings.",
+        qualifications: [
+            "Registered Nurse qualification.",
+            "2-6 years of hospital experience.",
+            "Strong communication and interpersonal skills."
+        ],
+    },
+    {
+        id: "8",
+        title: "Electrician",
+        company: "Eswatini Electrical Services",
+        location: "Manzini, Eswatini",
+        logo: null,
+        initials: "E",
+        color: "#00CED1",
+        salary: "E5,000 - E9,000",
+        salaryFreq: "/month",
+        experience: "2-4 years",
+        jobType: "Full Time",
+        description: "Install, maintain, and repair electrical systems in residential and commercial spaces.",
+        fullDescription: "Eswatini Electrical Services seeks an experienced Electrician to ensure safe installation and maintenance of electrical systems while following industry standards and regulations.",
+        qualifications: [
+            "Certified Electrician.",
+            "2-4 years practical experience.",
+            "Knowledge of safety codes and standards."
+        ],
+    },
+    {
+        id: "9",
+        title: "Teacher",
+        company: "St. Michael's High School",
+        location: "Mbabane, Eswatini",
+        logo: null,
+        initials: "S",
+        color: "#FFA500",
+        salary: "E4,500 - E8,000",
+        salaryFreq: "/month",
+        experience: "3-5 years",
+        jobType: "Full Time",
+        description: "Teach students and prepare lesson plans in your subject area.",
+        fullDescription: "St. Michael's High School requires qualified teachers to educate students, develop curriculum plans, and promote a positive learning environment.",
+        qualifications: [
+            "Teaching qualification.",
+            "3-5 years classroom experience.",
+            "Strong communication and organizational skills."
+        ],
+    },
+    {
+        id: "10",
+        title: "Barista",
+        company: "Coffee Spot Mbabane",
+        location: "Mbabane, Eswatini",
+        logo: null,
+        initials: "C",
+        color: "#FF4500",
+        salary: "E3,000 - E5,500",
+        salaryFreq: "/month",
+        experience: "1-2 years",
+        jobType: "Part Time",
+        description: "Prepare and serve coffee and beverages while providing excellent customer service.",
+        fullDescription: "Coffee Spot Mbabane is seeking a friendly Barista to craft coffee drinks, maintain equipment, and create a welcoming environment for customers.",
+        qualifications: [
+            "Experience as a barista or in customer service.",
+            "Ability to work flexible hours.",
+            "Good communication and interpersonal skills."
+        ],
+    },
+]
 
-    const vacancies = [
-        {
-            id: 1,
-            title: 'UI/UX Designer',
-            company: 'Ngwane Tech Solutions',
-            logo: '🟢',
-            location: 'Mbabane, Eswatini',
-            salary: 'E 18,000 - E 25,000',
-            period: '/month',
-            type: 'Full-Time',
-            mode: 'Hybrid',
-            category: 'Design',
-            posted: '2 days ago',
-            expires: '2025-11-20',
-            daysLeft: 17,
-            description:
-                'We are looking for a talented UI/UX Designer to create clean, user-friendly interfaces for our clients across Eswatini.',
-            requirements: ['3+ years experience', 'Figma or Adobe XD', 'Portfolio required'],
-            responsibilities: ['Design user interfaces', 'Create prototypes', 'Conduct user testing'],
-            applyLink: 'https://ngwanetech.co.sz/careers',
-            featured: true,
-        },
-        {
-            id: 2,
-            title: 'Senior Software Engineer',
-            company: 'Lourie Technologies',
-            logo: '💻',
-            location: 'Manzini, Eswatini',
-            salary: 'E 30,000 - E 45,000',
-            period: '/month',
-            type: 'Full-Time',
-            mode: 'Remote',
-            category: 'Technology',
-            posted: '1 week ago',
-            expires: '2025-11-15',
-            daysLeft: 12,
-            description:
-                'Join our local engineering team to build modern web and mobile applications for municipalities and enterprises in Eswatini.',
-            requirements: ['5+ years experience', 'React or React Native', 'Node.js and MongoDB'],
-            responsibilities: ['Develop scalable apps', 'API integrations', 'Mentor junior developers'],
-            applyLink: 'https://lourietechnologies.co.sz/apply',
-            featured: false,
-        },
-        {
-            id: 3,
-            title: 'Financial Analyst',
-            company: 'EswatiniBank',
-            logo: '💰',
-            location: 'Mbabane, Eswatini',
-            salary: 'E 20,000 - E 30,000',
-            period: '/month',
-            type: 'Full-Time',
-            mode: 'Onsite',
-            category: 'Finance',
-            posted: '3 days ago',
-            expires: '2025-11-25',
-            daysLeft: 22,
-            description:
-                'We are seeking a Financial Analyst to evaluate financial data and provide insights for decision-making.',
-            requirements: ['Bachelor in Finance or Accounting', 'Strong Excel skills', '2+ years experience'],
-            responsibilities: ['Prepare reports', 'Analyze budgets', 'Assess risks'],
-            applyLink: 'https://eswatinibank.co.sz/careers',
-            featured: false,
-        },
-        {
-            id: 4,
-            title: 'Digital Marketing Manager',
-            company: 'MTN Eswatini',
-            logo: '🟡',
-            location: 'Mbabane, Eswatini',
-            salary: 'E 25,000 - E 40,000',
-            period: '/month',
-            type: 'Full-Time',
-            mode: 'Hybrid',
-            category: 'Marketing',
-            posted: '5 days ago',
-            expires: '2025-11-10',
-            daysLeft: 7,
-            description:
-                'Lead MTN Eswatini’s digital marketing campaigns and grow our online presence through data-driven strategies.',
-            requirements: ['Marketing degree', 'SEO/SEM experience', 'Analytics skills'],
-            responsibilities: ['Manage campaigns', 'Oversee social media', 'Track performance metrics'],
-            applyLink: 'https://mtn.co.sz/careers',
-            featured: true,
-        },
-        {
-            id: 5,
-            title: 'Graphic Designer',
-            company: 'PromoConnect Eswatini',
-            logo: '🎨',
-            location: 'Manzini, Eswatini',
-            salary: 'E 12,000 - E 18,000',
-            period: '/month',
-            type: 'Full-Time',
-            mode: 'Onsite',
-            category: 'Design',
-            posted: '4 days ago',
-            expires: '2025-11-18',
-            daysLeft: 15,
-            description:
-                'We’re seeking a creative graphic designer to work on marketing materials, social media posts, and brand visuals.',
-            requirements: ['2+ years experience', 'Proficiency in Photoshop or Illustrator', 'Creative portfolio'],
-            responsibilities: ['Design marketing visuals', 'Edit product images', 'Collaborate with marketing team'],
-            applyLink: 'https://promoconnect.co.sz/apply',
-            featured: false,
-        },
-    ];
+const ADS = [
+    {
+        id: "ad1",
+        brandName: "Swazi Telecom",
+        title: "Get 50% off on installation!",
+        description: "Limited offer for new subscribers.",
+        cta: "Subscribe Now",
+        catergory: "telecommunication",
+        imageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSYMDAWLG_u75RgvwzaQbIKDP-BZJ26iMY-gg&s"
+    },
+    {
+        id: "ad2",
+        brandName: "Hungry Lion",
+        title: "Big Boss Cheese Meal - Only E50",
+        description: "Get a Big Boss Cheese Meal For Only E50.",
+        imageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQDmje78j3KWDjwzNhJliz-bH5khVfJli1EMw&s",
+        category: "food",
+        cta: "View Now"
+    },
+    {
+        id: "ad3",
+        brandName: "Lifestyle Awards",
+        title: "Jumbo Khumalo",
+        description: "Saturday 29 November 2025 Mavuso Sports center",
+        imageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR-paOdJnqRTA4f8lnz6qWDvtRFnL4dhf1a4w&s",
+        category: "Event",
+        cta: "Buy Now"
+    },
+]
 
+const LogoComponent = ({ logoUrl, initials }) => {
+    const [logoError, setLogoError] = useState(false)
 
-    const filteredVacancies = vacancies.filter(vacancy => {
-        const matchesCategory = selectedCategory === 'All' || vacancy.category === selectedCategory;
-        const matchesSearch = vacancy.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            vacancy.company.toLowerCase().includes(searchQuery.toLowerCase());
-        return matchesCategory && matchesSearch;
-    });
+    if (logoError || !logoUrl) {
+        return (
+            <View style={[styles.logo, styles.logoFallback]}>
+                <Text style={styles.logoText}>{initials}</Text>
+            </View>
+        )
+    }
 
-    const handleApply = (url) => {
-        Linking.openURL(url);
-    };
+    return <Image source={{ uri: logoUrl }} style={styles.logo} onError={() => setLogoError(true)} />
+}
+
+const JobCard = ({ item, bookmarked, onBookmark }) => {
+    return (
+        <View style={styles.jobItem}>
+            <LogoComponent logoUrl={item.logo} initials={item.initials} />
+            <View style={styles.jobContent}>
+                <Text numberOfLines={1} style={styles.jobTitle}>{item.title}</Text>
+                <Text style={styles.company}>{item.company}</Text>
+                <Text style={styles.jobLocation}>{item.location}</Text>
+                <Text style={styles.salary}>{item.salary}</Text>
+            </View>
+            <TouchableOpacity onPress={() => onBookmark(item.id)}>
+                <Ionicons name={bookmarked[item.id] ? "bookmark" : "bookmark-outline"} size={20} color={bookmarked[item.id] ? ACCENT : MUTED} />
+            </TouchableOpacity>
+        </View>
+    )
+}
+
+export default function VacanciesScreen({navigation}) {
+    const [query, setQuery] = useState("")
+    const [bookmarked, setBookmarked] = useState({})
+
+    const handleBookmark = (id) => {
+        setBookmarked((prev) => ({ ...prev, [id]: !prev[id] }))
+    }
+
+    const filtered = useMemo(() => {
+        if (!query) return JOBS
+        const q = query.toLowerCase()
+        return JOBS.filter(
+            (job) =>
+                job.title.toLowerCase().includes(q) ||
+                job.company.toLowerCase().includes(q) ||
+                job.location.toLowerCase().includes(q),
+        )
+    }, [query])
+
+    const dataWithAds = useMemo(() => {
+        const result = []
+        filtered.forEach((job, index) => {
+            result.push({ type: "job", data: job })
+            if ((index + 1) % 3 === 0 && ADS.length > 0) {
+                const ad = ADS[index % ADS.length]
+                result.push({ type: "ad", data: ad })
+            }
+        })
+        return result
+    }, [filtered])
+
+    const renderItem = ({ item }) => {
+        if (item.type === "job") return <TouchableOpacity onPress={()=>{navigation.navigate("VacancyDetailsScreen", {job: item.data})}}><JobCard item={item.data} bookmarked={bookmarked} onBookmark={handleBookmark} /></TouchableOpacity>
+        if (item.type === "ad") return <NativeAd ads={[item.data]} />
+        return null
+    }
 
     return (
-        <View style={styles.container}>
-            <StatusBar barStyle="dark-content" />
-            <SecondaryNav title="Job Vacancies" rightIcon="options-outline" onRightPress={() => alert("Notifications!")} />
-
-
-            {/* Header
+        <View style={styles.screen}>
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color="#000" />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>Job Vacancies</Text>
-                <TouchableOpacity style={styles.filterButton}>
-                    <Ionicons name="options-outline" size={24} color="#000" />
-                </TouchableOpacity>
-            </View> */}
-
-            {/* Search Bar */}
-            <View style={styles.searchContainer}>
-                <Ionicons name="search" size={20} color="#999" style={styles.searchIcon} />
-                <TextInput
-                    style={styles.searchInput}
-                    placeholder="Search for a job or company"
-                    value={searchQuery}
-                    onChangeText={setSearchQuery}
-                    placeholderTextColor="#999"
-                />
+                <SecondaryNav title="Job Openings" rightIcon="notifications-outline" onRightPress={() => alert("Notifications!")} />
+                <View>
+                    <Text style={styles.title}>Apply Now</Text>
+                    <Text style={styles.subtitle}>{filtered.length} vacancies available</Text>
+                </View>
             </View>
 
-            <ScrollView showsVerticalScrollIndicator={false}>
-                {/* Featured Banner */}
-                <View style={styles.featuredBanner}>
-                    <View style={styles.bannerContent}>
-                        <Text style={styles.bannerTitle}>See how you can{'\n'}find a job quickly!</Text>
-                        <TouchableOpacity style={styles.readMoreButton}>
-                            <Text style={styles.readMoreText}>Read more</Text>
-                        </TouchableOpacity>
-                    </View>
-                    <View style={styles.bannerImage}>
-                        <Text style={styles.bannerEmoji}>👩‍💼</Text>
-                    </View>
+            <View style={styles.searchRow}>
+                <View style={styles.searchBox}>
+                    <Ionicons name="search" size={16} color={MUTED} />
+                    <TextInput
+                        placeholder="Search jobs, locations..."
+                        placeholderTextColor={MUTED}
+                        value={query}
+                        onChangeText={setQuery}
+                        style={styles.searchInput}
+                        returnKeyType="search"
+                    />
                 </View>
+            </View>
 
-                {/* Categories */}
-                <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionTitle}>Recommendation</Text>
-                    <TouchableOpacity>
-                        <Text style={styles.seeAllText}>See All</Text>
-                    </TouchableOpacity>
-                </View>
+            <FlatList
+                data={dataWithAds}
+                keyExtractor={(item, index) => item.type + "_" + item.data.id + "_" + index}
+                renderItem={renderItem}
+                contentContainerStyle={styles.listContent}
+                showsVerticalScrollIndicator={false}
+            />
 
-                <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.categoriesContainer}
-                >
-                    {categories.map((category) => (
-                        <TouchableOpacity
-                            key={category}
-                            style={[
-                                styles.categoryChip,
-                                selectedCategory === category && styles.categoryChipActive,
-                            ]}
-                            onPress={() => setSelectedCategory(category)}
-                        >
-                            <Text
-                                style={[
-                                    styles.categoryText,
-                                    selectedCategory === category && styles.categoryTextActive,
-                                ]}
-                            >
-                                {category}
-                            </Text>
-                        </TouchableOpacity>
-                    ))}
-                </ScrollView>
-
-                {/* Vacancies List */}
-                <View style={styles.vacanciesContainer}>
-                    {filteredVacancies.map((vacancy) => (
-                        <TouchableOpacity key={vacancy.id} style={styles.vacancyCard}>
-                            <View style={styles.vacancyHeader}>
-                                <View style={styles.companyLogo}>
-                                    <Text style={styles.logoText}>{vacancy.logo}</Text>
-                                </View>
-                                <View style={styles.vacancyHeaderText}>
-                                    <Text style={styles.vacancyTitle}>{vacancy.title}</Text>
-                                    <Text style={styles.companyName}>{vacancy.company}</Text>
-                                </View>
-                                <TouchableOpacity style={styles.bookmarkButton}>
-                                    <Ionicons name="bookmark-outline" size={22} color="#2563eb" />
-                                </TouchableOpacity>
-                            </View>
-
-                            <View style={styles.locationContainer}>
-                                <Ionicons name="location-outline" size={16} color="#64748b" />
-                                <Text style={styles.locationText}>{vacancy.location}</Text>
-                            </View>
-
-                            <View style={styles.salaryContainer}>
-                                <Text style={styles.salaryAmount}>{vacancy.salary}</Text>
-                                <Text style={styles.salaryPeriod}>{vacancy.period}</Text>
-                            </View>
-
-                            <View style={styles.tagsContainer}>
-                                <View style={styles.tag}>
-                                    <Text style={styles.tagText}>{vacancy.type}</Text>
-                                </View>
-                                <View style={styles.tag}>
-                                    <Text style={styles.tagText}>{vacancy.mode}</Text>
-                                </View>
-                                {vacancy.daysLeft <= 7 && (
-                                    <View style={[styles.tag, styles.urgentTag]}>
-                                        <Ionicons name="time-outline" size={12} color="#ef4444" />
-                                        <Text style={styles.urgentTagText}>{vacancy.daysLeft} days left</Text>
-                                    </View>
-                                )}
-                            </View>
-
-                            <Text style={styles.vacancyDescription} numberOfLines={2}>
-                                {vacancy.description}
-                            </Text>
-
-                            <View style={styles.vacancyFooter}>
-                                <View style={styles.postedInfo}>
-                                    <Ionicons name="time-outline" size={14} color="#94a3b8" />
-                                    <Text style={styles.postedText}>{vacancy.posted}</Text>
-                                </View>
-                                <TouchableOpacity
-                                    style={styles.applyButton}
-                                    onPress={() => handleApply(vacancy.applyLink)}
-                                >
-                                    <Text style={styles.applyButtonText}>Apply Now</Text>
-                                    <Ionicons name="arrow-forward" size={16} color="#fff" />
-                                </TouchableOpacity>
-                            </View>
-                        </TouchableOpacity>
-                    ))}
-                </View>
-
-                <View style={styles.bottomPadding} />
-            </ScrollView>
         </View>
-    );
+    )
 }
 
 const styles = StyleSheet.create({
-    container: {
+    screen: {
         flex: 1,
-        backgroundColor: '#f8fafc',
-        paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 50,
+        backgroundColor: BACKGROUND, paddingTop: Platform.OS === "android" ? 24 : 48,
+        paddingHorizontal: 16
     },
     header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 20,
-        paddingTop: 60,
-        paddingBottom: 20,
-        backgroundColor: '#fff',
+        marginBottom: 20
     },
-    backButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: '#f1f5f9',
-        alignItems: 'center',
-        justifyContent: 'center',
+    title: {
+        fontSize: 28,
+        fontWeight: "700",
+        color: TEXT_PRIMARY,
+        marginBottom: 4
     },
-    headerTitle: {
-        fontSize: 20,
-        fontWeight: '700',
-        color: '#000',
+    subtitle: {
+        color: MUTED,
+        fontSize: 14
     },
-    filterButton: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: '#f1f5f9',
-        alignItems: 'center',
-        justifyContent: 'center',
+    searchRow: {
+        marginBottom: 16
     },
-    searchContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#fff',
-        marginHorizontal: 20,
-        marginTop: 20,
-        marginBottom: 16,
-        paddingHorizontal: 16,
-        borderRadius: 12,
-        height: 50,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 2,
-    },
-    searchIcon: {
-        marginRight: 10,
+    searchBox: {
+        flexDirection: "row",
+        alignItems: "center",
+        backgroundColor: SURFACE,
+        paddingVertical: 10,
+        paddingHorizontal: 12,
+        borderRadius: 10,
+        borderWidth: 1,
+        borderColor: "#E5E7EB"
     },
     searchInput: {
+        marginLeft: 8,
         flex: 1,
-        fontSize: 15,
-        color: '#000',
+        fontSize: 16,
+        color: TEXT_PRIMARY
     },
-    featuredBanner: {
-        flexDirection: 'row',
-        backgroundColor: '#3b82f6',
-        marginHorizontal: 20,
-        marginBottom: 24,
-        padding: 20,
-        borderRadius: 16,
-        overflow: 'hidden',
+    listContent: {
+        paddingBottom: 40
     },
-    bannerContent: {
-        flex: 1,
-        justifyContent: 'center',
-    },
-    bannerTitle: {
-        fontSize: 18,
-        fontWeight: '700',
-        color: '#fff',
-        marginBottom: 12,
-        lineHeight: 24,
-    },
-    readMoreButton: {
-        backgroundColor: '#fff',
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        borderRadius: 8,
-        alignSelf: 'flex-start',
-    },
-    readMoreText: {
-        color: '#3b82f6',
-        fontSize: 14,
-        fontWeight: '600',
-    },
-    bannerImage: {
-        width: 80,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    bannerEmoji: {
-        fontSize: 60,
-    },
-    sectionHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: 20,
-        marginBottom: 16,
-    },
-    sectionTitle: {
-        fontSize: 18,
-        fontWeight: '700',
-        color: '#000',
-    },
-    seeAllText: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#3b82f6',
-    },
-    categoriesContainer: {
-        paddingHorizontal: 20,
-        paddingBottom: 20,
-        gap: 10,
-    },
-    categoryChip: {
-        paddingHorizontal: 20,
-        paddingVertical: 10,
-        borderRadius: 20,
-        backgroundColor: '#fff',
-        marginRight: 10,
+    jobItem: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+        backgroundColor: SURFACE,
+        paddingVertical: 12,
+        paddingHorizontal: 12,
+        marginBottom: 8,
+        borderRadius: 12,
+
         borderWidth: 1,
-        borderColor: '#e2e8f0',
+
+        borderColor: "#F0F0F0"
     },
-    categoryChipActive: {
-        backgroundColor: '#3b82f6',
-        borderColor: '#3b82f6',
+    logo: {
+        width: 48,
+        height: 48,
+        borderRadius: 8,
+        marginRight: 12
     },
-    categoryText: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#64748b',
-    },
-    categoryTextActive: {
-        color: '#fff',
-    },
-    vacanciesContainer: {
-        paddingHorizontal: 20,
-    },
-    vacancyCard: {
-        backgroundColor: '#fff',
-        borderRadius: 16,
-        padding: 20,
-        marginBottom: 16,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 12,
-        elevation: 3,
-    },
-    vacancyHeader: {
-        flexDirection: 'row',
-        marginBottom: 12,
-    },
-    companyLogo: {
-        width: 56,
-        height: 56,
-        borderRadius: 14,
-        backgroundColor: '#f1f5f9',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginRight: 12,
+    logoFallback: {
+        backgroundColor: ACCENT,
+        justifyContent: "center",
+        alignItems: "center"
     },
     logoText: {
-        fontSize: 28,
+        color: SURFACE,
+        fontWeight: "700",
+        fontSize: 18
     },
-    vacancyHeaderText: {
+    jobContent: {
         flex: 1,
-        justifyContent: 'center',
+        marginRight: 12
     },
-    vacancyTitle: {
-        fontSize: 17,
-        fontWeight: '700',
-        color: '#000',
-        marginBottom: 4,
+    jobTitle: {
+        fontSize: 15,
+        fontWeight: "600",
+        color: TEXT_PRIMARY,
+        marginBottom: 2
     },
-    companyName: {
-        fontSize: 14,
-        color: '#64748b',
-    },
-    bookmarkButton: {
-        padding: 4,
-    },
-    locationContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 12,
-        gap: 6,
-    },
-    locationText: {
-        fontSize: 14,
-        color: '#64748b',
-    },
-    salaryContainer: {
-        flexDirection: 'row',
-        alignItems: 'baseline',
-        marginBottom: 12,
-    },
-    salaryAmount: {
-        fontSize: 18,
-        fontWeight: '700',
-        color: '#3b82f6',
-    },
-    salaryPeriod: {
-        fontSize: 14,
-        color: '#64748b',
-        marginLeft: 4,
-    },
-    tagsContainer: {
-        flexDirection: 'row',
-        gap: 8,
-        marginBottom: 12,
-    },
-    tag: {
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 8,
-        backgroundColor: '#eff6ff',
-    },
-    tagText: {
+    company: {
         fontSize: 12,
-        fontWeight: '600',
-        color: '#3b82f6',
+        fontWeight: "500",
+        color: MUTED,
+        marginBottom: 2
     },
-    urgentTag: {
-        backgroundColor: '#fef2f2',
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
-    },
-    urgentTagText: {
+    jobLocation: {
         fontSize: 12,
-        fontWeight: '600',
-        color: '#ef4444',
+        color: MUTED,
+        marginBottom: 2
     },
-    vacancyDescription: {
-        fontSize: 14,
-        color: '#475569',
-        lineHeight: 20,
-        marginBottom: 16,
+    salary: {
+        fontSize: 12,
+        fontWeight: "600",
+        color: ACCENT
     },
-    vacancyFooter: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingTop: 16,
-        borderTopWidth: 1,
-        borderTopColor: '#f1f5f9',
-    },
-    postedInfo: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
-    },
-    postedText: {
-        fontSize: 13,
-        color: '#94a3b8',
-    },
-    applyButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#3b82f6',
-        paddingHorizontal: 20,
-        paddingVertical: 10,
-        borderRadius: 10,
-        gap: 6,
-    },
-    applyButtonText: {
-        color: '#fff',
-        fontSize: 14,
-        fontWeight: '600',
-    },
-    bottomPadding: {
-        height: 20,
-    },
-});
+})

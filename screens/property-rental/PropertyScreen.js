@@ -100,7 +100,7 @@ export default function PropertyScreen({ navigation }) {
         if (catogory !== 'Houses') {
             navigation.navigate('LeaseItemsScreen');
         } else {
-            navigation.navigate('RentalHousesScreen');
+            navigation.navigate('MoreHouses');
         }
     }
 
