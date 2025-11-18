@@ -230,10 +230,12 @@ const styles = StyleSheet.create({
         color: "#000",
     },
     footer: {
-        padding: 16,
+        paddingHorizontal: 16,
+        paddingVertical: 10,
         borderTopWidth: 1,
         borderTopColor: "#f0f0f0",
         backgroundColor: "#fff",
+        marginBottom: 40
     },
     applyButton: {
         backgroundColor: "#000",

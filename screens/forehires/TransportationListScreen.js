@@ -19,6 +19,7 @@ import {
     BottomSheetView,
     BottomSheetBackdrop,
 } from '@gorhom/bottom-sheet';
+import CustomLoader from '../../components/customLoader';
 import SecondaryNav from '../../components/SecondaryNav';
 import { mockTransportationVehicles } from '../../utils/mockData';
 
@@ -174,6 +175,7 @@ export default function TransportationListScreen({ navigation }) {
     const [showOtherLimit, setShowOtherLimit] = useState(3);
     const [currentLocation, setCurrentLocation] = useState(null);
     const [locationStatus, setLocationStatus] = useState('idle');
+    const [isLoadingVehicles, setIsLoadingVehicles] = useState(true);
 
     // Comments & Bottom Sheet
     const [comments, setComments] = useState({});
@@ -195,6 +197,7 @@ export default function TransportationListScreen({ navigation }) {
         let mounted = true;
         (async () => {
             try {
+                setIsLoadingVehicles(true);
                 setLocationStatus('requesting');
                 const { status } = await Location.requestForegroundPermissionsAsync();
                 if (status !== 'granted') {
@@ -211,6 +214,8 @@ export default function TransportationListScreen({ navigation }) {
             } catch (err) {
                 console.warn('Location error', err);
                 setLocationStatus('error');
+            } finally {
+                setIsLoadingVehicles(false);
             }
         })();
         return () => { mounted = false; };
@@ -218,6 +223,7 @@ export default function TransportationListScreen({ navigation }) {
 
     // ────── Vehicle Processing ──────
     const processedVehicles = useMemo(() => {
+
         let filtered = mockTransportationVehicles.filter(vehicle => {
             const matchesType =
                 selectedType === 'All' ||
@@ -639,67 +645,75 @@ export default function TransportationListScreen({ navigation }) {
                     </>
                 )}
 
-                {/* ── MAIN LIST ── */}
-                <ScrollView showsVerticalScrollIndicator={false}>
-                    <View style={styles.resultsContainer}>
-                        <Text style={styles.resultsText}>{processedVehicles.length} vehicles found</Text>
-                        <TouchableOpacity
-                            style={styles.postButton}
-                            onPress={() => navigation.navigate('PostTransportationScreen')}
-                        >
-                            <Ionicons name="add-circle" size={18} color="#2563eb" />
-                            <Text style={styles.postButtonText}>Post Vehicle</Text>
-                        </TouchableOpacity>
+                {isLoadingVehicles ? (
+                    <View style={styles.loaderContainer}>
+                        <CustomLoader />
+                        <Text style={styles.loaderText}>Loading vehicles...</Text>
                     </View>
-
-                    {/* Near By Section */}
-                    {nearByVehicles.length > 0 && (
-                        <View style={styles.section}>
-                            <View style={styles.sectionHeader}>
-                                <Text style={styles.sectionTitle}>Near By ({nearByVehicles.length})</Text>
-                                {nearByVehicles.length > showNearByLimit ? (
-                                    <TouchableOpacity onPress={() => setShowNearByLimit(nearByVehicles.length)}>
-                                        <Text style={styles.viewAllText}>View All</Text>
-                                    </TouchableOpacity>
-                                ) : (
-                                    nearByVehicles.length > 0 && showNearByLimit > 3 && (
-                                        <TouchableOpacity onPress={() => setShowNearByLimit(3)}>
-                                            <Text style={[styles.viewAllText, { color: '#64748b' }]}>Show Less</Text>
-                                        </TouchableOpacity>
-                                    )
-                                )}
-                            </View>
-                            <View style={styles.vehiclesContainer}>
-                                {nearByVehicles.slice(0, showNearByLimit).map(renderVehicleCard)}
-                            </View>
+                ) : (
+                    // {/* ── MAIN LIST ── */ }
+                    < ScrollView showsVerticalScrollIndicator={false}>
+                        <View style={styles.resultsContainer}>
+                            <Text style={styles.resultsText}>{processedVehicles.length} vehicles found</Text>
+                            <TouchableOpacity
+                                style={styles.postButton}
+                                onPress={() => navigation.navigate('PostTransportationScreen')}
+                            >
+                                <Ionicons name="add-circle" size={18} color="#2563eb" />
+                                <Text style={styles.postButtonText}>Post Vehicle</Text>
+                            </TouchableOpacity>
                         </View>
-                    )}
 
-                    {/* Other Vehicles Section */}
-                    {otherVehicles.length > 0 && (
-                        <View style={styles.section}>
-                            <View style={styles.sectionHeader}>
-                                <Text style={styles.sectionTitle}>Other Vehicles ({otherVehicles.length})</Text>
-                                {otherVehicles.length > showOtherLimit ? (
-                                    <TouchableOpacity onPress={() => setShowOtherLimit(otherVehicles.length)}>
-                                        <Text style={styles.viewAllText}>View All</Text>
-                                    </TouchableOpacity>
-                                ) : (
-                                    otherVehicles.length > 0 && showOtherLimit > 3 && (
-                                        <TouchableOpacity onPress={() => setShowOtherLimit(3)}>
-                                            <Text style={[styles.viewAllText, { color: '#64748b' }]}>Show Less</Text>
+                        {/* Near By Section */}
+                        {nearByVehicles.length > 0 && (
+                            <View style={styles.section}>
+                                <View style={styles.sectionHeader}>
+                                    <Text style={styles.sectionTitle}>Near By ({nearByVehicles.length})</Text>
+                                    {nearByVehicles.length > showNearByLimit ? (
+                                        <TouchableOpacity onPress={() => setShowNearByLimit(nearByVehicles.length)}>
+                                            <Text style={styles.viewAllText}>View All</Text>
                                         </TouchableOpacity>
-                                    )
-                                )}
+                                    ) : (
+                                        nearByVehicles.length > 0 && showNearByLimit > 3 && (
+                                            <TouchableOpacity onPress={() => setShowNearByLimit(3)}>
+                                                <Text style={[styles.viewAllText, { color: '#64748b' }]}>Show Less</Text>
+                                            </TouchableOpacity>
+                                        )
+                                    )}
+                                </View>
+                                <View style={styles.vehiclesContainer}>
+                                    {nearByVehicles.slice(0, showNearByLimit).map(renderVehicleCard)}
+                                </View>
                             </View>
-                            <View style={styles.vehiclesContainer}>
-                                {otherVehicles.slice(0, showOtherLimit).map(renderVehicleCard)}
-                            </View>
-                        </View>
-                    )}
+                        )}
 
-                    <View style={styles.bottomPadding} />
-                </ScrollView>
+                        {/* Other Vehicles Section */}
+                        {otherVehicles.length > 0 && (
+                            <View style={styles.section}>
+                                <View style={styles.sectionHeader}>
+                                    <Text style={styles.sectionTitle}>Other Vehicles ({otherVehicles.length})</Text>
+                                    {otherVehicles.length > showOtherLimit ? (
+                                        <TouchableOpacity onPress={() => setShowOtherLimit(otherVehicles.length)}>
+                                            <Text style={styles.viewAllText}>View All</Text>
+                                        </TouchableOpacity>
+                                    ) : (
+                                        otherVehicles.length > 0 && showOtherLimit > 3 && (
+                                            <TouchableOpacity onPress={() => setShowOtherLimit(3)}>
+                                                <Text style={[styles.viewAllText, { color: '#64748b' }]}>Show Less</Text>
+                                            </TouchableOpacity>
+                                        )
+                                    )}
+                                </View>
+                                <View style={styles.vehiclesContainer}>
+                                    {otherVehicles.slice(0, showOtherLimit).map(renderVehicleCard)}
+                                </View>
+                            </View>
+                        )}
+
+                        <View style={styles.bottomPadding} />
+                    </ScrollView>
+                )}
+
 
                 {/* ── COMMENT BOTTOM SHEET (outside ScrollView) ── */}
                 <CommentBottomSheet
@@ -722,7 +736,7 @@ export default function TransportationListScreen({ navigation }) {
                     renderBackdrop={renderBackdrop}
                 />
             </View>
-        </BottomSheetModalProvider>
+        </BottomSheetModalProvider >
     );
 }
 
@@ -770,6 +784,19 @@ const styles = StyleSheet.create({
     typeChipActive: { backgroundColor: '#2563eb' },
     typeText: { fontSize: 14, fontWeight: '600', color: '#64748b' },
     typeTextActive: { color: '#fff' },
+
+    loaderContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#f8fafc',
+    },
+    loaderText: {
+        marginTop: 16,
+        fontSize: 14,
+        color: '#64748b',
+        fontWeight: '500',
+    },
 
     // ── SORT POPUP (restored) ──
     popupOverlay: {

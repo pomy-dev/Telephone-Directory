@@ -198,6 +198,7 @@ const GigsScreen = ({ navigation }) => {
 
     return (
         <SafeAreaView style={styles.container}>
+            <View style={{ height: 30 }} />
             <SecondaryNav
                 title="Gigs"
                 rightIcon="add-circle-outline"
@@ -301,7 +302,8 @@ const styles = StyleSheet.create({
         color: "#666",
     },
     jobsList: {
-        padding: 16,
+        paddingTop: 16,
+        paddingBottom: 36,
     },
     jobCard: {
         backgroundColor: "#fff",
