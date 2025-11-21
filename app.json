@@ -20,6 +20,7 @@
         "UIBackgroundModes": [
           "remote-notification"
         ],
+        "NSCameraUsageDescription": "Needed to scan pamphlets",
         "NSPhotoLibraryAddUsageDescription": "Allow this app to save images to your photo library.",
         "ITSAppUsesNonExemptEncryption": false,
         "NSLocationWhenInUseUsageDescription": "This app needs your location to show directions to the business."
@@ -38,7 +39,10 @@
         "ACCESS_FINE_LOCATION",
         "RECEIVE_BOOT_COMPLETED",
         "VIBRATE",
-        "com.google.android.c2dm.permission.RECEIVE"
+        "com.google.android.c2dm.permission.RECEIVE",
+        "CAMERA",
+        "WRITE_EXTERNAL_STORAGE",
+        "READ_EXTERNAL_STORAGE"
       ],
       "edgeToEdgeEnabled": true,
       "package": "com.pld.phonebook",
