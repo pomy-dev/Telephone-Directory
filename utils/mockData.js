@@ -2798,3 +2798,345 @@ export const mockTransportationVehicles = [
     status: 'available',
   },
 ];
+
+// Special deals
+export const mockDeals = {
+  "lastUpdated": "2025-11-20T08:00:00Z",
+  "currency": "SZL",
+  "stores": ["Spar", "Shoprite", "Pick n Pay", "Boxer", "Hub", "FoodZone", "OK Foods", "SuperSpar"],
+  "deals": [
+    // -------------------------------
+    // FAMILY ESSENTIALS COMBO
+    // -------------------------------
+    {
+      id: "c1-1",
+      type: "combo",
+      category: "staples",
+      name: "Family Essentials Combo",
+      items: ["10kg Tastic Rice", "5L Sunfoil Oil", "5kg Selati Sugar"],
+      price: 249.00,
+      store: "Spar",
+      validUntil: "2025-11-30",
+      savings: 72
+    },
+    {
+      id: "c1-2",
+      type: "combo",
+      category: "staples",
+      name: "Family Essentials Combo",
+      items: ["10kg Tastic Rice", "5L Sunfoil Oil", "5kg Selati Sugar"],
+      price: 239.90,
+      store: "Shoprite",
+      validUntil: "2025-11-29",
+      savings: 80
+    },
+    {
+      id: "c1-3",
+      type: "combo",
+      category: "staples",
+      name: "Family Essentials Combo",
+      items: ["10kg Tastic Rice", "5L Sunfoil Oil", "5kg Selati Sugar"],
+      price: 259.90,
+      store: "Pick n Pay",
+      validUntil: "2025-11-28",
+      savings: 65
+    },
+
+    // -------------------------------
+    // MAIZE MEAL POWER PACK
+    // -------------------------------
+    {
+      id: "c2-1",
+      type: "combo",
+      category: "staples",
+      name: "Maize Meal Power Pack",
+      items: ["10kg Ace Maize", "2L Oil", "2kg Brown Sugar", "1kg Salt"],
+      price: 199.90,
+      store: "Shoprite",
+      validUntil: "2025-11-30",
+      savings: 48
+    },
+    {
+      id: "c2-2",
+      type: "combo",
+      category: "staples",
+      name: "Maize Meal Power Pack",
+      items: ["10kg Ace Maize", "2L Oil", "2kg Brown Sugar", "1kg Salt"],
+      price: 209.90,
+      store: "Spar",
+      validUntil: "2025-11-28",
+      savings: 40
+    },
+    {
+      id: "c2-3",
+      type: "combo",
+      category: "staples",
+      name: "Maize Meal Power Pack",
+      items: ["10kg Ace Maize", "2L Oil", "2kg Brown Sugar", "1kg Salt"],
+      price: 189.90,
+      store: "Boxer",
+      validUntil: "2025-11-29",
+      savings: 55
+    },
+
+    // -------------------------------
+    // WEEKEND COOLER DEAL
+    // -------------------------------
+    {
+      id: "c3-1",
+      type: "combo",
+      category: "beverages",
+      name: "Weekend Cooler Deal",
+      items: ["Coca-Cola 2L ×6", "Fanta Orange 2L ×3", "Sprite 2L ×3"],
+      price: 189.90,
+      store: "Pick n Pay",
+      validUntil: "2025-11-24",
+      savings: 60
+    },
+    {
+      id: "c3-2",
+      type: "combo",
+      category: "beverages",
+      name: "Weekend Cooler Deal",
+      items: ["Coca-Cola 2L ×6", "Fanta Orange 2L ×3", "Sprite 2L ×3"],
+      price: 179.90,
+      store: "SuperSpar",
+      validUntil: "2025-11-26",
+      savings: 70
+    },
+    {
+      id: "c3-3",
+      type: "combo",
+      category: "beverages",
+      name: "Weekend Cooler Deal",
+      items: ["Coca-Cola 2L ×6", "Fanta Orange 2L ×3", "Sprite 2L ×3"],
+      price: 199.90,
+      store: "FoodZone",
+      validUntil: "2025-11-29",
+      savings: 50
+    },
+
+    // STARTER BREAKFAST PACK
+    {
+      id: "c4-1",
+      type: "combo",
+      category: "breakfast",
+      name: "Starter Breakfast Pack",
+      items: ["2L Clover Milk", "700g Albany Bread", "18 Large Eggs", "250g Rama"],
+      price: 99.90,
+      store: "OK Foods",
+      validUntil: "2025-11-25",
+      savings: 22
+    },
+    {
+      id: "c4-2",
+      type: "combo",
+      category: "breakfast",
+      name: "Starter Breakfast Pack",
+      items: ["2L Clover Milk", "700g Albany Bread", "18 Large Eggs", "250g Rama"],
+      price: 104.90,
+      store: "Spar",
+      validUntil: "2025-11-28",
+      savings: 20
+    },
+
+    // MEAT VALUE PACK
+    {
+      id: "c5-1",
+      type: "combo",
+      category: "meat",
+      name: "Meat Value Pack",
+      items: ["2kg Beef Mince", "1kg Sausages", "2kg Chicken Portions"],
+      price: 249.00,
+      store: "Boxer",
+      validUntil: "2025-11-26",
+      savings: 40
+    },
+    {
+      id: "c5-2",
+      type: "combo",
+      category: "meat",
+      name: "Meat Value Pack",
+      items: ["2kg Beef Mince", "1kg Sausages", "2kg Chicken Portions"],
+      price: 259.00,
+      store: "Pick n Pay",
+      validUntil: "2025-11-27",
+      savings: 35
+    },
+    {
+      id: "c5-3",
+      type: "combo",
+      category: "meat",
+      name: "Meat Value Pack",
+      items: ["2kg Beef Mince", "1kg Sausages", "2kg Chicken Portions"],
+      price: 239.90,
+      store: "Shoprite",
+      validUntil: "2025-11-28",
+      savings: 45
+    },
+
+    /* ------------------------------
+       RICE – multiple stores
+    ------------------------------ */
+    {
+      "id": "r1", "type": "single", "category": "rice",
+      "name": "10kg Tastic Parboiled Rice", "price": 149.90,
+      "unit": "10kg", "perKg": 14.99, "store": "Boxer", "validUntil": "2025-11-28"
+    },
+
+    {
+      "id": "r2", "type": "single", "category": "rice",
+      "name": "10kg Tastic Parboiled Rice", "price": 159.90,
+      "unit": "10kg", "perKg": 15.99, "store": "Shoprite", "validUntil": "2025-11-30"
+    },
+
+    {
+      "id": "r3", "type": "single", "category": "rice",
+      "name": "10kg Tastic Parboiled Rice", "price": 154.50,
+      "unit": "10kg", "perKg": 15.45, "store": "Pick n Pay", "validUntil": "2025-11-27"
+    },
+
+    {
+      "id": "r4", "type": "single", "category": "rice",
+      "name": "10kg Tastic Parboiled Rice", "price": 169.90,
+      "unit": "10kg", "perKg": 16.99, "store": "Spar", "validUntil": "2025-11-29"
+    },
+
+
+    /* ------------------------------
+       OIL – multiple stores
+    ------------------------------ */
+    {
+      "id": "o1", "type": "single", "category": "oil",
+      "name": "5L Sunfoil Cooking Oil", "price": 74.90,
+      "unit": "5L", "perL": 14.98, "store": "Hub", "validUntil": "2025-11-30"
+    },
+
+    {
+      "id": "o2", "type": "single", "category": "oil",
+      "name": "5L Sunfoil Cooking Oil", "price": 79.90,
+      "unit": "5L", "perL": 15.98, "store": "Pick n Pay", "validUntil": "2025-11-27"
+    },
+
+    {
+      "id": "o3", "type": "single", "category": "oil",
+      "name": "5L Sunfoil Cooking Oil", "price": 72.90,
+      "unit": "5L", "perL": 14.58, "store": "Boxer", "validUntil": "2025-11-26"
+    },
+
+    {
+      "id": "o4", "type": "single", "category": "oil",
+      "name": "5L Sunfoil Cooking Oil", "price": 83.90,
+      "unit": "5L", "perL": 16.78, "store": "Spar", "validUntil": "2025-11-29"
+    },
+
+
+    /* ------------------------------
+       SUGAR – multiple stores
+    ------------------------------ */
+    {
+      "id": "sg1", "type": "single", "category": "sugar",
+      "name": "5kg Selati White Sugar", "price": 58.90,
+      "unit": "5kg", "perKg": 11.78, "store": "Pick n Pay", "validUntil": "2025-11-30"
+    },
+
+    {
+      "id": "sg2", "type": "single", "category": "sugar",
+      "name": "5kg Selati White Sugar", "price": 61.90,
+      "unit": "5kg", "perKg": 12.38, "store": "Shoprite", "validUntil": "2025-11-29"
+    },
+
+    {
+      "id": "sg3", "type": "single", "category": "sugar",
+      "name": "5kg Selati White Sugar", "price": 56.90,
+      "unit": "5kg", "perKg": 11.38, "store": "Boxer", "validUntil": "2025-11-27"
+    },
+
+    {
+      "id": "sg4", "type": "single", "category": "sugar",
+      "name": "5kg Selati White Sugar", "price": 63.50,
+      "unit": "5kg", "perKg": 12.70, "store": "Spar", "validUntil": "2025-11-26"
+    },
+
+
+    /* ------------------------------
+       MAIZE MEAL – multiple stores
+    ------------------------------ */
+    {
+      "id": "m1", "type": "single", "category": "maize",
+      "name": "10kg White Star Super Maize Meal", "price": 109.90,
+      "unit": "10kg", "perKg": 10.99, "store": "Boxer", "validUntil": "2025-11-26"
+    },
+
+    {
+      "id": "m2", "type": "single", "category": "maize",
+      "name": "10kg White Star Super Maize Meal", "price": 119.90,
+      "unit": "10kg", "perKg": 11.99, "store": "Spar", "validUntil": "2025-11-28"
+    },
+
+    {
+      "id": "m3", "type": "single", "category": "maize",
+      "name": "10kg White Star Super Maize Meal", "price": 112.50,
+      "unit": "10kg", "perKg": 11.25, "store": "Pick n Pay", "validUntil": "2025-11-30"
+    },
+
+
+    /* ------------------------------
+       MEAT – multiple stores
+    ------------------------------ */
+    {
+      "id": "me1", "type": "single", "category": "meat",
+      "name": "Beef Brisket per kg", "price": 89.90, "unit": "kg",
+      "store": "Spar", "validUntil": "2025-11-25"
+    },
+
+    {
+      "id": "me2", "type": "single", "category": "meat",
+      "name": "Beef Brisket per kg", "price": 84.50, "unit": "kg",
+      "store": "Boxer", "validUntil": "2025-11-26"
+    },
+
+    {
+      "id": "me3", "type": "single", "category": "meat",
+      "name": "Beef Brisket per kg", "price": 92.90, "unit": "kg",
+      "store": "Pick n Pay", "validUntil": "2025-11-27"
+    },
+
+
+    /* ------------------------------
+       CHICKEN – multiple stores
+    ------------------------------ */
+    {
+      "id": "ch1", "type": "single", "category": "chicken",
+      "name": "IQF Chicken Portions 5kg", "price": 219.90,
+      "unit": "5kg", "store": "Hub", "validUntil": "2025-11-26"
+    },
+
+    {
+      "id": "ch2", "type": "single", "category": "chicken",
+      "name": "IQF Chicken Portions 5kg", "price": 209.90,
+      "unit": "5kg", "store": "Shoprite", "validUntil": "2025-11-28"
+    },
+
+    {
+      "id": "ch3", "type": "single", "category": "chicken",
+      "name": "IQF Chicken Portions 5kg", "price": 199.90,
+      "unit": "5kg", "store": "Boxer", "validUntil": "2025-11-27"
+    },
+
+
+    /* ORIGINAL EXTRA ITEMS (kept as-is) */
+    { "id": "s9", "type": "single", "category": "dairy", "name": "Clover Full Cream Milk 2L ×6", "price": 119.90, "store": "FoodZone", "validUntil": "2025-11-29" },
+    { "id": "s10", "type": "single", "category": "bakery", "name": "Albany Superior White Bread 700g ×4", "price": 49.90, "store": "SuperSpar", "validUntil": "2025-11-23" },
+    { "id": "s11", "type": "single", "category": "snacks", "name": "Lays Classic 120g ×10", "price": 99.90, "store": "OK Foods", "validUntil": "2025-11-30" },
+    { "id": "s12", "type": "single", "category": "personal", "name": "Aqua Fresh Toothpaste 100ml ×3", "price": 39.90, "store": "Shoprite", "validUntil": "2025-11-30" },
+    { "id": "s13", "type": "single", "category": "oil", "name": "2L D'Light Cooking Oil", "price": 34.90, "unit": "2L", "perL": 17.45, "store": "Boxer", "validUntil": "2025-11-28" },
+    { "id": "s14", "type": "single", "category": "maize", "name": "12.5kg Iwisa Super Maize Meal", "price": 129.90, "unit": "12.5kg", "perKg": 10.39, "store": "Boxer", "validUntil": "2025-11-30" },
+    { "id": "s15", "type": "single", "category": "chicken", "name": "IQF Chicken Portions 5kg", "price": 219.90, "unit": "5kg", "store": "Hub", "validUntil": "2025-11-26" },
+    { "id": "s16", "type": "single", "category": "eggs", "name": "30 Large Eggs", "price": 49.90, "store": "Pick n Pay", "validUntil": "2025-11-25" },
+    { "id": "s17", "type": "single", "category": "flour", "name": "10kg Snowflake Cake Flour", "price": 124.90, "unit": "10kg", "perKg": 12.49, "store": "Spar", "validUntil": "2025-11-30" },
+    { "id": "s18", "type": "single", "category": "pasta", "name": "Fatti's & Moni's Spaghetti 5kg", "price": 89.90, "unit": "5kg", "store": "Shoprite", "validUntil": "2025-11-29" },
+    { "id": "s19", "type": "single", "category": "canned", "name": "Koo Baked Beans 410g ×12", "price": 109.90, "store": "FoodZone", "validUntil": "2025-11-30" },
+    { "id": "s20", "type": "single", "category": "toiletries", "name": "Sunlight Dishwashing Liquid 750ml ×4", "price": 69.90, "store": "OK Foods", "validUntil": "2025-11-27" }
+  ]
+}

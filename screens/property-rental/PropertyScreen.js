@@ -115,7 +115,7 @@ export default function PropertyScreen({ navigation }) {
                 style={styles.propertyCard}
                 onPress={() => {
                     if (isHouse) {
-                        navigation.navigate('RentalHouseDetailsScreen', { houseId: property.id });
+                        navigation.navigate('HouseDetailsScreen', { houseId: property.id });
                     } else {
                         navigation.navigate('LeaseItemDetailsScreen', { itemId: property.id });
                     }

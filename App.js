@@ -1,7 +1,7 @@
 // App.js
 import "react-native-gesture-handler";
 import React, { useContext, useState, useEffect } from "react";
-import { View, Text, TouchableOpacity, StyleSheet, StatusBar, Platform } from "react-native";
+import { View, Text, StyleSheet, StatusBar, Platform } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { NavigationContainer, useNavigationContainerRef } from "@react-navigation/native";
 import { Icons } from "./constants/Icons";
@@ -9,16 +9,19 @@ import Toast from "react-native-toast-message";
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Provider as PaperProvider } from 'react-native-paper';
 import * as Notifications from "expo-notifications";
-import * as NavigationBar from "expo-navigation-bar";
 import { RealmProvider } from '@realm/react';
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs"
 import { createNativeStackNavigator } from "@react-navigation/native-stack"
+
+// Basket Provider
+
+import { BasketProvider } from './context/basketContext';
+
 // loan assist
 import LoanDetails from "./screens/loans/LoanDetails"
 import LoanCompare from "./screens/loans/LoanCompare"
 import LoanCalculator from "./screens/loans/LoanCalculator"
 import LoanAssist from "./screens/loans/LoanAssist"
-
 
 // screens
 import HomeScreen from "./screens/HomeScreen"
@@ -71,6 +74,11 @@ import TransportationListScreen from "./screens/forehires/TransportationListScre
 import TransportationDetailsScreen from "./screens/forehires/TransportationDetailsScreen"
 import PostTransportationScreen from "./screens/forehires/PostTransportationScreen"
 import BookTransportationScreen from "./screens/forehires/BookTransportationScreen"
+
+import HomeDealScreen from './screens/special-deals/HomeDeals'
+import SearchDealScreen from './screens/special-deals/SearchScreen'
+import ItemCompareScreen from './screens/special-deals/ItemCompareScreen'
+import BasketScreen from './screens/special-deals/BasketScreen'
 
 // Splash Screen 
 import SplashScreen from "./screens/SplashScreen";
@@ -333,70 +341,78 @@ function AppContent() {
             <>
               <GestureHandlerRootView style={{ flex: 1 }}>
                 <PaperProvider theme={theme}>
-                  <NavigationContainer ref={navigationRef} theme={theme}>
-                    <Stack.Navigator screenOptions={{ headerShown: false }}>
-                      {/* Tabs as main screen */}
-                      <Stack.Screen name="MainTabs" component={Tabs} />
+                  <BasketProvider>
+                    <NavigationContainer ref={navigationRef} theme={theme}>
+                      <Stack.Navigator screenOptions={{ headerShown: false }}>
+                        {/* Tabs as main screen */}
+                        <Stack.Screen name="MainTabs" component={Tabs} />
 
-                      {/* Business Directory */}
-                      <Stack.Screen name="DirectoryScreen" component={DirectoryScreen} />
-                      <Stack.Screen name="BusinessList" component={BusinessList} />
-                      <Stack.Screen name="BusinessesScreen" component={BusinessScreen} />
-                      <Stack.Screen name="FeaturedList" component={FeaturedScreen} />
-                      <Stack.Screen name="BusinessDetails" component={BusinessDetailScreen} />
+                        {/* Business Directory */}
+                        <Stack.Screen name="DirectoryScreen" component={DirectoryScreen} />
+                        <Stack.Screen name="BusinessList" component={BusinessList} />
+                        <Stack.Screen name="BusinessesScreen" component={BusinessScreen} />
+                        <Stack.Screen name="FeaturedList" component={FeaturedScreen} />
+                        <Stack.Screen name="BusinessDetails" component={BusinessDetailScreen} />
 
-                      {/* Liked Businesses */}
-                      <Stack.Screen name="Favorites" component={FavoritesScreen} />
+                        {/* Liked Businesses */}
+                        <Stack.Screen name="Favorites" component={FavoritesScreen} />
 
-                      {/* People */}
-                      <Stack.Screen name="PeopleScreen" component={PeopleScreen} />
+                        {/* People */}
+                        <Stack.Screen name="PeopleScreen" component={PeopleScreen} />
 
-                      {/* Tenders  */}
-                      <Stack.Screen name="AddTenderScreen" component={AddTenderScreen} />
-                      <Stack.Screen name="TenderDetailsScreen" component={TenderDetailsScreen} />
-                      <Stack.Screen name="PublishedTendersScreen" component={PublishedTendersScreen} />
-                      <Stack.Screen name="BidTenderScreen" component={BidTenderScreen} />
-                      <Stack.Screen name="MyBidsScreen" component={MyBidsScreen} />
+                        {/* Tenders  */}
+                        <Stack.Screen name="AddTenderScreen" component={AddTenderScreen} />
+                        <Stack.Screen name="TenderDetailsScreen" component={TenderDetailsScreen} />
+                        <Stack.Screen name="PublishedTendersScreen" component={PublishedTendersScreen} />
+                        <Stack.Screen name="BidTenderScreen" component={BidTenderScreen} />
+                        <Stack.Screen name="MyBidsScreen" component={MyBidsScreen} />
 
-                      {/* Piece Jobs  */}
-                      <Stack.Screen name="GigsScreen" component={GigsScreen} />
-                      <Stack.Screen name="JobDetailScreen" component={JobDetailScreen} />
-                      <Stack.Screen name="PostJobScreen" component={PostJobScreen} />
+                        {/* Piece Jobs  */}
+                        <Stack.Screen name="GigsScreen" component={GigsScreen} />
+                        <Stack.Screen name="JobDetailScreen" component={JobDetailScreen} />
+                        <Stack.Screen name="PostJobScreen" component={PostJobScreen} />
 
-                      {/* vacancies */}
-                      <Stack.Screen name="VacanciesScreen" component={VacanciesScreen} />
+                        {/* vacancies */}
+                        <Stack.Screen name="VacanciesScreen" component={VacanciesScreen} />
 
-                      {/* rental houses */}
-                      <Stack.Screen name="PropertyScreen" component={PropertyScreen} />
-                      {/* <Stack.Screen name="RentalHousesScreen" component={RentalHousesScreen} /> */}
-                      <Stack.Screen name="MoreHouses" component={MoreHouses} />
-                      <Stack.Screen name="HouseDetailsScreen" component={HouseDetailsScreen} />
-                      <Stack.Screen name="HouseMapScreen" component={HouseMapScreen} />
-                      <Stack.Screen name="AgentDetailsScreen" component={AgentDetailsScreen} />
-                      {/* <Stack.Screen name="RentalHouseDetailsScreen" component={RentalHouseDetailsScreen} /> */}
-                      <Stack.Screen name="PostRentalHouseScreen" component={PostRentalHouseScreen} />
-                      <Stack.Screen name="ApplyRentalScreen" component={ApplyRentalScreen} />
-                      <Stack.Screen name="MyRentalApplicationsScreen" component={MyRentalApplicationsScreen} />
+                        {/* rental houses */}
+                        <Stack.Screen name="PropertyScreen" component={PropertyScreen} />
+                        {/* <Stack.Screen name="RentalHousesScreen" component={RentalHousesScreen} /> */}
+                        <Stack.Screen name="MoreHouses" component={MoreHouses} />
+                        <Stack.Screen name="HouseDetailsScreen" component={HouseDetailsScreen} />
+                        <Stack.Screen name="HouseMapScreen" component={HouseMapScreen} />
+                        <Stack.Screen name="AgentDetailsScreen" component={AgentDetailsScreen} />
+                        {/* <Stack.Screen name="RentalHouseDetailsScreen" component={RentalHouseDetailsScreen} /> */}
+                        <Stack.Screen name="PostRentalHouseScreen" component={PostRentalHouseScreen} />
+                        <Stack.Screen name="ApplyRentalScreen" component={ApplyRentalScreen} />
+                        <Stack.Screen name="MyRentalApplicationsScreen" component={MyRentalApplicationsScreen} />
 
-                      {/* lease items */}
-                      <Stack.Screen name="LeaseItemsScreen" component={LeaseItemsScreen} />
-                      <Stack.Screen name="PostLeaseItemScreen" component={PostLeaseItemScreen} />
-                      <Stack.Screen name="LeaseItemDetailsScreen" component={LeaseItemDetailsScreen} />
+                        {/* lease items */}
+                        <Stack.Screen name="LeaseItemsScreen" component={LeaseItemsScreen} />
+                        <Stack.Screen name="PostLeaseItemScreen" component={PostLeaseItemScreen} />
+                        <Stack.Screen name="LeaseItemDetailsScreen" component={LeaseItemDetailsScreen} />
 
-                      {/* transport for hire */}
-                      <Stack.Screen name="TransportationListScreen" component={TransportationListScreen} />
-                      <Stack.Screen name="TransportationDetailsScreen" component={TransportationDetailsScreen} />
-                      <Stack.Screen name="PostTransportationScreen" component={PostTransportationScreen} />
-                      <Stack.Screen name="BookTransportationScreen" component={BookTransportationScreen} />
+                        {/* transport for hire */}
+                        <Stack.Screen name="TransportationListScreen" component={TransportationListScreen} />
+                        <Stack.Screen name="TransportationDetailsScreen" component={TransportationDetailsScreen} />
+                        <Stack.Screen name="PostTransportationScreen" component={PostTransportationScreen} />
+                        <Stack.Screen name="BookTransportationScreen" component={BookTransportationScreen} />
 
-                      <Stack.Screen name="LoanDetails" component={LoanDetails} />
-                      <Stack.Screen name="LoanCompare" component={LoanCompare} />
-                      <Stack.Screen name="LoanCalculator" component={LoanCalculator} />
-                      <Stack.Screen name="LoanAssist" component={LoanAssist} />
+                        {/* loan assist */}
+                        <Stack.Screen name="LoanDetails" component={LoanDetails} />
+                        <Stack.Screen name="LoanCompare" component={LoanCompare} />
+                        <Stack.Screen name="LoanCalculator" component={LoanCalculator} />
+                        <Stack.Screen name="LoanAssist" component={LoanAssist} />
 
-                    </Stack.Navigator>
-                    <StatusBar style={isDarkMode ? "light" : "dark"} />
-                  </NavigationContainer>
+                        {/* deals assist */}
+                        <Stack.Screen name="SpecialDeals" component={HomeDealScreen} />
+                        <Stack.Screen name="SearchDeal" component={SearchDealScreen} />
+                        <Stack.Screen name="ItemComparison" component={ItemCompareScreen} />
+                        <Stack.Screen name="BasketScreen" component={BasketScreen} />
+                      </Stack.Navigator>
+                      <StatusBar style={isDarkMode ? "light" : "dark"} />
+                    </NavigationContainer>
+                  </BasketProvider>
                 </PaperProvider>
                 <Toast config={toastConfig} />
               </GestureHandlerRootView>

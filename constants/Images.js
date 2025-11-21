@@ -1,6 +1,5 @@
 // State flags
 import bs_eswatini from '../assets/pics/bsEswatini.png';
-import eptc from '../assets/pics/eptc.png';
 
 // companies
 import RES from '../assets/pics/res.png';
@@ -55,75 +54,62 @@ import default_user from '../assets/default-user.png';
 // services
 import forhire from '../assets/icons/forhire.jpg'
 import houses from '../assets/icons/houses.png'
-import newsroom from '../assets/icons/newsroom.png'
 import Phonebook from '../assets/icons/Phonebook.png'
 import piecejob from '../assets/icons/piece-jobs.png'
-import ride from '../assets/icons/Ride.png'
-import taxi from '../assets/icons/taxi.png'
+import deals from '../assets/icons/deals.png'
 import tender from '../assets/icons/tender.png'
 import vacancies from '../assets/icons/vacancies.png'
 import Loans from '../assets/icons/Stokvel.png'
 
+// special-deals
+import computer from '../assets/special-deals/computer.png'
+import deal from '../assets/special-deals/deal.png'
+import handshake from '../assets/special-deals/handshake.png'
+import hotdeal from '../assets/special-deals/hot-deal.png'
+import offerbag from '../assets/special-deals/offer-bag.png'
+import specialoffer from '../assets/special-deals/special-offer.png'
+import specialtimeout from '../assets/special-deals/special-timeout.png'
+import tagdeals from '../assets/special-deals/tag-deals.png'
+import travel from '../assets/special-deals/travel.png'
+import specialAlert from '../assets/special-deals/hot-deal-phone.png'
+import item from '../assets/special-deals/item.png'
+import product from '../assets/special-deals/package.png'
+
 // export the images
 export const Images = {
-  // logo
-  logo,
+  // specials deal
+  computer, deal, handshake, hotdeal, offerbag, specialoffer, specialtimeout, tagdeals,
+  travel, specialAlert, item, product,
 
-  // App icon
-  appLogo,
+  // logo,App icon
+  logo, appLogo,
 
   // home screen services
-  forhire,
-  houses,
-  Phonebook,
-  piecejob,
-  tender,
-  vacancies,
+  forhire, houses, Phonebook, piecejob, deals, tender, vacancies,
 
   // state flags
   bs_eswatini,
-  eptc,
 
   //loans screen : 
   Loans,
 
   // stokfella accounts
-  buildingSociety,
-  momo,
-  instacash,
-  cash,
+  buildingSociety, momo, instacash, cash,
 
   // stokfela
   stokfela,
 
   // companies
-  RES,
-  RSTP,
-  Water,
+  RES, RSTP, Water,
 
   // Popular Categories
-  Education,
-  Government,
-  Emergency,
-  Healthcare,
+  Education, Government, Emergency, Healthcare,
 
   // Tenders
-  tender1,
-  tender2,
-  tender3,
-  tender4,
-  tender5,
-  tender6,
-  tender7,
-  tender8,
-  tender9,
-  tender10,
-  tender11,
-  tender12,
+  tender1, tender2, tender3, tender4, tender5, tender6, tender7, tender8, tender9, tender10, tender11, tender12,
 
   // Socials
-  google,
-  facebook,
+  google, facebook,
 
   // no image placeholder
   noImage,

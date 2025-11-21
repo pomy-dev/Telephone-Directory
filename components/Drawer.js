@@ -55,7 +55,7 @@ const CustomDrawerContent = ({ states, navigation }) => {
   };
 
   const selectedStateData = states.find((state) => state.name === (selectedState));
-  const emblemSource = selectedStateData ? selectedStateData.coatOfArmsIcon : Images.eptc;
+  const emblemSource = selectedStateData && selectedStateData.coatOfArmsIcon;
 
   const renderPickerItem = ({ item }) => (
     <Pressable
