@@ -79,6 +79,7 @@ import HomeDealScreen from './screens/special-deals/HomeDeals'
 import SearchDealScreen from './screens/special-deals/SearchScreen'
 import ItemCompareScreen from './screens/special-deals/ItemCompareScreen'
 import BasketScreen from './screens/special-deals/BasketScreen'
+import PamphletScanner from './screens/special-deals/PamphletScanner'
 
 // Splash Screen 
 import SplashScreen from "./screens/SplashScreen";
@@ -409,6 +410,7 @@ function AppContent() {
                         <Stack.Screen name="SearchDeal" component={SearchDealScreen} />
                         <Stack.Screen name="ItemComparison" component={ItemCompareScreen} />
                         <Stack.Screen name="BasketScreen" component={BasketScreen} />
+                        <Stack.Screen name="ScanDealScreen" component={PamphletScanner} />
                       </Stack.Navigator>
                       <StatusBar style={isDarkMode ? "light" : "dark"} />
                     </NavigationContainer>

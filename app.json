@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "scheme": "com.pld.phonebook.auth0",
     "splash": {
       "image": "./assets/splash-icon.png",
@@ -108,7 +108,8 @@
           "clientId": "wuNnffEgLMLYx1G6ZSBL6ci2rL8b1VOT",
           "domain": "dev-3zyqmqx2ka58kywm.us.auth0.com"
         }
-      ]
+      ],
+      "react-native-vision-camera"
     ],
     "extra": {
       "eas": {

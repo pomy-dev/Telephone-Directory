@@ -160,7 +160,6 @@ function getCurrentMonth(format = 'long') {
 }
 
 export default function HomeDealScreen({ navigation }) {
-  const [showSearch, setShowSearch] = useState(false);
   const combos = mockDeals.deals.filter(d => d.type === 'combo');
   const singles = mockDeals.deals.filter(d => d.type === 'single').slice(0, 8);
 
@@ -173,6 +172,10 @@ export default function HomeDealScreen({ navigation }) {
           style={styles.hero}
           resizeMode="cover"
         >
+          <TouchableOpacity onPress={() => navigation.goBack()} style={{ position: 'absolute', top: 40, left: 15, zIndex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)', borderRadius: 20, padding: 5 }}>
+            <Icons.Ionicons name='arrow-back' size={24} color={'#FFF'} />
+          </TouchableOpacity>
+
           {/* Rising from bottom */}
           {[...Array(5)].map((_, i) => (
             <FloatingUpItem key={`up-${i}`} delay={i * 2500} />
@@ -190,24 +193,26 @@ export default function HomeDealScreen({ navigation }) {
         </ImageBackground>
       </View>
 
-      {/* Pressable Search Trigger */}
-      <TouchableOpacity
-        style={styles.searchTrigger}
-        // onPress={() => setShowSearch(!showSearch)}
-        onPress={() => navigation.navigate('SearchDeal')}
-      >
-        <Icons.Ionicons name="search" size={24} color="#666" />
-        <Text style={styles.searchText}>Search rice, maize, oil, pampers...</Text>
-        <Icons.Ionicons name={showSearch ? "chevron-up" : "chevron-down"} size={24} color="#666" />
-      </TouchableOpacity>
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 16, gap: 10 }}>
+        {/* Pressable Search Trigger */}
+        <TouchableOpacity
+          style={styles.searchTrigger}
+          onPress={() => navigation.navigate('SearchDeal')}
+        >
+          <Icons.Ionicons name="search" size={24} color="#666" />
+          <Text style={styles.searchText}>Search...</Text>
+          <Icons.Feather name="chevron-right" size={24} color="#666" />
+        </TouchableOpacity>
 
-      {/* Animated Search Bar */}
-      {showSearch && (
-        <Animated.View entering={SlideInDown} style={styles.searchBar}>
-          <Icons.Ionicons name="search" size={24} color="#999" style={{ marginLeft: 16 }} />
-          <TextInput placeholder="Type to search..." style={styles.input} autoFocus />
-        </Animated.View>
-      )}
+        {/* Add deal */}
+        <TouchableOpacity
+          style={styles.publishDeal}
+          onPress={() => navigation.navigate('ScanDealScreen')}
+        >
+          <Icons.Entypo name="megaphone" size={24} color="#666" />
+          <Text style={styles.searchText}>Post</Text>
+        </TouchableOpacity>
+      </View>
 
       <ScrollView>
         {/* Combo Deals - Horizontal Scroll */}
@@ -289,10 +294,21 @@ const styles = StyleSheet.create({
     opacity: 0.9,
   },
   searchTrigger: {
+    flex: 2,
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
-    margin: 16,
+    marginLeft: 16,
+    padding: 16,
+    borderRadius: 16,
+    elevation: 4,
+  },
+  publishDeal: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    marginRight: 16,
     padding: 16,
     borderRadius: 16,
     elevation: 4,
