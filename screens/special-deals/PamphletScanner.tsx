@@ -15,6 +15,8 @@ import {
   Camera,
   useCameraDevice,
   useFrameProcessor,
+  useLocationPermission,
+  useMicrophonePermission
 } from 'react-native-vision-camera';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Reanimated, {
@@ -43,24 +45,25 @@ const zoomLevels = [1, 2, 3, 4, 5, 6];
 
 const ZoomLevelButton = ({ level, zoom, onSelect }) => {
   const animatedStyle = useAnimatedStyle(() => ({
-    backgroundColor: Math.abs(zoom.value - level) < 0.2
-      ? '#00ff00'
-      : 'rgba(255,255,255,0.1)',
-  }));
+    backgroundColor:
+      Math.abs(zoom.value - level) < 0.2
+        ? '#00ff00'
+        : 'rgba(255,255,255,0.1)',
+  }), [level]);
+
+  const animatedTextStyle = useAnimatedStyle(() => ({
+    color: Math.abs(zoom.value - level) < 0.2 ? '#000' : '#ddd',
+    fontWeight: Math.abs(zoom.value - level) < 0.2 ? 'bold' : '600',
+  }), [level]);
 
   return (
     <TouchableOpacity
       style={[styles.zoomLevelBtn, animatedStyle]}
       onPress={() => onSelect(level)}
     >
-      <Text
-        style={[
-          styles.zoomLevelText,
-          Math.abs(zoom.value - level) < 0.2 && styles.zoomLevelTextActive,
-        ]}
-      >
+      <Reanimated.Text style={[styles.zoomLevelText, animatedTextStyle]}>
         {level}x
-      </Text>
+      </Reanimated.Text>
     </TouchableOpacity>
   );
 };
@@ -69,14 +72,18 @@ export default function PamphletScanner({ navigation }) {
   const { theme } = React.useContext(AppContext)
   const isFocused = useIsFocused();
   const device = useCameraDevice('back') || useCameraDevice('front');
-  const camera = useRef(null);
+  const camera = useRef<Camera>(null);
 
   const [permissionGranted, setPermissionGranted] = useState(null);
   const [items, setItems] = useState([]);
   const [boxes, setBoxes] = useState([]);
-  const [flash, setFlash] = useState('off');
+  const [flash, setFlash] = useState<"off" | "on">('off');
+  const [torch, setTorch] = useState<"off" | "on">('off');
   const [isInitialized, setIsInitialized] = useState(false);
   const [processing, setProcessing] = useState(false);
+
+  const microphone = useMicrophonePermission()
+  const location = useLocationPermission()
 
   // Zoom & Focus
   const zoom = useSharedValue(1);
@@ -84,7 +91,8 @@ export default function PamphletScanner({ navigation }) {
   const focusX = useSharedValue(0.5);
   const focusY = useSharedValue(0.5);
   const isZoomPickerOpen = useSharedValue(false);
-  const currentZoomIndex = useSharedValue(0);
+
+  const cameraPermission = Camera.getCameraPermissionStatus()
 
   const focusRingAnimatedStyle = useAnimatedStyle(() => ({
     left: focusX.value * WINDOW_WIDTH - 40,
@@ -132,7 +140,7 @@ export default function PamphletScanner({ navigation }) {
       zoom.value = withSpring(closest);
     });
 
-  const handleTapToFocus = (e) => {
+  const handleTapToFocus = (e: any) => {
     const { locationX, locationY } = e.nativeEvent;
     const x = locationX / WINDOW_WIDTH;
     const y = locationY / WINDOW_HEIGHT;
@@ -140,18 +148,18 @@ export default function PamphletScanner({ navigation }) {
     focusX.value = x;
     focusY.value = y;
     focusRingScale.value = withSpring(1);
-    camera.current?.setFocusPoint?.({ x, y });
+    // camera.current?.setFocusPoint?.({ x, y });
   };
 
-  const groupBlocks = useCallback((blocks) => {
-    const prices = blocks.filter(b => PRICE_REGEX.test(b.text));
-    const others = blocks.filter(b => !PRICE_REGEX.test(b.text));
+  const groupBlocks = useCallback((blocks: any) => {
+    const prices = blocks.filter((b: any) => PRICE_REGEX.test(b.text));
+    const others = blocks.filter((b: any) => !PRICE_REGEX.test(b.text));
     const result = [];
 
-    prices.forEach(p => {
+    prices.forEach((p: any) => {
       const candidates = others
-        .filter(o => o.boundingBox.y + o.boundingBox.height < p.boundingBox.y)
-        .sort((a, b) =>
+        .filter((o: any) => o.boundingBox.y + o.boundingBox.height < p.boundingBox.y)
+        .sort((a: any, b: any) =>
           p.boundingBox.y - (a.boundingBox.y + a.boundingBox.height) -
           (p.boundingBox.y - (b.boundingBox.y + b.boundingBox.height))
         );
@@ -193,7 +201,7 @@ export default function PamphletScanner({ navigation }) {
     } catch (e) { }
   }, []);
 
-  const setBoxesFromBlocks = useCallback((blocks) => {
+  const setBoxesFromBlocks = useCallback((blocks: any) => {
     if (!blocks.length) return setBoxes([]);
     const grouped = groupBlocks(blocks);
     const overlay = grouped.flatMap(item => [
@@ -206,45 +214,80 @@ export default function PamphletScanner({ navigation }) {
   useEffect(() => {
     (async () => {
       const status = await Camera.requestCameraPermission();
-      setPermissionGranted(status === 'authorized' || status === 'granted');
+      setPermissionGranted(status === 'granted');
     })();
   }, []);
 
   const captureAndSave = async () => {
-    if (!camera.current || processing) return;
+    if (!camera.current || !isFocused) {
+      console.log('Early return: camera not ready');
+      setProcessing(false);
+      return;
+    }
+    // if (!camera.current || !isFocused || !isInitialized) {
+    //   console.log('Early return: camera not ready');
+    //   setProcessing(false);
+    //   return;
+    // }
+
     setProcessing(true);
     try {
-      const photo = await camera.current.takePhoto({ quality: 0.9, flash });
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      if (!camera.current) {
+        throw new Error('Camera ref lost');
+      }
+
+      // camera.current.resumePreview?.();
+
+      console.log('Taking photo...');
+      const photo = await camera.current.takePhoto({
+        flash: flash,
+        enableShutterSound: false,
+        // qualityPrioritization: 'balanced',
+        // enableAutoRedEyeReduction: false,
+        // skipMetadata: true,
+      });
+
+      console.log('Photo taken:', photo.path);
       const path = photo.path;
-      const ocr = await scanOCR(path, { detailedDetection: true });
-      const grouped = groupBlocks(ocr?.blocks || []);
+      // const ocr = await scanOCR(path, { detailedDetection: true });
+      // const grouped = groupBlocks(ocr?.blocks || []);
+      // console.log('Step 2')
+      // const newItems = [];
+      // for (const item of grouped) {
+      //   try {
+      //     const cropped = await ImageEditor.cropImage(path, {
+      //       offset: { x: item.cropBox.x, y: item.cropBox.y },
+      //       size: { width: item.cropBox.width, height: item.cropBox.height },
+      //       displaySize: { width: 300, height: 300 },
+      //       resizeMode: 'contain',
+      //     });
 
-      const newItems = [];
-      for (const item of grouped) {
-        try {
-          const cropped = await ImageEditor.cropImage(path, {
-            offset: { x: item.cropBox.x, y: item.cropBox.y },
-            size: { width: item.cropBox.width, height: item.cropBox.height },
-            displaySize: { width: 300, height: 300 },
-            resizeMode: 'contain',
-          });
-          const base64 = await FileSystem.readAsStringAsync(cropped, { encoding: FileSystem.EncodingType.Base64 });
-          newItems.push({
-            name: item.name || '—',
-            price: item.price,
-            imageBase64: `data:image/jpeg;base64,${base64}`,
-          });
-        } catch (e) { }
-      }
+      //     const base64 = await FileSystem.readAsStringAsync(cropped, {
+      //       encoding: FileSystem.EncodingType.Base64,
+      //     });
 
-      if (newItems.length > 0) {
-        setItems(prev => [...prev, ...newItems]);
-        Alert.alert('Success!', `${newItems.length} item(s) added`);
-      } else {
-        Alert.alert('No prices found', 'Try better lighting or clearer text');
-      }
+      //     newItems.push({
+      //       name: item.name || '—',
+      //       price: item.price,
+      //       imageBase64: `data:image/jpeg;base64,${base64}`,
+      //     });
+      //   } catch (cropError) {
+      //     console.warn('Cropping failed for one item', cropError);
+      //   }
+      // }
+      console.log('Step 3')
+      // if (newItems.length > 0) {
+      //   setItems(prev => [...prev, ...newItems]);
+      //   Alert.alert('Success!', `${newItems.length} item(s) added`);
+      // } else {
+      //   Alert.alert('No prices found', 'Try better lighting or clearer text');
+      // }
+      console.log('Step 5')
     } catch (err) {
-      Alert.alert('Error', err.message || 'Capture failed');
+      console.error('Capture failed:', err);
+      Alert.alert('Capture failed', err.message || 'Camera is closed or unavailable');
     } finally {
       setProcessing(false);
     }
@@ -253,6 +296,9 @@ export default function PamphletScanner({ navigation }) {
   const onInitialized = useCallback(() => {
     setIsInitialized(true);
   }, []);
+
+  console.log(`Camera Permission: ${cameraPermission}`)
+  console.log('Is permission granted: ', permissionGranted, '\nIs camera initialized: ', isInitialized)
 
   if (!permissionGranted || !device) {
     return (
@@ -271,19 +317,39 @@ export default function PamphletScanner({ navigation }) {
         <GestureDetector gesture={pinch}>
           <TouchableWithoutFeedback onPress={handleTapToFocus}>
             <Reanimated.View style={styles.cameraContainer}>
-              <AnimatedCamera
+              <Camera
+                ref={camera}
+                style={styles.absoluteFill}
+                device={device}
+                // isActive={isFocused && isInitialized}
+                isActive={true}
+                // onInitialized={onInitialized}
+                photo={true}
+              // video={true}
+              // torch={torch}
+              // exposure={0}
+              // audio={microphone.hasPermission}
+              // enableLocation={location.hasPermission}
+              // animatedProps={animatedProps}
+              // frameProcessor={frameProcessor}
+              // resizeMode="cover"
+              />
+
+              {/* <AnimatedCamera
                 ref={camera}
                 style={styles.absoluteFill}
                 device={device}
                 isActive={isFocused && isInitialized}
-                photo={true}
-                flash={flash}
                 onInitialized={onInitialized}
+                photo={true}
+                torch={torch}
+                exposure={0}
+                // audio={microphone.hasPermission}
+                // enableLocation={location.hasPermission}
                 animatedProps={animatedProps}
                 frameProcessor={frameProcessor}
-                frameProcessorFps={2}
                 resizeMode="cover"
-              />
+              /> */}
 
               {/* Focus Ring */}
               <Reanimated.View style={[styles.focusRing, focusRingAnimatedStyle]} />
@@ -335,25 +401,13 @@ export default function PamphletScanner({ navigation }) {
 
               {/* ZOOM & TORCH CONTROLS */}
               <View style={styles.zoomControlContainer} pointerEvents="box-none">
-                {/* Torch Button */}
-                <TouchableOpacity
-                  style={[styles.torchBtn, flash === 'torch' && styles.torchActive]}
-                  onPress={() => setFlash(prev => prev === 'torch' ? 'off' : 'torch')}
-                >
-                  <Icons.MaterialIcons
-                    name={flash === 'torch' ? 'flashlight-on' : 'flashlight-off'}
-                    size={28}
-                    color={flash === 'torch' ? '#ffd60a' : '#fff'}
-                  />
-                </TouchableOpacity>
-
                 {/* Zoom Picker Button */}
                 <TouchableOpacity
                   style={styles.zoomPickerBtn}
                   onPress={() => { isZoomPickerOpen.value = !isZoomPickerOpen.value; }}
                 >
                   <ReanimatedText style={styles.zoomPickerText}>
-                    {currentZoomDisplay.value}x
+                    {currentZoomDisplay?.value}x
                   </ReanimatedText>
                   <Icons.Feather name="chevron-right" size={24} color="#fff" style={{ marginLeft: 4 }} />
                 </TouchableOpacity>
@@ -365,7 +419,7 @@ export default function PamphletScanner({ navigation }) {
                       key={level}
                       level={level}
                       zoom={zoom}
-                      onSelect={(selected) => {
+                      onSelect={(selected: any) => {
                         zoom.value = withSpring(selected);
                         isZoomPickerOpen.value = false;
                       }}
