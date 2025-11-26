@@ -17,6 +17,7 @@
     "@react-native-community/image-editor": "^4.3.0",
     "@react-native-community/netinfo": "^11.4.1",
     "@react-native-community/slider": "4.5.6",
+    "@react-native-ml-kit/text-recognition": "^2.0.0",
     "@react-navigation/bottom-tabs": "^7.3.14",
     "@react-navigation/drawer": "^7.5.7",
     "@react-navigation/elements": "^2.6.3",

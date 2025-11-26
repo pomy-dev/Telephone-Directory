@@ -28,6 +28,9 @@ import Reanimated, {
   useDerivedValue,
   useAnimatedStyle,
 } from 'react-native-reanimated';
+// import { scanOCR } from 'vision-camera-ocr-plugin';
+import * as MediaLibrary from 'expo-media-library';
+import TextRecognition from '@react-native-ml-kit/text-recognition';
 import { useIsFocused } from '@react-navigation/core';
 import ImageEditor from '@react-native-community/image-editor';
 import * as FileSystem from 'expo-file-system';
@@ -72,15 +75,16 @@ export default function PamphletScanner({ navigation }) {
   const { theme } = React.useContext(AppContext)
   const isFocused = useIsFocused();
   const device = useCameraDevice('back') || useCameraDevice('front');
-  const camera = useRef<Camera>(null);
+  const camera = useRef(null);
 
   const [permissionGranted, setPermissionGranted] = useState(null);
   const [items, setItems] = useState([]);
   const [boxes, setBoxes] = useState([]);
-  const [flash, setFlash] = useState<"off" | "on">('off');
-  const [torch, setTorch] = useState<"off" | "on">('off');
+  const [flash, setFlash] = useState('off');
+  const [torch, setTorch] = useState('off');
   const [isInitialized, setIsInitialized] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [isCapturing, setIsCapturing] = useState(false)
 
   const microphone = useMicrophonePermission()
   const location = useLocationPermission()
@@ -92,7 +96,68 @@ export default function PamphletScanner({ navigation }) {
   const focusY = useSharedValue(0.5);
   const isZoomPickerOpen = useSharedValue(false);
 
-  const cameraPermission = Camera.getCameraPermissionStatus()
+  const snapshotInterval = useRef(null);
+
+  useEffect(() => {
+    if (!isFocused || !isInitialized || !camera.current) {
+      setBoxes([]);
+      if (snapshotInterval.current) clearInterval(snapshotInterval.current);
+      return;
+    }
+
+    // Start taking low-res snapshots every 400ms (≈2.5 FPS) — smooth enough for boxes
+    snapshotInterval.current = setInterval(async () => {
+      if (!camera.current || isCapturing) return; // Don't run during capture
+
+      try {
+        // takeSnapshot = fast, low-res, never blocks takePhoto()
+        const snapshot = await camera.current.takeSnapshot({
+          quality: 0.5
+        });
+
+        const result = await TextRecognition.recognize(snapshot.path);
+        const blocks = result.blocks.map(b => ({
+          text: b.text,
+          boundingBox: {
+            x: b.frame.x,
+            y: b.frame.y,
+            width: b.frame.width,
+            height: b.frame.height,
+          },
+        }));
+
+        const grouped = groupBlocks(blocks);
+        const overlay = grouped.flatMap(item => [
+          { ...item.priceBox, color: '#00ff0088', stroke: '#00ff00' },
+          item.nameBox && { ...item.nameBox, color: '#0088ff88', stroke: '#0088ff' },
+        ]).filter(Boolean);
+
+        setBoxes(overlay);
+
+        // Clean up snapshot file
+        await FileSystem.deleteAsync(snapshot.path, { idempotent: true });
+      } catch (e) {
+        // Silently ignore — OCR fails sometimes on blurry frames
+      }
+    }, 400);
+
+    return () => {
+      if (snapshotInterval.current) clearInterval(snapshotInterval.current);
+    };
+  }, [isFocused, isInitialized, isCapturing]);
+
+  useEffect(() => {
+    (async () => {
+      // camera permission
+      const cameraStatus = await Camera.requestCameraPermission();
+      setPermissionGranted(cameraStatus === 'granted');
+
+      const { status } = await MediaLibrary.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission needed', 'Please allow access to save photos to your gallery.');
+      }
+    })();
+  }, []);
 
   const focusRingAnimatedStyle = useAnimatedStyle(() => ({
     left: focusX.value * WINDOW_WIDTH - 40,
@@ -107,10 +172,6 @@ export default function PamphletScanner({ navigation }) {
 
   const minZoom = device?.minZoom ?? 1;
   const maxZoom = Math.min(device?.maxZoom ?? 8, 8);
-
-  const animatedProps = useAnimatedProps(() => ({
-    zoom: zoom.value,
-  }));
 
   const animatedZoomPanelStyle = useAnimatedStyle(() => ({
     opacity: withTiming(isZoomPickerOpen.value ? 1 : 0, { duration: 200 }),
@@ -140,7 +201,7 @@ export default function PamphletScanner({ navigation }) {
       zoom.value = withSpring(closest);
     });
 
-  const handleTapToFocus = (e: any) => {
+  const handleTapToFocus = (e) => {
     const { locationX, locationY } = e.nativeEvent;
     const x = locationX / WINDOW_WIDTH;
     const y = locationY / WINDOW_HEIGHT;
@@ -151,15 +212,15 @@ export default function PamphletScanner({ navigation }) {
     // camera.current?.setFocusPoint?.({ x, y });
   };
 
-  const groupBlocks = useCallback((blocks: any) => {
-    const prices = blocks.filter((b: any) => PRICE_REGEX.test(b.text));
-    const others = blocks.filter((b: any) => !PRICE_REGEX.test(b.text));
+  const groupBlocks = useCallback((blocks) => {
+    const prices = blocks.filter((b) => PRICE_REGEX.test(b.text));
+    const others = blocks.filter((b) => !PRICE_REGEX.test(b.text));
     const result = [];
 
-    prices.forEach((p: any) => {
+    prices.forEach((p) => {
       const candidates = others
-        .filter((o: any) => o.boundingBox.y + o.boundingBox.height < p.boundingBox.y)
-        .sort((a: any, b: any) =>
+        .filter((o) => o.boundingBox.y + o.boundingBox.height < p.boundingBox.y)
+        .sort((a, b) =>
           p.boundingBox.y - (a.boundingBox.y + a.boundingBox.height) -
           (p.boundingBox.y - (b.boundingBox.y + b.boundingBox.height))
         );
@@ -192,113 +253,125 @@ export default function PamphletScanner({ navigation }) {
     return result;
   }, []);
 
-  const frameProcessor = useFrameProcessor((frame) => {
-    'worklet';
-    if (!global.scanOCR) return;
-    try {
-      const result = global.scanOCR(frame);
-      runOnJS(setBoxesFromBlocks)(result?.blocks || []);
-    } catch (e) { }
-  }, []);
+  // const frameProcessor = useFrameProcessor((frame) => {
+  //   'worklet';
+  //   try {
+  //     const result = scanOCR(frame)
+  //     runOnJS(setBoxesFromBlocks)(result?.result?.blocks || []);
+  //   } catch (e) { }
+  // }, []);
 
-  const setBoxesFromBlocks = useCallback((blocks: any) => {
-    if (!blocks.length) return setBoxes([]);
-    const grouped = groupBlocks(blocks);
-    const overlay = grouped.flatMap(item => [
-      { ...item.priceBox, color: '#00ff0088', stroke: '#00ff00' },
-      item.nameBox && { ...item.nameBox, color: '#0088ff88', stroke: '#0088ff' },
-    ]).filter(Boolean);
-    setBoxes(overlay);
-  }, [groupBlocks]);
+  // const setBoxesFromBlocks = useCallback((blocks: any) => {
+  //   if (!blocks.length) return setBoxes([]);
+  //   const grouped = groupBlocks(blocks);
+  //   const overlay = grouped.flatMap(item => [
+  //     { ...item.priceBox, color: '#00ff0088', stroke: '#00ff00' },
+  //     item.nameBox && { ...item.nameBox, color: '#0088ff88', stroke: '#0088ff' },
+  //   ]).filter(Boolean);
+  //   setBoxes(overlay);
+  // }, [groupBlocks]);
 
-  useEffect(() => {
-    (async () => {
-      const status = await Camera.requestCameraPermission();
-      setPermissionGranted(status === 'granted');
-    })();
-  }, []);
-
-  const captureAndSave = async () => {
-    if (!camera.current || !isFocused) {
+  const captureAndSave = useCallback(async () => {
+    if (!camera.current || !isFocused || !isInitialized) {
       console.log('Early return: camera not ready');
       setProcessing(false);
       return;
     }
-    // if (!camera.current || !isFocused || !isInitialized) {
-    //   console.log('Early return: camera not ready');
-    //   setProcessing(false);
-    //   return;
-    // }
 
     setProcessing(true);
+    setIsCapturing(true); // ← pauses your live boxes (snapshot loop)
+
     try {
-      await new Promise(resolve => setTimeout(resolve, 300));
-
-      if (!camera.current) {
-        throw new Error('Camera ref lost');
-      }
-
-      // camera.current.resumePreview?.();
+      // Small delay + resume preview (Android stability)
+      await new Promise(r => setTimeout(r, 300));
 
       console.log('Taking photo...');
       const photo = await camera.current.takePhoto({
-        flash: flash,
-        enableShutterSound: false,
-        // qualityPrioritization: 'balanced',
-        // enableAutoRedEyeReduction: false,
-        // skipMetadata: true,
+        flash,
+        enableShutterSound: false
       });
 
-      console.log('Photo taken:', photo.path);
-      const path = photo.path;
-      // const ocr = await scanOCR(path, { detailedDetection: true });
-      // const grouped = groupBlocks(ocr?.blocks || []);
-      // console.log('Step 2')
-      // const newItems = [];
-      // for (const item of grouped) {
-      //   try {
-      //     const cropped = await ImageEditor.cropImage(path, {
-      //       offset: { x: item.cropBox.x, y: item.cropBox.y },
-      //       size: { width: item.cropBox.width, height: item.cropBox.height },
-      //       displaySize: { width: 300, height: 300 },
-      //       resizeMode: 'contain',
-      //     });
+      console.log('Photo taken (cache path):', photo.path);
 
-      //     const base64 = await FileSystem.readAsStringAsync(cropped, {
-      //       encoding: FileSystem.EncodingType.Base64,
-      //     });
+      const photoUri = `file://${photo.path}`;
+      await MediaLibrary.saveToLibraryAsync(photoUri);
+      console.log('Photo saved to gallery!');
 
-      //     newItems.push({
-      //       name: item.name || '—',
-      //       price: item.price,
-      //       imageBase64: `data:image/jpeg;base64,${base64}`,
-      //     });
-      //   } catch (cropError) {
-      //     console.warn('Cropping failed for one item', cropError);
-      //   }
-      // }
-      console.log('Step 3')
-      // if (newItems.length > 0) {
-      //   setItems(prev => [...prev, ...newItems]);
-      //   Alert.alert('Success!', `${newItems.length} item(s) added`);
-      // } else {
-      //   Alert.alert('No prices found', 'Try better lighting or clearer text');
-      // }
-      console.log('Step 5')
+      const asset = await MediaLibrary.createAssetAsync(photoUri);  // <== key fix
+      const contentUri = asset.localUri || asset.uri; // now a content:// URI
+
+      console.log("Using content URI for ML Kit:", contentUri);
+
+      // ML Kit OCR — now works perfectly on Android
+      const mlResult = await TextRecognition.recognize(contentUri);
+
+      // Fix TypeScript "Property 'x' does not exist" (known type bug)
+      const blocks = mlResult.blocks.map(b => ({
+        text: b.text,
+        boundingBox: {
+          x: b.frame.x,
+          y: b.frame.y,
+          width: b.frame.width,
+          height: b.frame.height,
+        },
+      }));
+
+      const grouped = groupBlocks(blocks);
+      console.log('Step 2 – Found items:', grouped.length);
+
+      const newItems = [];
+      for (const item of grouped) {
+        try {
+          const cropped = await ImageEditor.cropImage(contentUri, {
+            offset: {
+              x: Math.round(item.cropBox.x),
+              y: Math.round(item.cropBox.y),
+            },
+            size: {
+              width: Math.round(item.cropBox.width),
+              height: Math.round(item.cropBox.height),
+            },
+            displaySize: { width: 300, height: 300 },
+            resizeMode: 'contain',
+          });
+
+          const base64 = await FileSystem.readAsStringAsync(cropped.uri, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+
+          // Clean up cropped temp file
+          await FileSystem.deleteAsync(cropped.uri, { idempotent: true });
+
+          newItems.push({
+            name: item.name || '—',
+            price: item.price,
+            imageBase64: `data:image/jpeg;base64,${base64}`,
+          });
+        } catch (cropError) {
+          console.warn('Cropping failed for one item:', cropError);
+        }
+      }
+
+      // Success feedback
+      if (newItems.length > 0) {
+        setItems(prev => [...prev, ...newItems]);
+        Alert.alert('Success!', `${newItems.length} item(s) added`);
+      } else {
+        Alert.alert('No prices found', 'Try better lighting or clearer text');
+      }
+
     } catch (err) {
       console.error('Capture failed:', err);
-      Alert.alert('Capture failed', err.message || 'Camera is closed or unavailable');
+      Alert.alert('Error', err.message || 'Failed to capture photo');
     } finally {
       setProcessing(false);
+      setIsCapturing(false); // ← resume live boxes
     }
-  };
+  }, [camera, isFocused, isInitialized, flash, groupBlocks, setItems]);
 
   const onInitialized = useCallback(() => {
     setIsInitialized(true);
   }, []);
-
-  console.log(`Camera Permission: ${cameraPermission}`)
-  console.log('Is permission granted: ', permissionGranted, '\nIs camera initialized: ', isInitialized)
 
   if (!permissionGranted || !device) {
     return (
@@ -317,25 +390,7 @@ export default function PamphletScanner({ navigation }) {
         <GestureDetector gesture={pinch}>
           <TouchableWithoutFeedback onPress={handleTapToFocus}>
             <Reanimated.View style={styles.cameraContainer}>
-              <Camera
-                ref={camera}
-                style={styles.absoluteFill}
-                device={device}
-                // isActive={isFocused && isInitialized}
-                isActive={true}
-                // onInitialized={onInitialized}
-                photo={true}
-              // video={true}
-              // torch={torch}
-              // exposure={0}
-              // audio={microphone.hasPermission}
-              // enableLocation={location.hasPermission}
-              // animatedProps={animatedProps}
-              // frameProcessor={frameProcessor}
-              // resizeMode="cover"
-              />
-
-              {/* <AnimatedCamera
+              <AnimatedCamera
                 ref={camera}
                 style={styles.absoluteFill}
                 device={device}
@@ -344,12 +399,13 @@ export default function PamphletScanner({ navigation }) {
                 photo={true}
                 torch={torch}
                 exposure={0}
-                // audio={microphone.hasPermission}
-                // enableLocation={location.hasPermission}
-                animatedProps={animatedProps}
-                frameProcessor={frameProcessor}
+                // frameProcessor={isCapturing ? undefined : frameProcessor}
+                enableFpsGraph={true}
+                outputOrientation="device"
+                audio={microphone.hasPermission}
+                enableLocation={location.hasPermission}
                 resizeMode="cover"
-              /> */}
+              />
 
               {/* Focus Ring */}
               <Reanimated.View style={[styles.focusRing, focusRingAnimatedStyle]} />
@@ -401,6 +457,11 @@ export default function PamphletScanner({ navigation }) {
 
               {/* ZOOM & TORCH CONTROLS */}
               <View style={styles.zoomControlContainer} pointerEvents="box-none">
+                {/* Torch Button */}
+                <TouchableOpacity style={[styles.torchBtn, torch === 'on' && styles.torchActive]} onPress={() => setTorch(prev => prev === 'off' ? 'on' : 'off')} >
+                  <Icons.MaterialIcons name={torch === 'on' ? 'flashlight-on' : 'flashlight-off'} size={28} color={torch === 'on' ? '#ffd60a' : '#fff'} />
+                </TouchableOpacity>
+
                 {/* Zoom Picker Button */}
                 <TouchableOpacity
                   style={styles.zoomPickerBtn}
@@ -419,7 +480,7 @@ export default function PamphletScanner({ navigation }) {
                       key={level}
                       level={level}
                       zoom={zoom}
-                      onSelect={(selected: any) => {
+                      onSelect={(selected) => {
                         zoom.value = withSpring(selected);
                         isZoomPickerOpen.value = false;
                       }}
@@ -488,6 +549,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     borderWidth: 2
   },
+  torchActive: {
+    shadowColor: "#fcd34d",
+    shadowOpacity: 0.7,
+    shadowOffset: { width: 0, height: 0 },
+    shadowRadius: 8,
+  },
   zoomPickerBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -536,7 +603,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   focusRing: { position: 'absolute', width: 80, height: 80, borderRadius: 40, borderWidth: 3, borderColor: '#00ff00', backgroundColor: 'transparent' },
-  results: { flex: 1, padding: 16 },
+  results: { flex: 1, paddingHorizontal: 16, paddingVertical: 10, marginBottom: 48 },
   empty: { textAlign: 'center', color: '#888', marginTop: 60, fontSize: 18 },
   card: { flexDirection: 'row', backgroundColor: '#222', borderRadius: 16, padding: 12, marginBottom: 12 },
   thumb: { width: 90, height: 90, borderRadius: 12, backgroundColor: '#333' },
