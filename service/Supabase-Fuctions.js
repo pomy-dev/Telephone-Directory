@@ -76,12 +76,13 @@ export async function addFlyerItems(store, flyerItems) {
 export async function addForhire(formData) {
   if (!formData) return;
 
-  const { data, error } = await supabase.rpc("save_forhire_listing", {
+  const { data, error } = await supabase.rpc("save_forehire_listing", {
     p_type: formData?.type,
     p_category: formData?.category,
     p_make: formData?.make,
     p_model: formData?.model,
     p_year: formData?.year,
+    p_boarder_crossing: formData.crossingBoarder,
     p_registration: formData?.registration,
     p_price: formData?.price,
     p_price_type: formData?.priceType,
@@ -100,8 +101,14 @@ export async function addForhire(formData) {
   });
 
   if (error) console.error('RPC failed:', error);
+  return data;
+}
 
-  console.log(data)
+export async function getForHireTransport() {
+  const { data, error } = await supabase.rpc("get_all_forehire_listings");
+
+  if (error) console.log("Fetch error:", error);
+
   return data;
 }
 

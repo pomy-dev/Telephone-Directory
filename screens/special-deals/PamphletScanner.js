@@ -33,7 +33,7 @@ import { SaveFormat } from 'expo-image-manipulator';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as MediaLibrary from 'expo-media-library';
 import { useIsFocused } from '@react-navigation/core';
-import Constants from 'expo-constants';
+import { API_BASE_URL } from '../../config/env';
 import * as FileSystem from 'expo-file-system';
 import {
   BottomSheetModal,
@@ -43,7 +43,6 @@ import {
   SCREEN_HEIGHT,
 } from '@gorhom/bottom-sheet';
 import { addFlyerItems } from '../../service/Supabase-Fuctions';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { Icons } from '../../constants/Icons';
 import { Images } from '../../constants/Images';
 import { AppContext } from '../../context/appContext';
@@ -55,19 +54,6 @@ const ReanimatedText = Reanimated.createAnimatedComponent(Text);
 
 const { width: WINDOW_WIDTH, height: WINDOW_HEIGHT } = Dimensions.get('window');
 const zoomLevels = [1, 2, 3, 4, 5, 6];
-
-// Initialize OpenAI (key from .env → app.json → Constants)
-const genAI = new GoogleGenerativeAI(Constants.expoConfig?.extra?.apiKey);
-const model = genAI.getGenerativeModel({
-  model: 'gemini-2.5-flash',
-  generationConfig: {
-    responseMimeType: 'application/json',  // Enforces JSON output
-    temperature: 0.2,  // Low for consistent extraction
-    maxOutputTokens: 2048,  // Enough for multiple items
-    topP: 0.8,  // Optional: For variety control
-    topK: 40,   // Optional
-  }
-});
 
 const ZoomLevelButton = ({ level, zoom, onSelect }) => {
   const animatedStyle = useAnimatedStyle(() => ({
@@ -180,6 +166,7 @@ export default function PamphletScanner({ navigation }) {
   const [capturing, setCapturing] = useState(false);
   const [geminiProcessing, setGeminiProcessing] = useState(false);
   const [isSubmiting, setIsSubmiting] = useState(false);
+  const [isFAB, setIsFAB] = useState(true);
 
   // Bottom Sheet
   const bottomSheetRef = useRef(null);
@@ -310,52 +297,22 @@ export default function PamphletScanner({ navigation }) {
         encoding: FileSystem.EncodingType.Base64,
       });
 
-      const prompt = `
-        You are an expert at reading grocery/retail flyers.
+      const response = await fetch(`${API_BASE_URL}/api/process-img`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          base64Image: base64,
+          mimeType: 'image/jpeg',
+        }),
+      });
 
-        Extract every product deal from this flyer image.
+      const data = await response.json();
 
-        For each item, detect its approximate bounding box in the image using normalized coordinates (0 to 1).
+      if (!response.ok) {
+        throw new Error(data.error || 'Server error');
+      }
 
-        Return ONLY valid JSON in this exact format:
-
-        [
-          {
-            "itemName": ["Exact product name(s)"],
-            "price": "$9.99",
-            "description": "2L bottle, limit 4, etc.",
-            "type":"single item OR combo"
-            "boundingBox": {
-              "x": 0.15,      // left edge (0 = left, 1 = right)
-              "y": 0.32,      // top edge (0 = top, 1 = bottom)
-              "width": 0.35,  // width of box
-              "height": 0.18  // height of box
-            }
-          },
-          ...
-        ]
-
-        Rules:
-        - Be precise with coordinates — estimate carefully
-        - Only include real products with prices
-        - Item type is either single item or combo
-        - Single item is one that is sold alone
-        - Combo is a collection of items that is sold at one price  e.g Sugar + Rice + Oil => 245.90
-        - Ignore headers, footers, logos, fine print
-        - Use normalized coordinates (not pixels)
-      `;
-
-      const result = await model.generateContent([
-        {
-          inlineData: {
-            data: base64,
-            mimeType: 'image/jpeg', // Or 'image/png' etc.
-          },
-        },
-        { text: prompt },
-      ]);
-
-      const extracted = JSON.parse(result.response.text());
+      const extracted = data.items;
 
       console.log('From AI output: ', extracted)
 
@@ -373,7 +330,7 @@ export default function PamphletScanner({ navigation }) {
           }
 
           return {
-            name: it.itemName || 'Unknown Item',
+            name: Array.isArray(it.itemName) ? it.itemName.join(', ') : it.itemName || 'Unknown Item',
             price: it.price || '—',
             type: it.type || 'single item',
             description: it.description || '',
@@ -455,8 +412,9 @@ export default function PamphletScanner({ navigation }) {
     } catch (err) {
       console.error(err.message)
     } finally {
-      setIsSubmiting(false)
+      setIsSubmiting(false);
       bottomSheetRef.current?.close();
+      setIsFAB(false);
     }
   };
 
@@ -506,7 +464,7 @@ export default function PamphletScanner({ navigation }) {
                   <TouchableOpacity
                     style={[styles.captureBtn, capturing && styles.captureBtnDisabled]}
                     onPress={captureAndAnalyzeWithOpenAI}
-                    disabled={capturing}
+                    disabled={capturing && geminiProcessing}
                   >
                     {capturing ? <ActivityIndicator color="#000" /> : <Text style={styles.captureText}>ADD ITEMS</Text>}
                   </TouchableOpacity>
@@ -579,14 +537,19 @@ export default function PamphletScanner({ navigation }) {
           </ScrollView>
 
           {/* FAB */}
-          <Reanimated.View style={[styles.fab, fabStyle]}>
-            <TouchableOpacity
-              onPress={() => bottomSheetRef.current?.present()}
-              style={styles.fabButton}
-            >
-              <Icons.Feather name="send" size={32} color="#fff" />
-            </TouchableOpacity>
-          </Reanimated.View>
+          {isFAB &&
+            <Reanimated.View style={[styles.fab, fabStyle]}>
+              <TouchableOpacity
+                onPress={() => {
+                  bottomSheetRef.current?.present()
+                  setIsFAB(false)
+                }}
+                style={styles.fabButton}
+              >
+                <Icons.Feather name="send" size={32} color="#fff" />
+              </TouchableOpacity>
+            </Reanimated.View>
+          }
         </View>
 
         <CommentBottomSheet

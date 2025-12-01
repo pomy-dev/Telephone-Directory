@@ -49,6 +49,17 @@ export default function TransportationDetailsScreen({ navigation, route }) {
         Linking.openURL(`mailto:${vehicle.owner.email}`);
     };
 
+    const handleSMS = async (vehicle) => {
+        shareMessage = `Hello ${vehicle?.owner.name}!\n\n`;
+        const smsUrl = Platform.OS === "ios"
+            ? `sms:&body=${encodeURIComponent(shareMessage)}` // iOS uses semicolon
+            : `smsto:?body=${encodeURIComponent(shareMessage)}`;
+        if (await Linking.canOpenURL(smsUrl))
+            await Linking.openURL(smsUrl);
+        else
+            throw new Error('SMS client not available');
+    };
+
     const handleShare = async () => {
         try {
             await Share.share({
@@ -81,7 +92,7 @@ export default function TransportationDetailsScreen({ navigation, route }) {
     return (
         <View style={styles.container}>
             <StatusBar barStyle="dark-content" />
-            <SecondaryNav title="Vehicle Details" />
+            <SecondaryNav title="Fore-Hire Details" />
 
             <ScrollView showsVerticalScrollIndicator={false}>
                 {/* Image Carousel */}
@@ -276,7 +287,6 @@ export default function TransportationDetailsScreen({ navigation, route }) {
                                     <Text style={styles.rating}>{vehicle.owner.rating}</Text>
                                 </View>
                             </View>
-                            <Text style={styles.experience}>Experience: {vehicle.owner.experience}</Text>
                             <Text style={styles.responseTime}>Response Time: {vehicle.owner.responseTime}</Text>
                             <View style={styles.contactButtons}>
                                 <TouchableOpacity style={styles.contactButton} onPress={handleCall}>
@@ -286,7 +296,10 @@ export default function TransportationDetailsScreen({ navigation, route }) {
                                     <Ionicons name="logo-whatsapp" size={30} color="#25D366" />
                                 </TouchableOpacity>
                                 <TouchableOpacity style={styles.contactButton} onPress={handleEmail}>
-                                    <Ionicons name="mail-outline" size={30} color="#2563eb" />
+                                    <Ionicons name="mail-outline" size={30} color="#eb2550ff" />
+                                </TouchableOpacity>
+                                <TouchableOpacity style={styles.contactButton} onPress={handleSMS}>
+                                    <Icons.MaterialIcons name="message" size={30} color="#2563eb" />
                                 </TouchableOpacity>
                             </View>
                         </View>

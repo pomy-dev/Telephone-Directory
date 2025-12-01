@@ -7,12 +7,13 @@ import {
     TouchableOpacity,
     StatusBar,
     Platform,
+    Linking,
     Image,
     TextInput,
     Alert,
 } from 'react-native';
 import * as Location from 'expo-location';
-import { Ionicons } from '@expo/vector-icons';
+import { Icons } from '../../constants/Icons';
 import {
     BottomSheetModal,
     BottomSheetModalProvider,
@@ -20,6 +21,7 @@ import {
     BottomSheetBackdrop,
 } from '@gorhom/bottom-sheet';
 import { AppContext } from "../../context/appContext"
+import { getForHireTransport } from '../../service/Supabase-Fuctions';
 import CustomLoader from '../../components/customLoader';
 import SecondaryNav from '../../components/SecondaryNav';
 import { mockTransportationVehicles } from '../../utils/mockData';
@@ -43,7 +45,7 @@ const ActiveFilterChip = ({ label, onClear }) => (
     <View style={styles.activeFilterChip}>
         <Text style={styles.activeFilterText}>{label}</Text>
         <TouchableOpacity onPress={onClear} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-            <Ionicons name="close-circle" size={18} color="#64748b" />
+            <Icons.Ionicons name="close-circle" size={18} color="#64748b" />
         </TouchableOpacity>
     </View>
 );
@@ -105,7 +107,7 @@ const RatingBottomSheet = React.forwardRef(({ onSubmit, onDismiss, renderBackdro
                 <View style={ratingSheetStyles.stars}>
                     {[1, 2, 3, 4, 5].map((star) => (
                         <TouchableOpacity key={star} onPress={() => setRating(star)}>
-                            <Ionicons
+                            <Icons.Ionicons
                                 name={star <= rating ? 'star' : 'star-outline'}
                                 size={44}
                                 color="#fbbf24"
@@ -214,8 +216,14 @@ export default function TransportationListScreen({ navigation }) {
                 });
             }
         })();
+        getAllForeHire();
         return () => { mounted = false; };
     }, []);
+
+    const getAllForeHire = async () => {
+        const vehicles = await getForHireTransport()
+        console.log('vehicles: ', vehicles)
+    }
 
     // ────── Process & Sort Vehicles ──────
     const processedVehicles = useMemo(() => {
@@ -317,9 +325,31 @@ export default function TransportationListScreen({ navigation }) {
         <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.5} />
     ), []);
 
+    const handleCall = (vehicle) => {
+        Linking.openURL(`tel:${vehicle.owner.phone}`);
+    };
+
+    const handleWhatsApp = (vehicle) => {
+        Linking.openURL(`whatsapp://send?phone=${vehicle.owner.whatsapp.replace(/[^0-9]/g, '')}`);
+    };
+
+    const handleEmail = (vehicle) => {
+        Linking.openURL(`mailto:${vehicle.owner.email}`);
+    };
+
+    const handleSMS = async (vehicle) => {
+        shareMessage = `Hello ${vehicle?.owner.name}!\n\n`;
+        const smsUrl = Platform.OS === "ios"
+            ? `sms:&body=${encodeURIComponent(shareMessage)}` // iOS uses semicolon
+            : `smsto:?body=${encodeURIComponent(shareMessage)}`;
+        if (await Linking.canOpenURL(smsUrl))
+            await Linking.openURL(smsUrl);
+        else
+            throw new Error('SMS client not available');
+    };
+
     // ────── Helper Labels ──────
     const getTypeLabel = (type) => ({ minibus: 'Minibus', bus: 'Bus', van: 'Van', truck: 'Truck', suv: 'SUV', sedan: 'Sedan' })[type] || type;
-    const getPriceLabel = (type) => ({ per_trip: '/trip', per_day: '/day', per_hour: '/hour', per_km: '/km' })[type] || '';
 
     // ────── RENDER VEHICLE CARD – Modern Overlay Style ──────
     const renderVehicleCard = (vehicle) => {
@@ -344,14 +374,17 @@ export default function TransportationListScreen({ navigation }) {
                 <View style={styles.overlayContent}>
                     {/* Top Badges */}
                     <View style={styles.topBadges}>
+                        <View style={styles.typeBadge}>
+                            <Text style={styles.typeBadgeText}>{getTypeLabel(vehicle.type)}</Text>
+                        </View>
                         {vehicle.borderCrossing && (
                             <View style={styles.borderBadge}>
-                                <Ionicons name="globe" size={13} color="#fff" />
+                                <Icons.Ionicons name="globe" size={13} color="#fff" />
                                 <Text style={styles.borderBadgeText}>Cross-Border</Text>
                             </View>
                         )}
                         {vehicle.owner.verified && (
-                            <Ionicons name="checkmark-circle" size={20} color="#10b981" style={{ marginLeft: 8 }} />
+                            <Icons.Ionicons name="checkmark-circle" size={20} color="#10b981" style={{ marginLeft: 8 }} />
                         )}
                     </View>
 
@@ -366,7 +399,7 @@ export default function TransportationListScreen({ navigation }) {
 
                         {/* Location + Distance */}
                         <View style={styles.locationRow}>
-                            <Ionicons name="location" size={14} color="#fff" />
+                            <Icons.Ionicons name="location" size={14} color="#fff" />
                             <Text style={styles.locationText}>
                                 {vehicle.location.city || vehicle.location.area}
                                 {vehicle.distance !== null && ` • ${vehicle.distance.toFixed(1)} km`}
@@ -391,17 +424,17 @@ export default function TransportationListScreen({ navigation }) {
                     {/* Stats Bar */}
                     <View style={styles.statsOverlay}>
                         <TouchableOpacity style={styles.stat} onPress={(e) => { e.stopPropagation(); toggleLike(vehicle.id); }}>
-                            <Ionicons name={isLiked ? 'heart' : 'heart-outline'} size={19} color={isLiked ? "#ff4444" : "#fff"} />
+                            <Icons.Ionicons name={isLiked ? 'heart' : 'heart-outline'} size={19} color={isLiked ? "#ff4444" : "#fff"} />
                             <Text style={styles.statText}>{likes}</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity style={styles.stat} onPress={(e) => { e.stopPropagation(); handleRate(vehicle.id); }}>
-                            <Ionicons name="star" size={19} color="#fbbf24" />
+                            <Icons.Ionicons name="star" size={19} color="#fbbf24" />
                             <Text style={styles.statText}>{rating.toFixed(1)}</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity style={styles.stat} onPress={(e) => { e.stopPropagation(); openCommentSheet(vehicle.id); }}>
-                            <Ionicons name="chatbubble" size={18} color="#fff" />
+                            <Icons.Ionicons name="chatbubble" size={18} color="#fff" />
                             <Text style={styles.statText}>{vehicleComments.length}</Text>
                         </TouchableOpacity>
                     </View>
@@ -409,12 +442,19 @@ export default function TransportationListScreen({ navigation }) {
 
                 {/* Footer Below Image */}
                 <View style={styles.cardFooter}>
-                    <View>
-                        <Text style={styles.priceText}>E {vehicle.price?.toLocaleString() || '—'}</Text>
-                        <Text style={styles.priceSubtext}>{getPriceLabel(vehicle.priceType)}</Text>
-                    </View>
-                    <View style={styles.typeBadge}>
-                        <Text style={styles.typeBadgeText}>{getTypeLabel(vehicle.type)}</Text>
+                    <View style={styles.contactButtons}>
+                        <TouchableOpacity style={styles.contactButton} onPress={handleCall}>
+                            <Icons.Ionicons name="call-outline" size={20} color="#2563eb" />
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.contactButton} onPress={handleWhatsApp}>
+                            <Icons.Ionicons name="logo-whatsapp" size={20} color="#25D366" />
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.contactButton} onPress={handleEmail}>
+                            <Icons.Ionicons name="mail-outline" size={20} color="#eb2560ff" />
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.contactButton} onPress={handleSMS}>
+                            <Icons.MaterialIcons name="message" size={20} color="#2563eb" />
+                        </TouchableOpacity>
                     </View>
                 </View>
             </TouchableOpacity>
@@ -443,13 +483,13 @@ export default function TransportationListScreen({ navigation }) {
                         >
                             {sortByBorderCrossing !== 'All' && (
                                 <View style={styles.activeFilterChip}>
-                                    <Ionicons name="globe-outline" size={15} color="#1e40af" />
+                                    <Icons.Ionicons name="globe-outline" size={15} color="#1e40af" />
                                     <Text style={styles.activeFilterText}>Border: {sortByBorderCrossing}</Text>
                                     <TouchableOpacity
                                         onPress={() => setSortByBorderCrossing('All')}
                                         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                                     >
-                                        <Ionicons name="close-circle" size={18} color="#1e40af" />
+                                        <Icons.Ionicons name="close-circle" size={18} color="#1e40af" />
                                     </TouchableOpacity>
                                 </View>
                             )}
@@ -470,7 +510,7 @@ export default function TransportationListScreen({ navigation }) {
 
                 {/* Search Bar */}
                 <View style={styles.searchBar}>
-                    <Ionicons name="search" size={20} color="#94a3b8" />
+                    <Icons.Ionicons name="search" size={20} color="#94a3b8" />
                     <TextInput
                         style={styles.searchInput}
                         placeholder="Search make, model, or location..."
@@ -480,7 +520,7 @@ export default function TransportationListScreen({ navigation }) {
                     />
                     {(sortByCategory !== 'All' || sortByBorderCrossing !== 'All') && (
                         <TouchableOpacity onPress={() => setShowSortOptions(true)}>
-                            <Ionicons name="options" size={24} color="#2563eb" />
+                            <Icons.Ionicons name="options" size={24} color="#2563eb" />
                         </TouchableOpacity>
                     )}
                 </View>
@@ -508,7 +548,7 @@ export default function TransportationListScreen({ navigation }) {
                             <View style={styles.sortHeader}>
                                 <Text style={styles.sortTitle}>Filter & Sort</Text>
                                 <TouchableOpacity onPress={() => setShowSortOptions(false)}>
-                                    <Ionicons name="close" size={28} color="#1e293b" />
+                                    <Icons.Ionicons name="close" size={28} color="#1e293b" />
                                 </TouchableOpacity>
                             </View>
 
@@ -557,7 +597,7 @@ export default function TransportationListScreen({ navigation }) {
                             style={styles.postBtn}
                             onPress={() => navigation.navigate('PostTransportationScreen')}
                         >
-                            <Ionicons name="add-circle-outline" size={20} color="#2563eb" />
+                            <Icons.Ionicons name="add-circle-outline" size={20} color="#2563eb" />
                             <Text style={styles.postBtnText}>Post Vehicle</Text>
                         </TouchableOpacity>
                     </View>
@@ -831,6 +871,28 @@ const styles = StyleSheet.create({
     stat: { alignItems: 'center', gap: 4 },
     statText: { color: '#fff', fontSize: 13, fontWeight: '600' },
 
+    contactButtons: {
+        flexDirection: 'row',
+        gap: 12,
+    },
+    contactButton: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#eff6ff',
+        paddingHorizontal: 6,
+        paddingVertical: 3,
+        borderRadius: 50,
+        gap: 6,
+        borderColor: '#e3e3e3ff',
+    },
+    contactButtonText: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#475569',
+    },
+
     // Footer Below Image
     cardFooter: {
         flexDirection: 'row',
@@ -846,9 +908,9 @@ const styles = StyleSheet.create({
     priceSubtext: { fontSize: 12, color: '#64748b', marginTop: 2 },
     typeBadge: {
         backgroundColor: '#eff6ff',
-        paddingHorizontal: 16,
-        paddingVertical: 8,
-        borderRadius: 30,
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        borderRadius: 20,
     },
     typeBadgeText: { color: '#2563eb', fontSize: 12, fontWeight: '700' },
 

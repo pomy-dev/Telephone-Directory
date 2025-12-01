@@ -34,11 +34,10 @@ export default function PostTransportationScreen({ navigation }) {
         model: '',
         year: '',
         registration: '',
-        price: '',
-        priceType: 'per_day',
         capacity: '',
         cargoCapacity: '',
         description: '',
+        crossingBoarder: false,
         operatingStart: '08:00',
         operatingEnd: '18:00',
         operatingDays: [],
@@ -46,12 +45,11 @@ export default function PostTransportationScreen({ navigation }) {
         features: [],
         location: { area: '', city: '', address: '' },
         certifications: { insurance: false, license: false, borderCrossing: false },
-        ownerInfo: { name: '', phone: '', email: '', whatsapp: '' },
+        ownerInfo: { name: '', phone: '', email: '', whatsapp: '', responsetime: '' },
         images: [],
     });
 
     const [currentRoute, setCurrentRoute] = useState({ origin: '', destination: '', distance: '', duration: '', price: '' });
-    const [currentFeature, setCurrentFeature] = useState('');
     const [errors, setErrors] = useState({});
     const [isPickingImg, setIsPickingImg] = useState(false);
     const [isSubmiting, setIsSubmiting] = useState(false);
@@ -62,7 +60,6 @@ export default function PostTransportationScreen({ navigation }) {
         'Mbabane', 'Manzini', 'Ezulwini', 'Nhlangano', 'Siteki', 'Big Bend',
         'Malkerns', 'Mhlume', 'Hluti', 'Simunye', 'Piggs Peak', 'Lobamba', 'Lavumisa'
     ];
-    const priceTypes = ['per_trip', 'per_day', 'per_route', 'per_km'];
     const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     const commonFeatures = [
         'Air Conditioning', 'Music System', 'GPS Tracking', 'WiFi Available',
@@ -128,7 +125,6 @@ export default function PostTransportationScreen({ navigation }) {
             if (!formData.model.trim()) newErrors.model = 'Model required';
             if (!formData.year.trim()) newErrors.year = 'Year required';
             if (!formData.registration.trim()) newErrors.registration = 'Registration required';
-            if (!formData.price.trim()) newErrors.price = 'Price required';
         }
 
         if (currentStep === 3) {
@@ -167,7 +163,6 @@ export default function PostTransportationScreen({ navigation }) {
     };
 
     const handleSubmit = async () => {
-        console.log(formData)
         try {
             setIsSubmiting(true)
             const result = await addForhire(formData)
@@ -177,10 +172,12 @@ export default function PostTransportationScreen({ navigation }) {
         } finally {
             setIsSubmiting(false)
             setFormData({
-                type: '', category: '', make: '', model: '', year: '', registration: '', price: '', priceType: 'per_trip',
-                capacity: '', cargoCapacity: '', description: '', certifications: {}, features: [], location: {},
-                operatingDays: [], operatingEnd: '18:00', operatingStart: '08:00', routes: [], ownerInfo: {}, images: []
+                type: '', category: '', make: '', model: '', year: '', registration: '', capacity: '', cargoCapacity: '',
+                description: '', certifications: { insurance: false, license: false, borderCrossing: false }, features: [],
+                location: { address: '', area: '', city: '' }, operatingDays: [], operatingEnd: '18:00', operatingStart: '08:00',
+                routes: [], ownerInfo: {}, images: [],
             })
+            setCurrentStep(1)
         }
     };
 
@@ -217,7 +214,6 @@ export default function PostTransportationScreen({ navigation }) {
                     </View>
                     <Text style={styles.progressText}>Step {currentStep} of {TOTAL_STEPS}</Text>
                 </View>
-
 
                 <Text style={styles.stepTitle}>{getStepTitle()}</Text>
 
@@ -275,6 +271,32 @@ export default function PostTransportationScreen({ navigation }) {
                                 ))}
                             </View>
                             {errors.category && <Text style={styles.error}>{errors.category}</Text>}
+
+                            <Text style={styles.label}>Is Boarder Crossing</Text>
+                            <View style={styles.certificationGrid}>
+                                <TouchableOpacity
+                                    style={[
+                                        styles.certBox,
+                                        formData.crossingBoarder && styles.certBoxActive
+                                    ]}
+                                    onPress={() => updateForm('crossingBoarder', !formData.crossingBoarder)}
+                                >
+                                    <Ionicons
+                                        name={formData.crossingBoarder ? 'checkmark-circle' : 'ellipse-outline'}
+                                        size={28}
+                                        color={formData.crossingBoarder ? '#10b981' : '#94a3b8'}
+                                    />
+                                    <View style={{ marginLeft: 12 }}>
+                                        <Text style={[
+                                            styles.certLabel,
+                                            formData.crossingBoarder && styles.certLabelActive
+                                        ]}>
+                                            Is vehicle or fore hire crossing boarders?
+                                        </Text>
+                                        <Ionicons name='globe-outline' size={18} color={formData.crossingBoarder ? '#10b981' : '#64748b'} />
+                                    </View>
+                                </TouchableOpacity>
+                            </View>
                         </View>
                     )}
 
@@ -304,30 +326,6 @@ export default function PostTransportationScreen({ navigation }) {
                                     <Text style={styles.label}>Registration *</Text>
                                     <TextInput style={[styles.input, errors.registration && styles.inputError]} placeholder="SD 123 AB" value={formData.registration} onChangeText={v => updateForm('registration', v)} />
                                     {errors.registration && <Text style={styles.error}>{errors.registration}</Text>}
-                                </View>
-                            </View>
-
-                            <View style={styles.row}>
-                                <View style={styles.half}>
-                                    <Text style={styles.label}>Price (SZL) *</Text>
-                                    <TextInput style={[styles.input, errors.price && styles.inputError]} placeholder="3500" value={formData.price} keyboardType="numeric" onChangeText={v => updateForm('price', v)} />
-                                    {errors.price && <Text style={styles.error}>{errors.price}</Text>}
-                                </View>
-                                <View style={styles.half}>
-                                    <Text style={styles.label}>Price Type</Text>
-                                    <View style={styles.chipsRow}>
-                                        {priceTypes.map(pt => (
-                                            <TouchableOpacity
-                                                key={pt}
-                                                style={[styles.smallChip, formData.priceType === pt && styles.chipActive]}
-                                                onPress={() => updateForm('priceType', pt)}
-                                            >
-                                                <Text style={[styles.smallChipText, formData.priceType === pt && styles.chipTextActive]}>
-                                                    {pt.replace('_', '/')}
-                                                </Text>
-                                            </TouchableOpacity>
-                                        ))}
-                                    </View>
                                 </View>
                             </View>
 
@@ -535,6 +533,8 @@ export default function PostTransportationScreen({ navigation }) {
                             {errors.ownerEmail && <Text style={styles.error}>{errors.ownerEmail}</Text>}
 
                             <TextInput style={styles.input} placeholder="WhatsApp (Optional)" value={formData.ownerInfo.whatsapp} keyboardType="phone-pad" onChangeText={v => updateForm('ownerInfo', { ...formData.ownerInfo, whatsapp: v })} />
+
+                            <TextInput style={styles.input} placeholder="Within 2 hrs" value={formData.ownerInfo.responsetime} keyboardType="default" onChangeText={v => updateForm('ownerInfo', { ...formData.ownerInfo, responsetime: v })} />
                         </View>
                     )}
 
@@ -551,7 +551,7 @@ export default function PostTransportationScreen({ navigation }) {
 
                                 <Text style={styles.reviewText}><Text style={styles.bold}>Type:</Text> {formData.type?.toUpperCase()} • {formData.category.replace('_', ' ')}</Text>
                                 <Text style={styles.reviewText}><Text style={styles.bold}>Vehicle:</Text> {formData.make} {formData.model} ({formData.year})</Text>
-                                <Text style={styles.reviewText}><Text style={styles.bold}>Price:</Text> E {formData.price} {formData.priceType.replace('_', '/')}</Text>
+                                <Text style={styles.reviewText}><Text style={styles.bold}>Is Crossing Boarder:</Text>{formData.crossingBoarder ? 'Yes' : 'No'}</Text>
                                 <Text style={styles.reviewText}><Text style={styles.bold}>Location:</Text> {formData.location.area}, {formData.location.city || 'Eswatini'}</Text>
                                 <Text style={styles.reviewText}><Text style={styles.bold}>Contact:</Text> {formData.ownerInfo.name} • {formData.ownerInfo.phone}</Text>
                             </View>
@@ -598,7 +598,7 @@ const styles = StyleSheet.create({
     label: { fontSize: 15, fontWeight: '600', color: '#475569', marginTop: 12, marginBottom: 8 },
     input: { backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 12, padding: 14, fontSize: 16, marginVertical: 5 },
     inputError: { borderColor: '#ef4444' },
-    textArea: { height: 120, textAlignVertical: 'top' },
+    textArea: { height: 80, textAlignVertical: 'top' },
     error: { color: '#ef4444', fontSize: 13, marginTop: 6 },
 
     row: { flexDirection: 'row', gap: 6, marginBottom: 12 },
