@@ -1,6 +1,5 @@
-export const SUPABASE_URL = "https://zvrclfzgiadnrfsotlvo.supabase.co";
-export const SUPABASE_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp2cmNsZnpnaWFkbnJmc290bHZvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk4MzI4ODEsImV4cCI6MjA3NTQwODg4MX0.eM4lMWbntY27a3I8V7YSAQJ7wR9XnlsRynOCv8F70Pw";
+export const SUPABASE_URL = "https://dgsxhanqqcbqfrsslqjs.supabase.co"
+export const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRnc3hoYW5xcWNicWZyc3NscWpzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjM5ODE3NDQsImV4cCI6MjA3OTU1Nzc0NH0.x0ddeh_3k9KjSVxjBSQm-QX5Nc7yDQfASdLdNPnlY70"
 
 export const API_BASE_URL = 'https://phone-book-api-qpil.onrender.com';
 // export const API_BASE_URL = 'http://10.150.14.28:5000';

@@ -10,15 +10,24 @@ import {
     TextInput,
     Image,
     Alert,
+    ActivityIndicator,
+    KeyboardAvoidingView
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { CustomToast } from '../../components/customToast';
+import { addForhire } from '../../service/Supabase-Fuctions';
+import { AppContext } from "../../context/appContext"
 import * as ImagePicker from 'expo-image-picker';
 import SecondaryNav from '../../components/SecondaryNav';
 import { mockAreas } from '../../utils/mockData';
 
+const TOTAL_STEPS = 6;
+
 export default function PostTransportationScreen({ navigation }) {
+    const { theme, isDarkMode } = React.useContext(AppContext)
+    const [currentStep, setCurrentStep] = useState(1);
+
     const [formData, setFormData] = useState({
-        title: '',
         type: '',
         category: '',
         make: '',
@@ -32,1015 +41,660 @@ export default function PostTransportationScreen({ navigation }) {
         description: '',
         operatingStart: '08:00',
         operatingEnd: '18:00',
+        operatingDays: [],
+        routes: [],
+        features: [],
+        location: { area: '', city: '', address: '' },
+        certifications: { insurance: false, license: false, borderCrossing: false },
+        ownerInfo: { name: '', phone: '', email: '', whatsapp: '' },
+        images: [],
     });
-    const [images, setImages] = useState([]);
-    const [features, setFeatures] = useState([]);
-    const [routes, setRoutes] = useState([]);
-    const [operatingDays, setOperatingDays] = useState([]);
-    const [location, setLocation] = useState({
-        area: '',
-        city: '',
-        address: '',
-    });
-    const [ownerInfo, setOwnerInfo] = useState({
-        name: '',
-        phone: '',
-        email: '',
-        whatsapp: '',
-    });
+
+    const [currentRoute, setCurrentRoute] = useState({ origin: '', destination: '', distance: '', duration: '', price: '' });
     const [currentFeature, setCurrentFeature] = useState('');
-    const [currentRoute, setCurrentRoute] = useState({
-        origin: '',
-        destination: '',
-        distance: '',
-        duration: '',
-        price: '',
-    });
-    const [certifications, setCertifications] = useState({
-        insurance: false,
-        license: false,
-        borderCrossing: false,
-    });
     const [errors, setErrors] = useState({});
+    const [isPickingImg, setIsPickingImg] = useState(false);
+    const [isSubmiting, setIsSubmiting] = useState(false);
 
     const types = ['minibus', 'bus', 'van', 'truck', 'suv', 'sedan'];
     const categories = ['public_transport', 'cargo', 'passenger', 'luxury'];
-    const cities = ['Mbabane', 'Manzini', 'Ezulwini', 'Nhlangano', 'Siteki'];
-    const priceTypes = ['per_trip', 'per_day', 'per_hour', 'per_km'];
+    const cities = [
+        'Mbabane', 'Manzini', 'Ezulwini', 'Nhlangano', 'Siteki', 'Big Bend',
+        'Malkerns', 'Mhlume', 'Hluti', 'Simunye', 'Piggs Peak', 'Lobamba', 'Lavumisa'
+    ];
+    const priceTypes = ['per_trip', 'per_day', 'per_route', 'per_km'];
     const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     const commonFeatures = [
-        'Air Conditioning', 'Music System', 'GPS Tracking', 'Navigation System',
-        'Leather Seats', 'Sunroof', 'WiFi Available', 'Entertainment System',
-        'Luggage Space', 'Experienced Driver', 'Insurance Included',
+        'Air Conditioning', 'Music System', 'GPS Tracking', 'WiFi Available',
+        'Leather Seats', 'Sunroof', 'Entertainment System', 'Luggage Space', 'Chair-Desk',
+        'Experienced Driver', 'Insurance Included', 'Freezer', 'Toilet', 'Device-Charging'
     ];
 
-    const handleInputChange = (field, value) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
-        if (errors[field]) {
-            setErrors(prev => ({ ...prev, [field]: null }));
-        }
+    // Helper to update nested state
+    const updateForm = (key, value) => {
+        setFormData(prev => ({ ...prev, [key]: value }));
+        setErrors(prev => ({ ...prev, [key]: null }));
     };
 
     const pickImage = async () => {
         const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (status !== 'granted') {
-            Alert.alert('Permission Required', 'Please grant camera roll permissions.');
+            Alert.alert('Permission Needed', 'Please allow access to your photos.');
             return;
         }
 
-        const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ['images', 'videos'],
-            allowsEditing: true,
-            aspect: [16, 9],
-            quality: 0.8,
-            allowsMultipleSelection: true,
-        });
+        try {
+            setIsPickingImg(true)
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ['images', 'videos'],
+                allowsMultipleSelection: true,
+                quality: 0.8
+            });
 
-        if (!result.canceled && result.assets) {
-            const newImages = result.assets.map(asset => asset.uri);
-            setImages(prev => [...prev, ...newImages].slice(0, 10));
+
+            if (!result.canceled) {
+                const newImages = result.assets.map(a => a.uri);
+                updateForm('images', [...formData.images, ...newImages].slice(0, 10));
+            }
+        } catch (err) {
+            Alert.alert('Error', err.message)
+        } finally {
+            setIsPickingImg(false)
         }
     };
 
     const removeImage = (index) => {
-        setImages(prev => prev.filter((_, i) => i !== index));
-    };
-
-    const toggleFeature = (feature) => {
-        setFeatures(prev =>
-            prev.includes(feature) ? prev.filter(f => f !== feature) : [...prev, feature]
-        );
-    };
-
-    const addCustomFeature = () => {
-        if (currentFeature.trim()) {
-            setFeatures(prev => [...prev, currentFeature.trim()]);
-            setCurrentFeature('');
-        }
-    };
-
-    const removeFeature = (index) => {
-        setFeatures(prev => prev.filter((_, i) => i !== index));
-    };
-
-    const toggleDay = (day) => {
-        setOperatingDays(prev =>
-            prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
-        );
+        updateForm('images', formData.images.filter((_, i) => i !== index));
     };
 
     const addRoute = () => {
         if (currentRoute.origin && currentRoute.destination) {
-            setRoutes(prev => [...prev, { ...currentRoute }]);
-            setCurrentRoute({
-                origin: '',
-                destination: '',
-                distance: '',
-                duration: '',
-                price: '',
-            });
+            updateForm('routes', [...formData.routes, { ...currentRoute }]);
+            setCurrentRoute({ origin: '', destination: '', distance: '', duration: '', price: '' });
         }
     };
 
-    const removeRoute = (index) => {
-        setRoutes(prev => prev.filter((_, i) => i !== index));
-    };
-
-    const validateForm = () => {
+    const validateStep = () => {
         const newErrors = {};
 
-        if (!formData.title.trim()) newErrors.title = 'Title is required';
-        if (!formData.type) newErrors.type = 'Vehicle type is required';
-        if (!formData.category) newErrors.category = 'Category is required';
-        if (!formData.make.trim()) newErrors.make = 'Make is required';
-        if (!formData.model.trim()) newErrors.model = 'Model is required';
-        if (!formData.year.trim()) newErrors.year = 'Year is required';
-        if (!formData.registration.trim()) newErrors.registration = 'Registration is required';
-        if (!formData.price.trim()) newErrors.price = 'Price is required';
-        if (!formData.description.trim()) newErrors.description = 'Description is required';
-        if (images.length === 0) newErrors.images = 'At least one image is required';
-        if (operatingDays.length === 0) newErrors.operatingDays = 'At least one operating day is required';
-        if (!location.area) newErrors.locationArea = 'Area is required';
-        if (!ownerInfo.name.trim()) newErrors.ownerName = 'Owner name is required';
-        if (!ownerInfo.phone.trim()) newErrors.ownerPhone = 'Owner phone is required';
-        if (!ownerInfo.email.trim()) newErrors.ownerEmail = 'Owner email is required';
-        if (ownerInfo.email && !/\S+@\S+\.\S+/.test(ownerInfo.email)) {
-            newErrors.ownerEmail = 'Invalid email format';
+        if (currentStep === 1) {
+            if (formData.images.length === 0) newErrors.images = 'At least 1 photo required';
+            if (!formData.type) newErrors.type = 'Vehicle type required';
+            if (!formData.category) newErrors.category = 'Category required';
+        }
+
+        if (currentStep === 2) {
+            if (!formData.make.trim()) newErrors.make = 'Make required';
+            if (!formData.model.trim()) newErrors.model = 'Model required';
+            if (!formData.year.trim()) newErrors.year = 'Year required';
+            if (!formData.registration.trim()) newErrors.registration = 'Registration required';
+            if (!formData.price.trim()) newErrors.price = 'Price required';
+        }
+
+        if (currentStep === 3) {
+            if (!formData.description.trim()) newErrors.description = 'Description required';
+        }
+
+        if (currentStep === 5) {
+            if (!formData.location.area) newErrors.locationArea = 'Area required';
+            if (!formData.ownerInfo.name.trim()) newErrors.ownerName = 'Name required';
+            if (!formData.ownerInfo.phone.trim()) newErrors.ownerPhone = 'Phone required';
+            if (!formData.ownerInfo.email.trim()) newErrors.ownerEmail = 'Email required';
+            if (formData.ownerInfo.email && !/\S+@\S+\.\S+/.test(formData.ownerInfo.email))
+                newErrors.ownerEmail = 'Invalid email';
         }
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleSubmit = () => {
-        if (!validateForm()) {
-            Alert.alert('Validation Error', 'Please fill in all required fields correctly.');
-            return;
+    const goNext = () => {
+        if (validateStep()) {
+            if (currentStep < TOTAL_STEPS) {
+                setCurrentStep(prev => prev + 1);
+                setErrors({});
+            }
         }
+    };
 
-        Alert.alert(
-            'Success',
-            'Transportation vehicle posted successfully!',
-            [{ text: 'OK', onPress: () => navigation.goBack() }]
-        );
+    const goBack = () => {
+        if (currentStep > 1) {
+            setCurrentStep(prev => prev - 1);
+            setErrors({});
+        } else {
+            navigation.goBack();
+        }
+    };
+
+    const handleSubmit = async () => {
+        console.log(formData)
+        try {
+            setIsSubmiting(true)
+            const result = await addForhire(formData)
+            result && CustomToast('Saved', 'Vehicle Details saved successfully.')
+        } catch (err) {
+            Alert.alert('Error!', err.message);
+        } finally {
+            setIsSubmiting(false)
+            setFormData({
+                type: '', category: '', make: '', model: '', year: '', registration: '', price: '', priceType: 'per_trip',
+                capacity: '', cargoCapacity: '', description: '', certifications: {}, features: [], location: {},
+                operatingDays: [], operatingEnd: '18:00', operatingStart: '08:00', routes: [], ownerInfo: {}, images: []
+            })
+        }
+    };
+
+    const getStepTitle = () => {
+        const titles = [
+            'Photos & Basics',
+            'Vehicle Details',
+            'Schedule & Features',
+            'Routes & Stations',
+            'Location & Contact',
+            'Review & Post'
+        ];
+        return titles[currentStep - 1];
     };
 
     return (
-        <View style={styles.container}>
-            <StatusBar barStyle="dark-content" />
-            <SecondaryNav title="Post Vehicle for Hire" />
+        <KeyboardAvoidingView
+            style={{ flex: 1 }}
+            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : -27} // tweak if needed
+        >
+            <View style={styles.container}>
+                <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
+                <View style={{ height: 20 }} />
+                <SecondaryNav
+                    title="For Hires"
+                    rightIcon='train-outline'
+                />
 
-            <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollView}>
-                {/* Images Section */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Vehicle Images *</Text>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imagesContainer}>
-                        {images.map((uri, index) => (
-                            <View key={index} style={styles.imageWrapper}>
-                                <Image source={{ uri }} style={styles.previewImage} />
-                                <TouchableOpacity style={styles.removeImageButton} onPress={() => removeImage(index)}>
-                                    <Ionicons name="close-circle" size={24} color="#ef4444" />
-                                </TouchableOpacity>
-                            </View>
-                        ))}
-                        {images.length < 10 && (
-                            <TouchableOpacity style={styles.addImageButton} onPress={pickImage}>
-                                <Ionicons name="camera-outline" size={32} color="#64748b" />
-                                <Text style={styles.addImageText}>Add Photo</Text>
-                            </TouchableOpacity>
-                        )}
-                    </ScrollView>
-                    {errors.images && <Text style={styles.errorText}>{errors.images}</Text>}
+                {/* Progress Bar */}
+                <View style={styles.progressContainer}>
+                    <View style={styles.progressBar}>
+                        <View style={[styles.progressFill, { width: `${(currentStep / TOTAL_STEPS) * 100}%` }]} />
+                    </View>
+                    <Text style={styles.progressText}>Step {currentStep} of {TOTAL_STEPS}</Text>
                 </View>
 
-                {/* Basic Information */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Vehicle Information</Text>
 
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Title *</Text>
-                        <TextInput
-                            style={[styles.input, errors.title && styles.inputError]}
-                            placeholder="e.g., Comfortable 15-Seater Minibus"
-                            value={formData.title}
-                            onChangeText={(value) => handleInputChange('title', value)}
-                            placeholderTextColor="#94a3b8"
-                        />
-                        {errors.title && <Text style={styles.errorText}>{errors.title}</Text>}
-                    </View>
+                <Text style={styles.stepTitle}>{getStepTitle()}</Text>
 
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Vehicle Type *</Text>
-                        <View style={styles.typeContainer}>
-                            {types.map((type) => (
-                                <TouchableOpacity
-                                    key={type}
-                                    style={[styles.typeChip, formData.type === type && styles.typeChipActive]}
-                                    onPress={() => handleInputChange('type', type)}
-                                >
-                                    <Text style={[styles.typeText, formData.type === type && styles.typeTextActive]}>
-                                        {type.charAt(0).toUpperCase() + type.slice(1)}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
-                        {errors.type && <Text style={styles.errorText}>{errors.type}</Text>}
-                    </View>
+                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+                    {/* ==================== STEP 1: Photos & Basics ==================== */}
+                    {currentStep === 1 && (
+                        <View style={styles.step}>
+                            <Text style={styles.sectionTitle}>Vehicle Photos *</Text>
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ marginBottom: 16, paddingHorizontal: 10 }}>
+                                {formData.images.map((uri, i) => (
+                                    <View key={i} style={styles.imageWrapper}>
+                                        <Image source={{ uri }} style={styles.previewImage} />
+                                        <TouchableOpacity style={styles.removeBtn} onPress={() => removeImage(i)}>
+                                            <Ionicons name="close-circle" size={26} color="#ef4444" />
+                                        </TouchableOpacity>
+                                    </View>
+                                ))}
+                                {formData.images.length < 10 && (
+                                    <TouchableOpacity style={styles.addImageBtn} onPress={pickImage}>
+                                        {isPickingImg ? <ActivityIndicator color={theme.colors.indicator} size={36} /> : <Ionicons name="camera-outline" size={36} color="#64748b" />}
+                                        <Text style={styles.addImageText}>Add Photos</Text>
+                                    </TouchableOpacity>
+                                )}
+                            </ScrollView>
+                            {errors.images && <Text style={styles.error}>{errors.images}</Text>}
 
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Category *</Text>
-                        <View style={styles.categoryContainer}>
-                            {categories.map((category) => (
-                                <TouchableOpacity
-                                    key={category}
-                                    style={[styles.categoryChip, formData.category === category && styles.categoryChipActive]}
-                                    onPress={() => handleInputChange('category', category)}
-                                >
-                                    <Text style={[styles.categoryText, formData.category === category && styles.categoryTextActive]}>
-                                        {category.replace('_', '/').toUpperCase()}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
-                        {errors.category && <Text style={styles.errorText}>{errors.category}</Text>}
-                    </View>
-
-                    <View style={styles.detailsRow}>
-                        <View style={[styles.inputGroup, { flex: 1 }]}>
-                            <Text style={styles.label}>Make *</Text>
-                            <TextInput
-                                style={[styles.input, errors.make && styles.inputError]}
-                                placeholder="Toyota"
-                                value={formData.make}
-                                onChangeText={(value) => handleInputChange('make', value)}
-                                placeholderTextColor="#94a3b8"
-                            />
-                            {errors.make && <Text style={styles.errorText}>{errors.make}</Text>}
-                        </View>
-
-                        <View style={[styles.inputGroup, { flex: 1 }]}>
-                            <Text style={styles.label}>Model *</Text>
-                            <TextInput
-                                style={[styles.input, errors.model && styles.inputError]}
-                                placeholder="Hiace"
-                                value={formData.model}
-                                onChangeText={(value) => handleInputChange('model', value)}
-                                placeholderTextColor="#94a3b8"
-                            />
-                            {errors.model && <Text style={styles.errorText}>{errors.model}</Text>}
-                        </View>
-                    </View>
-
-                    <View style={styles.detailsRow}>
-                        <View style={[styles.inputGroup, { flex: 1 }]}>
-                            <Text style={styles.label}>Year *</Text>
-                            <TextInput
-                                style={[styles.input, errors.year && styles.inputError]}
-                                placeholder="2020"
-                                value={formData.year}
-                                onChangeText={(value) => handleInputChange('year', value)}
-                                keyboardType="numeric"
-                                placeholderTextColor="#94a3b8"
-                            />
-                            {errors.year && <Text style={styles.errorText}>{errors.year}</Text>}
-                        </View>
-
-                        <View style={[styles.inputGroup, { flex: 1 }]}>
-                            <Text style={styles.label}>Registration *</Text>
-                            <TextInput
-                                style={[styles.input, errors.registration && styles.inputError]}
-                                placeholder="SD 1234 AB"
-                                value={formData.registration}
-                                onChangeText={(value) => handleInputChange('registration', value)}
-                                placeholderTextColor="#94a3b8"
-                            />
-                            {errors.registration && <Text style={styles.errorText}>{errors.registration}</Text>}
-                        </View>
-                    </View>
-
-                    <View style={styles.detailsRow}>
-                        <View style={[styles.inputGroup, { flex: 1 }]}>
-                            <Text style={styles.label}>Price (SZL) *</Text>
-                            <TextInput
-                                style={[styles.input, errors.price && styles.inputError]}
-                                placeholder="2500"
-                                value={formData.price}
-                                onChangeText={(value) => handleInputChange('price', value)}
-                                keyboardType="numeric"
-                                placeholderTextColor="#94a3b8"
-                            />
-                            {errors.price && <Text style={styles.errorText}>{errors.price}</Text>}
-                        </View>
-
-                        <View style={[styles.inputGroup, { flex: 1 }]}>
-                            <Text style={styles.label}>Price Type</Text>
-                            <View style={styles.priceTypeContainer}>
-                                {priceTypes.map((type) => (
+                            <Text style={styles.label}>Vehicle Type *</Text>
+                            <View style={styles.chipsRow}>
+                                {types.map(t => (
                                     <TouchableOpacity
-                                        key={type}
-                                        style={[styles.priceTypeChip, formData.priceType === type && styles.priceTypeChipActive]}
-                                        onPress={() => handleInputChange('priceType', type)}
+                                        key={t}
+                                        style={[styles.chip, formData.type === t && styles.chipActive]}
+                                        onPress={() => updateForm('type', t)}
                                     >
-                                        <Text style={[styles.priceTypeText, formData.priceType === type && styles.priceTypeTextActive]}>
-                                            {type.replace('_', '/')}
+                                        <Text style={[styles.chipText, formData.type === t && styles.chipTextActive]}>
+                                            {t.charAt(0).toUpperCase() + t.slice(1)}
                                         </Text>
                                     </TouchableOpacity>
                                 ))}
                             </View>
-                        </View>
-                    </View>
+                            {errors.type && <Text style={styles.error}>{errors.type}</Text>}
 
-                    <View style={styles.detailsRow}>
-                        <View style={[styles.inputGroup, { flex: 1 }]}>
-                            <Text style={styles.label}>Capacity (Seats)</Text>
+                            <Text style={styles.label}>Category *</Text>
+                            <View style={styles.chipsRow}>
+                                {categories.map(c => (
+                                    <TouchableOpacity
+                                        key={c}
+                                        style={[styles.chip, formData.category === c && styles.chipActive]}
+                                        onPress={() => updateForm('category', c)}
+                                    >
+                                        <Text style={[styles.chipText, formData.category === c && styles.chipTextActive]}>
+                                            {c.replace('_', ' ').toUpperCase()}
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                            {errors.category && <Text style={styles.error}>{errors.category}</Text>}
+                        </View>
+                    )}
+
+                    {/* ==================== STEP 2: Vehicle Details ==================== */}
+                    {currentStep === 2 && (
+                        <View style={styles.step}>
+                            <View style={styles.row}>
+                                <View style={styles.half}>
+                                    <Text style={styles.label}>Make *</Text>
+                                    <TextInput style={[styles.input, errors.make && styles.inputError]} placeholder="Toyota" value={formData.make} onChangeText={v => updateForm('make', v)} />
+                                    {errors.make && <Text style={styles.error}>{errors.make}</Text>}
+                                </View>
+                                <View style={styles.half}>
+                                    <Text style={styles.label}>Model *</Text>
+                                    <TextInput style={[styles.input, errors.model && styles.inputError]} placeholder="Hiace" value={formData.model} onChangeText={v => updateForm('model', v)} />
+                                    {errors.model && <Text style={styles.error}>{errors.model}</Text>}
+                                </View>
+                            </View>
+
+                            <View style={styles.row}>
+                                <View style={styles.half}>
+                                    <Text style={styles.label}>Year *</Text>
+                                    <TextInput style={[styles.input, errors.year && styles.inputError]} placeholder="2022" value={formData.year} keyboardType="numeric" onChangeText={v => updateForm('year', v)} />
+                                    {errors.year && <Text style={styles.error}>{errors.year}</Text>}
+                                </View>
+                                <View style={styles.half}>
+                                    <Text style={styles.label}>Registration *</Text>
+                                    <TextInput style={[styles.input, errors.registration && styles.inputError]} placeholder="SD 123 AB" value={formData.registration} onChangeText={v => updateForm('registration', v)} />
+                                    {errors.registration && <Text style={styles.error}>{errors.registration}</Text>}
+                                </View>
+                            </View>
+
+                            <View style={styles.row}>
+                                <View style={styles.half}>
+                                    <Text style={styles.label}>Price (SZL) *</Text>
+                                    <TextInput style={[styles.input, errors.price && styles.inputError]} placeholder="3500" value={formData.price} keyboardType="numeric" onChangeText={v => updateForm('price', v)} />
+                                    {errors.price && <Text style={styles.error}>{errors.price}</Text>}
+                                </View>
+                                <View style={styles.half}>
+                                    <Text style={styles.label}>Price Type</Text>
+                                    <View style={styles.chipsRow}>
+                                        {priceTypes.map(pt => (
+                                            <TouchableOpacity
+                                                key={pt}
+                                                style={[styles.smallChip, formData.priceType === pt && styles.chipActive]}
+                                                onPress={() => updateForm('priceType', pt)}
+                                            >
+                                                <Text style={[styles.smallChipText, formData.priceType === pt && styles.chipTextActive]}>
+                                                    {pt.replace('_', '/')}
+                                                </Text>
+                                            </TouchableOpacity>
+                                        ))}
+                                    </View>
+                                </View>
+                            </View>
+
+                            <View style={styles.row}>
+                                <View style={styles.half}>
+                                    <Text style={styles.label}>Seats</Text>
+                                    <TextInput style={styles.input} placeholder="22" value={formData.capacity} keyboardType="numeric" onChangeText={v => updateForm('capacity', v)} />
+                                </View>
+                                <View style={styles.half}>
+                                    <Text style={styles.label}>Cargo (Tons)</Text>
+                                    <TextInput style={styles.input} placeholder="5" value={formData.cargoCapacity} keyboardType="numeric" onChangeText={v => updateForm('cargoCapacity', v)} />
+                                </View>
+                            </View>
+                        </View>
+                    )}
+
+                    {/* ==================== STEP 3: Description & Features ==================== */}
+                    {currentStep === 3 && (
+                        <View style={styles.step}>
+                            <Text style={styles.label}>Description *</Text>
                             <TextInput
-                                style={styles.input}
-                                placeholder="15"
-                                value={formData.capacity}
-                                onChangeText={(value) => handleInputChange('capacity', value)}
-                                keyboardType="numeric"
-                                placeholderTextColor="#94a3b8"
+                                style={[styles.input, styles.textArea, errors.description && styles.inputError]}
+                                placeholder="Tell customers about your vehicle..."
+                                value={formData.description}
+                                onChangeText={v => updateForm('description', v)}
+                                multiline
                             />
+                            {errors.description && <Text style={styles.error}>{errors.description}</Text>}
+
+                            <Text style={styles.label}>Operating Days *</Text>
+                            <View style={styles.chipsRow}>
+                                {daysOfWeek.map(day => (
+                                    <TouchableOpacity
+                                        key={day}
+                                        style={[styles.chip, formData.operatingDays.includes(day) && styles.chipActive]}
+                                        onPress={() => updateForm('operatingDays', formData.operatingDays.includes(day)
+                                            ? formData.operatingDays.filter(d => d !== day)
+                                            : [...formData.operatingDays, day]
+                                        )}
+                                    >
+                                        <Text style={[styles.chipText, formData.operatingDays.includes(day) && styles.chipTextActive]}>
+                                            {day.slice(0, 3)}
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                            {errors.operatingDays && <Text style={styles.error}>{errors.operatingDays}</Text>}
+
+                            <View style={styles.row}>
+                                <View style={styles.half}>
+                                    <Text style={styles.label}>Start Time</Text>
+                                    <TextInput style={styles.input} placeholder="08:00" value={formData.operatingStart} onChangeText={v => updateForm('operatingStart', v)} />
+                                </View>
+                                <View style={styles.half}>
+                                    <Text style={styles.label}>End Time</Text>
+                                    <TextInput style={styles.input} placeholder="18:00" value={formData.operatingEnd} onChangeText={v => updateForm('operatingEnd', v)} />
+                                </View>
+                            </View>
+
+                            <Text style={styles.label}>Features (Tap to select)</Text>
+                            <View style={styles.featuresGrid}>
+                                {commonFeatures.map(f => (
+                                    <TouchableOpacity
+                                        key={f}
+                                        style={[styles.featureChip, formData.features.includes(f) && styles.featureActive]}
+                                        onPress={() => updateForm('features', formData.features.includes(f)
+                                            ? formData.features.filter(x => x !== f)
+                                            : [...formData.features, f]
+                                        )}
+                                    >
+                                        <Text style={[styles.featureText, formData.features.includes(f) && styles.featureTextActive]}>{f}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
                         </View>
+                    )}
 
-                        <View style={[styles.inputGroup, { flex: 1 }]}>
-                            <Text style={styles.label}>Cargo Capacity (Tons)</Text>
-                            <TextInput
-                                style={styles.input}
-                                placeholder="10"
-                                value={formData.cargoCapacity}
-                                onChangeText={(value) => handleInputChange('cargoCapacity', value)}
-                                keyboardType="numeric"
-                                placeholderTextColor="#94a3b8"
-                            />
-                        </View>
-                    </View>
+                    {/* ==================== STEP 4: Routes & Schedule ==================== */}
+                    {currentStep === 4 && (
+                        <View style={styles.step}>
+                            <Text style={styles.sectionTitle}>Fixed Routes (Optional)</Text>
+                            <Text style={styles.subtitle}>Great for regular trips like Mbabane → Manzini</Text>
 
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Description *</Text>
-                        <TextInput
-                            style={[styles.input, styles.textArea, errors.description && styles.inputError]}
-                            placeholder="Describe the vehicle..."
-                            value={formData.description}
-                            onChangeText={(value) => handleInputChange('description', value)}
-                            multiline
-                            numberOfLines={4}
-                            placeholderTextColor="#94a3b8"
-                        />
-                        {errors.description && <Text style={styles.errorText}>{errors.description}</Text>}
-                    </View>
-                </View>
+                            <View style={styles.routeForm}>
+                                <View style={styles.row}>
+                                    <TextInput style={[styles.input, { flex: 1 }]} placeholder="Origin (e.g. Mbabane)" value={currentRoute.origin}
+                                        onChangeText={t => setCurrentRoute(p => ({ ...p, origin: t }))} />
+                                    <TextInput style={[styles.input, { flex: 1, marginLeft: 12 }]} placeholder="Destination (e.g. Johannesburg)"
+                                        value={currentRoute.destination} onChangeText={t => setCurrentRoute(p => ({ ...p, destination: t }))} />
+                                </View>
+                                <View style={styles.row}>
+                                    <TextInput style={[styles.input, { flex: 1 }]} placeholder="Distance (e.g. 350 km)" value={currentRoute.distance}
+                                        onChangeText={t => setCurrentRoute(p => ({ ...p, distance: t }))} />
+                                    <TextInput style={[styles.input, { flex: 1, marginLeft: 12 }]} placeholder="Duration (4-5 hrs)"
+                                        value={currentRoute.duration} onChangeText={t => setCurrentRoute(p => ({ ...p, duration: t }))} />
+                                </View>
+                                <TextInput style={styles.input} placeholder="Price for this route (optional)" value={currentRoute.price}
+                                    onChangeText={t => setCurrentRoute(p => ({ ...p, price: t }))} keyboardType="numeric" />
 
-                {/* Operating Schedule */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Operating Schedule</Text>
-
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Operating Days *</Text>
-                        <View style={styles.daysContainer}>
-                            {daysOfWeek.map((day) => (
-                                <TouchableOpacity
-                                    key={day}
-                                    style={[styles.dayChip, operatingDays.includes(day) && styles.dayChipActive]}
-                                    onPress={() => toggleDay(day)}
-                                >
-                                    <Text style={[styles.dayText, operatingDays.includes(day) && styles.dayTextActive]}>
-                                        {day.substring(0, 3)}
-                                    </Text>
+                                <TouchableOpacity style={styles.addBtn} onPress={addRoute}>
+                                    <Ionicons name="add-circle" size={22} color="#fff" />
+                                    <Text style={styles.addBtnText}>Add Route</Text>
                                 </TouchableOpacity>
+                            </View>
+
+                            {formData.routes.map((route, i) => (
+                                <View key={i} style={styles.routeCard}>
+                                    <View>
+                                        <Text style={styles.routeMain}>{route.origin} → {route.destination}</Text>
+                                        <Text style={styles.routeSub}>{route.distance} • {route.duration} {route.price ? `• E${route.price}` : ''}</Text>
+                                    </View>
+                                    <TouchableOpacity onPress={() => removeRoute(i)}>
+                                        <Ionicons name="trash-outline" size={22} color="#ef4444" />
+                                    </TouchableOpacity>
+                                </View>
                             ))}
-                        </View>
-                        {errors.operatingDays && <Text style={styles.errorText}>{errors.operatingDays}</Text>}
-                    </View>
 
-                    <View style={styles.detailsRow}>
-                        <View style={[styles.inputGroup, { flex: 1 }]}>
-                            <Text style={styles.label}>Start Time</Text>
+                            {/* Certifications */}
+                            <Text style={[styles.sectionTitle, { marginTop: 32 }]}>Certifications & Safety</Text>
+                            <Text style={styles.subtitle}>Boost trust — show customers you're verified</Text>
+
+                            <View style={styles.certificationGrid}>
+                                {[
+                                    { key: 'insurance', label: 'Fully Insured', icon: 'shield-checkmark' },
+                                    { key: 'license', label: 'Licensed Operator', icon: 'card' },
+                                    { key: 'borderCrossing', label: 'Cross-Border Permitted', icon: 'globe' },
+                                ].map(item => (
+                                    <TouchableOpacity
+                                        key={item.key}
+                                        style={[
+                                            styles.certBox,
+                                            formData.certifications[item.key] && styles.certBoxActive
+                                        ]}
+                                        onPress={() => updateForm('certifications', {
+                                            ...formData.certifications,
+                                            [item.key]: !formData.certifications[item.key]
+                                        })}
+                                    >
+                                        <Ionicons
+                                            name={formData.certifications[item.key] ? 'checkmark-circle' : 'ellipse-outline'}
+                                            size={28}
+                                            color={formData.certifications[item.key] ? '#10b981' : '#94a3b8'}
+                                        />
+                                        <View style={{ marginLeft: 12 }}>
+                                            <Text style={[
+                                                styles.certLabel,
+                                                formData.certifications[item.key] && styles.certLabelActive
+                                            ]}>
+                                                {item.label}
+                                            </Text>
+                                            <Ionicons name={item.icon} size={18} color={formData.certifications[item.key] ? '#10b981' : '#64748b'} />
+                                        </View>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        </View>
+                    )}
+
+                    {/* ==================== STEP 4: Location & Contact ==================== */}
+                    {currentStep === 5 && (
+                        <View style={styles.step}>
+                            <Text style={styles.label}>Region *</Text>
+                            <View style={styles.chipsRow}>
+                                {mockAreas.map(area => (
+                                    <TouchableOpacity
+                                        key={area}
+                                        style={[styles.chip, formData.location.area === area && styles.chipActive]}
+                                        onPress={() => updateForm('location', { ...formData.location, area })}
+                                    >
+                                        <Text style={[styles.chipText, formData.location.area === area && styles.chipTextActive]}>{area}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                            {errors.locationArea && <Text style={styles.error}>{errors.locationArea}</Text>}
+
+                            <Text style={styles.label}>City</Text>
+                            <View style={styles.chipsRow}>
+                                {cities.map(city => (
+                                    <TouchableOpacity
+                                        key={city}
+                                        style={[styles.chip, formData.location.city === city && styles.chipActive]}
+                                        onPress={() => updateForm('location', { ...formData.location, city })}
+                                    >
+                                        <Text style={[styles.chipText, formData.location.city === city && styles.chipTextActive]}>{city}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+
+                            <Text style={styles.label}>Full Address (Optional)</Text>
                             <TextInput
                                 style={styles.input}
-                                placeholder="08:00"
-                                value={formData.operatingStart}
-                                onChangeText={(value) => handleInputChange('operatingStart', value)}
-                                placeholderTextColor="#94a3b8"
+                                placeholder="123 Main St, Mbabane"
+                                value={formData.location.address}
+                                onChangeText={v => updateForm('location', { ...formData.location, address: v })}
                             />
-                        </View>
 
-                        <View style={[styles.inputGroup, { flex: 1 }]}>
-                            <Text style={styles.label}>End Time</Text>
-                            <TextInput
-                                style={styles.input}
-                                placeholder="18:00"
-                                value={formData.operatingEnd}
-                                onChangeText={(value) => handleInputChange('operatingEnd', value)}
-                                placeholderTextColor="#94a3b8"
-                            />
-                        </View>
-                    </View>
-                </View>
+                            <Text style={styles.sectionTitle}>Your Contact Info</Text>
+                            <TextInput style={[styles.input, errors.ownerName && styles.inputError]} placeholder="Name or Company *" value={formData.ownerInfo.name} onChangeText={v => updateForm('ownerInfo', { ...formData.ownerInfo, name: v })} />
+                            {errors.ownerName && <Text style={styles.error}>{errors.ownerName}</Text>}
 
-                {/* Routes (Optional) */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Routes (Optional)</Text>
-                    <View style={styles.routeForm}>
-                        <View style={styles.detailsRow}>
-                            <View style={[styles.inputGroup, { flex: 1 }]}>
-                                <Text style={styles.label}>Origin</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="Mbabane"
-                                    value={currentRoute.origin}
-                                    onChangeText={(value) => setCurrentRoute(prev => ({ ...prev, origin: value }))}
-                                    placeholderTextColor="#94a3b8"
-                                />
-                            </View>
-                            <View style={[styles.inputGroup, { flex: 1 }]}>
-                                <Text style={styles.label}>Destination</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="Johannesburg"
-                                    value={currentRoute.destination}
-                                    onChangeText={(value) => setCurrentRoute(prev => ({ ...prev, destination: value }))}
-                                    placeholderTextColor="#94a3b8"
-                                />
-                            </View>
+                            <TextInput style={[styles.input, errors.ownerPhone && styles.inputError]} placeholder="Phone Number *" value={formData.ownerInfo.phone} keyboardType="phone-pad" onChangeText={v => updateForm('ownerInfo', { ...formData.ownerInfo, phone: v })} />
+                            {errors.ownerPhone && <Text style={styles.error}>{errors.ownerPhone}</Text>}
+
+                            <TextInput style={[styles.input, errors.ownerEmail && styles.inputError]} placeholder="Email Address *" value={formData.ownerInfo.email} keyboardType="email-address" autoCapitalize="none" onChangeText={v => updateForm('ownerInfo', { ...formData.ownerInfo, email: v })} />
+                            {errors.ownerEmail && <Text style={styles.error}>{errors.ownerEmail}</Text>}
+
+                            <TextInput style={styles.input} placeholder="WhatsApp (Optional)" value={formData.ownerInfo.whatsapp} keyboardType="phone-pad" onChangeText={v => updateForm('ownerInfo', { ...formData.ownerInfo, whatsapp: v })} />
                         </View>
-                        <View style={styles.detailsRow}>
-                            <View style={[styles.inputGroup, { flex: 1 }]}>
-                                <Text style={styles.label}>Distance</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="350 km"
-                                    value={currentRoute.distance}
-                                    onChangeText={(value) => setCurrentRoute(prev => ({ ...prev, distance: value }))}
-                                    placeholderTextColor="#94a3b8"
-                                />
+                    )}
+
+                    {/* ==================== STEP 5: Review & Post ==================== */}
+                    {currentStep === 6 && (
+                        <View style={styles.step}>
+                            <Text style={styles.reviewTitle}>Review Your Listing</Text>
+                            <View style={styles.reviewCard}>
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
+                                    {formData.images.map((uri, i) => (
+                                        <Image key={i} source={{ uri }} style={styles.reviewImage} />
+                                    ))}
+                                </ScrollView>
+
+                                <Text style={styles.reviewText}><Text style={styles.bold}>Type:</Text> {formData.type?.toUpperCase()} • {formData.category.replace('_', ' ')}</Text>
+                                <Text style={styles.reviewText}><Text style={styles.bold}>Vehicle:</Text> {formData.make} {formData.model} ({formData.year})</Text>
+                                <Text style={styles.reviewText}><Text style={styles.bold}>Price:</Text> E {formData.price} {formData.priceType.replace('_', '/')}</Text>
+                                <Text style={styles.reviewText}><Text style={styles.bold}>Location:</Text> {formData.location.area}, {formData.location.city || 'Eswatini'}</Text>
+                                <Text style={styles.reviewText}><Text style={styles.bold}>Contact:</Text> {formData.ownerInfo.name} • {formData.ownerInfo.phone}</Text>
                             </View>
-                            <View style={[styles.inputGroup, { flex: 1 }]}>
-                                <Text style={styles.label}>Duration</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    placeholder="4-5 hours"
-                                    value={currentRoute.duration}
-                                    onChangeText={(value) => setCurrentRoute(prev => ({ ...prev, duration: value }))}
-                                    placeholderTextColor="#94a3b8"
-                                />
-                            </View>
-                        </View>
-                        <TouchableOpacity style={styles.addRouteButton} onPress={addRoute}>
-                            <Ionicons name="add-circle" size={20} color="#2563eb" />
-                            <Text style={styles.addRouteButtonText}>Add Route</Text>
-                        </TouchableOpacity>
-                    </View>
-                    {routes.map((route, index) => (
-                        <View key={index} style={styles.routeItem}>
-                            <View style={styles.routeItemContent}>
-                                <Text style={styles.routeItemText}>{route.origin} → {route.destination}</Text>
-                                <Text style={styles.routeItemSubtext}>{route.distance} • {route.duration}</Text>
-                            </View>
-                            <TouchableOpacity onPress={() => removeRoute(index)}>
-                                <Ionicons name="close-circle" size={20} color="#ef4444" />
+
+                            <TouchableOpacity style={styles.finalSubmitBtn} onPress={handleSubmit} disabled={isSubmiting}>
+                                <Text style={styles.finalSubmitText}>Post Vehicle Now</Text>
+                                {isSubmiting ?
+                                    <ActivityIndicator color={theme.colors.indicator} size={22} /> :
+                                    <Ionicons name="send" size={22} color="#fff" />
+                                }
                             </TouchableOpacity>
                         </View>
-                    ))}
-                </View>
+                    )}
+                </ScrollView>
 
-                {/* Features */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Features</Text>
-                    <View style={styles.featuresContainer}>
-                        {commonFeatures.map((feature) => (
-                            <TouchableOpacity
-                                key={feature}
-                                style={[styles.featureChip, features.includes(feature) && styles.featureChipActive]}
-                                onPress={() => toggleFeature(feature)}
-                            >
-                                <Text style={[styles.featureText, features.includes(feature) && styles.featureTextActive]}>
-                                    {feature}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
-                    </View>
-                    <View style={styles.addFeatureContainer}>
-                        <TextInput
-                            style={styles.addFeatureInput}
-                            placeholder="Add custom feature..."
-                            value={currentFeature}
-                            onChangeText={setCurrentFeature}
-                            placeholderTextColor="#94a3b8"
-                        />
-                        <TouchableOpacity style={styles.addFeatureButton} onPress={addCustomFeature}>
-                            <Ionicons name="add-circle" size={24} color="#2563eb" />
+                {/* Bottom Navigation Buttons */}
+                {currentStep < 6 ? (
+                    <View style={styles.footer}>
+                        <TouchableOpacity style={styles.backBtn} onPress={goBack}>
+                            <Text style={styles.backText}>Back</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.nextBtn} onPress={goNext}>
+                            <Text style={styles.nextText}>Next</Text>
+                            <Ionicons name="arrow-forward" size={20} color="#fff" />
                         </TouchableOpacity>
                     </View>
-                </View>
-
-                {/* Location */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Location</Text>
-
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Area *</Text>
-                        <View style={styles.locationContainer}>
-                            {mockAreas.map((area) => (
-                                <TouchableOpacity
-                                    key={area}
-                                    style={[styles.locationChip, location.area === area && styles.locationChipActive]}
-                                    onPress={() => setLocation(prev => ({ ...prev, area }))}
-                                >
-                                    <Text style={[styles.locationText, location.area === area && styles.locationTextActive]}>
-                                        {area}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
-                        {errors.locationArea && <Text style={styles.errorText}>{errors.locationArea}</Text>}
-                    </View>
-
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.label}>City</Text>
-                        <View style={styles.locationContainer}>
-                            {cities.map((city) => (
-                                <TouchableOpacity
-                                    key={city}
-                                    style={[styles.locationChip, location.city === city && styles.locationChipActive]}
-                                    onPress={() => setLocation(prev => ({ ...prev, city }))}
-                                >
-                                    <Text style={[styles.locationText, location.city === city && styles.locationTextActive]}>
-                                        {city}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
-                    </View>
-
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Address</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Street address"
-                            value={location.address}
-                            onChangeText={(value) => setLocation(prev => ({ ...prev, address: value }))}
-                            placeholderTextColor="#94a3b8"
-                        />
-                    </View>
-                </View>
-
-                {/* Certifications */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Certifications</Text>
-                    <View style={styles.certificationRow}>
-                        <TouchableOpacity
-                            style={[styles.certificationChip, certifications.insurance && styles.certificationChipActive]}
-                            onPress={() => setCertifications(prev => ({ ...prev, insurance: !prev.insurance }))}
-                        >
-                            <Ionicons name={certifications.insurance ? 'checkmark-circle' : 'ellipse-outline'} size={20} color={certifications.insurance ? '#10b981' : '#64748b'} />
-                            <Text style={[styles.certificationText, certifications.insurance && styles.certificationTextActive]}>
-                                Fully Insured
-                            </Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={[styles.certificationChip, certifications.license && styles.certificationChipActive]}
-                            onPress={() => setCertifications(prev => ({ ...prev, license: !prev.license }))}
-                        >
-                            <Ionicons name={certifications.license ? 'checkmark-circle' : 'ellipse-outline'} size={20} color={certifications.license ? '#10b981' : '#64748b'} />
-                            <Text style={[styles.certificationText, certifications.license && styles.certificationTextActive]}>
-                                Licensed
-                            </Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                            style={[styles.certificationChip, certifications.borderCrossing && styles.certificationChipActive]}
-                            onPress={() => setCertifications(prev => ({ ...prev, borderCrossing: !prev.borderCrossing }))}
-                        >
-                            <Ionicons name={certifications.borderCrossing ? 'checkmark-circle' : 'ellipse-outline'} size={20} color={certifications.borderCrossing ? '#10b981' : '#64748b'} />
-                            <Text style={[styles.certificationText, certifications.borderCrossing && styles.certificationTextActive]}>
-                                Border Crossing
-                            </Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-
-                {/* Owner Information */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Your Contact Information</Text>
-
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Name *</Text>
-                        <TextInput
-                            style={[styles.input, errors.ownerName && styles.inputError]}
-                            placeholder="Your name or company name"
-                            value={ownerInfo.name}
-                            onChangeText={(value) => setOwnerInfo(prev => ({ ...prev, name: value }))}
-                            placeholderTextColor="#94a3b8"
-                        />
-                        {errors.ownerName && <Text style={styles.errorText}>{errors.ownerName}</Text>}
-                    </View>
-
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Phone *</Text>
-                        <TextInput
-                            style={[styles.input, errors.ownerPhone && styles.inputError]}
-                            placeholder="+268 2404 1234"
-                            value={ownerInfo.phone}
-                            onChangeText={(value) => setOwnerInfo(prev => ({ ...prev, phone: value }))}
-                            keyboardType="phone-pad"
-                            placeholderTextColor="#94a3b8"
-                        />
-                        {errors.ownerPhone && <Text style={styles.errorText}>{errors.ownerPhone}</Text>}
-                    </View>
-
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Email *</Text>
-                        <TextInput
-                            style={[styles.input, errors.ownerEmail && styles.inputError]}
-                            placeholder="your.email@example.com"
-                            value={ownerInfo.email}
-                            onChangeText={(value) => setOwnerInfo(prev => ({ ...prev, email: value }))}
-                            keyboardType="email-address"
-                            autoCapitalize="none"
-                            placeholderTextColor="#94a3b8"
-                        />
-                        {errors.ownerEmail && <Text style={styles.errorText}>{errors.ownerEmail}</Text>}
-                    </View>
-
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.label}>WhatsApp</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="+268 2404 1234"
-                            value={ownerInfo.whatsapp}
-                            onChangeText={(value) => setOwnerInfo(prev => ({ ...prev, whatsapp: value }))}
-                            keyboardType="phone-pad"
-                            placeholderTextColor="#94a3b8"
-                        />
-                    </View>
-                </View>
-
-                <View style={styles.bottomPadding} />
-            </ScrollView>
-
-            {/* Submit Button */}
-            <View style={styles.footer}>
-                <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-                    <Text style={styles.submitButtonText}>Post Vehicle</Text>
-                    <Ionicons name="checkmark-circle" size={20} color="#fff" />
-                </TouchableOpacity>
+                ) : null}
             </View>
-        </View>
+        </KeyboardAvoidingView>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#f8fafc',
-        paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
-    },
-    scrollView: {
-        flex: 1,
-    },
-    section: {
-        backgroundColor: '#fff',
-        marginHorizontal: 10,
-        marginTop: 20,
-        padding: 20,
-        borderRadius: 16,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 2,
-    },
-    sectionTitle: {
-        fontSize: 18,
-        fontWeight: '700',
-        color: '#000',
-        marginBottom: 16,
-    },
-    imagesContainer: {
+    container: { flex: 1, backgroundColor: '#fff' },
+    progressContainer: { paddingHorizontal: 20, paddingTop: 16 },
+    progressBar: { height: 6, backgroundColor: '#e2e8f0', borderRadius: 3, overflow: 'hidden' },
+    progressFill: { height: '100%', backgroundColor: '#2563eb', borderRadius: 3 },
+    progressText: { textAlign: 'center', marginTop: 8, color: '#64748b', fontSize: 13 },
+    stepTitle: { fontSize: 22, fontWeight: '800', textAlign: 'center', marginVertical: 12, color: '#1e293b' },
+    scrollContent: { paddingHorizontal: 20, paddingBottom: 10 },
+    step: { flex: 1 },
+
+    sectionTitle: { fontSize: 17, fontWeight: '700', marginVertical: 16, color: '#1e293b' },
+    label: { fontSize: 15, fontWeight: '600', color: '#475569', marginTop: 12, marginBottom: 8 },
+    input: { backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 12, padding: 14, fontSize: 16, marginVertical: 5 },
+    inputError: { borderColor: '#ef4444' },
+    textArea: { height: 120, textAlignVertical: 'top' },
+    error: { color: '#ef4444', fontSize: 13, marginTop: 6 },
+
+    row: { flexDirection: 'row', gap: 6, marginBottom: 12 },
+    half: { flex: 1 },
+
+    chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 12 },
+    chip: { paddingHorizontal: 16, paddingVertical: 10, backgroundColor: '#f1f5f9', borderRadius: 30, borderWidth: 1, borderColor: '#e2e8f0' },
+    chipActive: { backgroundColor: '#2563eb', borderColor: '#2563eb' },
+    chipText: { fontSize: 14, fontWeight: '600', color: '#475569' },
+    chipTextActive: { color: '#fff' },
+    smallChip: { paddingHorizontal: 12, paddingVertical: 6 },
+    smallChipText: { fontSize: 12 },
+
+    featuresGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 8 },
+    featureChip: { paddingHorizontal: 14, paddingVertical: 8, backgroundColor: '#f8fafc', borderRadius: 20, borderWidth: 1, borderColor: '#e2e8f0' },
+    featureActive: { backgroundColor: '#eff6ff', borderColor: '#2563eb' },
+    featureTextActive: { color: '#2563eb', fontWeight: '600' },
+
+    imageWrapper: { position: 'relative', marginRight: 12, paddingTop: 10 },
+    previewImage: { width: 140, height: 140, borderRadius: 16 },
+    removeBtn: { position: 'absolute', top: -3, right: -5 },
+    addImageBtn: { marginTop: 10, width: 140, height: 140, backgroundColor: '#f8fafc', borderRadius: 16, borderWidth: 2, borderColor: '#e2e8f0', borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center' },
+    addImageText: { marginTop: 8, color: '#64748b', fontSize: 13 },
+
+    reviewTitle: { fontSize: 20, fontWeight: '700', textAlign: 'center', marginBottom: 20 },
+    reviewCard: { backgroundColor: '#f8fafc', padding: 20, borderRadius: 20, marginBottom: 20 },
+    reviewImage: { width: 100, height: 100, borderRadius: 12, marginRight: 10 },
+    reviewText: { fontSize: 15, marginVertical: 4, color: '#1e293b' },
+    bold: { fontWeight: '700' },
+
+    subtitle: { fontSize: 13, color: '#64748b', marginTop: 4 },
+    routeForm: { backgroundColor: '#f8fafc', padding: 16, borderRadius: 16, marginVertical: 16 },
+    addBtn: {
         flexDirection: 'row',
-        gap: 12,
-    },
-    imageWrapper: {
-        position: 'relative',
-    },
-    previewImage: {
-        width: 120,
-        height: 120,
-        borderRadius: 12,
-    },
-    removeImageButton: {
-        position: 'absolute',
-        top: -8,
-        right: -8,
-    },
-    addImageButton: {
-        width: 120,
-        height: 120,
-        borderRadius: 12,
-        backgroundColor: '#f1f5f9',
-        borderWidth: 2,
-        borderColor: '#e2e8f0',
-        borderStyle: 'dashed',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 8,
-    },
-    addImageText: {
-        fontSize: 12,
-        color: '#64748b',
-    },
-    inputGroup: {
-        marginBottom: 20,
-    },
-    label: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#334155',
-        marginBottom: 8,
-    },
-    input: {
-        backgroundColor: '#f8fafc',
-        borderWidth: 1,
-        borderColor: '#e2e8f0',
-        borderRadius: 10,
+        backgroundColor: '#2563eb',
         padding: 14,
-        fontSize: 15,
-        color: '#000',
-    },
-    inputError: {
-        borderColor: '#ef4444',
-    },
-    textArea: {
-        minHeight: 100,
-        textAlignVertical: 'top',
-    },
-    errorText: {
-        marginTop: 4,
-        fontSize: 12,
-        color: '#ef4444',
-    },
-    typeContainer: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 8,
-    },
-    typeChip: {
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        borderRadius: 20,
-        backgroundColor: '#f1f5f9',
-        borderWidth: 1,
-        borderColor: '#e2e8f0',
-    },
-    typeChipActive: {
-        backgroundColor: '#2563eb',
-        borderColor: '#2563eb',
-    },
-    typeText: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#475569',
-    },
-    typeTextActive: {
-        color: '#fff',
-    },
-    categoryContainer: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 8,
-    },
-    categoryChip: {
-        paddingHorizontal: 14,
-        paddingVertical: 8,
-        borderRadius: 20,
-        backgroundColor: '#f1f5f9',
-        borderWidth: 1,
-        borderColor: '#e2e8f0',
-    },
-    categoryChipActive: {
-        backgroundColor: '#2563eb',
-        borderColor: '#2563eb',
-    },
-    categoryText: {
-        fontSize: 12,
-        fontWeight: '600',
-        color: '#475569',
-    },
-    categoryTextActive: {
-        color: '#fff',
-    },
-    detailsRow: {
-        flexDirection: 'row',
-        gap: 6,
-    },
-    priceTypeContainer: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 8,
-    },
-    priceTypeChip: {
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderRadius: 20,
-        backgroundColor: '#f1f5f9',
-        borderWidth: 1,
-        borderColor: '#e2e8f0',
-    },
-    priceTypeChipActive: {
-        backgroundColor: '#2563eb',
-        borderColor: '#2563eb',
-    },
-    priceTypeText: {
-        fontSize: 12,
-        fontWeight: '600',
-        color: '#475569',
-    },
-    priceTypeTextActive: {
-        color: '#fff',
-    },
-    daysContainer: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 8,
-    },
-    dayChip: {
-        paddingHorizontal: 14,
-        paddingVertical: 8,
-        borderRadius: 20,
-        backgroundColor: '#f1f5f9',
-        borderWidth: 1,
-        borderColor: '#e2e8f0',
-    },
-    dayChipActive: {
-        backgroundColor: '#2563eb',
-        borderColor: '#2563eb',
-    },
-    dayText: {
-        fontSize: 12,
-        fontWeight: '600',
-        color: '#475569',
-    },
-    dayTextActive: {
-        color: '#fff',
-    },
-    routeForm: {
-        marginBottom: 12,
-    },
-    addRouteButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
+        borderRadius: 12,
         justifyContent: 'center',
-        backgroundColor: '#eff6ff',
-        padding: 12,
-        borderRadius: 10,
-        gap: 6,
-        marginTop: 8,
+        alignItems: 'center',
+        gap: 8,
+        marginTop: 12,
     },
-    addRouteButtonText: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#2563eb',
-    },
-    routeItem: {
+    addBtnText: { color: '#fff', fontWeight: '600', fontSize: 15 },
+    routeCard: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        backgroundColor: '#f8fafc',
-        padding: 12,
-        borderRadius: 8,
-        marginBottom: 8,
-    },
-    routeItemContent: {
-        flex: 1,
-    },
-    routeItemText: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#000',
-        marginBottom: 2,
-    },
-    routeItemSubtext: {
-        fontSize: 12,
-        color: '#64748b',
-    },
-    featuresContainer: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 8,
-        marginBottom: 12,
-    },
-    featureChip: {
-        paddingHorizontal: 14,
-        paddingVertical: 8,
-        borderRadius: 20,
-        backgroundColor: '#f1f5f9',
+        backgroundColor: '#fff',
+        padding: 16,
+        borderRadius: 12,
+        marginBottom: 10,
         borderWidth: 1,
         borderColor: '#e2e8f0',
     },
-    featureChipActive: {
-        backgroundColor: '#eff6ff',
-        borderColor: '#2563eb',
+    routeMain: { fontSize: 16, fontWeight: '700', color: '#1e293b' },
+    routeSub: { fontSize: 13, color: '#64748b', marginTop: 4 },
+
+    certificationGrid: {
+        gap: 16,
+        marginVertical: 16,
     },
-    featureText: {
-        fontSize: 13,
-        fontWeight: '600',
-        color: '#475569',
-    },
-    featureTextActive: {
-        color: '#2563eb',
-    },
-    addFeatureContainer: {
-        flexDirection: 'row',
-        gap: 8,
-    },
-    addFeatureInput: {
-        flex: 1,
-        backgroundColor: '#f8fafc',
-        borderWidth: 1,
-        borderColor: '#e2e8f0',
-        borderRadius: 10,
-        padding: 12,
-        fontSize: 14,
-        color: '#000',
-    },
-    addFeatureButton: {
-        padding: 8,
-    },
-    locationContainer: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 8,
-    },
-    locationChip: {
-        paddingHorizontal: 14,
-        paddingVertical: 8,
-        borderRadius: 20,
-        backgroundColor: '#f1f5f9',
-        borderWidth: 1,
-        borderColor: '#e2e8f0',
-    },
-    locationChipActive: {
-        backgroundColor: '#2563eb',
-        borderColor: '#2563eb',
-    },
-    locationText: {
-        fontSize: 13,
-        fontWeight: '600',
-        color: '#475569',
-    },
-    locationTextActive: {
-        color: '#fff',
-    },
-    certificationRow: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 12,
-    },
-    certificationChip: {
+    certBox: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingHorizontal: 12,
-        paddingVertical: 10,
-        borderRadius: 10,
+        padding: 18,
         backgroundColor: '#f8fafc',
-        borderWidth: 1,
+        borderRadius: 16,
+        borderWidth: 1.5,
         borderColor: '#e2e8f0',
-        gap: 8,
     },
-    certificationChipActive: {
+    certBoxActive: {
         backgroundColor: '#f0fdf4',
         borderColor: '#10b981',
     },
-    certificationText: {
-        fontSize: 13,
+    certLabel: {
+        fontSize: 15,
         fontWeight: '600',
         color: '#475569',
     },
-    certificationTextActive: {
+    certLabelActive: {
         color: '#10b981',
-    },
-    footer: {
-        padding: 10,
-        backgroundColor: '#fff',
-        borderTopWidth: 1,
-        borderTopColor: '#e2e8f0',
-        marginBottom: 40,
-    },
-    submitButton: {
-        backgroundColor: '#2563eb',
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 16,
-        borderRadius: 12,
-        gap: 8,
-    },
-    submitButtonText: {
-        color: '#fff',
-        fontSize: 16,
         fontWeight: '700',
     },
-    bottomPadding: {
-        height: 20,
+    emptyText: {
+        textAlign: 'center',
+        color: '#64748b',
+        fontStyle: 'italic',
+        marginTop: 20,
+        fontSize: 14,
     },
+
+    footer: { flexDirection: 'row', gap: 10, paddingHorizontal: 16, paddingVertical: 10, backgroundColor: '#fff', borderTopWidth: 1, borderColor: '#e2e8f0', marginBottom: 40 },
+    backBtn: { flex: 1, padding: 16, backgroundColor: '#f1f5f9', borderRadius: 12, alignItems: 'center' },
+    backText: { color: '#64748b', fontWeight: '600' },
+    nextBtn: { flex: 1, flexDirection: 'row', backgroundColor: '#2563eb', padding: 16, borderRadius: 12, justifyContent: 'center', alignItems: 'center', gap: 8 },
+    nextText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+    finalSubmitBtn: { backgroundColor: '#10b981', flexDirection: 'row', padding: 18, borderRadius: 16, justifyContent: 'center', alignItems: 'center', gap: 10 },
+    finalSubmitText: { color: '#fff', fontSize: 17, fontWeight: '800' },
 });

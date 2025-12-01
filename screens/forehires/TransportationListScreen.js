@@ -19,115 +19,108 @@ import {
     BottomSheetView,
     BottomSheetBackdrop,
 } from '@gorhom/bottom-sheet';
+import { AppContext } from "../../context/appContext"
 import CustomLoader from '../../components/customLoader';
 import SecondaryNav from '../../components/SecondaryNav';
 import { mockTransportationVehicles } from '../../utils/mockData';
 
 // ──────────────────────────────────────────────────────────────
-// Haversine distance
+// Haversine Distance Calculator
 // ──────────────────────────────────────────────────────────────
 const calculateDistance = (lat1, lon1, lat2, lon2) => {
     const R = 6371;
     const dLat = (lat2 - lat1) * Math.PI / 180;
     const dLon = (lon2 - lon1) * Math.PI / 180;
     const a =
-        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-        Math.cos(lat1 * Math.PI / 180) *
-        Math.cos(lat2 * Math.PI / 180) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
 };
 
+// ────── Reusable Active Filter Chip (with clear button) ──────
+const ActiveFilterChip = ({ label, onClear }) => (
+    <View style={styles.activeFilterChip}>
+        <Text style={styles.activeFilterText}>{label}</Text>
+        <TouchableOpacity onPress={onClear} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Ionicons name="close-circle" size={18} color="#64748b" />
+        </TouchableOpacity>
+    </View>
+);
+
+// ────── Comment Bottom Sheet ──────
 const CommentBottomSheet = React.forwardRef(
-    (
-        {
-            vehicleId,
-            commentText,
-            setCommentText,
-            suggestion,
-            setSuggestion,
-            onSubmit,
-            onDismiss,
-            renderBackdrop,
-        },
-        ref
-    ) => {
-        return (
-            <BottomSheetModal
-                ref={ref}
-                index={0}
-                snapPoints={['60%', '80%', '90%']}
-                backdropComponent={renderBackdrop}
-                onDismiss={onDismiss}
-                keyboardBehavior="extend"
-                android_keyboardInputMode="adjustResize"
-                enablePanDownToClose
-            >
-                <BottomSheetView style={sheetStyles.content}>
-                    <Text style={sheetStyles.title}>Write a Review</Text>
-
-                    {/* Comment input */}
-                    <TextInput
-                        style={[sheetStyles.input, { minHeight: 50 }]}
-                        placeholder="Share your experience..."
-                        value={commentText}
-                        onChangeText={setCommentText}
-                        multiline
-                        autoFocus
-                    />
-
-                    {/* suggestion input */}
-                    <TextInput
-                        style={[sheetStyles.input, { minHeight: 100 }]}
-                        placeholder="We value your suggestion..."
-                        value={suggestion}
-                        onChangeText={setSuggestion}
-                        multiline
-                        autoFocus
-                    />
-
-                    {/* Submit */}
-                    <TouchableOpacity style={sheetStyles.submitBtn} onPress={onSubmit}>
-                        <Text style={sheetStyles.submitTxt}>Submit Review</Text>
-                    </TouchableOpacity>
-                </BottomSheetView>
-            </BottomSheetModal>
-        );
-    }
+    ({ vehicleId, commentText, setCommentText, suggestion, setSuggestion, onSubmit, onDismiss, renderBackdrop }, ref) => (
+        <BottomSheetModal
+            ref={ref}
+            index={0}
+            snapPoints={['65%', '85%']}
+            backdropComponent={renderBackdrop}
+            onDismiss={onDismiss}
+            enablePanDownToClose
+            keyboardBehavior="extend"
+            android_keyboardInputMode="adjustResize"
+        >
+            <BottomSheetView style={sheetStyles.container}>
+                <Text style={sheetStyles.title}>Write a Review</Text>
+                <TextInput
+                    style={sheetStyles.textArea}
+                    placeholder="Share your experience with this vehicle..."
+                    value={commentText}
+                    onChangeText={setCommentText}
+                    multiline
+                    textAlignVertical="top"
+                />
+                <TextInput
+                    style={[sheetStyles.textArea, { height: 100 }]}
+                    placeholder="Any suggestions for improvement? (Optional)"
+                    value={suggestion}
+                    onChangeText={setSuggestion}
+                    multiline
+                    textAlignVertical="top"
+                />
+                <TouchableOpacity style={sheetStyles.submitButton} onPress={onSubmit}>
+                    <Text style={sheetStyles.submitButtonText}>Submit Review</Text>
+                </TouchableOpacity>
+            </BottomSheetView>
+        </BottomSheetModal>
+    )
 );
 CommentBottomSheet.displayName = 'CommentBottomSheet';
 
-// ────── Rating Bottom Sheet (new) ──────
+// ────── Rating Bottom Sheet ──────
 const RatingBottomSheet = React.forwardRef(({ onSubmit, onDismiss, renderBackdrop }, ref) => {
-    const [value, setValue] = useState(5);
+    const [rating, setRating] = useState(5);
     return (
         <BottomSheetModal
             ref={ref}
             index={0}
-            snapPoints={['30%', '40%']}
+            snapPoints={['38%']}
             backdropComponent={renderBackdrop}
             onDismiss={onDismiss}
             enablePanDownToClose
         >
-            <BottomSheetView style={{ padding: 20, alignItems: 'center' }}>
-                <Text style={{ fontSize: 18, fontWeight: '700', marginBottom: 12 }}>Rate Vehicle</Text>
-                <View style={{ flexDirection: 'row', gap: 8, marginBottom: 16 }}>
-                    {[1, 2, 3, 4, 5].map(n => (
-                        <TouchableOpacity key={n} onPress={() => setValue(n)}>
-                            <Ionicons name={n <= value ? 'star' : 'star-outline'} size={36} color="#fbbf24" />
+            <BottomSheetView style={ratingSheetStyles.container}>
+                <Text style={ratingSheetStyles.title}>Rate This Vehicle</Text>
+                <View style={ratingSheetStyles.stars}>
+                    {[1, 2, 3, 4, 5].map((star) => (
+                        <TouchableOpacity key={star} onPress={() => setRating(star)}>
+                            <Ionicons
+                                name={star <= rating ? 'star' : 'star-outline'}
+                                size={44}
+                                color="#fbbf24"
+                            />
                         </TouchableOpacity>
                     ))}
                 </View>
                 <TouchableOpacity
+                    style={ratingSheetStyles.submitButton}
                     onPress={() => {
-                        onSubmit(value);
+                        onSubmit(rating);
                         ref.current?.close();
                     }}
-                    style={{ backgroundColor: '#2563eb', paddingVertical: 12, paddingHorizontal: 24, borderRadius: 10 }}
                 >
-                    <Text style={{ color: '#fff', fontWeight: '700' }}>Submit Rating</Text>
+                    <Text style={ratingSheetStyles.submitButtonText}>Submit Rating</Text>
                 </TouchableOpacity>
             </BottomSheetView>
         </BottomSheetModal>
@@ -136,33 +129,46 @@ const RatingBottomSheet = React.forwardRef(({ onSubmit, onDismiss, renderBackdro
 RatingBottomSheet.displayName = 'RatingBottomSheet';
 
 const sheetStyles = StyleSheet.create({
-    content: { padding: 20, flex: 1 },
-    title: { fontSize: 20, fontWeight: '700', textAlign: 'center', marginBottom: 16 },
-    starRow: { flexDirection: 'row', justifyContent: 'center', marginBottom: 20, gap: 8 },
-    starBtn: { padding: 4 },
-    input: {
-        borderWidth: 1,
+    container: { flex: 1, padding: 24 },
+    title: { fontSize: 22, fontWeight: '700', textAlign: 'center', marginBottom: 24, color: '#1e293b' },
+    textArea: {
+        borderWidth: 1.5,
         borderColor: '#e2e8f0',
-        borderRadius: 12,
-        padding: 12,
-        backgroundColor: '#f8fafc',
-        fontSize: 15,
-        textAlignVertical: 'top',
+        borderRadius: 16,
+        padding: 16,
+        backgroundColor: '#fff',
+        fontSize: 16,
         marginBottom: 16,
+        height: 120,
     },
-    submitBtn: {
+    submitButton: {
         backgroundColor: '#2563eb',
-        paddingVertical: 14,
-        borderRadius: 12,
+        paddingVertical: 16,
+        borderRadius: 16,
         alignItems: 'center',
+        marginTop: 8,
     },
-    submitTxt: { color: '#fff', fontSize: 16, fontWeight: '600' },
+    submitButtonText: { color: '#fff', fontSize: 17, fontWeight: '600' },
+});
+
+const ratingSheetStyles = StyleSheet.create({
+    container: { padding: 32, alignItems: 'center' },
+    title: { fontSize: 20, fontWeight: '700', marginBottom: 24, color: '#1e293b' },
+    stars: { flexDirection: 'row', gap: 12, marginBottom: 32 },
+    submitButton: {
+        backgroundColor: '#2563eb',
+        paddingHorizontal: 32,
+        paddingVertical: 14,
+        borderRadius: 16,
+    },
+    submitButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
 });
 
 // ──────────────────────────────────────────────────────────────
 // MAIN SCREEN
 // ──────────────────────────────────────────────────────────────
 export default function TransportationListScreen({ navigation }) {
+    const { theme, isDarkMode } = React.useContext(AppContext)
     // ────── State ──────
     const [selectedType, setSelectedType] = useState('All');
     const [sortByCategory, setSortByCategory] = useState('All');
@@ -175,356 +181,241 @@ export default function TransportationListScreen({ navigation }) {
     const [showOtherLimit, setShowOtherLimit] = useState(3);
     const [currentLocation, setCurrentLocation] = useState(null);
     const [locationStatus, setLocationStatus] = useState('idle');
-    const [isLoadingVehicles, setIsLoadingVehicles] = useState(true);
 
-    // Comments & Bottom Sheet
-    const [comments, setComments] = useState({});
-    const [commentText, setCommentText] = useState('');
-    const [commentSuggestion, setSuggestion] = useState('');
-    const [modalVehicleId, setModalVehicleId] = useState(null);
-    const bottomSheetModalRef = useRef(null);
-
-    // Rating Bottom Sheet
+    // Bottom sheets
+    const commentSheetRef = useRef(null);
     const ratingSheetRef = useRef(null);
+    const [modalVehicleId, setModalVehicleId] = useState(null);
+    const [commentText, setCommentText] = useState('');
+    const [commentSuggestion, setCommentSuggestion] = useState('');
     const [ratingVehicleId, setRatingVehicleId] = useState(null);
+    const [comments, setComments] = useState({});
 
     const NEARBY_THRESHOLD_KM = 10;
     const types = ['All', 'Minibus', 'Bus', 'Van', 'Truck', 'Lory', 'SUV', 'Sedan'];
     const categories = ['All', 'Public Transport', 'Cargo', 'Passenger', 'Luxury'];
 
-    // ────── Location ──────
+    // ────── Location Permission & Fetch ──────
     useEffect(() => {
         let mounted = true;
         (async () => {
-            try {
-                setIsLoadingVehicles(true);
-                setLocationStatus('requesting');
-                const { status } = await Location.requestForegroundPermissionsAsync();
-                if (status !== 'granted') {
-                    setLocationStatus('denied');
-                    return;
-                }
-                setLocationStatus('granted');
-                const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-                if (!mounted) return;
+            setLocationStatus('requesting');
+            const { status } = await Location.requestForegroundPermissionsAsync();
+            if (status !== 'granted') {
+                setLocationStatus('denied');
+                return;
+            }
+            setLocationStatus('granted');
+            const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+            if (mounted) {
                 setCurrentLocation({
                     latitude: pos.coords.latitude,
                     longitude: pos.coords.longitude,
                 });
-            } catch (err) {
-                console.warn('Location error', err);
-                setLocationStatus('error');
-            } finally {
-                setIsLoadingVehicles(false);
             }
         })();
         return () => { mounted = false; };
     }, []);
 
-    // ────── Vehicle Processing ──────
+    // ────── Process & Sort Vehicles ──────
     const processedVehicles = useMemo(() => {
-
         let filtered = mockTransportationVehicles.filter(vehicle => {
-            const matchesType =
-                selectedType === 'All' ||
-                (selectedType === 'Minibus' && vehicle.type === 'minibus') ||
-                (selectedType !== 'All' && vehicle.type === selectedType.toLowerCase());
+            const matchesType = selectedType === 'All' ||
+                vehicle.type.toLowerCase() === selectedType.toLowerCase() ||
+                (selectedType === 'Minibus' && vehicle.type === 'minibus');
 
-            const matchesCategory =
-                sortByCategory === 'All' ||
+            const matchesCategory = sortByCategory === 'All' ||
                 (sortByCategory === 'Public Transport' && vehicle.category === 'public_transport') ||
                 (sortByCategory === 'Cargo' && vehicle.category === 'cargo') ||
                 (sortByCategory === 'Passenger' && vehicle.category === 'passenger') ||
                 (sortByCategory === 'Luxury' && vehicle.category === 'luxury');
 
-            const matchesBorder =
-                sortByBorderCrossing === 'All' ||
+            const matchesBorder = sortByBorderCrossing === 'All' ||
                 (sortByBorderCrossing === 'Yes' && vehicle.borderCrossing) ||
                 (sortByBorderCrossing === 'No' && !vehicle.borderCrossing);
 
-            const q = searchQuery.trim().toLowerCase();
-            const matchesSearch =
-                q.length === 0 ||
+            const q = searchQuery.toLowerCase().trim();
+            const matchesSearch = !q ||
                 vehicle.title.toLowerCase().includes(q) ||
-                (vehicle.description || '').toLowerCase().includes(q) ||
-                (vehicle.make || '').toLowerCase().includes(q) ||
-                (vehicle.model || '').toLowerCase().includes(q);
+                vehicle.make?.toLowerCase().includes(q) ||
+                vehicle.model?.toLowerCase().includes(q) ||
+                vehicle.description?.toLowerCase().includes(q);
 
             return matchesType && matchesCategory && matchesBorder && matchesSearch;
         });
 
-        filtered = filtered.map(vehicle => {
-            let distance = null;
-            if (
-                currentLocation &&
-                vehicle.location?.coordinates?.latitude != null &&
-                vehicle.location?.coordinates?.longitude != null
-            ) {
-                distance = calculateDistance(
+        // Add distance
+        filtered = filtered.map(v => ({
+            ...v,
+            distance: currentLocation && v.location?.coordinates
+                ? calculateDistance(
                     currentLocation.latitude,
                     currentLocation.longitude,
-                    vehicle.location.coordinates.latitude,
-                    vehicle.location.coordinates.longitude
-                );
-            }
-            return { ...vehicle, distance };
-        });
+                    v.location.coordinates.latitude,
+                    v.location.coordinates.longitude
+                )
+                : null,
+        }));
 
+        // Primary sort: nearest first
         filtered.sort((a, b) => {
-            const aHas = a.distance !== null;
-            const bHas = b.distance !== null;
-            if (aHas && bHas) return a.distance - b.distance;
-            if (aHas && !bHas) return -1;
-            if (!aHas && bHas) return 1;
-            return 0;
+            if (a.distance === null) return 1;
+            if (b.distance === null) return -1;
+            return a.distance - b.distance;
         });
 
         return filtered;
     }, [selectedType, sortByCategory, sortByBorderCrossing, searchQuery, currentLocation]);
 
-    const nearByVehicles = useMemo(
-        () => processedVehicles.filter(v => v.distance !== null && v.distance <= NEARBY_THRESHOLD_KM),
-        [processedVehicles]
-    );
-
-    const otherVehicles = useMemo(
-        () => processedVehicles.filter(v => v.distance !== null && v.distance > NEARBY_THRESHOLD_KM),
-        [processedVehicles]
-    );
+    const nearByVehicles = useMemo(() => processedVehicles.filter(v => v.distance !== null && v.distance <= NEARBY_THRESHOLD_KM), [processedVehicles]);
+    const otherVehicles = useMemo(() => processedVehicles.filter(v => !v.distance || v.distance > NEARBY_THRESHOLD_KM), [processedVehicles]);
 
     // ────── Interactions ──────
-    const toggleLike = (vehicleId) => {
+    const toggleLike = (id) => {
         setLikedVehicles(prev => {
-            const newSet = new Set(prev);
-            newSet.has(vehicleId) ? newSet.delete(vehicleId) : newSet.add(vehicleId);
-            return newSet;
+            const copy = new Set(prev);
+            copy.has(id) ? copy.delete(id) : copy.add(id);
+            return copy;
         });
     };
 
-    // Replace handleRate with cross-platform bottom-sheet approach
-    const handleRate = useCallback((vehicleId) => {
-        setRatingVehicleId(vehicleId);
-        // present rating bottom sheet
+    const handleRate = (id) => {
+        setRatingVehicleId(id);
         ratingSheetRef.current?.present();
-    }, []);
+    };
 
-    const submitRating = useCallback((value) => {
-        if (!ratingVehicleId) return;
-        setVehicleRatings(p => ({ ...p, [ratingVehicleId]: value }));
-        Alert.alert('Thanks', 'Your rating has been saved.');
+    const submitRating = (value) => {
+        setVehicleRatings(prev => ({ ...prev, [ratingVehicleId]: value }));
+        Alert.alert('Thank You!', 'Your rating has been recorded.');
         setRatingVehicleId(null);
-    }, [ratingVehicleId]);
+    };
 
-    // ────── Comment Sheet ──────
-    const openCommentSheet = useCallback((vehicleId) => {
-        setModalVehicleId(vehicleId);
+    const openCommentSheet = (id) => {
+        setModalVehicleId(id);
         setCommentText('');
-        setSuggestion('');
-        bottomSheetModalRef.current?.present();
-    }, []);
+        setCommentSuggestion('');
+        commentSheetRef.current?.present();
+    };
 
-    const submitComment = useCallback(() => {
-        if (!modalVehicleId || !commentText.trim()) {
-            Alert.alert('Error', 'Please write a comment');
+    const submitComment = () => {
+        if (!commentText.trim()) {
+            Alert.alert('Missing Comment', 'Please write something before submitting.');
             return;
         }
         setComments(prev => ({
             ...prev,
             [modalVehicleId]: [
-                ...(prev[modalVehicleId] ?? []),
-                { comment: commentText.trim(), suggestion: commentSuggestion },
-            ],
+                ...(prev[modalVehicleId] || []),
+                { text: commentText.trim(), suggestion: commentSuggestion.trim(), date: new Date() }
+            ]
         }));
-        bottomSheetModalRef.current?.close();
-        Alert.alert('Success', 'Your review has been added!');
-    }, [modalVehicleId, commentText, commentSuggestion]);
-
-    const renderBackdrop = useCallback(
-        (props) => (
-            <BottomSheetBackdrop
-                {...props}
-                disappearsOnIndex={-1}
-                appearsOnIndex={0}
-                opacity={0.5}
-            />
-        ),
-        []
-    );
-
-    // ────── Helpers ──────
-    const getTypeLabel = (type) => {
-        const map = {
-            minibus: 'Minibus',
-            bus: 'Bus',
-            van: 'Van',
-            truck: 'Truck',
-            suv: 'SUV',
-            sedan: 'Sedan',
-        };
-        return map[type] ?? type;
+        commentSheetRef.current?.close();
+        Alert.alert('Success', 'Review submitted successfully!');
     };
 
-    const getPriceLabel = (priceType) => {
-        const map = {
-            per_trip: '/trip',
-            per_day: '/day',
-            per_hour: '/hour',
-            per_km: '/km',
-        };
-        return map[priceType] ?? '';
-    };
+    const renderBackdrop = useCallback(props => (
+        <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.5} />
+    ), []);
 
-    // ────── Render Vehicle Card ──────
+    // ────── Helper Labels ──────
+    const getTypeLabel = (type) => ({ minibus: 'Minibus', bus: 'Bus', van: 'Van', truck: 'Truck', suv: 'SUV', sedan: 'Sedan' })[type] || type;
+    const getPriceLabel = (type) => ({ per_trip: '/trip', per_day: '/day', per_hour: '/hour', per_km: '/km' })[type] || '';
+
+    // ────── RENDER VEHICLE CARD – Modern Overlay Style ──────
     const renderVehicleCard = (vehicle) => {
         const isLiked = likedVehicles.has(vehicle.id);
         const userRating = vehicleRatings[vehicle.id];
-        const displayRating = userRating || vehicle.rating || 0;
-        const displayLikes = isLiked ? (vehicle.likes || 0) + 1 : vehicle.likes || 0;
-        const vehicleComments = comments[vehicle.id] ?? [];
+        const rating = userRating || vehicle.rating || 0;
+        const likes = isLiked ? (vehicle.likes || 0) + 1 : vehicle.likes || 0;
+        const vehicleComments = comments[vehicle.id] || [];
         const latestComment = vehicleComments[vehicleComments.length - 1];
 
         return (
             <TouchableOpacity
                 key={vehicle.id}
                 style={styles.vehicleCard}
+                activeOpacity={0.92}
                 onPress={() => navigation.navigate('TransportationDetailsScreen', { vehicleId: vehicle.id })}
             >
-                <Image source={{ uri: vehicle.images[0] }} style={styles.vehicleImage} resizeMode="cover" />
-                {vehicle.borderCrossing && (
-                    <View style={styles.borderBadge}>
-                        <Ionicons name="globe-outline" size={14} color="#fff" />
-                        <Text style={styles.borderBadgeText}>Cross Border</Text>
-                    </View>
-                )}
-                <View style={styles.vehicleContent}>
-                    {/* Header */}
-                    <View style={styles.vehicleHeader}>
-                        <View style={styles.vehicleHeaderLeft}>
-                            <Text style={styles.vehicleTitle} numberOfLines={2}>
-                                {vehicle.title}
-                            </Text>
-                            <View style={styles.vehicleInfoRow}>
-                                <Text style={styles.vehicleMakeModel}>{vehicle.make} {vehicle.model}</Text>
-                                <Text style={styles.vehicleYear}>• {vehicle.year}</Text>
+                {/* Background Image */}
+                <Image source={{ uri: vehicle.images[0] }} style={styles.vehicleImage} />
+
+                {/* Overlay Content */}
+                <View style={styles.overlayContent}>
+                    {/* Top Badges */}
+                    <View style={styles.topBadges}>
+                        {vehicle.borderCrossing && (
+                            <View style={styles.borderBadge}>
+                                <Ionicons name="globe" size={13} color="#fff" />
+                                <Text style={styles.borderBadgeText}>Cross-Border</Text>
                             </View>
-                            <View style={styles.locationRow}>
-                                <Ionicons name="location-outline" size={14} color="#64748b" />
-                                <Text style={styles.vehicleLocation} numberOfLines={1}>
-                                    {vehicle.location.city || vehicle.location.area}
-                                    {vehicle.distance !== null && ` • ${vehicle.distance.toFixed(1)} km`}
-                                </Text>
-                            </View>
-                        </View>
+                        )}
                         {vehicle.owner.verified && (
-                            <View style={styles.verifiedBadge}>
-                                <Ionicons name="checkmark-circle" size={20} color="#10b981" />
-                            </View>
+                            <Ionicons name="checkmark-circle" size={20} color="#10b981" style={{ marginLeft: 8 }} />
                         )}
                     </View>
 
-                    {/* Details */}
-                    <View style={styles.vehicleDetails}>
-                        {vehicle.capacity && (
-                            <View style={styles.detailItem}>
-                                <Ionicons name="people-outline" size={16} color="#64748b" />
-                                <Text style={styles.detailText}>{vehicle.capacity} Seats</Text>
-                            </View>
-                        )}
-                        {vehicle.cargoCapacity && (
-                            <View style={styles.detailItem}>
-                                <Ionicons name="cube-outline" size={16} color="#64748b" />
-                                <Text style={styles.detailText}>{vehicle.cargoCapacity} Tons</Text>
-                            </View>
-                        )}
-                        <View style={styles.detailItem}>
-                            <Ionicons name="time-outline" size={16} color="#64748b" />
-                            <Text style={styles.detailText}>
-                                {vehicle.operatingHours.start} - {vehicle.operatingHours.end}
+                    {/* Main Info */}
+                    <View style={styles.infoContainer}>
+                        <Text style={styles.vehicleTitle} numberOfLines={1}>
+                            {vehicle.title}
+                        </Text>
+                        <Text style={styles.vehicleSubtitle} numberOfLines={1}>
+                            {vehicle.make} {vehicle.model} • {vehicle.year}
+                        </Text>
+
+                        {/* Location + Distance */}
+                        <View style={styles.locationRow}>
+                            <Ionicons name="location" size={14} color="#fff" />
+                            <Text style={styles.locationText}>
+                                {vehicle.location.city || vehicle.location.area}
+                                {vehicle.distance !== null && ` • ${vehicle.distance.toFixed(1)} km`}
                             </Text>
                         </View>
+
+                        {/* Quick Specs */}
+                        <View style={styles.specsRow}>
+                            {vehicle.capacity && (
+                                <View style={styles.specPill}>
+                                    <Text style={styles.specText}>{vehicle.capacity} seats</Text>
+                                </View>
+                            )}
+                            {vehicle.cargoCapacity && (
+                                <View style={styles.specPill}>
+                                    <Text style={styles.specText}>{vehicle.cargoCapacity}t cargo</Text>
+                                </View>
+                            )}
+                        </View>
                     </View>
 
-                    {/* Price & Type */}
-                    <View style={styles.vehicleFooter}>
-                        <View>
-                            <Text style={styles.price}>E {vehicle.price.toLocaleString()}</Text>
-                            <Text style={styles.pricePeriod}>{getPriceLabel(vehicle.priceType)}</Text>
-                        </View>
-                        <View style={styles.typeBadge}>
-                            <Text style={styles.typeBadgeText}>{getTypeLabel(vehicle.type).toUpperCase()}</Text>
-                        </View>
-                    </View>
-
-                    {/* Stats Row */}
-                    <View style={styles.vehicleStats}>
-                        <TouchableOpacity
-                            style={styles.statItem}
-                            onPress={(e) => {
-                                e.stopPropagation();
-                                toggleLike(vehicle.id);
-                            }}
-                        >
-                            <Ionicons
-                                name={isLiked ? 'heart' : 'heart-outline'}
-                                size={16}
-                                color={isLiked ? '#ef4444' : '#94a3b8'}
-                            />
-                            <Text style={[styles.statText, isLiked && styles.statTextLiked]}>
-                                {displayLikes}
-                            </Text>
+                    {/* Stats Bar */}
+                    <View style={styles.statsOverlay}>
+                        <TouchableOpacity style={styles.stat} onPress={(e) => { e.stopPropagation(); toggleLike(vehicle.id); }}>
+                            <Ionicons name={isLiked ? 'heart' : 'heart-outline'} size={19} color={isLiked ? "#ff4444" : "#fff"} />
+                            <Text style={styles.statText}>{likes}</Text>
                         </TouchableOpacity>
 
-                        <TouchableOpacity
-                            style={styles.statItem}
-                            onPress={(e) => {
-                                e.stopPropagation();
-                                handleRate(vehicle.id);
-                            }}
-                        >
-                            <Ionicons name="star" size={16} color="#fbbf24" />
-                            <Text style={styles.statText}>
-                                {displayRating.toFixed(1)} ({vehicle.totalRatings || 0})
-                            </Text>
+                        <TouchableOpacity style={styles.stat} onPress={(e) => { e.stopPropagation(); handleRate(vehicle.id); }}>
+                            <Ionicons name="star" size={19} color="#fbbf24" />
+                            <Text style={styles.statText}>{rating.toFixed(1)}</Text>
                         </TouchableOpacity>
 
-                        {/* Add Comment */}
-                        <TouchableOpacity
-                            style={styles.statItem}
-                            onPress={(e) => {
-                                e.stopPropagation();
-                                openCommentSheet(vehicle.id);
-                            }}
-                        >
-                            <Ionicons name="chatbubble-outline" size={16} color="#2563eb" />
+                        <TouchableOpacity style={styles.stat} onPress={(e) => { e.stopPropagation(); openCommentSheet(vehicle.id); }}>
+                            <Ionicons name="chatbubble" size={18} color="#fff" />
                             <Text style={styles.statText}>{vehicleComments.length}</Text>
                         </TouchableOpacity>
-
-                        {vehicle.routes.length > 0 && (
-                            <View style={styles.statItem}>
-                                <Ionicons name="map-outline" size={16} color="#94a3b8" />
-                                <Text style={styles.statText}>{vehicle.routes.length} routes</Text>
-                            </View>
-                        )}
                     </View>
+                </View>
 
-                    {/* Latest Comment Preview */}
-                    {latestComment && (
-                        <View style={styles.commentPreview}>
-                            <View style={styles.commentSuggestion}>
-                                {[...Array(5)].map((_, i) => (
-                                    <Ionicons
-                                        key={i}
-                                        name="star"
-                                        size={12}
-                                        color={i < latestComment.stars ? '#fbbf24' : '#e2e8f0'}
-                                    />
-                                ))}
-                            </View>
-                            <Text style={styles.commentText} numberOfLines={2}>
-                                "{latestComment.text}"
-                            </Text>
-                        </View>
-                    )}
+                {/* Footer Below Image */}
+                <View style={styles.cardFooter}>
+                    <View>
+                        <Text style={styles.priceText}>E {vehicle.price?.toLocaleString() || '—'}</Text>
+                        <Text style={styles.priceSubtext}>{getPriceLabel(vehicle.priceType)}</Text>
+                    </View>
+                    <View style={styles.typeBadge}>
+                        <Text style={styles.typeBadgeText}>{getTypeLabel(vehicle.type)}</Text>
+                    </View>
                 </View>
             </TouchableOpacity>
         );
@@ -533,202 +424,188 @@ export default function TransportationListScreen({ navigation }) {
     // ────── JSX ──────
     return (
         <BottomSheetModalProvider>
-            <View style={styles.container}>
-                <StatusBar barStyle="dark-content" />
+            <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+                <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
+                <View style={{ height: 20 }} />
                 <SecondaryNav
-                    title="Transport For-Hire"
+                    title="Transport For Hire"
                     rightIcon="options-outline"
-                    onRightPress={() => setShowSortOptions(!showSortOptions)}
+                    onRightPress={() => setShowSortOptions(true)}
                 />
 
-                {/* Location status hint */}
-                {locationStatus === 'requesting' && (
-                    <View style={{ paddingHorizontal: 20, marginTop: 8 }}>
-                        <Text style={{ color: '#64748b', fontSize: 13 }}>Locating you… distances will appear when ready.</Text>
-                    </View>
-                )}
-                {locationStatus === 'denied' && (
-                    <View style={{ paddingHorizontal: 20, marginTop: 8 }}>
-                        <Text style={{ color: '#ef4444', fontSize: 13 }}>Location permission denied — distances unavailable.</Text>
+                {/* Active Filters Bar – Premium & Always Visible When Filters Applied */}
+                {(sortByCategory !== 'All' || sortByBorderCrossing !== 'All') && (
+                    <View style={styles.activeFiltersBar}>
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false}
+                            contentContainerStyle={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+                        >
+                            {sortByBorderCrossing !== 'All' && (
+                                <View style={styles.activeFilterChip}>
+                                    <Ionicons name="globe-outline" size={15} color="#1e40af" />
+                                    <Text style={styles.activeFilterText}>Border: {sortByBorderCrossing}</Text>
+                                    <TouchableOpacity
+                                        onPress={() => setSortByBorderCrossing('All')}
+                                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                                    >
+                                        <Ionicons name="close-circle" size={18} color="#1e40af" />
+                                    </TouchableOpacity>
+                                </View>
+                            )}
+
+                            {/* Clear All */}
+                            <TouchableOpacity
+                                style={styles.clearAllButton}
+                                onPress={() => {
+                                    setSortByCategory('All');
+                                    setSortByBorderCrossing('All');
+                                }}
+                            >
+                                <Text style={styles.clearAllText}>Clear</Text>
+                            </TouchableOpacity>
+                        </ScrollView>
                     </View>
                 )}
 
                 {/* Search Bar */}
-                <View style={styles.searchContainer}>
-                    <Ionicons name="search" size={20} color="#999" style={styles.searchIcon} />
+                <View style={styles.searchBar}>
+                    <Ionicons name="search" size={20} color="#94a3b8" />
                     <TextInput
                         style={styles.searchInput}
-                        placeholder="Search vehicles..."
+                        placeholder="Search make, model, or location..."
                         value={searchQuery}
                         onChangeText={setSearchQuery}
-                        placeholderTextColor="#999"
+                        placeholderTextColor="#94a3b8"
                     />
-                    {(sortByCategory !== 'All' || sortByBorderCrossing !== 'All') && !showSortOptions && (
-                        <TouchableOpacity
-                            style={styles.activeFiltersIndicator}
-                            onPress={() => setShowSortOptions(true)}
-                        >
-                            <Ionicons name="options" size={16} color="#2563eb" />
-                            <Text style={styles.activeFiltersIndicatorText}>Sort</Text>
+                    {(sortByCategory !== 'All' || sortByBorderCrossing !== 'All') && (
+                        <TouchableOpacity onPress={() => setShowSortOptions(true)}>
+                            <Ionicons name="options" size={24} color="#2563eb" />
                         </TouchableOpacity>
                     )}
                 </View>
 
                 {/* Type Tabs */}
-                <View style={styles.typeContainer}>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.typeScroll}>
-                        {types.map((type) => (
-                            <TouchableOpacity
-                                key={type}
-                                style={[styles.typeChip, selectedType === type && styles.typeChipActive]}
-                                onPress={() => setSelectedType(type)}
-                            >
-                                <Text style={[styles.typeText, selectedType === type && styles.typeTextActive]}>
-                                    {type}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
-                    </ScrollView>
-                </View>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.typeTabs}>
+                    {types.map(type => (
+                        <TouchableOpacity
+                            key={type}
+                            style={[styles.typeTab, selectedType === type && styles.typeTabActive]}
+                            onPress={() => setSelectedType(type)}
+                        >
+                            <Text style={[styles.typeTabText, selectedType === type && styles.typeTabTextActive]}>
+                                {type}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </ScrollView>
 
-                {/* ── SORT POPUP (restored) ── */}
+                {/* Sort Modal */}
                 {showSortOptions && (
                     <>
-                        <TouchableOpacity
-                            style={styles.popupOverlay}
-                            activeOpacity={1}
-                            onPress={() => setShowSortOptions(false)}
-                        />
-                        <View style={styles.sortPopup}>
-                            <View style={styles.popupHeader}>
-                                <Text style={styles.popupTitle}>Sort Options</Text>
+                        <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={() => setShowSortOptions(false)} />
+                        <View style={styles.sortModal}>
+                            <View style={styles.sortHeader}>
+                                <Text style={styles.sortTitle}>Filter & Sort</Text>
                                 <TouchableOpacity onPress={() => setShowSortOptions(false)}>
-                                    <Ionicons name="close" size={24} color="#64748b" />
+                                    <Ionicons name="close" size={28} color="#1e293b" />
                                 </TouchableOpacity>
                             </View>
-                            <View style={styles.popupContent}>
-                                <View style={styles.sortSection}>
-                                    <Text style={styles.sortSectionTitle}>Category</Text>
-                                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.sortScroll}>
-                                        {categories.map((category) => (
-                                            <TouchableOpacity
-                                                key={category}
-                                                style={[styles.sortChip, sortByCategory === category && styles.sortChipActive]}
-                                                onPress={() => setSortByCategory(category)}
-                                            >
-                                                <Text style={[styles.sortChipText, sortByCategory === category && styles.sortChipTextActive]}>
-                                                    {category}
-                                                </Text>
-                                            </TouchableOpacity>
-                                        ))}
-                                    </ScrollView>
-                                </View>
 
-                                <View style={styles.sortSection}>
-                                    <Text style={styles.sortSectionTitle}>Border Crossing</Text>
-                                    <View style={styles.borderSortRow}>
-                                        {['All', 'Yes', 'No'].map((option) => (
-                                            <TouchableOpacity
-                                                key={option}
-                                                style={[styles.borderSortChip, sortByBorderCrossing === option && styles.borderSortChipActive]}
-                                                onPress={() => setSortByBorderCrossing(option)}
-                                            >
-                                                <Text style={[styles.borderSortText, sortByBorderCrossing === option && styles.borderSortTextActive]}>
-                                                    {option}
-                                                </Text>
-                                            </TouchableOpacity>
-                                        ))}
-                                    </View>
+                            <View style={styles.sortSection}>
+                                <Text style={styles.sortLabel}>Category</Text>
+                                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingVertical: 8 }}>
+                                    {categories.map(cat => (
+                                        <TouchableOpacity
+                                            key={cat}
+                                            style={[styles.filterChip, sortByCategory === cat && styles.filterChipActive]}
+                                            onPress={() => setSortByCategory(cat)}
+                                        >
+                                            <Text style={[styles.filterChipText, sortByCategory === cat && styles.filterChipTextActive]}>
+                                                {cat}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    ))}
+                                </ScrollView>
+                            </View>
+
+                            <View style={styles.sortSection}>
+                                <Text style={styles.sortLabel}>Border Crossing</Text>
+                                <View style={styles.borderOptions}>
+                                    {['All', 'Yes', 'No'].map(opt => (
+                                        <TouchableOpacity
+                                            key={opt}
+                                            style={[styles.borderChip, sortByBorderCrossing === opt && styles.borderChipActive]}
+                                            onPress={() => setSortByBorderCrossing(opt)}
+                                        >
+                                            <Text style={[styles.borderChipText, sortByBorderCrossing === opt && styles.borderChipTextActive]}>
+                                                {opt}
+                                            </Text>
+                                        </TouchableOpacity>
+                                    ))}
                                 </View>
                             </View>
                         </View>
                     </>
                 )}
 
-                {isLoadingVehicles ? (
-                    <View style={styles.loaderContainer}>
-                        <CustomLoader />
-                        <Text style={styles.loaderText}>Loading vehicles...</Text>
+                {/* Main Content */}
+                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 30 }}>
+                    <View style={styles.resultsHeader}>
+                        <Text style={styles.resultsCount}>{processedVehicles.length} vehicles available</Text>
+                        <TouchableOpacity
+                            style={styles.postBtn}
+                            onPress={() => navigation.navigate('PostTransportationScreen')}
+                        >
+                            <Ionicons name="add-circle-outline" size={20} color="#2563eb" />
+                            <Text style={styles.postBtnText}>Post Vehicle</Text>
+                        </TouchableOpacity>
                     </View>
-                ) : (
-                    // {/* ── MAIN LIST ── */ }
-                    < ScrollView showsVerticalScrollIndicator={false}>
-                        <View style={styles.resultsContainer}>
-                            <Text style={styles.resultsText}>{processedVehicles.length} vehicles found</Text>
-                            <TouchableOpacity
-                                style={styles.postButton}
-                                onPress={() => navigation.navigate('PostTransportationScreen')}
-                            >
-                                <Ionicons name="add-circle" size={18} color="#2563eb" />
-                                <Text style={styles.postButtonText}>Post Vehicle</Text>
-                            </TouchableOpacity>
+
+                    {/* Nearby Section */}
+                    {nearByVehicles.length > 0 && (
+                        <View style={styles.section}>
+                            <View style={styles.sectionHeader}>
+                                <Text style={styles.sectionTitle}>Nearby ({nearByVehicles.length})</Text>
+                                {nearByVehicles.length > showNearByLimit && (
+                                    <TouchableOpacity onPress={() => setShowNearByLimit(nearByVehicles.length)}>
+                                        <Text style={styles.seeAllText}>See all</Text>
+                                    </TouchableOpacity>
+                                )}
+                            </View>
+                            {nearByVehicles.slice(0, showNearByLimit).map(renderVehicleCard)}
                         </View>
+                    )}
 
-                        {/* Near By Section */}
-                        {nearByVehicles.length > 0 && (
-                            <View style={styles.section}>
-                                <View style={styles.sectionHeader}>
-                                    <Text style={styles.sectionTitle}>Near By ({nearByVehicles.length})</Text>
-                                    {nearByVehicles.length > showNearByLimit ? (
-                                        <TouchableOpacity onPress={() => setShowNearByLimit(nearByVehicles.length)}>
-                                            <Text style={styles.viewAllText}>View All</Text>
-                                        </TouchableOpacity>
-                                    ) : (
-                                        nearByVehicles.length > 0 && showNearByLimit > 3 && (
-                                            <TouchableOpacity onPress={() => setShowNearByLimit(3)}>
-                                                <Text style={[styles.viewAllText, { color: '#64748b' }]}>Show Less</Text>
-                                            </TouchableOpacity>
-                                        )
-                                    )}
-                                </View>
-                                <View style={styles.vehiclesContainer}>
-                                    {nearByVehicles.slice(0, showNearByLimit).map(renderVehicleCard)}
-                                </View>
+                    {/* Other Vehicles */}
+                    {otherVehicles.length > 0 && (
+                        <View style={styles.section}>
+                            <View style={styles.sectionHeader}>
+                                <Text style={styles.sectionTitle}>All Vehicles ({otherVehicles.length})</Text>
+                                {otherVehicles.length > showOtherLimit && (
+                                    <TouchableOpacity onPress={() => setShowOtherLimit(otherVehicles.length)}>
+                                        <Text style={styles.seeAllText}>See all</Text>
+                                    </TouchableOpacity>
+                                )}
                             </View>
-                        )}
+                            {otherVehicles.slice(0, showOtherLimit).map(renderVehicleCard)}
+                        </View>
+                    )}
+                </ScrollView>
 
-                        {/* Other Vehicles Section */}
-                        {otherVehicles.length > 0 && (
-                            <View style={styles.section}>
-                                <View style={styles.sectionHeader}>
-                                    <Text style={styles.sectionTitle}>Other Vehicles ({otherVehicles.length})</Text>
-                                    {otherVehicles.length > showOtherLimit ? (
-                                        <TouchableOpacity onPress={() => setShowOtherLimit(otherVehicles.length)}>
-                                            <Text style={styles.viewAllText}>View All</Text>
-                                        </TouchableOpacity>
-                                    ) : (
-                                        otherVehicles.length > 0 && showOtherLimit > 3 && (
-                                            <TouchableOpacity onPress={() => setShowOtherLimit(3)}>
-                                                <Text style={[styles.viewAllText, { color: '#64748b' }]}>Show Less</Text>
-                                            </TouchableOpacity>
-                                        )
-                                    )}
-                                </View>
-                                <View style={styles.vehiclesContainer}>
-                                    {otherVehicles.slice(0, showOtherLimit).map(renderVehicleCard)}
-                                </View>
-                            </View>
-                        )}
-
-                        <View style={styles.bottomPadding} />
-                    </ScrollView>
-                )}
-
-
-                {/* ── COMMENT BOTTOM SHEET (outside ScrollView) ── */}
+                {/* Bottom Sheets */}
                 <CommentBottomSheet
-                    ref={bottomSheetModalRef}
+                    ref={commentSheetRef}
                     vehicleId={modalVehicleId}
                     commentText={commentText}
                     setCommentText={setCommentText}
-                    commentSuggestion={commentSuggestion}
-                    setSuggestion={setSuggestion}
+                    suggestion={commentSuggestion}
+                    setSuggestion={setCommentSuggestion}
                     onSubmit={submitComment}
                     onDismiss={() => setModalVehicleId(null)}
                     renderBackdrop={renderBackdrop}
                 />
 
-                {/* ── RATING BOTTOM SHEET (new) ── */}
                 <RatingBottomSheet
                     ref={ratingSheetRef}
                     onSubmit={submitRating}
@@ -736,228 +613,252 @@ export default function TransportationListScreen({ navigation }) {
                     renderBackdrop={renderBackdrop}
                 />
             </View>
-        </BottomSheetModalProvider >
+        </BottomSheetModalProvider>
     );
 }
 
 // ──────────────────────────────────────────────────────────────
-// Styles (keep all original + new comment preview)
+// STYLES – Premium & Clean
 // ──────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#f8fafc',
-        paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
-    },
-    searchContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#fff',
-        marginHorizontal: 10,
-        marginTop: 20,
-        marginBottom: 16,
+    container: { flex: 1 },
+
+    // Active Filters Bar
+    activeFiltersBar: {
         paddingHorizontal: 10,
-        borderRadius: 12,
-        height: 50,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 2,
-    },
-    searchIcon: { marginRight: 10 },
-    searchInput: { flex: 1, fontSize: 15, color: '#000' },
-    activeFiltersIndicator: {
-        flexDirection: 'row',
-        alignItems: 'center',
         backgroundColor: '#eff6ff',
-        paddingHorizontal: 10,
-        paddingVertical: 6,
-        borderRadius: 12,
-        gap: 4,
-        marginLeft: 8,
-    },
-    activeFiltersIndicatorText: { fontSize: 12, fontWeight: '600', color: '#2563eb' },
-    typeContainer: { backgroundColor: '#fff', paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: '#e2e8f0' },
-    typeScroll: { paddingHorizontal: 20, gap: 12 },
-    typeChip: { paddingHorizontal: 20, paddingVertical: 8, borderRadius: 20, backgroundColor: '#f1f5f9', marginRight: 8 },
-    typeChipActive: { backgroundColor: '#2563eb' },
-    typeText: { fontSize: 14, fontWeight: '600', color: '#64748b' },
-    typeTextActive: { color: '#fff' },
-
-    loaderContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: '#f8fafc',
-    },
-    loaderText: {
-        marginTop: 16,
-        fontSize: 14,
-        color: '#64748b',
-        fontWeight: '500',
-    },
-
-    // ── SORT POPUP (restored) ──
-    popupOverlay: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0,0,0,0.3)',
-        zIndex: 999,
-    },
-    sortPopup: {
-        position: 'absolute',
-        top: Platform.OS === 'android' ? StatusBar.currentHeight + 140 : 140,
-        left: 20,
-        right: 20,
-        backgroundColor: '#fff',
-        borderRadius: 16,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.15,
-        shadowRadius: 12,
-        elevation: 8,
-        zIndex: 1000,
-        maxHeight: 400,
-    },
-    popupHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: 16,
+        paddingVertical: 10,
         borderBottomWidth: 1,
-        borderBottomColor: '#e2e8f0',
+        borderBottomColor: '#dbeafe',
     },
-    popupTitle: { fontSize: 18, fontWeight: '700', color: '#000' },
-    popupContent: { padding: 16 },
-    sortSection: { marginBottom: 16 },
-    sortSectionTitle: { fontSize: 14, fontWeight: '600', color: '#475569', marginBottom: 12 },
-    sortScroll: { gap: 8 },
-    sortChip: {
-        paddingHorizontal: 16,
+    activeFilterChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#dbeafe',
+        paddingHorizontal: 14,
         paddingVertical: 8,
         borderRadius: 20,
-        backgroundColor: '#f1f5f9',
-        marginRight: 8,
-        borderWidth: 1,
-        borderColor: '#e2e8f0',
+        marginRight: 10,
+        gap: 6,
     },
-    sortChipActive: { backgroundColor: '#2563eb', borderColor: '#2563eb' },
-    sortChipText: { fontSize: 13, fontWeight: '600', color: '#64748b' },
-    sortChipTextActive: { color: '#fff' },
-    borderSortRow: { flexDirection: 'row', gap: 8 },
-    borderSortChip: {
-        flex: 1,
+    activeFilterText: { fontSize: 13, fontWeight: '600', color: '#1e40af' },
+    clearAllBtn: { marginLeft: 10 },
+    clearAllText: { fontSize: 13, color: '#64748b', fontWeight: '500' },
+
+    searchBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginHorizontal: 16,
+        marginVertical: 16,
+        backgroundColor: '#F2F2F7',
+        borderRadius: 50,
+        paddingHorizontal: 16,
+        height: 45,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.04,
+        shadowRadius: 4,
+        elevation: 2,
+        gap: 12,
+    },
+    searchInput: { flex: 1, fontSize: 16, color: '#1e293b' },
+
+    typeTabs: { height: 60, paddingHorizontal: 16, paddingVertical: 10, marginBottom: 25 },
+    typeTab: {
+        paddingHorizontal: 20,
         paddingVertical: 10,
-        borderRadius: 10,
-        backgroundColor: '#f1f5f9',
-        borderWidth: 1,
-        borderColor: '#e2e8f0',
+        borderRadius: 30,
         alignItems: 'center',
+        backgroundColor: '#f3f0faff',
+        marginRight: 10,
     },
-    borderSortChipActive: { backgroundColor: '#2563eb', borderColor: '#2563eb' },
-    borderSortText: { fontSize: 13, fontWeight: '600', color: '#64748b' },
-    borderSortTextActive: { color: '#fff' },
+    typeTabActive: { backgroundColor: '#2563eb' },
+    typeTabText: { fontSize: 14, fontWeight: '600', color: '#64748b' },
+    typeTabTextActive: { color: '#fff' },
 
-    resultsContainer: {
+    // ──────────────────────────────
+    // SORT / FILTER MODAL (popup)
+    // ──────────────────────────────
+    sortModal: {
+        position: 'absolute',
+        top: Platform.OS === 'ios' ? 140 : 120,
+        left: 24,
+        right: 24,
+        backgroundColor: '#fff',
+        borderRadius: 24,
+        padding: 24,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 12 },
+        shadowOpacity: 0.25,
+        shadowRadius: 25,
+        elevation: 20,
+        zIndex: 1000,
+    },
+    sortHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingHorizontal: 20,
-        marginBottom: 16,
+        marginBottom: 24,
     },
-    resultsText: { fontSize: 14, color: '#64748b' },
-    postButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#eff6ff',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 12,
-        gap: 4,
+    sortTitle: {
+        fontSize: 21,
+        fontWeight: '800',
+        color: '#1e293b',
     },
-    postButtonText: { fontSize: 13, fontWeight: '600', color: '#2563eb' },
 
-    section: { marginBottom: 24 },
-    sectionHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: 20,
+    sortSection: {
+        marginBottom: 28,
+    },
+    sortLabel: {
+        fontSize: 15,
+        fontWeight: '700',
+        color: '#475569',
         marginBottom: 12,
     },
-    sectionTitle: { fontSize: 18, fontWeight: '700', color: '#000' },
-    viewAllText: { fontSize: 14, fontWeight: '600', color: '#2563eb' },
-    vehiclesContainer: { paddingHorizontal: 10 },
 
-    vehicleCard: {
-        backgroundColor: '#fff',
-        borderRadius: 8,
-        marginBottom: 16,
-        overflow: 'hidden',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 12,
-        elevation: 3,
-        position: 'relative',
+    // Category chips inside modal
+    filterChip: {
+        paddingHorizontal: 20,
+        paddingVertical: 11,
+        borderRadius: 30,
+        backgroundColor: '#f1f5f9',
+        marginRight: 12,
     },
-    vehicleImage: { width: '100%', height: 200 },
-    borderBadge: {
+    filterChipActive: {
+        backgroundColor: '#2563eb',
+    },
+    filterChipText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#64748b',
+    },
+    filterChipTextActive: {
+        color: '#fff',
+    },
+
+    // Border Crossing chips (Yes/No/All)
+    borderOptions: {
+        flexDirection: 'row',
+        gap: 12,
+    },
+    borderChip: {
+        flex: 1,
+        paddingVertical: 14,
+        borderRadius: 16,
+        backgroundColor: '#f1f5f9',
+        alignItems: 'center',
+    },
+    borderChipActive: {
+        backgroundColor: '#2563eb',
+    },
+    borderChipText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#64748b',
+    },
+    borderChipTextActive: {
+        color: '#fff',
+    },
+
+    // CARD – Modern Overlay Design
+    vehicleCard: {
+        marginHorizontal: 5,
+        marginBottom: 20,
+        borderRadius: 20,
+        overflow: 'hidden',
+        backgroundColor: '#fff',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.15,
+        shadowRadius: 20,
+        elevation: 12,
+        height: 340, // Compact height
+    },
+    vehicleImage: {
+        width: '100%',
+        height: '100%',
         position: 'absolute',
-        top: 12,
-        right: 12,
+    },
+    overlayContent: {
+        flex: 1,
+        padding: 16,
+        justifyContent: 'space-between',
+    },
+    topBadges: {
+        flexDirection: 'row',
+        justifyContent: 'flex-end',
+        alignItems: 'flex-start',
+    },
+    borderBadge: {
+        backgroundColor: 'rgba(16, 185, 129, 0.9)',
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#10b981',
         paddingHorizontal: 10,
-        paddingVertical: 6,
+        paddingVertical: 5,
         borderRadius: 20,
         gap: 4,
     },
-    borderBadgeText: { fontSize: 11, fontWeight: '700', color: '#fff' },
-    vehicleContent: { padding: 16 },
-    vehicleHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 12 },
-    vehicleHeaderLeft: { flex: 1, marginRight: 8 },
-    vehicleTitle: { fontSize: 18, fontWeight: '700', color: '#000', marginBottom: 6 },
-    vehicleInfoRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
-    vehicleMakeModel: { fontSize: 13, fontWeight: '600', color: '#475569' },
-    vehicleYear: { fontSize: 13, color: '#94a3b8', marginLeft: 4 },
-    locationRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-    vehicleLocation: { fontSize: 13, color: '#64748b', flex: 1 },
-    verifiedBadge: { padding: 4 },
-    vehicleDetails: {
-        flexDirection: 'row',
-        gap: 16,
-        marginBottom: 12,
-        paddingBottom: 12,
-        borderBottomWidth: 1,
-        borderBottomColor: '#f1f5f9',
+    borderBadgeText: { color: '#fff', fontSize: 11, fontWeight: '700' },
+
+    infoContainer: {
+        backgroundColor: 'rgba(0,0,0,0.45)',
+        padding: 12,
+        borderRadius: 14,
+        alignSelf: 'flex-start',
+        maxWidth: '80%',
     },
-    detailItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-    detailText: { fontSize: 13, color: '#475569', fontWeight: '500' },
-    vehicleFooter: {
+    vehicleTitle: { fontSize: 18, fontWeight: '800', color: '#fff' },
+    vehicleSubtitle: { fontSize: 13, color: '#e2e8f0', marginTop: 2 },
+    locationRow: { flexDirection: 'row', alignItems: 'center', marginTop: 6, gap: 6 },
+    locationText: { fontSize: 13, color: '#fff', fontWeight: '500' },
+    specsRow: { flexDirection: 'row', gap: 8, marginTop: 10 },
+    specPill: {
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 20,
+    },
+    specText: { color: '#fff', fontSize: 12, fontWeight: '600' },
+
+    statsOverlay: {
+        flexDirection: 'row',
+        justifyContent: 'space-around',
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        paddingVertical: 12,
+        borderRadius: 14,
+        marginTop: 10,
+    },
+    stat: { alignItems: 'center', gap: 4 },
+    statText: { color: '#fff', fontSize: 13, fontWeight: '600' },
+
+    // Footer Below Image
+    cardFooter: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 12,
+        backgroundColor: '#fff',
+        paddingHorizontal: 16,
+        paddingVertical: 14,
+        borderTopWidth: 1,
+        borderTopColor: '#f1f5f9',
     },
-    price: { fontSize: 20, fontWeight: '700', color: '#10b981' },
-    pricePeriod: { fontSize: 12, color: '#64748b' },
-    typeBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8, backgroundColor: '#eff6ff' },
-    typeBadgeText: { fontSize: 11, fontWeight: '600', color: '#2563eb' },
-    vehicleStats: { flexDirection: 'row', gap: 16, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#f1f5f9' },
-    statItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-    statText: { fontSize: 12, color: '#94a3b8' },
-    statTextLiked: { color: '#ef4444', fontWeight: '600' },
+    priceText: { fontSize: 22, fontWeight: '800', color: '#10b981' },
+    priceSubtext: { fontSize: 12, color: '#64748b', marginTop: 2 },
+    typeBadge: {
+        backgroundColor: '#eff6ff',
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 30,
+    },
+    typeBadgeText: { color: '#2563eb', fontSize: 12, fontWeight: '700' },
 
-    // Comment preview
-    commentPreview: { marginTop: 12, paddingTop: 12, borderTopWidth: 1, borderTopColor: '#f1f5f9' },
-    commentStars: { flexDirection: 'row', marginBottom: 4 },
-    commentText: { fontSize: 13, color: '#475569', fontStyle: 'italic' },
-
-    bottomPadding: { height: 20 },
+    // Rest of your existing styles (search, filters, etc.) stay the same
+    resultsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginTop: 10 },
+    resultsCount: { fontSize: 15, color: '#64748b' },
+    postBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#eff6ff', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 30, gap: 6 },
+    postBtnText: { color: '#2563eb', fontWeight: '600' },
+    section: { marginTop: 8 },
+    sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', marginHorizontal: 20, marginBottom: 12 },
+    sectionTitle: { fontSize: 18, fontWeight: '700', color: '#1e293b' },
+    seeAllText: { color: '#2563eb', fontWeight: '600' }
 });

@@ -1603,9 +1603,7 @@ export const mockCategories = [
   { id: '6', name: 'Home & Garden', icon: '🏠', color: '#795548' }
 ];
 
-export const mockAreas = [
-  'Mbabane', 'Manzini', 'Ezulwini', 'Malkerns', 'Matsapha', 'Big Bend', 'Nhlangano', 'Siteki'
-];
+export const mockAreas = ['Hhohho', 'Shiselweni', 'Lubombo', 'Manzini', 'Matsapha', 'Skhuphe'];
 
 // Rental Houses Mock Data
 export const mockRentalHouses = [

@@ -1,30 +1,39 @@
-import { supabase } from '../service/Supabase-Client';
-import * as FileSystem from 'expo-file-system/legacy';
+import { supabase } from './Supabase-Client';
+import * as FileSystem from 'expo-file-system';
 
 export const UploadImage = async (file) => {
   try {
-    const fileName = `${Date.now()}_${file.fileName}`;
-    path = `group-avatars/${fileName}`;
+    if (!file) return;
+    const fileName = `photo_${Date.now()}`
 
-    // Upload the file to Supabase Storage
-    const { error } = await supabase.storage
-      .from("group-avatars") // Replace with your actual bucket name
-      .upload(file, {
-        cacheControl: "3600",
-        upsert: false, // Set to true if you want to overwrite existing files
-        contentType: file.mimeType || "image/jpeg",
-      });
+    const base64 = await FileSystem.readAsStringAsync(file, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
 
-    if (error) {
-      throw new Error(`Error uploading file: ${error.message}`);
+    const binaryString = atob(base64);
+    const len = binaryString.length;
+    const bytes = new Uint8Array(len);
+    for (let i = 0; i < len; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
     }
 
-    // Retrieve the public URL of the uploaded file
-    const { data } = supabase.storage
-      .from("group-avatars")
-      .getPublicUrl(path);
+    const mimeType = 'image/jpeg';
 
-    return data.publicUrl;
+    // Upload the file to Supabase Storage
+    const { data, error } = await supabase.storage
+      .from('flyer_items')
+      .upload(`items/${fileName}`, bytes, {
+        contentType: mimeType,
+        upsert: false,
+      });
+
+    if (error) console.warn('Upload error:', error);
+
+    const { data: urlData } = supabase.storage
+      .from('flyer_items')
+      .getPublicUrl(data?.path);
+
+    return urlData.publicUrl;
 
   } catch (error) {
     console.error("Image could not be uploaded:", error);
@@ -32,7 +41,77 @@ export const UploadImage = async (file) => {
   }
 }
 
-export const uploadAttachments = async (files = []) => {
+export const uploadVehicles = async (path, files = []) => {
+  console.log('Path: ', path, '\nImages: ', files)
+  if (files?.length === 0) return;
+
+  const uploaded = [];
+  for (const file of files) {
+    try {
+      // === 1. Extract file info ===
+      const fileName = `vehicle_${Date.now()}`;
+
+      // === 1. Read file as Base64 ===
+      const base64 = await FileSystem.readAsStringAsync(file, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      // === 2. Convert Base64 → Uint8Array (binary) ===
+      const binaryString = atob(base64);
+      const len = binaryString.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binaryString.charCodeAt(i);
+      }
+
+      // === 3. Detect MIME type & extension ===
+      let mimeType = 'image/jpeg';
+
+      // === 4. Upload to Supabase Storage ===
+      const { data, error } = await supabase.storage
+        .from(path)
+        .upload(`vehicles/${fileName}`, bytes, {
+          contentType: mimeType,
+          upsert: false,
+        });
+
+      if (error) {
+        console.warn('Upload error:', error);
+        continue;
+      }
+
+      // === 5. Get public URL ===
+      const { data: urlData } = supabase.storage
+        .from(path)
+        .getPublicUrl(data?.path);
+
+      const publicUrl = urlData.publicUrl;
+
+      // === 6. Determine display type ===
+      const type = mimeType.startsWith('image/') ? 'image' :
+        mimeType.startsWith('video/') ? 'video' :
+          'document';
+
+      // === 7. Push clean metadata ===
+      uploaded.push({
+        url: publicUrl,
+        name: fileName,
+        type,
+        size: bytes.byteLength,
+        mimeType,
+        path: data?.path,
+      });
+
+    } catch (err) {
+      console.warn('Upload failed:', err);
+    }
+  }
+
+  return uploaded;
+};
+
+export const uploadAttachments = async (path, files = []) => {
+  console.log('Path: ', path, '\nImages: ', files)
   const uploaded = [];
   for (const file of files) {
     if (!file?.uri) continue;
@@ -40,8 +119,7 @@ export const uploadAttachments = async (files = []) => {
     try {
       // === 1. Extract file info ===
       const fileName = file.name || `file_${Date.now()}`;
-      const fileUri = file.uri;
-      const fileSize = file.size || (await FileSystem.getInfoAsync(fileUri)).size;
+      const fileSize = file.size
 
       // === 1. Read file as Base64 ===
       const base64 = await FileSystem.readAsStringAsync(file.uri, {
@@ -79,8 +157,8 @@ export const uploadAttachments = async (files = []) => {
 
       // === 4. Upload to Supabase Storage ===
       const { data, error } = await supabase.storage
-        .from('discussion-media')
-        .upload(`discussions/${fileName}`, bytes, {
+        .from(path)
+        .upload(`vehicles/${fileName}`, bytes, {
           contentType: mimeType,
           upsert: false,
         });
@@ -92,8 +170,8 @@ export const uploadAttachments = async (files = []) => {
 
       // === 5. Get public URL ===
       const { data: urlData } = supabase.storage
-        .from('discussion-media')
-        .getPublicUrl(data.path);
+        .from(path)
+        .getPublicUrl(data?.path);
 
       const publicUrl = urlData.publicUrl;
 
@@ -106,7 +184,7 @@ export const uploadAttachments = async (files = []) => {
       uploaded.push({
         url: publicUrl,
         name: fileName,
-        type, // 'image' | 'video' | 'document'
+        type,
         size: fileSize || bytes.byteLength,
         mimeType,
         path: data.path,

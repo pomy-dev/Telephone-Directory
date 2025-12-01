@@ -1,4 +1,4 @@
-import React, { useRef, useState, useCallback, useEffect } from 'react';
+import React, { useRef, useState, useCallback, useEffect, useMemo } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Dimensions,
+  TextInput,
   TouchableWithoutFeedback,
 } from 'react-native';
 import {
@@ -28,23 +29,45 @@ import Reanimated, {
   useDerivedValue,
   useAnimatedStyle,
 } from 'react-native-reanimated';
-// import { scanOCR } from 'vision-camera-ocr-plugin';
+import { SaveFormat } from 'expo-image-manipulator';
+import * as ImageManipulator from 'expo-image-manipulator';
 import * as MediaLibrary from 'expo-media-library';
-import TextRecognition from '@react-native-ml-kit/text-recognition';
 import { useIsFocused } from '@react-navigation/core';
-import ImageEditor from '@react-native-community/image-editor';
+import Constants from 'expo-constants';
 import * as FileSystem from 'expo-file-system';
+import {
+  BottomSheetModal,
+  BottomSheetModalProvider,
+  BottomSheetView,
+  BottomSheetBackdrop,
+  SCREEN_HEIGHT,
+} from '@gorhom/bottom-sheet';
+import { addFlyerItems } from '../../service/Supabase-Fuctions';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { Icons } from '../../constants/Icons';
+import { Images } from '../../constants/Images';
 import { AppContext } from '../../context/appContext';
+import { CustomToast } from '../../components/customToast';
 
 Reanimated.addWhitelistedNativeProps({ zoom: true });
 const AnimatedCamera = Reanimated.createAnimatedComponent(Camera);
 const ReanimatedText = Reanimated.createAnimatedComponent(Text);
 
 const { width: WINDOW_WIDTH, height: WINDOW_HEIGHT } = Dimensions.get('window');
-const PRICE_REGEX = /(?:SZL|E|R|ZAR|USD)?\s?\d{1,3}(?:[,\.]\d{3})*(?:[\.,]\d{1,2})?/i;
-const PADDING = 16;
 const zoomLevels = [1, 2, 3, 4, 5, 6];
+
+// Initialize OpenAI (key from .env → app.json → Constants)
+const genAI = new GoogleGenerativeAI(Constants.expoConfig?.extra?.apiKey);
+const model = genAI.getGenerativeModel({
+  model: 'gemini-2.5-flash',
+  generationConfig: {
+    responseMimeType: 'application/json',  // Enforces JSON output
+    temperature: 0.2,  // Low for consistent extraction
+    maxOutputTokens: 2048,  // Enough for multiple items
+    topP: 0.8,  // Optional: For variety control
+    topK: 40,   // Optional
+  }
+});
 
 const ZoomLevelButton = ({ level, zoom, onSelect }) => {
   const animatedStyle = useAnimatedStyle(() => ({
@@ -71,6 +94,78 @@ const ZoomLevelButton = ({ level, zoom, onSelect }) => {
   );
 };
 
+const CommentBottomSheet = React.forwardRef(
+  (
+    {
+      store,
+      setStoreName,
+      onSubmit,
+      onDismiss,
+      snapPoints,
+      renderBackdrop,
+      isSubmiting
+    },
+    ref
+  ) => {
+    return (
+      <BottomSheetModal
+        ref={ref}
+        index={0}
+        snapPoints={snapPoints}
+        backdropComponent={renderBackdrop}
+        onDismiss={onDismiss}
+        keyboardBehavior="extend"
+        android_keyboardInputMode="adjustResize"
+        enablePanDownToClose
+      >
+        <BottomSheetView style={sheetStyles.content}>
+          <Text style={sheetStyles.title}>Specify Store</Text>
+
+          {/* store input */}
+          <TextInput
+            style={[sheetStyles.input, { minHeight: 50 }]}
+            placeholder="Specify store of flyer"
+            value={store}
+            onChangeText={setStoreName}
+            multiline
+          />
+
+          {/* Submit */}
+          <TouchableOpacity style={[sheetStyles.submitBtn, isSubmiting && sheetStyles.submiting]} onPress={onSubmit} disabled={isSubmiting}>
+            {isSubmiting ? <ActivityIndicator size={20} color={'#eee'} /> : <Text style={sheetStyles.submitTxt}>Submit Review</Text>}
+          </TouchableOpacity>
+        </BottomSheetView>
+      </BottomSheetModal >
+    );
+  }
+);
+CommentBottomSheet.displayName = 'CommentBottomSheet';
+
+const sheetStyles = StyleSheet.create({
+  content: { padding: 20, flex: 1 },
+  title: { fontSize: 20, fontWeight: '700', textAlign: 'center', marginBottom: 16 },
+  starRow: { flexDirection: 'row', justifyContent: 'center', marginBottom: 20, gap: 8 },
+  starBtn: { padding: 4 },
+  input: {
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderRadius: 12,
+    padding: 12,
+    backgroundColor: '#f8fafc',
+    fontSize: 15,
+    textAlignVertical: 'top',
+    marginBottom: 16,
+  },
+  submitBtn: {
+    backgroundColor: '#2563eb',
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  submiting: { backgroundColor: '#96b2edff' },
+  submitTxt: { color: '#fff', fontSize: 16, fontWeight: '600', textAlign: 'center' },
+});
+
 export default function PamphletScanner({ navigation }) {
   const { theme } = React.useContext(AppContext)
   const isFocused = useIsFocused();
@@ -79,12 +174,17 @@ export default function PamphletScanner({ navigation }) {
 
   const [permissionGranted, setPermissionGranted] = useState(null);
   const [items, setItems] = useState([]);
-  const [boxes, setBoxes] = useState([]);
   const [flash, setFlash] = useState('off');
   const [torch, setTorch] = useState('off');
   const [isInitialized, setIsInitialized] = useState(false);
-  const [processing, setProcessing] = useState(false);
-  const [isCapturing, setIsCapturing] = useState(false)
+  const [capturing, setCapturing] = useState(false);
+  const [geminiProcessing, setGeminiProcessing] = useState(false);
+  const [isSubmiting, setIsSubmiting] = useState(false);
+
+  // Bottom Sheet
+  const bottomSheetRef = useRef(null);
+  const [storeName, setStoreName] = useState('');
+  const snapPoints = useMemo(() => ['50%', '60%'], []);
 
   const microphone = useMicrophonePermission()
   const location = useLocationPermission()
@@ -95,56 +195,6 @@ export default function PamphletScanner({ navigation }) {
   const focusX = useSharedValue(0.5);
   const focusY = useSharedValue(0.5);
   const isZoomPickerOpen = useSharedValue(false);
-
-  const snapshotInterval = useRef(null);
-
-  useEffect(() => {
-    if (!isFocused || !isInitialized || !camera.current) {
-      setBoxes([]);
-      if (snapshotInterval.current) clearInterval(snapshotInterval.current);
-      return;
-    }
-
-    // Start taking low-res snapshots every 400ms (≈2.5 FPS) — smooth enough for boxes
-    snapshotInterval.current = setInterval(async () => {
-      if (!camera.current || isCapturing) return; // Don't run during capture
-
-      try {
-        // takeSnapshot = fast, low-res, never blocks takePhoto()
-        const snapshot = await camera.current.takeSnapshot({
-          quality: 0.5
-        });
-
-        const result = await TextRecognition.recognize(snapshot.path);
-        const blocks = result.blocks.map(b => ({
-          text: b.text,
-          boundingBox: {
-            x: b.frame.x,
-            y: b.frame.y,
-            width: b.frame.width,
-            height: b.frame.height,
-          },
-        }));
-
-        const grouped = groupBlocks(blocks);
-        const overlay = grouped.flatMap(item => [
-          { ...item.priceBox, color: '#00ff0088', stroke: '#00ff00' },
-          item.nameBox && { ...item.nameBox, color: '#0088ff88', stroke: '#0088ff' },
-        ]).filter(Boolean);
-
-        setBoxes(overlay);
-
-        // Clean up snapshot file
-        await FileSystem.deleteAsync(snapshot.path, { idempotent: true });
-      } catch (e) {
-        // Silently ignore — OCR fails sometimes on blurry frames
-      }
-    }, 400);
-
-    return () => {
-      if (snapshotInterval.current) clearInterval(snapshotInterval.current);
-    };
-  }, [isFocused, isInitialized, isCapturing]);
 
   useEffect(() => {
     (async () => {
@@ -172,6 +222,24 @@ export default function PamphletScanner({ navigation }) {
 
   const minZoom = device?.minZoom ?? 1;
   const maxZoom = Math.min(device?.maxZoom ?? 8, 8);
+
+  // FAB Animation
+  const fabStyle = useAnimatedStyle(() => ({
+    opacity: items.length > 0 ? withTiming(1, { duration: 300 }) : withTiming(0, { duration: 200 }),
+    transform: [{ scale: items.length > 0 ? withSpring(1) : withSpring(0.8) }],
+  }));
+
+  const renderBackdrop = useCallback(
+    (props) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        opacity={0.5}
+      />
+    ),
+    []
+  );
 
   const animatedZoomPanelStyle = useAnimatedStyle(() => ({
     opacity: withTiming(isZoomPickerOpen.value ? 1 : 0, { duration: 200 }),
@@ -212,162 +280,150 @@ export default function PamphletScanner({ navigation }) {
     // camera.current?.setFocusPoint?.({ x, y });
   };
 
-  const groupBlocks = useCallback((blocks) => {
-    const prices = blocks.filter((b) => PRICE_REGEX.test(b.text));
-    const others = blocks.filter((b) => !PRICE_REGEX.test(b.text));
-    const result = [];
-
-    prices.forEach((p) => {
-      const candidates = others
-        .filter((o) => o.boundingBox.y + o.boundingBox.height < p.boundingBox.y)
-        .sort((a, b) =>
-          p.boundingBox.y - (a.boundingBox.y + a.boundingBox.height) -
-          (p.boundingBox.y - (b.boundingBox.y + b.boundingBox.height))
-        );
-
-      const nameBlock = candidates[0] || null;
-      let x = p.boundingBox.x, y = p.boundingBox.y;
-      let w = p.boundingBox.width, h = p.boundingBox.height;
-
-      if (nameBlock) {
-        x = Math.min(x, nameBlock.boundingBox.x);
-        y = Math.min(y, nameBlock.boundingBox.y);
-        w = Math.max(x + w, nameBlock.boundingBox.x + nameBlock.boundingBox.width) - x;
-        h = Math.max(y + h, nameBlock.boundingBox.y + nameBlock.boundingBox.height) - y;
-      }
-
-      x = Math.max(0, x - PADDING);
-      y = Math.max(0, y - PADDING);
-      w += PADDING * 2;
-      h += PADDING * 2;
-
-      result.push({
-        name: nameBlock?.text?.trim() || null,
-        price: p.text.trim(),
-        cropBox: { x, y, width: w, height: h },
-        priceBox: p.boundingBox,
-        nameBox: nameBlock?.boundingBox,
-      });
-    });
-
-    return result;
-  }, []);
-
-  // const frameProcessor = useFrameProcessor((frame) => {
-  //   'worklet';
-  //   try {
-  //     const result = scanOCR(frame)
-  //     runOnJS(setBoxesFromBlocks)(result?.result?.blocks || []);
-  //   } catch (e) { }
-  // }, []);
-
-  // const setBoxesFromBlocks = useCallback((blocks: any) => {
-  //   if (!blocks.length) return setBoxes([]);
-  //   const grouped = groupBlocks(blocks);
-  //   const overlay = grouped.flatMap(item => [
-  //     { ...item.priceBox, color: '#00ff0088', stroke: '#00ff00' },
-  //     item.nameBox && { ...item.nameBox, color: '#0088ff88', stroke: '#0088ff' },
-  //   ]).filter(Boolean);
-  //   setBoxes(overlay);
-  // }, [groupBlocks]);
-
-  const captureAndSave = useCallback(async () => {
-    if (!camera.current || !isFocused || !isInitialized) {
-      console.log('Early return: camera not ready');
-      setProcessing(false);
-      return;
-    }
-
-    setProcessing(true);
-    setIsCapturing(true); // ← pauses your live boxes (snapshot loop)
+  const captureAndAnalyzeWithOpenAI = useCallback(async () => {
+    if (!camera.current || !isFocused) return;
+    setCapturing(true);
 
     try {
-      // Small delay + resume preview (Android stability)
-      await new Promise(r => setTimeout(r, 300));
-
-      console.log('Taking photo...');
       const photo = await camera.current.takePhoto({
         flash,
-        enableShutterSound: false
+        enableShutterSound: false,
+      });
+      console.log('Taken photo')
+      setCapturing(false);
+
+      await GeminiAIProcess(photo.path)
+    } catch (err) {
+      console.error('Capturing error:', err.message);
+      Alert.alert(
+        'Camera error',
+        'Could not read the flyer. Try better lighting or a clearer image.'
+      );
+    }
+  }, [camera, isFocused, flash]);
+
+  const GeminiAIProcess = async (path) => {
+    setGeminiProcessing(true)
+    try {
+      const photoUri = `file://${path}`;
+      const base64 = await FileSystem.readAsStringAsync(photoUri, {
+        encoding: FileSystem.EncodingType.Base64,
       });
 
-      console.log('Photo taken (cache path):', photo.path);
+      const prompt = `
+        You are an expert at reading grocery/retail flyers.
 
-      const photoUri = `file://${photo.path}`;
-      await MediaLibrary.saveToLibraryAsync(photoUri);
-      console.log('Photo saved to gallery!');
+        Extract every product deal from this flyer image.
 
-      const asset = await MediaLibrary.createAssetAsync(photoUri);  // <== key fix
-      const contentUri = asset.localUri || asset.uri; // now a content:// URI
+        For each item, detect its approximate bounding box in the image using normalized coordinates (0 to 1).
 
-      console.log("Using content URI for ML Kit:", contentUri);
+        Return ONLY valid JSON in this exact format:
 
-      // ML Kit OCR — now works perfectly on Android
-      const mlResult = await TextRecognition.recognize(contentUri);
+        [
+          {
+            "itemName": ["Exact product name(s)"],
+            "price": "$9.99",
+            "description": "2L bottle, limit 4, etc.",
+            "type":"single item OR combo"
+            "boundingBox": {
+              "x": 0.15,      // left edge (0 = left, 1 = right)
+              "y": 0.32,      // top edge (0 = top, 1 = bottom)
+              "width": 0.35,  // width of box
+              "height": 0.18  // height of box
+            }
+          },
+          ...
+        ]
 
-      // Fix TypeScript "Property 'x' does not exist" (known type bug)
-      const blocks = mlResult.blocks.map(b => ({
-        text: b.text,
-        boundingBox: {
-          x: b.frame.x,
-          y: b.frame.y,
-          width: b.frame.width,
-          height: b.frame.height,
+        Rules:
+        - Be precise with coordinates — estimate carefully
+        - Only include real products with prices
+        - Item type is either single item or combo
+        - Single item is one that is sold alone
+        - Combo is a collection of items that is sold at one price  e.g Sugar + Rice + Oil => 245.90
+        - Ignore headers, footers, logos, fine print
+        - Use normalized coordinates (not pixels)
+      `;
+
+      const result = await model.generateContent([
+        {
+          inlineData: {
+            data: base64,
+            mimeType: 'image/jpeg', // Or 'image/png' etc.
+          },
         },
-      }));
+        { text: prompt },
+      ]);
 
-      const grouped = groupBlocks(blocks);
-      console.log('Step 2 – Found items:', grouped.length);
+      const extracted = JSON.parse(result.response.text());
 
-      const newItems = [];
-      for (const item of grouped) {
-        try {
-          const cropped = await ImageEditor.cropImage(contentUri, {
-            offset: {
-              x: Math.round(item.cropBox.x),
-              y: Math.round(item.cropBox.y),
-            },
-            size: {
-              width: Math.round(item.cropBox.width),
-              height: Math.round(item.cropBox.height),
-            },
-            displaySize: { width: 300, height: 300 },
-            resizeMode: 'contain',
-          });
+      console.log('From AI output: ', extracted)
 
-          const base64 = await FileSystem.readAsStringAsync(cropped.uri, {
-            encoding: FileSystem.EncodingType.Base64,
-          });
+      // Now crop each item using the bounding box
+      const newItems = await Promise.all(
+        extracted.map(async (it) => {
+          let croppedImage = Images.product;
 
-          // Clean up cropped temp file
-          await FileSystem.deleteAsync(cropped.uri, { idempotent: true });
+          if (it.boundingBox) {
+            try {
+              croppedImage = await cropImage(path, it.boundingBox);
+            } catch (cropErr) {
+              console.warn('Crop failed for item:', it.itemName, cropErr);
+            }
+          }
 
-          newItems.push({
-            name: item.name || '—',
-            price: item.price,
-            imageBase64: `data:image/jpeg;base64,${base64}`,
-          });
-        } catch (cropError) {
-          console.warn('Cropping failed for one item:', cropError);
-        }
-      }
+          return {
+            name: it.itemName || 'Unknown Item',
+            price: it.price || '—',
+            type: it.type || 'single item',
+            description: it.description || '',
+            image: croppedImage?.uri,
+          };
+        })
+      );
 
-      // Success feedback
-      if (newItems.length > 0) {
-        setItems(prev => [...prev, ...newItems]);
-        Alert.alert('Success!', `${newItems.length} item(s) added`);
-      } else {
-        Alert.alert('No prices found', 'Try better lighting or clearer text');
-      }
-
-    } catch (err) {
-      console.error('Capture failed:', err);
-      Alert.alert('Error', err.message || 'Failed to capture photo');
+      setItems((prev) => [...prev, ...newItems]);
+      Alert.alert('Success!', `${newItems.length} items added with cropped images!`);
+    } catch (e) {
+      console.error('OpenAI error:', e);
+      Alert.alert(
+        'No items returned',
+        e.message.includes('rate limit')
+          ? 'Rate limited. Try again in a minute.'
+          : 'Could not read the flyer. Try better lighting or a clearer image.'
+      );
     } finally {
-      setProcessing(false);
-      setIsCapturing(false); // ← resume live boxes
+      setGeminiProcessing(false)
     }
-  }, [camera, isFocused, isInitialized, flash, groupBlocks, setItems]);
+  }
+
+  const cropImage = async (photoPath, box, paddingPercent = 10) => {
+    const { x, y, width, height } = box;
+
+    // Convert normalized coords to pixels (with padding)
+    const paddingX = (width * WINDOW_WIDTH * paddingPercent) / 100;
+    const paddingY = (height * WINDOW_HEIGHT * paddingPercent) / 100;
+
+    const cropRegion = {
+      backgroundColor: null,
+      originX: Math.max(0, Math.round(x * WINDOW_WIDTH - paddingX)),
+      originY: Math.max(0, Math.round(y * WINDOW_HEIGHT - paddingY)),
+      width: Math.round(width * WINDOW_WIDTH + paddingX * 2),
+      height: Math.round(height * WINDOW_HEIGHT + paddingY * 2),
+    };
+
+    try {
+      const imageContext = ImageManipulator.ImageManipulator.manipulate(`file://${photoPath}`);
+      const croppedImage = imageContext.crop(cropRegion)
+      const resultImg = await croppedImage.renderAsync()
+      const cachedImg = await resultImg.saveAsync({ format: SaveFormat.PNG, })
+
+      return cachedImg
+    } catch (err) {
+      console.warn('Manipulator crop failed:', err);
+      return Images.product;
+    }
+  };
 
   const onInitialized = useCallback(() => {
     setIsInitialized(true);
@@ -384,132 +440,167 @@ export default function PamphletScanner({ navigation }) {
     );
   }
 
+  const handleSaveFlyer = async () => {
+    if (!storeName.trim()) {
+      Alert.alert('Missing Store', 'Please enter the store name');
+      return;
+    }
+
+    setIsSubmiting(true)
+    try {
+      const savedItems = await addFlyerItems(storeName, items);
+      savedItems && CustomToast('Saved!', `${items.length} items from ${storeName} saved`)
+
+      setItems([]);
+    } catch (err) {
+      console.error(err.message)
+    } finally {
+      setIsSubmiting(false)
+      bottomSheetRef.current?.close();
+    }
+  };
+
   return (
-    <View style={styles.container}>
-      <TouchableWithoutFeedback onPress={closeZoomPicker}>
-        <GestureDetector gesture={pinch}>
-          <TouchableWithoutFeedback onPress={handleTapToFocus}>
-            <Reanimated.View style={styles.cameraContainer}>
-              <AnimatedCamera
-                ref={camera}
-                style={styles.absoluteFill}
-                device={device}
-                isActive={isFocused && isInitialized}
-                onInitialized={onInitialized}
-                photo={true}
-                torch={torch}
-                exposure={0}
-                // frameProcessor={isCapturing ? undefined : frameProcessor}
-                enableFpsGraph={true}
-                outputOrientation="device"
-                audio={microphone.hasPermission}
-                enableLocation={location.hasPermission}
-                resizeMode="cover"
-              />
+    <BottomSheetModalProvider>
+      <View style={styles.container}>
+        <TouchableWithoutFeedback onPress={closeZoomPicker}>
+          <GestureDetector gesture={pinch}>
+            <TouchableWithoutFeedback onPress={handleTapToFocus}>
+              <Reanimated.View style={styles.cameraContainer}>
+                <AnimatedCamera
+                  ref={camera}
+                  style={styles.absoluteFill}
+                  device={device}
+                  isActive={isFocused && isInitialized}
+                  onInitialized={onInitialized}
+                  photo={true}
+                  torch={torch}
+                  exposure={0}
+                  enableFpsGraph={true}
+                  outputOrientation="device"
+                  audio={microphone.hasPermission}
+                  enableLocation={location.hasPermission}
+                  resizeMode="cover"
+                />
 
-              {/* Focus Ring */}
-              <Reanimated.View style={[styles.focusRing, focusRingAnimatedStyle]} />
+                {/* Focus Ring */}
+                <Reanimated.View style={[styles.focusRing, focusRingAnimatedStyle]} />
 
-              {/* OCR Boxes */}
-              {boxes.map((box, i) => (
-                <View key={i} style={[StyleSheet.absoluteFill, {
-                  left: box.x,
-                  top: box.y,
-                  width: box.width,
-                  height: box.height,
-                  borderWidth: 3,
-                  borderColor: box.stroke,
-                  backgroundColor: box.color,
-                  borderRadius: 12,
-                }]} pointerEvents="none" />
-              ))}
+                {/* Back Button */}
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+                  <Icons.Ionicons name="arrow-back" size={28} color="#fff" />
+                </TouchableOpacity>
 
-              {/* Back Button */}
-              <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-                <Icons.Ionicons name="arrow-back" size={28} color="#fff" />
-              </TouchableOpacity>
+                {/* Top Bar */}
+                <View style={styles.topBar}>
+                  <Text style={styles.title}>Flyer Scanner</Text>
+                  <Text style={styles.subtitle}>Point at flyer → tap ADD ITEMS</Text>
+                </View>
 
-              {/* Top Bar */}
-              <View style={styles.topBar}>
-                <Text style={styles.title}>Price Scanner</Text>
-                <Text style={styles.subtitle}>Green = price • Blue = name</Text>
+                {/* Bottom Controls */}
+                <View style={styles.bottomBar}>
+                  <TouchableOpacity style={styles.iconBtn} onPress={() => setFlash(f => f === 'off' ? 'on' : 'off')}>
+                    <Icons.MaterialIcons name={flash === 'on' ? 'flash-on' : 'flash-off'} size={28} color="#fff" />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.captureBtn, capturing && styles.captureBtnDisabled]}
+                    onPress={captureAndAnalyzeWithOpenAI}
+                    disabled={capturing}
+                  >
+                    {capturing ? <ActivityIndicator color="#000" /> : <Text style={styles.captureText}>ADD ITEMS</Text>}
+                  </TouchableOpacity>
+
+                  <TouchableOpacity style={styles.iconBtn} onPress={() => setItems([])}>
+                    <Icons.MaterialCommunityIcons name="delete-variant" size={28} color="#fff" />
+                    {items.length > 0 && <View style={styles.badge}><Text style={styles.badgeText}>{items.length}</Text></View>}
+                  </TouchableOpacity>
+                </View>
+
+                {/* ZOOM & TORCH CONTROLS */}
+                <View style={styles.zoomControlContainer} pointerEvents="box-none">
+                  {/* Torch Button */}
+                  <TouchableOpacity style={[styles.torchBtn, torch === 'on' && styles.torchActive]} onPress={() => setTorch(prev => prev === 'off' ? 'on' : 'off')} >
+                    <Icons.MaterialIcons name={torch === 'on' ? 'flashlight-on' : 'flashlight-off'} size={28} color={torch === 'on' ? '#ffd60a' : '#fff'} />
+                  </TouchableOpacity>
+
+                  {/* Zoom Picker Button */}
+                  <TouchableOpacity
+                    style={styles.zoomPickerBtn}
+                    onPress={() => { isZoomPickerOpen.value = !isZoomPickerOpen.value; }}
+                  >
+                    <ReanimatedText style={styles.zoomPickerText}>
+                      {`${currentZoomDisplay?.value.toString()}`}x
+                    </ReanimatedText>
+                    <Icons.Feather name="chevron-right" size={24} color="#fff" style={{ marginLeft: 4 }} />
+                  </TouchableOpacity>
+
+                  {/* Zoom Level Panel */}
+                  <Reanimated.View style={[styles.zoomPickerPanel, animatedZoomPanelStyle]}>
+                    {zoomLevels.map((level) => (
+                      <ZoomLevelButton
+                        key={level}
+                        level={level}
+                        zoom={zoom}
+                        onSelect={(selected) => {
+                          zoom.value = withSpring(selected);
+                          isZoomPickerOpen.value = false;
+                        }}
+                      />
+                    ))}
+                  </Reanimated.View>
+                </View>
+              </Reanimated.View>
+            </TouchableWithoutFeedback>
+          </GestureDetector>
+        </TouchableWithoutFeedback>
+
+        {/* Results + FAB */}
+        <View style={[styles.resultsContainer, { backgroundColor: theme.colors.background }]}>
+          <ScrollView contentContainerStyle={styles.results}>
+            {geminiProcessing ? (
+              <View style={{ alignItems: 'center', marginTop: 50 }}>
+                <ActivityIndicator size="large" color="#58a9f4" />
+                <Text style={{ color: '#888', marginTop: 20 }}>AI processing flyer snapshot...</Text>
               </View>
+            ) : items.length === 0 ? (
+              <Text style={styles.empty}>No items yet. Scan a flyer!</Text>
+            ) : (
+              items.map((item, i) => (
+                <View key={i} style={styles.card}>
+                  <Image source={Images.priceTag} style={styles.thumb} />
+                  <View style={styles.info}>
+                    <Text style={styles.name}>{item.name}</Text>
+                    <Text style={styles.price}>{item.price}</Text>
+                  </View>
+                </View>
+              ))
+            )}
+          </ScrollView>
 
-              {/* Bottom Controls */}
-              <View style={styles.bottomBar}>
-                <TouchableOpacity style={styles.iconBtn} onPress={() => setFlash(f => f === 'off' ? 'on' : 'off')}>
-                  <Icons.MaterialIcons name={flash === 'on' ? 'flash-on' : 'flash-off'} size={28} color="#fff" />
-                </TouchableOpacity>
+          {/* FAB */}
+          <Reanimated.View style={[styles.fab, fabStyle]}>
+            <TouchableOpacity
+              onPress={() => bottomSheetRef.current?.present()}
+              style={styles.fabButton}
+            >
+              <Icons.Feather name="send" size={32} color="#fff" />
+            </TouchableOpacity>
+          </Reanimated.View>
+        </View>
 
-                <TouchableOpacity
-                  style={[styles.captureBtn, processing && styles.captureBtnDisabled]}
-                  onPress={captureAndSave}
-                  disabled={processing}
-                >
-                  {processing ? <ActivityIndicator color="#000" /> : <Text style={styles.captureText}>ADD ITEMS</Text>}
-                </TouchableOpacity>
-
-                <TouchableOpacity style={styles.iconBtn} onPress={() => setItems([])}>
-                  <Icons.MaterialCommunityIcons name="delete-variant" size={28} color="#fff" />
-                  {items.length > 0 && <View style={styles.badge}><Text style={styles.badgeText}>{items.length}</Text></View>}
-                </TouchableOpacity>
-              </View>
-
-              {/* ZOOM & TORCH CONTROLS */}
-              <View style={styles.zoomControlContainer} pointerEvents="box-none">
-                {/* Torch Button */}
-                <TouchableOpacity style={[styles.torchBtn, torch === 'on' && styles.torchActive]} onPress={() => setTorch(prev => prev === 'off' ? 'on' : 'off')} >
-                  <Icons.MaterialIcons name={torch === 'on' ? 'flashlight-on' : 'flashlight-off'} size={28} color={torch === 'on' ? '#ffd60a' : '#fff'} />
-                </TouchableOpacity>
-
-                {/* Zoom Picker Button */}
-                <TouchableOpacity
-                  style={styles.zoomPickerBtn}
-                  onPress={() => { isZoomPickerOpen.value = !isZoomPickerOpen.value; }}
-                >
-                  <ReanimatedText style={styles.zoomPickerText}>
-                    {currentZoomDisplay?.value}x
-                  </ReanimatedText>
-                  <Icons.Feather name="chevron-right" size={24} color="#fff" style={{ marginLeft: 4 }} />
-                </TouchableOpacity>
-
-                {/* Zoom Level Panel */}
-                <Reanimated.View style={[styles.zoomPickerPanel, animatedZoomPanelStyle]}>
-                  {zoomLevels.map((level) => (
-                    <ZoomLevelButton
-                      key={level}
-                      level={level}
-                      zoom={zoom}
-                      onSelect={(selected) => {
-                        zoom.value = withSpring(selected);
-                        isZoomPickerOpen.value = false;
-                      }}
-                    />
-                  ))}
-                </Reanimated.View>
-              </View>
-            </Reanimated.View>
-          </TouchableWithoutFeedback>
-        </GestureDetector>
-      </TouchableWithoutFeedback>
-
-      {/* Results */}
-      <ScrollView style={[styles.results, { backgroundColor: theme.colors.background }]}>
-        {items.length === 0 ? (
-          <Text style={styles.empty}>No items added yet</Text>
-        ) : (
-          items.map((item, i) => (
-            <View key={i} style={styles.card}>
-              <Image source={{ uri: item.imageBase64 }} style={styles.thumb} />
-              <View style={styles.info}>
-                <Text style={styles.name}>{item.name}</Text>
-                <Text style={styles.price}>{item.price}</Text>
-              </View>
-            </View>
-          ))
-        )}
-      </ScrollView>
-    </View>
+        <CommentBottomSheet
+          ref={bottomSheetRef}
+          store={storeName}
+          setStoreName={setStoreName}
+          onSubmit={handleSaveFlyer}
+          onDismiss={() => setStoreName('')}
+          snapPoints={snapPoints}
+          renderBackdrop={renderBackdrop}
+          isSubmiting={isSubmiting}
+        />
+      </View>
+    </BottomSheetModalProvider>
   );
 }
 
@@ -517,7 +608,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#000' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#000' },
   loadingText: { color: '#fff', marginTop: 16, fontSize: 16 },
-  cameraContainer: { flex: 2 },
+  cameraContainer: { height: WINDOW_HEIGHT * 0.6 },
   absoluteFill: {
     position: 'absolute',
     left: 0,
@@ -603,11 +694,50 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   focusRing: { position: 'absolute', width: 80, height: 80, borderRadius: 40, borderWidth: 3, borderColor: '#00ff00', backgroundColor: 'transparent' },
-  results: { flex: 1, paddingHorizontal: 16, paddingVertical: 10, marginBottom: 48 },
+  resultsContainer: { height: WINDOW_HEIGHT * 0.4, marginBottom: 45 },
+  results: { paddingHorizontal: 16, paddingVertical: 20 },
   empty: { textAlign: 'center', color: '#888', marginTop: 60, fontSize: 18 },
   card: { flexDirection: 'row', backgroundColor: '#222', borderRadius: 16, padding: 12, marginBottom: 12 },
   thumb: { width: 90, height: 90, borderRadius: 12, backgroundColor: '#333' },
   info: { flex: 1, justifyContent: 'center', paddingLeft: 16 },
   name: { fontSize: 17, fontWeight: '600', color: '#fff' },
   price: { fontSize: 22, fontWeight: 'bold', color: '#0f0', marginTop: 6 },
+
+  // FAB
+  fab: {
+    position: 'absolute',
+    right: 20,
+    bottom: 20,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#00d4ff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 8,
+    shadowColor: '#00d4ff',
+    shadowOpacity: 0.5,
+    shadowRadius: 10,
+  },
+  fabButton: { width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' },
+
+  // Bottom Sheet
+  sheetContent: { flex: 1, padding: 24 },
+  sheetTitle: { fontSize: 24, fontWeight: 'bold', color: '#fff', textAlign: 'center' },
+  sheetSubtitle: { fontSize: 16, color: '#aaa', textAlign: 'center', marginTop: 8, marginBottom: 30 },
+  input: {
+    backgroundColor: '#333',
+    color: '#fff',
+    padding: 16,
+    borderRadius: 12,
+    fontSize: 18,
+    marginBottom: 20,
+  },
+  submitBtn: {
+    backgroundColor: '#00d4ff',
+    padding: 18,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  submitText: { color: '#000', fontSize: 18, fontWeight: 'bold' },
 });
