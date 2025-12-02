@@ -21,8 +21,7 @@ import { mockTransportationVehicles } from '../../utils/mockData';
 const { width } = Dimensions.get('window');
 
 export default function TransportationDetailsScreen({ navigation, route }) {
-    const { vehicleId } = route.params;
-    const vehicle = mockTransportationVehicles.find(v => v.id === vehicleId);
+    const { vehicle } = route.params;
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [isBookmarked, setIsBookmarked] = useState(false);
 
@@ -38,22 +37,22 @@ export default function TransportationDetailsScreen({ navigation, route }) {
     }
 
     const handleCall = () => {
-        Linking.openURL(`tel:${vehicle.owner.phone}`);
+        Linking.openURL(`tel:${vehicle.owner_info.phone}`);
     };
 
     const handleWhatsApp = () => {
-        Linking.openURL(`whatsapp://send?phone=${vehicle.owner.whatsapp.replace(/[^0-9]/g, '')}`);
+        Linking.openURL(`whatsapp://send?phone=${vehicle.owner_info.whatsapp.replace(/[^0-9]/g, '')}`);
     };
 
     const handleEmail = () => {
-        Linking.openURL(`mailto:${vehicle.owner.email}`);
+        Linking.openURL(`mailto:${vehicle.owner_info.email}`);
     };
 
-    const handleSMS = async (vehicle) => {
-        shareMessage = `Hello ${vehicle?.owner.name}!\n\n`;
+    const handleSMS = async () => {
+        shareMessage = `Hello ${vehicle?.owner_info?.name}!\n\n`;
         const smsUrl = Platform.OS === "ios"
-            ? `sms:&body=${encodeURIComponent(shareMessage)}` // iOS uses semicolon
-            : `smsto:?body=${encodeURIComponent(shareMessage)}`;
+            ? `sms:${vehicle?.owner_info?.phone}&body=${encodeURIComponent(shareMessage)}` // iOS uses semicolon
+            : `smsto:${vehicle?.owner_info?.phone}?body=${encodeURIComponent(shareMessage)}`;
         if (await Linking.canOpenURL(smsUrl))
             await Linking.openURL(smsUrl);
         else
@@ -63,8 +62,8 @@ export default function TransportationDetailsScreen({ navigation, route }) {
     const handleShare = async () => {
         try {
             await Share.share({
-                message: `Check out this vehicle for hire: ${vehicle.title}\nPrice: E ${vehicle.price}${vehicle.priceType === 'per_trip' ? '/trip' : vehicle.priceType === 'per_day' ? '/day' : '/hour'}\nLocation: ${vehicle.location.address}`,
-                title: vehicle.title,
+                message: `Check out this vehicle for hire: ${vehicle.vehicle_category}\nLocation: ${vehicle.location.address}`,
+                title: vehicle.vehicle_type,
             });
         } catch (error) {
             console.log('Error sharing:', error);
@@ -78,16 +77,6 @@ export default function TransportationDetailsScreen({ navigation, route }) {
             { text: 'Fill From', onPress: () => navigation.navigate('BookTransportationScreen', { vehicleId: vehicle.id }) },
         ]);
     }
-
-    const getPriceLabel = (priceType) => {
-        const labels = {
-            per_trip: '/trip',
-            per_day: '/day',
-            per_hour: '/hour',
-            per_km: '/km',
-        };
-        return labels[priceType] || '';
-    };
 
     return (
         <View style={styles.container}>
@@ -106,12 +95,12 @@ export default function TransportationDetailsScreen({ navigation, route }) {
                             setCurrentImageIndex(index);
                         }}
                     >
-                        {vehicle.images.map((image, index) => (
-                            <Image key={index} source={{ uri: image }} style={styles.vehicleImage} resizeMode="cover" />
+                        {vehicle.vehicle_images.map((image, index) => (
+                            <Image key={index} source={{ uri: image?.url }} style={styles.vehicleImage} resizeMode="cover" />
                         ))}
                     </ScrollView>
                     <View style={styles.imageIndicator}>
-                        {vehicle.images.map((_, index) => (
+                        {vehicle.vehicle_images.map((_, index) => (
                             <View
                                 key={index}
                                 style={[
@@ -121,7 +110,7 @@ export default function TransportationDetailsScreen({ navigation, route }) {
                             />
                         ))}
                     </View>
-                    {vehicle.borderCrossing && (
+                    {vehicle.boarder_crossing && (
                         <View style={styles.borderBadge}>
                             <Ionicons name="globe" size={16} color="#fff" />
                             <Text style={styles.borderBadgeText}>Cross Border</Text>
@@ -140,10 +129,16 @@ export default function TransportationDetailsScreen({ navigation, route }) {
                     {/* Header Info */}
                     <View style={styles.header}>
                         <View style={styles.headerLeft}>
-                            <Text style={styles.title}>{vehicle.title}</Text>
+                            <Text style={styles.title}>
+                                {
+                                    vehicle.vehicle_category.replace(/_/g, ' ')
+                                        .split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                        .join(' ')
+                                }
+                            </Text>
                             <View style={styles.vehicleInfoRow}>
-                                <Text style={styles.makeModel}>{vehicle.make} {vehicle.model}</Text>
-                                <Text style={styles.year}>• {vehicle.year}</Text>
+                                <Text style={styles.makeModel}>{vehicle.vehicle_make} {vehicle.model}</Text>
+                                <Text style={styles.year}>• {vehicle.year_made}</Text>
                                 <Text style={styles.registration}>• {vehicle.registration}</Text>
                             </View>
                             <View style={styles.locationRow}>
@@ -153,41 +148,30 @@ export default function TransportationDetailsScreen({ navigation, route }) {
                         </View>
                     </View>
 
-                    {/* Price */}
-                    <View style={styles.priceContainer}>
-                        <View>
-                            <Text style={styles.price}>E {vehicle.price.toLocaleString()}</Text>
-                            <Text style={styles.pricePeriod}>{getPriceLabel(vehicle.priceType)}</Text>
-                        </View>
-                        <View style={styles.categoryBadge}>
-                            <Text style={styles.categoryText}>{vehicle.category.replace('_', ' ').toUpperCase()}</Text>
-                        </View>
-                    </View>
-
                     {/* Key Details */}
                     <View style={styles.detailsGrid}>
-                        {vehicle.capacity && (
+                        {vehicle.vehicle_capacity && (
                             <View style={styles.detailBox}>
                                 <Ionicons name="people" size={24} color="#2563eb" />
-                                <Text style={styles.detailValue}>{vehicle.capacity}</Text>
+                                <Text style={styles.detailValue}>{vehicle.vehicle_capacity}</Text>
                                 <Text style={styles.detailLabel}>Seats</Text>
                             </View>
                         )}
-                        {vehicle.cargoCapacity && (
+                        {vehicle.cargo_capacity && (
                             <View style={styles.detailBox}>
                                 <Ionicons name="cube" size={24} color="#2563eb" />
-                                <Text style={styles.detailValue}>{vehicle.cargoCapacity}T</Text>
+                                <Text style={styles.detailValue}>{vehicle.cargo_capacity}T</Text>
                                 <Text style={styles.detailLabel}>Capacity</Text>
                             </View>
                         )}
                         <View style={styles.detailBox}>
                             <Ionicons name="time" size={24} color="#2563eb" />
-                            <Text style={styles.detailValue}>{vehicle.operatingHours.start}</Text>
+                            <Text style={styles.detailValue}>{vehicle.operating_start}</Text>
                             <Text style={styles.detailLabel}>Start Time</Text>
                         </View>
                         <View style={styles.detailBox}>
                             <Ionicons name="time-outline" size={24} color="#2563eb" />
-                            <Text style={styles.detailValue}>{vehicle.operatingHours.end}</Text>
+                            <Text style={styles.detailValue}>{vehicle.operating_end}</Text>
                             <Text style={styles.detailLabel}>End Time</Text>
                         </View>
                     </View>
@@ -229,7 +213,7 @@ export default function TransportationDetailsScreen({ navigation, route }) {
                                             <Text style={styles.routeDetailText}>E {route.price.toLocaleString()}</Text>
                                         </View>
                                     </View>
-                                    {route.borderCrossing && (
+                                    {route.boarder_crossing && (
                                         <View style={styles.borderRouteBadge}>
                                             <Ionicons name="globe" size={14} color="#10b981" />
                                             <Text style={styles.borderRouteText}>Cross Border Route</Text>
@@ -246,11 +230,11 @@ export default function TransportationDetailsScreen({ navigation, route }) {
                         <View style={styles.scheduleContainer}>
                             <View style={styles.scheduleRow}>
                                 <Text style={styles.scheduleLabel}>Days:</Text>
-                                <Text style={styles.scheduleValue}>{vehicle.operatingDays.join(', ')}</Text>
+                                <Text style={styles.scheduleValue}>{vehicle.operating_days.join(', ')}</Text>
                             </View>
                             <View style={styles.scheduleRow}>
                                 <Text style={styles.scheduleLabel}>Hours:</Text>
-                                <Text style={styles.scheduleValue}>{vehicle.operatingHours.start} - {vehicle.operatingHours.end}</Text>
+                                <Text style={styles.scheduleValue}>{vehicle.operating_start} - {vehicle.operating_end}</Text>
                             </View>
                         </View>
                     </View>
@@ -259,7 +243,7 @@ export default function TransportationDetailsScreen({ navigation, route }) {
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Features</Text>
                         <View style={styles.featuresGrid}>
-                            {vehicle.features.map((feature, index) => (
+                            {vehicle.vehicle_features.map((feature, index) => (
                                 <View key={index} style={styles.featureItem}>
                                     <Ionicons name="checkmark-circle" size={18} color="#10b981" />
                                     <Text style={styles.featureText}>{feature}</Text>
@@ -274,8 +258,8 @@ export default function TransportationDetailsScreen({ navigation, route }) {
                         <View style={styles.ownerCard}>
                             <View style={styles.ownerHeader}>
                                 <View style={styles.ownerInfo}>
-                                    <Text style={styles.ownerName}>{vehicle.owner.name}</Text>
-                                    {vehicle.owner.verified && (
+                                    <Text style={styles.ownerName}>{vehicle.owner_info.name}</Text>
+                                    {vehicle.vehicle_certifications.license && (
                                         <View style={styles.verifiedBadge}>
                                             <Ionicons name="checkmark-circle" size={16} color="#10b981" />
                                             <Text style={styles.verifiedText}>Verified</Text>
@@ -284,20 +268,23 @@ export default function TransportationDetailsScreen({ navigation, route }) {
                                 </View>
                                 <View style={styles.ratingContainer}>
                                     <Ionicons name="star" size={16} color="#fbbf24" />
-                                    <Text style={styles.rating}>{vehicle.owner.rating}</Text>
+                                    <Text style={styles.rating}>{vehicle.rating}</Text>
                                 </View>
                             </View>
-                            <Text style={styles.responseTime}>Response Time: {vehicle.owner.responseTime}</Text>
+                            <Text style={styles.responseTime}>Response Time: {vehicle.owner_info.responsetime}</Text>
                             <View style={styles.contactButtons}>
                                 <TouchableOpacity style={styles.contactButton} onPress={handleCall}>
                                     <Ionicons name="call-outline" size={30} color="#2563eb" />
                                 </TouchableOpacity>
+
                                 <TouchableOpacity style={styles.contactButton} onPress={handleWhatsApp}>
                                     <Ionicons name="logo-whatsapp" size={30} color="#25D366" />
                                 </TouchableOpacity>
+
                                 <TouchableOpacity style={styles.contactButton} onPress={handleEmail}>
                                     <Ionicons name="mail-outline" size={30} color="#eb2550ff" />
                                 </TouchableOpacity>
+
                                 <TouchableOpacity style={styles.contactButton} onPress={handleSMS}>
                                     <Icons.MaterialIcons name="message" size={30} color="#2563eb" />
                                 </TouchableOpacity>
@@ -309,19 +296,19 @@ export default function TransportationDetailsScreen({ navigation, route }) {
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Certifications</Text>
                         <View style={styles.certificationsContainer}>
-                            {vehicle.insurance && (
+                            {vehicle.vehicle_certifications?.insurance && (
                                 <View style={styles.certificationItem}>
                                     <Ionicons name="shield-checkmark" size={20} color="#10b981" />
                                     <Text style={styles.certificationText}>Fully Insured</Text>
                                 </View>
                             )}
-                            {vehicle.license && (
+                            {vehicle.vehicle_certifications?.license && (
                                 <View style={styles.certificationItem}>
                                     <Ionicons name="document-text" size={20} color="#10b981" />
                                     <Text style={styles.certificationText}>Licensed</Text>
                                 </View>
                             )}
-                            {vehicle.borderCrossing && (
+                            {vehicle.boarder_crossing && (
                                 <View style={styles.certificationItem}>
                                     <Ionicons name="globe" size={20} color="#10b981" />
                                     <Text style={styles.certificationText}>Border Crossing Approved</Text>
@@ -500,7 +487,7 @@ const styles = StyleSheet.create({
         flex: 1,
         alignItems: 'center',
         backgroundColor: '#fff',
-        padding: 16,
+        padding: 5,
         borderRadius: 12,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },

@@ -166,7 +166,7 @@ export default function PamphletScanner({ navigation }) {
   const [capturing, setCapturing] = useState(false);
   const [geminiProcessing, setGeminiProcessing] = useState(false);
   const [isSubmiting, setIsSubmiting] = useState(false);
-  const [isFAB, setIsFAB] = useState(true);
+  const [isFAB, setIsFAB] = useState(false);
 
   // Bottom Sheet
   const bottomSheetRef = useRef(null);
@@ -293,6 +293,7 @@ export default function PamphletScanner({ navigation }) {
     setGeminiProcessing(true)
     try {
       const photoUri = `file://${path}`;
+
       const base64 = await FileSystem.readAsStringAsync(photoUri, {
         encoding: FileSystem.EncodingType.Base64,
       });
@@ -536,20 +537,18 @@ export default function PamphletScanner({ navigation }) {
             )}
           </ScrollView>
 
-          {/* FAB */}
-          {isFAB &&
-            <Reanimated.View style={[styles.fab, fabStyle]}>
-              <TouchableOpacity
-                onPress={() => {
-                  bottomSheetRef.current?.present()
-                  setIsFAB(false)
-                }}
-                style={styles.fabButton}
-              >
-                <Icons.Feather name="send" size={32} color="#fff" />
-              </TouchableOpacity>
-            </Reanimated.View>
-          }
+          <Reanimated.View style={[styles.fab, fabStyle]}>
+            <TouchableOpacity
+              onPress={() => {
+                bottomSheetRef.current?.present()
+                setIsFAB(true)
+              }}
+              style={styles.fabButton}
+              disabled={isFAB}
+            >
+              <Icons.Feather name="send" size={32} color="#fff" />
+            </TouchableOpacity>
+          </Reanimated.View>
         </View>
 
         <CommentBottomSheet

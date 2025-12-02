@@ -10,9 +10,9 @@ import {
     Linking,
     Image,
     TextInput,
+    RefreshControl,
     Alert,
 } from 'react-native';
-import * as Location from 'expo-location';
 import { Icons } from '../../constants/Icons';
 import {
     BottomSheetModal,
@@ -20,11 +20,11 @@ import {
     BottomSheetView,
     BottomSheetBackdrop,
 } from '@gorhom/bottom-sheet';
+import { CustomToast } from '../../components/customToast';
 import { AppContext } from "../../context/appContext"
 import { getForHireTransport } from '../../service/Supabase-Fuctions';
 import CustomLoader from '../../components/customLoader';
 import SecondaryNav from '../../components/SecondaryNav';
-import { mockTransportationVehicles } from '../../utils/mockData';
 
 // ──────────────────────────────────────────────────────────────
 // Haversine Distance Calculator
@@ -179,10 +179,12 @@ export default function TransportationListScreen({ navigation }) {
     const [showSortOptions, setShowSortOptions] = useState(false);
     const [likedVehicles, setLikedVehicles] = useState(new Set());
     const [vehicleRatings, setVehicleRatings] = useState({});
-    const [showNearByLimit, setShowNearByLimit] = useState(3);
-    const [showOtherLimit, setShowOtherLimit] = useState(3);
-    const [currentLocation, setCurrentLocation] = useState(null);
-    const [locationStatus, setLocationStatus] = useState('idle');
+    const [isRefreshing, setIsRefreshing] = useState(false);
+
+    // Vehicle state
+    const [vehicles, setVehicles] = useState([]);
+    const [filteredVehicles, setFilteredVehicles] = useState([]);
+    const [loading, setLoading] = useState(false);
 
     // Bottom sheets
     const commentSheetRef = useRef(null);
@@ -193,90 +195,61 @@ export default function TransportationListScreen({ navigation }) {
     const [ratingVehicleId, setRatingVehicleId] = useState(null);
     const [comments, setComments] = useState({});
 
-    const NEARBY_THRESHOLD_KM = 10;
     const types = ['All', 'Minibus', 'Bus', 'Van', 'Truck', 'Lory', 'SUV', 'Sedan'];
     const categories = ['All', 'Public Transport', 'Cargo', 'Passenger', 'Luxury'];
 
-    // ────── Location Permission & Fetch ──────
+    // ────── Fetch vehicles onmount ──────
     useEffect(() => {
-        let mounted = true;
-        (async () => {
-            setLocationStatus('requesting');
-            const { status } = await Location.requestForegroundPermissionsAsync();
-            if (status !== 'granted') {
-                setLocationStatus('denied');
-                return;
-            }
-            setLocationStatus('granted');
-            const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-            if (mounted) {
-                setCurrentLocation({
-                    latitude: pos.coords.latitude,
-                    longitude: pos.coords.longitude,
-                });
-            }
-        })();
         getAllForeHire();
-        return () => { mounted = false; };
     }, []);
 
+    useEffect(() => {
+        const filtered_v = filterVehicles(vehicles);
+        setFilteredVehicles(filtered_v)
+    }, [vehicles, selectedType, sortByCategory, sortByBorderCrossing, searchQuery])
+
     const getAllForeHire = async () => {
-        const vehicles = await getForHireTransport()
-        console.log('vehicles: ', vehicles)
-    }
+        try {
+            setLoading(true);
+            const data = await getForHireTransport();
+            data?.length !== 0 && setVehicles(data);
+        } catch (err) {
+            console.error('Error fetching vehicles:', err);
+            setVehicles([]);
+            setLoading(false)
+        } finally {
+            setLoading(false);
+        }
+    };
 
     // ────── Process & Sort Vehicles ──────
-    const processedVehicles = useMemo(() => {
-        let filtered = mockTransportationVehicles.filter(vehicle => {
+    const filterVehicles = (data = vehicles) => {
+        let filtered = data?.filter(vehicle => {
             const matchesType = selectedType === 'All' ||
-                vehicle.type.toLowerCase() === selectedType.toLowerCase() ||
-                (selectedType === 'Minibus' && vehicle.type === 'minibus');
+                vehicle.vehicle_type.toLowerCase().trim() === selectedType.toLowerCase() ||
+                (selectedType === 'Minibus' && vehicle.vehicle_type.trim() === 'minibus');
 
             const matchesCategory = sortByCategory === 'All' ||
-                (sortByCategory === 'Public Transport' && vehicle.category === 'public_transport') ||
-                (sortByCategory === 'Cargo' && vehicle.category === 'cargo') ||
-                (sortByCategory === 'Passenger' && vehicle.category === 'passenger') ||
-                (sortByCategory === 'Luxury' && vehicle.category === 'luxury');
+                (sortByCategory === 'Public Transport' && vehicle.vehicle_category.trim() === 'public_transport') ||
+                (sortByCategory === 'Cargo' && vehicle.vehicle_category.trim() === 'cargo') ||
+                (sortByCategory === 'Passenger' && vehicle.vehicle_category.trim() === 'passenger') ||
+                (sortByCategory === 'Luxury' && vehicle.vehicle_category.trim() === 'luxury');
 
             const matchesBorder = sortByBorderCrossing === 'All' ||
-                (sortByBorderCrossing === 'Yes' && vehicle.borderCrossing) ||
-                (sortByBorderCrossing === 'No' && !vehicle.borderCrossing);
+                (sortByBorderCrossing === 'Yes' && vehicle.boarder_crossing) ||
+                (sortByBorderCrossing === 'No' && !vehicle.boarder_crossing);
 
             const q = searchQuery.toLowerCase().trim();
             const matchesSearch = !q ||
-                vehicle.title.toLowerCase().includes(q) ||
-                vehicle.make?.toLowerCase().includes(q) ||
-                vehicle.model?.toLowerCase().includes(q) ||
-                vehicle.description?.toLowerCase().includes(q);
+                vehicle.vehicle_make?.toLowerCase().trim().includes(q) ||
+                vehicle.vehicle_type?.toLowerCase().trim().includes(q) ||
+                vehicle.vehicle_model?.toLowerCase().trim().includes(q) ||
+                vehicle.description?.toLowerCase().trim().includes(q);
 
             return matchesType && matchesCategory && matchesBorder && matchesSearch;
         });
-
-        // Add distance
-        filtered = filtered.map(v => ({
-            ...v,
-            distance: currentLocation && v.location?.coordinates
-                ? calculateDistance(
-                    currentLocation.latitude,
-                    currentLocation.longitude,
-                    v.location.coordinates.latitude,
-                    v.location.coordinates.longitude
-                )
-                : null,
-        }));
-
-        // Primary sort: nearest first
-        filtered.sort((a, b) => {
-            if (a.distance === null) return 1;
-            if (b.distance === null) return -1;
-            return a.distance - b.distance;
-        });
-
-        return filtered;
-    }, [selectedType, sortByCategory, sortByBorderCrossing, searchQuery, currentLocation]);
-
-    const nearByVehicles = useMemo(() => processedVehicles.filter(v => v.distance !== null && v.distance <= NEARBY_THRESHOLD_KM), [processedVehicles]);
-    const otherVehicles = useMemo(() => processedVehicles.filter(v => !v.distance || v.distance > NEARBY_THRESHOLD_KM), [processedVehicles]);
+        return filtered?.sort(() => Math.random() - 0.5);
+    };
 
     // ────── Interactions ──────
     const toggleLike = (id) => {
@@ -325,23 +298,38 @@ export default function TransportationListScreen({ navigation }) {
         <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.5} />
     ), []);
 
+    const ActiveFilterChip = ({ label, icon, onClear }) => {
+        return (
+            <View style={styles.activeFilterChip}>
+                {icon && <Icons.Ionicons name={icon} size={15} color="#1e40af" style={{ marginRight: 6 }} />}
+                <Text style={styles.activeFilterText}>{label}</Text>
+                <TouchableOpacity
+                    onPress={onClear}
+                    hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                >
+                    <Icons.Ionicons name="close-circle" size={18} color="#1e40af" />
+                </TouchableOpacity>
+            </View>
+        );
+    };
+
     const handleCall = (vehicle) => {
-        Linking.openURL(`tel:${vehicle.owner.phone}`);
+        Linking.openURL(`tel:${vehicle.owner_info.phone}`);
     };
 
     const handleWhatsApp = (vehicle) => {
-        Linking.openURL(`whatsapp://send?phone=${vehicle.owner.whatsapp.replace(/[^0-9]/g, '')}`);
+        Linking.openURL(`whatsapp://send?phone=${vehicle.owner_info.whatsapp.replace(/[^0-9]/g, '')}`);
     };
 
     const handleEmail = (vehicle) => {
-        Linking.openURL(`mailto:${vehicle.owner.email}`);
+        Linking.openURL(`mailto:${vehicle.owner_info.email}`);
     };
 
     const handleSMS = async (vehicle) => {
-        shareMessage = `Hello ${vehicle?.owner.name}!\n\n`;
+        shareMessage = `Hello ${vehicle?.owner_info.name}!\n\n`;
         const smsUrl = Platform.OS === "ios"
-            ? `sms:&body=${encodeURIComponent(shareMessage)}` // iOS uses semicolon
-            : `smsto:?body=${encodeURIComponent(shareMessage)}`;
+            ? `sms:${vehicle?.owner_info?.phone}&body=${encodeURIComponent(shareMessage)}` // iOS uses semicolon
+            : `smsto:${vehicle?.owner_info?.phone}?body=${encodeURIComponent(shareMessage)}`;
         if (await Linking.canOpenURL(smsUrl))
             await Linking.openURL(smsUrl);
         else
@@ -365,25 +353,25 @@ export default function TransportationListScreen({ navigation }) {
                 key={vehicle.id}
                 style={styles.vehicleCard}
                 activeOpacity={0.92}
-                onPress={() => navigation.navigate('TransportationDetailsScreen', { vehicleId: vehicle.id })}
+                onPress={() => navigation.navigate('TransportationDetailsScreen', { vehicle: vehicle })}
             >
                 {/* Background Image */}
-                <Image source={{ uri: vehicle.images[0] }} style={styles.vehicleImage} />
+                <Image source={{ uri: vehicle?.vehicle_images[0]?.url }} style={styles.vehicleImage} />
 
                 {/* Overlay Content */}
                 <View style={styles.overlayContent}>
                     {/* Top Badges */}
                     <View style={styles.topBadges}>
                         <View style={styles.typeBadge}>
-                            <Text style={styles.typeBadgeText}>{getTypeLabel(vehicle.type)}</Text>
+                            <Text style={styles.typeBadgeText}>{getTypeLabel(vehicle.vehicle_type)}</Text>
                         </View>
-                        {vehicle.borderCrossing && (
+                        {vehicle.boarder_crossing && (
                             <View style={styles.borderBadge}>
                                 <Icons.Ionicons name="globe" size={13} color="#fff" />
                                 <Text style={styles.borderBadgeText}>Cross-Border</Text>
                             </View>
                         )}
-                        {vehicle.owner.verified && (
+                        {vehicle?.vehicle_certifications?.license && (
                             <Icons.Ionicons name="checkmark-circle" size={20} color="#10b981" style={{ marginLeft: 8 }} />
                         )}
                     </View>
@@ -391,18 +379,21 @@ export default function TransportationListScreen({ navigation }) {
                     {/* Main Info */}
                     <View style={styles.infoContainer}>
                         <Text style={styles.vehicleTitle} numberOfLines={1}>
-                            {vehicle.title}
+                            {vehicle.vehicle_category.replace(/_/g, ' ')
+                                .split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                .join(' ')
+                            }
                         </Text>
                         <Text style={styles.vehicleSubtitle} numberOfLines={1}>
-                            {vehicle.make} {vehicle.model} • {vehicle.year}
+                            {vehicle.vehicle_make} {vehicle.vehicle_model} • {vehicle.year_made}
                         </Text>
 
                         {/* Location + Distance */}
                         <View style={styles.locationRow}>
                             <Icons.Ionicons name="location" size={14} color="#fff" />
                             <Text style={styles.locationText}>
-                                {vehicle.location.city || vehicle.location.area}
-                                {vehicle.distance !== null && ` • ${vehicle.distance.toFixed(1)} km`}
+                                {vehicle?.location?.city || vehicle.location.area}
+                                {`• ${vehicle?.location?.address}`}
                             </Text>
                         </View>
 
@@ -410,12 +401,12 @@ export default function TransportationListScreen({ navigation }) {
                         <View style={styles.specsRow}>
                             {vehicle.capacity && (
                                 <View style={styles.specPill}>
-                                    <Text style={styles.specText}>{vehicle.capacity} seats</Text>
+                                    <Text style={styles.specText}>{vehicle.vehicle_capacity} seats</Text>
                                 </View>
                             )}
                             {vehicle.cargoCapacity && (
                                 <View style={styles.specPill}>
-                                    <Text style={styles.specText}>{vehicle.cargoCapacity}t cargo</Text>
+                                    <Text style={styles.specText}>{vehicle.cargo_capacity}t cargo</Text>
                                 </View>
                             )}
                         </View>
@@ -443,16 +434,16 @@ export default function TransportationListScreen({ navigation }) {
                 {/* Footer Below Image */}
                 <View style={styles.cardFooter}>
                     <View style={styles.contactButtons}>
-                        <TouchableOpacity style={styles.contactButton} onPress={handleCall}>
+                        <TouchableOpacity style={styles.contactButton} onPress={() => handleCall(vehicle)}>
                             <Icons.Ionicons name="call-outline" size={20} color="#2563eb" />
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.contactButton} onPress={handleWhatsApp}>
+                        <TouchableOpacity style={styles.contactButton} onPress={() => handleWhatsApp(vehicle)}>
                             <Icons.Ionicons name="logo-whatsapp" size={20} color="#25D366" />
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.contactButton} onPress={handleEmail}>
+                        <TouchableOpacity style={styles.contactButton} onPress={() => handleEmail(vehicle)}>
                             <Icons.Ionicons name="mail-outline" size={20} color="#eb2560ff" />
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.contactButton} onPress={handleSMS}>
+                        <TouchableOpacity style={styles.contactButton} onPress={() => handleSMS(vehicle)}>
                             <Icons.MaterialIcons name="message" size={20} color="#2563eb" />
                         </TouchableOpacity>
                     </View>
@@ -460,6 +451,25 @@ export default function TransportationListScreen({ navigation }) {
             </TouchableOpacity>
         );
     };
+
+    const handleRefresh = async () => {
+        try {
+            setIsRefreshing(true);
+            await getAllForeHire();
+            CustomToast('Refreshed 👍', 'Fore-Hire vehicles refreshed successfully');
+
+        } catch (err) {
+            console.log('General Error:', err.message);
+            err &&
+                CustomToast('Error', 'An error occurred.');
+        } finally {
+            setIsRefreshing(false);
+        }
+    };
+
+    const onRefresh = useCallback(() => {
+        handleRefresh();
+    }, []);
 
     // ────── JSX ──────
     return (
@@ -473,28 +483,37 @@ export default function TransportationListScreen({ navigation }) {
                     onRightPress={() => setShowSortOptions(true)}
                 />
 
+                {loading && <CustomLoader />}
+
                 {/* Active Filters Bar – Premium & Always Visible When Filters Applied */}
                 {(sortByCategory !== 'All' || sortByBorderCrossing !== 'All') && (
                     <View style={styles.activeFiltersBar}>
                         <ScrollView
                             horizontal
                             showsHorizontalScrollIndicator={false}
-                            contentContainerStyle={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+                            contentContainerStyle={styles.activeFiltersContent}
                         >
-                            {sortByBorderCrossing !== 'All' && (
-                                <View style={styles.activeFilterChip}>
-                                    <Icons.Ionicons name="globe-outline" size={15} color="#1e40af" />
-                                    <Text style={styles.activeFilterText}>Border: {sortByBorderCrossing}</Text>
-                                    <TouchableOpacity
-                                        onPress={() => setSortByBorderCrossing('All')}
-                                        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                                    >
-                                        <Icons.Ionicons name="close-circle" size={18} color="#1e40af" />
-                                    </TouchableOpacity>
-                                </View>
+                            {/* Category Chip */}
+                            {sortByCategory !== 'All' && (
+                                <ActiveFilterChip
+                                    label={`Category: ${sortByCategory}`}
+                                    onClear={() => setSortByCategory('All')}
+                                />
                             )}
 
-                            {/* Clear All */}
+                            {/* Border Crossing Chip */}
+                            {sortByBorderCrossing !== 'All' && (
+                                <ActiveFilterChip
+                                    label={`Border: ${sortByBorderCrossing}`}
+                                    icon="globe-outline"
+                                    onClear={() => setSortByBorderCrossing('All')}
+                                />
+                            )}
+
+                            {/* Spacer to push "Clear All" to the right */}
+                            <View style={{ flex: 1 }} />
+
+                            {/* Clear All Button */}
                             <TouchableOpacity
                                 style={styles.clearAllButton}
                                 onPress={() => {
@@ -502,7 +521,8 @@ export default function TransportationListScreen({ navigation }) {
                                     setSortByBorderCrossing('All');
                                 }}
                             >
-                                <Text style={styles.clearAllText}>Clear</Text>
+                                <Icons.Ionicons name="close" size={16} color="#64748b" />
+                                <Text style={styles.clearAllText}>Clear All</Text>
                             </TouchableOpacity>
                         </ScrollView>
                     </View>
@@ -590,9 +610,18 @@ export default function TransportationListScreen({ navigation }) {
                 )}
 
                 {/* Main Content */}
-                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 30 }}>
+                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 30 }}
+                    refreshControl={
+                        <RefreshControl
+                            refreshing={isRefreshing}
+                            onRefresh={onRefresh}
+                            colors={[theme.colors.primary]}
+                            progressBackgroundColor={theme.colors.card}
+                        />
+                    }
+                >
                     <View style={styles.resultsHeader}>
-                        <Text style={styles.resultsCount}>{processedVehicles.length} vehicles available</Text>
+                        <Text style={styles.resultsCount}>{filteredVehicles?.length} vehicles available</Text>
                         <TouchableOpacity
                             style={styles.postBtn}
                             onPress={() => navigation.navigate('PostTransportationScreen')}
@@ -603,34 +632,15 @@ export default function TransportationListScreen({ navigation }) {
                     </View>
 
                     {/* Nearby Section */}
-                    {nearByVehicles.length > 0 && (
-                        <View style={styles.section}>
-                            <View style={styles.sectionHeader}>
-                                <Text style={styles.sectionTitle}>Nearby ({nearByVehicles.length})</Text>
-                                {nearByVehicles.length > showNearByLimit && (
-                                    <TouchableOpacity onPress={() => setShowNearByLimit(nearByVehicles.length)}>
-                                        <Text style={styles.seeAllText}>See all</Text>
-                                    </TouchableOpacity>
-                                )}
-                            </View>
-                            {nearByVehicles.slice(0, showNearByLimit).map(renderVehicleCard)}
+                    <View style={styles.section}>
+                        <View style={styles.sectionHeader}>
+                            <Text style={styles.sectionTitle}>All Vehicles ({filteredVehicles?.length})</Text>
+                            <TouchableOpacity onPress={() => { }}>
+                                <Text style={styles.seeAllText}>See all</Text>
+                            </TouchableOpacity>
                         </View>
-                    )}
-
-                    {/* Other Vehicles */}
-                    {otherVehicles.length > 0 && (
-                        <View style={styles.section}>
-                            <View style={styles.sectionHeader}>
-                                <Text style={styles.sectionTitle}>All Vehicles ({otherVehicles.length})</Text>
-                                {otherVehicles.length > showOtherLimit && (
-                                    <TouchableOpacity onPress={() => setShowOtherLimit(otherVehicles.length)}>
-                                        <Text style={styles.seeAllText}>See all</Text>
-                                    </TouchableOpacity>
-                                )}
-                            </View>
-                            {otherVehicles.slice(0, showOtherLimit).map(renderVehicleCard)}
-                        </View>
-                    )}
+                        {filteredVehicles.map(renderVehicleCard)}
+                    </View>
                 </ScrollView>
 
                 {/* Bottom Sheets */}
@@ -665,25 +675,50 @@ const styles = StyleSheet.create({
 
     // Active Filters Bar
     activeFiltersBar: {
-        paddingHorizontal: 10,
+        paddingHorizontal: 16,
+        paddingVertical: 12,
         backgroundColor: '#eff6ff',
-        paddingVertical: 10,
         borderBottomWidth: 1,
         borderBottomColor: '#dbeafe',
     },
+
+    activeFiltersContent: {
+        alignItems: 'center',
+        gap: 10,
+        paddingRight: 20, // gives space for Clear All
+    },
+
     activeFilterChip: {
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#dbeafe',
         paddingHorizontal: 14,
+        paddingVertical: 9,
+        borderRadius: 30,
+        gap: 8,
+    },
+
+    activeFilterText: {
+        fontSize: 13.5,
+        fontWeight: '600',
+        color: '#1e40af',
+    },
+
+    clearAllButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#f1f5f9',
+        paddingHorizontal: 14,
         paddingVertical: 8,
-        borderRadius: 20,
-        marginRight: 10,
+        borderRadius: 30,
         gap: 6,
     },
-    activeFilterText: { fontSize: 13, fontWeight: '600', color: '#1e40af' },
-    clearAllBtn: { marginLeft: 10 },
-    clearAllText: { fontSize: 13, color: '#64748b', fontWeight: '500' },
+
+    clearAllText: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#64748b',
+    },
 
     searchBar: {
         flexDirection: 'row',

@@ -7,7 +7,7 @@ import { Images } from '../../constants/Images';
 const { width } = Dimensions.get('window');
 
 export default function ComboCard({ deal }) {
-  const { picked, basket, addToBasket, pickItem } = useBasket();
+  const { picked, pickItem } = useBasket();
   const isSelected = picked.some(i => i.id === deal.id);
 
   return (
@@ -15,7 +15,7 @@ export default function ComboCard({ deal }) {
       requestAnimationFrame(() => pickItem({ ...deal }, deal.store));
     }}>
       <ImageBackground
-        source={Images.product} // replace with real combo photos
+        source={Images.combo} // replace with real combo photos
         style={styles.card}
         imageStyle={styles.bgImage}
       >
@@ -49,7 +49,7 @@ const styles = StyleSheet.create({
     elevation: 8
   },
   bgImage: { opacity: 0.9 },
-  overlay: { flex: 1, backgroundColor: 'rgba(230,31,70,0.75)', padding: 20, justifyContent: 'space-between' },
+  overlay: { flex: 1, backgroundColor: 'rgba(108, 107, 107, 0.75)', padding: 20, justifyContent: 'space-between' },
   title: { color: '#fff', fontSize: 22, fontWeight: '900' },
   items: { color: '#fff', fontSize: 15, marginTop: 8, fontWeight: '600' },
   bottom: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end' },

@@ -1,45 +1,156 @@
 import React from 'react';
-import { View, Text, Image, TouchableOpacity, StyleSheet } from 'react-native';
+import {
+  View, Text, ImageBackground, TouchableOpacity, StyleSheet,
+} from 'react-native';
 import { useBasket } from '../../context/basketContext';
-import { Images } from '../../constants/Images';
 import { Icons } from '../../constants/Icons';
+import { Images } from '../../constants/Images';
+import Animated, { ZoomIn } from 'react-native-reanimated';
 
 const SingleDealCard = ({ deal }) => {
-  const { addToBasket, basket, picked, pickItem } = useBasket();
+  const { picked, pickItem } = useBasket();
   const isSelected = picked.some(i => i.id === deal.id);
 
   return (
     <TouchableOpacity
-      style={[styles.card, isSelected && styles.selected]}
+      activeOpacity={0.92}
+      style={styles.cardContainer}
       onPress={() => {
         requestAnimationFrame(() => pickItem({ ...deal }, deal.store));
       }}
     >
-      <Image
-        source={Images.product}
-        style={styles.image}
-        defaultSource={Images.item}
-      />
-      <View style={styles.content}>
-        <Text style={styles.name} numberOfLines={2}>{deal.name}</Text>
-        <Text style={styles.store}>{deal.store}</Text>
-        <Text style={styles.price}>SZL {deal.price.toFixed(2)}</Text>
-      </View>
-      {isSelected && <View style={styles.check}><Icons.Feather name='check-circle' color={'#fff'} size={30} /></View>}
+      <ImageBackground
+        source={Images.single}
+        style={styles.imageBackground}
+        imageStyle={styles.imageStyle}
+        resizeMode="cover"
+      >
+        <View style={styles.overlay} />
+
+        {/* Content on top of image */}
+        <View style={styles.content}>
+          <Text style={styles.name} numberOfLines={2}>
+            {deal.name}
+          </Text>
+
+          <Text style={styles.store}>{deal.store}</Text>
+
+          <Text style={styles.price}>SZL {deal.price.toFixed(2)}</Text>
+        </View>
+
+        {/* Selected Checkmark with animation */}
+        {isSelected && (
+          <Animated.View
+            entering={ZoomIn.duration(300)}
+            style={styles.selectedBadge}
+          >
+            <Icons.Feather name="check" size={28} color="#fff" />
+          </Animated.View>
+        )}
+
+        {/* Optional: Glow border when selected */}
+        {isSelected && <View style={styles.glowBorder} />}
+      </ImageBackground>
     </TouchableOpacity>
   );
-}
+};
 
 const styles = StyleSheet.create({
-  card: { width: '46%', backgroundColor: '#fff', borderRadius: 16, margin: '2%', elevation: 4, overflow: 'hidden' },
-  selected: { borderColor: '#4CAF50', borderWidth: 3 },
-  image: { width: '100%', height: 100 },
-  content: { padding: 12 },
-  name: { fontSize: 14, fontWeight: '600', color: '#333' },
-  store: { fontSize: 12, color: '#E61F46', marginTop: 4 },
-  price: { fontSize: 18, fontWeight: 'bold', color: '#E61F46', marginTop: 8 },
-  check: { position: 'absolute', top: 8, right: 8, backgroundColor: '#4CAF50', borderRadius: 20, padding: 4 },
-  checkText: { color: '#fff', fontSize: 16 },
+  cardContainer: {
+    width: '46%',
+    margin: '2%',
+    height: 150,
+    borderRadius: 20,
+    overflow: 'hidden',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    position: 'relative',
+  },
+
+  imageBackground: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'flex-end',
+  },
+
+  imageStyle: {
+    borderRadius: 20,
+  },
+
+  overlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(108, 107, 107, 0.75)',
+    borderRadius: 20,
+  },
+
+  content: {
+    padding: 10,
+  },
+
+  name: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#fff',
+    lineHeight: 20,
+    textShadowColor: 'rgba(0,0,0,0.6)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
+  },
+
+  store: {
+    fontSize: 12,
+    color: '#FFD700',
+    marginTop: 4,
+    fontWeight: '600',
+    textShadowColor: 'rgba(0,0,0,0.6)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+  },
+
+  price: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: '#fff',
+    marginTop: 8,
+    textShadowColor: 'rgba(0,0,0,0.7)',
+    textShadowOffset: { width: 1, height: 2 },
+    textShadowRadius: 4,
+  },
+
+  selectedBadge: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    backgroundColor: '#4CAF50',
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 3,
+    borderColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 10,
+  },
+
+  glowBorder: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 20,
+    borderWidth: 3,
+    borderColor: '#4CAF50',
+    opacity: 0.6,
+    shadowColor: '#4CAF50',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 12,
+    elevation: 15,
+  },
 });
 
-export default React.memo(SingleDealCard)
+export default React.memo(SingleDealCard);

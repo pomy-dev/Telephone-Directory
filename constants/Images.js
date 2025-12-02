@@ -74,6 +74,8 @@ import travel from '../assets/special-deals/travel.png'
 import specialAlert from '../assets/special-deals/hot-deal-phone.png'
 import item from '../assets/special-deals/item.png'
 import product from '../assets/special-deals/package.png'
+import combo from '../assets/special-deals/combo.png'
+import single from '../assets/special-deals/single.png'
 
 // price tag
 import priceTag from '../assets/special-deals/price_tag.png'
@@ -82,7 +84,7 @@ import priceTag from '../assets/special-deals/price_tag.png'
 export const Images = {
   // specials deal
   computer, deal, handshake, hotdeal, offerbag, specialoffer, specialtimeout, tagdeals,
-  travel, specialAlert, item, product, priceTag,
+  travel, specialAlert, item, product, priceTag, single, combo,
 
   // logo,App icon
   logo, appLogo,
