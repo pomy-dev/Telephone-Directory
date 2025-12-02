@@ -73,6 +73,12 @@ export async function addFlyerItems(store, flyerItems) {
   return data;
 }
 
+export async function fetchFlyerItems() {
+  const { data, error } = await supabase.rpc('get_pomy_flyer_items');
+
+  console.log(data);
+}
+
 export async function addForhire(formData) {
   if (!formData) return;
 

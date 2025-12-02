@@ -26,3 +26,56 @@ const AIoutput = [
     "type": "single item"
   }
 ]
+
+const SupaBaseOutput = [
+  {
+    "created_at": "2025-12-02T15:09:42.865542+00:00",
+    "description": "3m x 16mm",
+    "id": 52,
+    "image": "https://dgsxhanqqcbqfrsslqjs.supabase.co/storage/v1/object/public/flyer_items/items/photo_1764688176594",
+    "item": [Array],
+    "price": "34.90",
+    "store": "Build it",
+    "type": "single item"
+  },
+  {
+    "created_at": "2025-12-02T15:09:42.865542+00:00",
+    "description": "600mm, each",
+    "id": 53,
+    "image": "https://dgsxhanqqcbqfrsslqjs.supabase.co/storage/v1/object/public/flyer_items/items/photo_1764688176644",
+    "item": [Array],
+    "price": "99.90",
+    "store": "Build it",
+    "type": "single item"
+  },
+  {
+    "created_at": "2025-12-02T15:09:42.865542+00:00",
+    "description": "500g",
+    "id": 54,
+    "image": "https://dgsxhanqqcbqfrsslqjs.supabase.co/storage/v1/object/public/flyer_items/items/photo_1764688176646",
+    "item": [Array],
+    "price": "189.90",
+    "store": "Build it",
+    "type": "single item"
+  },
+  {
+    "created_at": "2025-12-02T15:09:42.865542+00:00",
+    "description": "20mm x 25m, per roll",
+    "id": 55,
+    "image": "https://dgsxhanqqcbqfrsslqjs.supabase.co/storage/v1/object/public/flyer_items/items/photo_1764688176648",
+    "item": [Array],
+    "price": "379.90",
+    "store": "Build it",
+    "type": "single item"
+  },
+  {
+    "created_at": "2025-12-02T15:09:42.865542+00:00",
+    "description": "2 Lever, Chrome Plated",
+    "id": 56,
+    "image": "https://dgsxhanqqcbqfrsslqjs.supabase.co/storage/v1/object/public/flyer_items/items/photo_1764688176666",
+    "item": [Array],
+    "price": "89.90",
+    "store": "Build it",
+    "type": "single item"
+  }
+]

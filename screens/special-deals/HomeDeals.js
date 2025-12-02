@@ -1,5 +1,5 @@
 // src/screens/HomeDealScreen.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -25,6 +25,7 @@ import { Icons } from '../../constants/Icons';
 import { mockDeals } from '../../utils/mockData';
 import ComboCard from '../../components/deals/comboCard';
 import SingleDealCard from '../../components/deals/singleDealCard';
+import { fetchFlyerItems } from '../../service/Supabase-Fuctions';
 import FloatingCompareBtn from '../../components/deals/floatingCompareBtn';
 
 const { width, height } = Dimensions.get('window');
@@ -160,6 +161,15 @@ function getCurrentMonth(format = 'long') {
 }
 
 export default function HomeDealScreen({ navigation }) {
+  const [deals, setDeals] = useState([])
+
+  useEffect(() => {
+    (async () => {
+      const flyer_listing = await fetchFlyerItems()
+      console.log('Flyers: ', flyer_listing)
+    })();
+  }, [])
+
   const combos = mockDeals.deals.filter(d => d.type === 'combo');
   const singles = mockDeals.deals.filter(d => d.type === 'single').slice(0, 8);
 
