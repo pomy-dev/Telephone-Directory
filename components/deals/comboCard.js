@@ -20,12 +20,11 @@ export default function ComboCard({ deal }) {
         imageStyle={styles.bgImage}
       >
         <View style={styles.overlay}>
-          <Text style={styles.title}>{deal.name}</Text>
-          <Text style={styles.items}>{deal.items.join(' + ')}</Text>
+          <Text style={styles.title} numberOfLines={1}>{deal?.description}</Text>
+          <Text style={styles.items}>{deal?.item.join(' + ')}</Text>
           <View style={styles.bottom}>
             <View>
-              <Text style={styles.price}>SZL {deal.price.toFixed(2)}</Text>
-              {deal.savings && <Text style={styles.savings}>Save SZL {deal.savings}</Text>}
+              <Text style={styles.price}>SZL {deal?.price}</Text>
             </View>
             <Icons.Feather
               name={isSelected ? "check-circle" : "plus-circle"}

@@ -22,8 +22,9 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Images } from '../../constants/Images';
 import { Icons } from '../../constants/Icons';
-import { mockDeals } from '../../utils/mockData';
+import CustomLoader from '../../components/customLoader';
 import ComboCard from '../../components/deals/comboCard';
+import { supabase } from '../../service/Supabase-Client';
 import SingleDealCard from '../../components/deals/singleDealCard';
 import { fetchFlyerItems } from '../../service/Supabase-Fuctions';
 import FloatingCompareBtn from '../../components/deals/floatingCompareBtn';
@@ -162,16 +163,81 @@ function getCurrentMonth(format = 'long') {
 
 export default function HomeDealScreen({ navigation }) {
   const [deals, setDeals] = useState([])
+  const [combos, setCombos] = useState([])
+  const [singles, setSingles] = useState([])
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
-    (async () => {
-      const flyer_listing = await fetchFlyerItems()
-      console.log('Flyers: ', flyer_listing)
-    })();
-  }, [])
+    getFlyerInfo();
+    // Listen for changes
+    const channel = supabase
+      .channel('flyer-items')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'pomy_flyer_items' },
+        (payload) => {
+          console.log('Realtime update:', payload);
 
-  const combos = mockDeals.deals.filter(d => d.type === 'combo');
-  const singles = mockDeals.deals.filter(d => d.type === 'single').slice(0, 8);
+          const { eventType, new: newItem, old: oldItem } = payload;
+
+          setItems((prev) => {
+            let updated = [...prev];
+
+            if (eventType === 'INSERT') {
+              updated = [newItem, ...updated]; // add to top
+            }
+
+            if (eventType === 'UPDATE') {
+              updated = updated.map((i) =>
+                i.id === newItem.id ? newItem : i
+              );
+            }
+
+            if (eventType === 'DELETE') {
+              updated = updated.filter((i) => i.id !== oldItem.id);
+            }
+
+            return updated;
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  useEffect(() => {
+    const filterDeals = () => {
+      try {
+        const combos = deals.filter(d => d.type?.trim() === 'combo');
+        const singles = deals.filter(d => d.type?.trim() === 'single item');
+
+        const comboRandom = combos?.sort(() => Math.random() - 0.5)
+        const singleRandom = singles?.sort(() => Math.random() - 0.5)
+
+        setCombos(comboRandom)
+        setSingles(singleRandom)
+      } catch (err) {
+        console.error(err)
+      }
+    };
+
+    filterDeals();
+  }, [deals])
+
+  const getFlyerInfo = () => {
+    try {
+      setLoading(true)
+      // Initial fetch
+      fetchFlyerItems(1).then((res) => setDeals(res.items));
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
+  }
 
   return (
     <View style={styles.container}>
@@ -224,26 +290,30 @@ export default function HomeDealScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      <ScrollView>
-        {/* Combo Deals - Horizontal Scroll */}
-        <Text style={styles.section}>Combo Deals</Text>
-        <FlatList
-          data={combos}
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          renderItem={({ item }) => <ComboCard deal={item} />}
-          keyExtractor={(item, index) => `${item.id}-${index}`}
-          contentContainerStyle={{ paddingHorizontal: 8 }}
-        />
+      {loading ?
+        <CustomLoader />
+        :
+        <ScrollView>
+          {/* Combo Deals - Horizontal Scroll */}
+          <Text style={styles.section}>Combo Deals</Text>
+          <FlatList
+            data={combos}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            renderItem={({ item }) => <ComboCard deal={item} />}
+            keyExtractor={(item, index) => `${item.id}-${index}`}
+            contentContainerStyle={{ paddingHorizontal: 8 }}
+          />
 
-        {/* Single Items - 2 Column Grid */}
-        <Text style={styles.section}>Items</Text>
-        <View style={{ paddingBottom: 120, justifyContent: 'space-between', flexDirection: 'row', flexWrap: 'wrap' }}>
-          {singles?.map((item, index) =>
-            <SingleDealCard deal={item} key={index} />
-          )}
-        </View>
-      </ScrollView>
+          {/* Single Items - 2 Column Grid */}
+          <Text style={styles.section}>Items</Text>
+          <View style={{ paddingBottom: 120, justifyContent: 'space-between', flexDirection: 'row', flexWrap: 'wrap' }}>
+            {singles?.map((item, index) =>
+              <SingleDealCard deal={item} key={index} />
+            )}
+          </View>
+        </ScrollView>
+      }
 
       {/* Floating Compare Button */}
       <FloatingCompareBtn />

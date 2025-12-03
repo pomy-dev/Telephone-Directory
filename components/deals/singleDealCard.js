@@ -30,12 +30,12 @@ const SingleDealCard = ({ deal }) => {
         {/* Content on top of image */}
         <View style={styles.content}>
           <Text style={styles.name} numberOfLines={2}>
-            {deal.name}
+            {deal?.item}
           </Text>
 
-          <Text style={styles.store}>{deal.store}</Text>
+          <Text style={styles.store}>{deal?.store}</Text>
 
-          <Text style={styles.price}>SZL {deal.price.toFixed(2)}</Text>
+          <Text style={styles.price}>SZL {deal?.price}</Text>
         </View>
 
         {/* Selected Checkmark with animation */}

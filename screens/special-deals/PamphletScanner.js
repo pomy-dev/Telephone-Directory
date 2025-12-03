@@ -117,7 +117,7 @@ const CommentBottomSheet = React.forwardRef(
           />
 
           {/* Submit */}
-          <TouchableOpacity style={[sheetStyles.submitBtn, isSubmiting && sheetStyles.submiting]} onPress={onSubmit} disabled={isSubmiting}>
+          <TouchableOpacity style={[sheetStyles.submitBtn, isSubmiting && sheetStyles.submiting]} onPress={onSubmit}>
             {isSubmiting ? <ActivityIndicator size={20} color={'#eee'} /> : <Text style={sheetStyles.submitTxt}>Submit Review</Text>}
           </TouchableOpacity>
         </BottomSheetView>
@@ -171,7 +171,7 @@ export default function PamphletScanner({ navigation }) {
   // Bottom Sheet
   const bottomSheetRef = useRef(null);
   const [storeName, setStoreName] = useState('');
-  const snapPoints = useMemo(() => ['50%', '60%'], []);
+  const snapPoints = useMemo(() => ['50%', '55%'], []);
 
   const microphone = useMicrophonePermission()
   const location = useLocationPermission()
@@ -336,6 +336,7 @@ export default function PamphletScanner({ navigation }) {
             type: it.type || 'single item',
             description: it.description || '',
             image: croppedImage?.uri,
+            unit: it.unit || 'each'
           };
         })
       );
@@ -408,14 +409,14 @@ export default function PamphletScanner({ navigation }) {
     try {
       const savedItems = await addFlyerItems(storeName, items);
       savedItems && CustomToast('Saved!', `${items.length} items from ${storeName} saved`)
-
-      setItems([]);
     } catch (err) {
       console.error(err.message)
+      setItems([]);
     } finally {
       setIsSubmiting(false);
       bottomSheetRef.current?.close();
       setIsFAB(false);
+      setItems([]);
     }
   };
 

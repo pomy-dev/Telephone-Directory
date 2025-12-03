@@ -56,6 +56,7 @@ export async function addFlyerItems(store, flyerItems) {
       type: item.type?.trim() || 'single item',
       description: item.description?.trim() || null,
       image: await UploadImage(item.image),
+      unit: item.unit?.trim() || 'each'
     }))
   );
 
@@ -73,10 +74,15 @@ export async function addFlyerItems(store, flyerItems) {
   return data;
 }
 
-export async function fetchFlyerItems() {
-  const { data, error } = await supabase.rpc('get_pomy_flyer_items');
+export async function fetchFlyerItems(page = 1) {
+  const { data, error } = await supabase.rpc('get_pomy_flyer_items', {
+    page,
+    page_size: 20
+  });
 
-  console.log(data);
+  if (error) console.log('Fetch error:', error);
+
+  return data;
 }
 
 export async function addForhire(formData) {

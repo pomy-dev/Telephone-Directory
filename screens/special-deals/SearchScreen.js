@@ -1,5 +1,5 @@
 // screens/SearchCompareScreen.tsx
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   View, TextInput, FlatList, TouchableOpacity, Text, StyleSheet,
   ScrollView, Image, StatusBar
@@ -7,46 +7,94 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Icons } from '../../constants/Icons'
 import Animated, { useAnimatedStyle, withRepeat, withTiming } from 'react-native-reanimated';
-import { mockDeals } from '../../utils/mockData';
 import { Images } from '../../constants/Images';
 import { useBasket } from '../../context/basketContext';
+import CustomLoader from '../../components/customLoader';
 
 export default function SearchCompareScreen({ navigation }) {
   const [query, setQuery] = useState('');
   const [viewMode, setViewMode] = useState('table');
-  const [productMode, setProductMode] = useState('single');
+  const [productMode, setProductMode] = useState('single item');
   const { basket, addToBasket } = useBasket();
+  const [deals, setDeals] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Initial fetch
+    fetchFlyerItems(1).then((res) => setDeals(res.items));
+
+    // Listen for changes
+    const channel = supabase
+      .channel('flyer-items')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'pomy_flyer_items' },
+        (payload) => {
+          console.log('Realtime update:', payload);
+
+          const { eventType, new: newItem, old: oldItem } = payload;
+
+          setItems((prev) => {
+            let updated = [...prev];
+
+            if (eventType === 'INSERT') {
+              updated = [newItem, ...updated]; // add to top
+            }
+
+            if (eventType === 'UPDATE') {
+              updated = updated.map((i) =>
+                i.id === newItem.id ? newItem : i
+              );
+            }
+
+            if (eventType === 'DELETE') {
+              updated = updated.filter((i) => i.id !== oldItem.id);
+            }
+
+            return updated;
+          });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const results = useMemo(() => {
     if (query.length < 2) return [];
 
-    const typeItems = mockDeals.deals
-      .filter(deal => {
-        return deal = deal.type === productMode?.toLowerCase()
+    try {
+      setLoading(true)
+      const typeItems = deals.filter(deal => {
+        return deal = deal?.type === productMode?.toLowerCase()
       }) || [];
 
-    const lower = query.toLowerCase();
+      const lower = query.toLowerCase();
 
-    return typeItems.filter(deal => {
-      const name = deal.name.toLowerCase();
-      const items = deal.items ? deal.items.join(' ').toLowerCase() : '';
-      const category = deal.category?.toLowerCase() || '';
-      const type = deal.type?.toLowerCase() || '';
-      const store = deal.store.toLowerCase();
-      const unit = (deal.unit || deal.perKg || deal.perL || '').toString().toLowerCase();
-      const price = deal.price.toString();
+      return typeItems.filter(deal => {
+        const name = deal.item.toLowerCase();
+        const items = deal.item ? deal.item.join(' ').toLowerCase() : '';
+        const type = deal.type?.toLowerCase() || '';
+        const store = deal.store.toLowerCase();
+        const unit = (deal.unit || deal.perKg || deal.perL || '').toString().toLowerCase();
+        const price = deal.price;
 
-      return (
-        name.includes(lower) ||
-        items.includes(lower) ||
-        category.includes(lower) ||
-        type.includes(lower) ||
-        store.includes(lower) ||
-        unit.includes(lower) ||
-        price.includes(lower)
-      );
-    })
-      .sort((a, b) => a.price - b.price);
+        return (
+          name.includes(lower) ||
+          items.includes(lower) ||
+          type.includes(lower) ||
+          store.includes(lower) ||
+          unit.includes(lower) ||
+          price.includes(lower)
+        );
+      }).sort((a, b) => a.price - b.price);
+    } catch (err) {
+      console.log(err)
+    } finally {
+      setLoading(false)
+    }
   }, [query, productMode]);
 
   const isInBasket = (deal) => basket.some(i => i.id === deal.id);
@@ -92,6 +140,7 @@ export default function SearchCompareScreen({ navigation }) {
           </TouchableOpacity>
         </View>
       </View>
+
       {/* Search Bar */}
       <View style={styles.searchBar}>
         <Ionicons name="search" size={24} color="#666" style={{ marginLeft: 12 }} />
@@ -108,6 +157,8 @@ export default function SearchCompareScreen({ navigation }) {
           </TouchableOpacity>
         )}
       </View>
+
+      {loading && <CustomLoader />}
 
       {/* Toggle View Mode */}
       {results.length > 0 && (
@@ -130,7 +181,6 @@ export default function SearchCompareScreen({ navigation }) {
         </View>
       )}
 
-
       {/* Results */}
       {results.length === 0 ? (
         <View style={styles.empty}>
@@ -150,7 +200,6 @@ export default function SearchCompareScreen({ navigation }) {
               <Text style={[styles.cellHeader, { width: 120 }]}>Item</Text>
               <Text style={[styles.cellHeader, { width: 120 }]}>Unit</Text>
               <Text style={[styles.cellHeader, { width: 120 }]}>Type</Text>
-              <Text style={[styles.cellHeader, { width: 150 }]}>Valid Until</Text>
             </View>
 
             {/* TABLE ROWS */}
@@ -190,10 +239,6 @@ export default function SearchCompareScreen({ navigation }) {
                   <Text style={[styles.cell, { width: 120 }]}>
                     {deal.type}
                   </Text>
-
-                  <Text style={[styles.cell, { width: 150 }]}>
-                    {deal.validUntil}
-                  </Text>
                 </View>
               );
             })}
@@ -211,7 +256,7 @@ export default function SearchCompareScreen({ navigation }) {
                 style={[styles.gridCard, selected && styles.selectedCard]}
                 onPress={() => addToBasket(deal, deal.store)}
               >
-                <Image source={Images.product} style={styles.gridImage} resizeMode="cover" />
+                <Image source={deal.type === 'combo' ? Images.combo : Images.single} style={styles.gridImage} resizeMode="cover" />
                 <Text style={styles.gridName} numberOfLines={2}>{deal.name}</Text>
                 <Text style={styles.gridStore}>{deal.store}</Text>
                 <Text style={styles.gridPrice}>SZL {deal.price.toFixed(2)}</Text>
