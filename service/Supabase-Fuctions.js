@@ -85,6 +85,14 @@ export async function fetchFlyerItems(page = 1) {
   return data;
 }
 
+export async function searchAllFlyerItems() {
+  const { data, error } = await supabase.rpc('search_pomy_flyer_items');
+
+  if (error) console.log('Fetch error:', error);
+
+  return data;
+}
+
 export async function addForhire(formData) {
   if (!formData) return;
 

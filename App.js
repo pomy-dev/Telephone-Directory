@@ -25,9 +25,9 @@ import LoanAssist from "./screens/loans/LoanAssist"
 
 // screens
 import HomeScreen from "./screens/HomeScreen"
-import LoginScreen from './screens/Login'
+import SavedListsScreen from './screens/SavedListItems'
 import FavoritesScreen from "./screens/FavoritesScreen"
-import PeopleScreen from "./screens/PeopleProfiles"
+import PeopleScreen from "./screens/people/PeopleProfiles"
 import SettingsScreen from "./screens/SettingsScreen"
 
 // business directory screens
@@ -144,11 +144,11 @@ function Tabs() {
       }}
     >
       <Tab.Screen
-        name="Login"
-        component={LoginScreen}
+        name="SavedListScreen"
+        component={SavedListsScreen}
         options={{
           tabBarIcon: ({ focused, color }) => (
-            <Icons.Ionicons name={focused ? "log-in" : "log-in-outline"} size={28} color={color} />
+            <Icons.Ionicons name={focused ? "list" : "list-outline"} size={28} color={color} />
           )
         }}
       />
@@ -360,6 +360,9 @@ function AppContent() {
 
                         {/* People */}
                         <Stack.Screen name="PeopleScreen" component={PeopleScreen} />
+
+                        {/* list items screen */}
+                        <Stack.Screen name="SavedListScreen" component={SavedListsScreen} />
 
                         {/* Tenders  */}
                         <Stack.Screen name="AddTenderScreen" component={AddTenderScreen} />

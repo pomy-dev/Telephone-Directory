@@ -5,8 +5,10 @@ import {
   ScrollView, Image, StatusBar
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Icons } from '../../constants/Icons'
+import { Icons } from '../../constants/Icons';
 import Animated, { useAnimatedStyle, withRepeat, withTiming } from 'react-native-reanimated';
+import { fetchFlyerItems } from '../../service/Supabase-Fuctions';
+import { supabase } from '../../service/Supabase-Client';
 import { Images } from '../../constants/Images';
 import { useBasket } from '../../context/basketContext';
 import CustomLoader from '../../components/customLoader';
@@ -14,40 +16,57 @@ import CustomLoader from '../../components/customLoader';
 export default function SearchCompareScreen({ navigation }) {
   const [query, setQuery] = useState('');
   const [viewMode, setViewMode] = useState('table');
-  const [productMode, setProductMode] = useState('single item');
+  const [productMode, setProductMode] = useState('single'); // 'single' or 'combo'
   const { basket, addToBasket } = useBasket();
   const [deals, setDeals] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
+  // SAFE PRICE HELPER — DEFINED EARLY
+  const safePrice = (price) => {
+    const num = parseFloat(String(price || '0').replace(/[$,R\s]/g, '')) || 0;
+    return num.toFixed(2);
+  };
+
+  const safePriceNumber = (price) => {
+    return parseFloat(String(price || '0').replace(/[$,R\s]/g, '')) || 0;
+  };
+
+  // FETCH + REALTIME
   useEffect(() => {
-    // Initial fetch
-    fetchFlyerItems(1).then((res) => setDeals(res.items));
+    let isMounted = true;
 
-    // Listen for changes
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        const res = await fetchFlyerItems(1);
+        if (isMounted) setDeals(res.items || []);
+      } catch (err) {
+        console.error('Fetch error:', err);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    loadData();
+
     const channel = supabase
       .channel('flyer-items')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'pomy_flyer_items' },
         (payload) => {
-          console.log('Realtime update:', payload);
-
           const { eventType, new: newItem, old: oldItem } = payload;
 
-          setItems((prev) => {
+          setDeals((prev) => {
             let updated = [...prev];
 
-            if (eventType === 'INSERT') {
-              updated = [newItem, ...updated]; // add to top
+            if (eventType === 'INSERT' && newItem) {
+              updated = [newItem, ...updated];
             }
-
-            if (eventType === 'UPDATE') {
-              updated = updated.map((i) =>
-                i.id === newItem.id ? newItem : i
-              );
+            if (eventType === 'UPDATE' && newItem) {
+              updated = updated.map((i) => (i.id === newItem.id ? newItem : i));
             }
-
-            if (eventType === 'DELETE') {
+            if (eventType === 'DELETE' && oldItem) {
               updated = updated.filter((i) => i.id !== oldItem.id);
             }
 
@@ -58,50 +77,48 @@ export default function SearchCompareScreen({ navigation }) {
       .subscribe();
 
     return () => {
+      isMounted = false;
       supabase.removeChannel(channel);
     };
   }, []);
 
+  // SEARCH LOGIC — BULLETPROOF
   const results = useMemo(() => {
     if (query.length < 2) return [];
 
-    try {
-      setLoading(true)
-      const typeItems = deals.filter(deal => {
-        return deal = deal?.type === productMode?.toLowerCase()
-      }) || [];
+    const lowerQuery = query.toLowerCase().trim();
 
-      const lower = query.toLowerCase();
+    return deals
+      .filter((deal) => {
+        if (!deal.type) return true;
+        const type = deal.type.toLowerCase();
+        if (productMode === 'single') return type.includes('single');
+        if (productMode === 'combo') return type.includes('combo');
+        return true;
+      })
+      .filter((deal) => {
+        const itemText = Array.isArray(deal.item)
+          ? deal.item.join(' ').toLowerCase()
+          : String(deal.item || '').toLowerCase();
 
-      return typeItems.filter(deal => {
-        const name = deal.item.toLowerCase();
-        const items = deal.item ? deal.item.join(' ').toLowerCase() : '';
-        const type = deal.type?.toLowerCase() || '';
-        const store = deal.store.toLowerCase();
-        const unit = (deal.unit || deal.perKg || deal.perL || '').toString().toLowerCase();
-        const price = deal.price;
+        const searchFields = [
+          itemText,
+          (deal.store || '').toLowerCase(),
+          (deal.type || '').toLowerCase(),
+          [deal.unit, deal.perKg, deal.perL, deal.description].filter(Boolean).join(' ').toLowerCase(),
+          String(deal.price || '').toLowerCase(),
+        ].join(' ');
 
-        return (
-          name.includes(lower) ||
-          items.includes(lower) ||
-          type.includes(lower) ||
-          store.includes(lower) ||
-          unit.includes(lower) ||
-          price.includes(lower)
-        );
-      }).sort((a, b) => a.price - b.price);
-    } catch (err) {
-      console.log(err)
-    } finally {
-      setLoading(false)
-    }
-  }, [query, productMode]);
+        return searchFields.includes(lowerQuery);
+      })
+      .sort((a, b) => safePriceNumber(a.price) - safePriceNumber(b.price));
+  }, [query, deals, productMode]);
 
-  const isInBasket = (deal) => basket.some(i => i.id === deal.id);
-  const selectedCount = results.filter(deal => isInBasket(deal)).length;
+  const isInBasket = (deal) => basket.some((i) => i.id === deal.id);
+  const selectedCount = results.filter(isInBasket).length;
   const totalPrice = results
-    .filter(deal => isInBasket(deal))
-    .reduce((sum, deal) => sum + deal.price, 0)
+    .filter(isInBasket)
+    .reduce((sum, deal) => sum + safePriceNumber(deal.price), 0)
     .toFixed(2);
 
   const animatedFab = useAnimatedStyle(() => ({
@@ -109,34 +126,31 @@ export default function SearchCompareScreen({ navigation }) {
   }));
 
   const toggleSelect = (deal) => {
-    addToBasket(deal, deal.store)
+    addToBasket(deal, deal.store);
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: '#f8f8f8' }]}>
       <StatusBar barStyle="dark-content" />
+
+      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icons.Ionicons name="arrow-back" size={28} color="#fff" />
         </TouchableOpacity>
-        {/* View Toggle */}
+
         <View style={styles.toggle}>
           <TouchableOpacity
             style={[styles.toggleBtn, productMode === 'single' && styles.activeToggle]}
             onPress={() => setProductMode('single')}
           >
-            <Text style={{ size: 20, color: productMode === 'single' ? '#000000' : '#999' }}>
-              Loose
-            </Text>
+            <Text style={productMode === 'single' ? styles.activeText : styles.inactiveText}>Loose</Text>
           </TouchableOpacity>
-
           <TouchableOpacity
             style={[styles.toggleBtn, productMode === 'combo' && styles.activeToggle]}
             onPress={() => setProductMode('combo')}
           >
-            <Text style={{ size: 20, color: productMode === 'combo' ? '#000000' : '#999' }}>
-              Combo
-            </Text>
+            <Text style={productMode === 'combo' ? styles.activeText : styles.inactiveText}>Combo</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -145,7 +159,7 @@ export default function SearchCompareScreen({ navigation }) {
       <View style={styles.searchBar}>
         <Ionicons name="search" size={24} color="#666" style={{ marginLeft: 12 }} />
         <TextInput
-          placeholder="Search rice, oil, pampers, Shoprite, 100..."
+          placeholder="Search rice, oil, pampers, Shoprite..."
           value={query}
           onChangeText={setQuery}
           style={styles.input}
@@ -160,22 +174,27 @@ export default function SearchCompareScreen({ navigation }) {
 
       {loading && <CustomLoader />}
 
-      {/* Toggle View Mode */}
+      {/* View Mode Toggle */}
       {results.length > 0 && (
         <View style={styles.toggleBar}>
           <Text style={styles.resultText}>Found {results.length} deal{results.length > 1 ? 's' : ''}</Text>
-          <View style={styles.toggle}>
+          <View style={{
+            flexDirection: 'row',
+            backgroundColor: 'rgba(0,0,0,0.3)',
+            borderRadius: 20,
+            padding: 4
+          }}>
             <TouchableOpacity
-              style={[styles.toggleBtn, viewMode === 'table' && styles.active]}
+              style={[styles.toggleBtn, viewMode === 'table' && styles.activeToggle]}
               onPress={() => setViewMode('table')}
             >
-              <Ionicons name="grid" size={22} color={viewMode === 'table' ? '#fff' : '#666'} />
+              <Ionicons name="list" size={22} color={viewMode === 'table' ? '#000' : '#dddd'} />
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.toggleBtn, viewMode === 'grid' && styles.active]}
+              style={[styles.toggleBtn, viewMode === 'grid' && styles.activeToggle]}
               onPress={() => setViewMode('grid')}
             >
-              <Ionicons name="list" size={22} color={viewMode === 'grid' ? '#fff' : '#666'} />
+              <Ionicons name="grid" size={22} color={viewMode === 'grid' ? '#000' : '#dddd'} />
             </TouchableOpacity>
           </View>
         </View>
@@ -192,53 +211,36 @@ export default function SearchCompareScreen({ navigation }) {
       ) : viewMode === 'table' ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           <View style={{ marginBottom: 25 }}>
-            {/* TABLE HEADER */}
             <View style={styles.row}>
               <Text style={[styles.cellHeader, { width: 50 }]}>✔️</Text>
               <Text style={[styles.cellHeader, { width: 150 }]}>Store</Text>
               <Text style={[styles.cellHeader, { width: 120 }]}>Price</Text>
-              <Text style={[styles.cellHeader, { width: 120 }]}>Item</Text>
-              <Text style={[styles.cellHeader, { width: 120 }]}>Unit</Text>
-              <Text style={[styles.cellHeader, { width: 120 }]}>Type</Text>
+              <Text style={[styles.cellHeader, { width: 180 }]}>Item</Text>
+              <Text style={[styles.cellHeader, { width: 100 }]}>Unit</Text>
+              <Text style={[styles.cellHeader, { width: 100 }]}>Type</Text>
             </View>
 
-            {/* TABLE ROWS */}
-            {results?.map((deal, index) => {
-              // const isSelected = basket.find(i => i.id === deal.id);
+            {results.map((deal) => {
               const selected = isInBasket(deal);
               return (
-                <View key={`${deal.id}-${index}`} style={styles.row}>
-                  {/* CHECKBOX */}
-                  <TouchableOpacity
-                    onPress={() => toggleSelect(deal)}
-                    style={styles.checkboxContainer}
-                  >
+                <View key={deal.id} style={styles.row}>
+                  <TouchableOpacity onPress={() => toggleSelect(deal)} style={styles.checkboxContainer}>
                     <View style={[styles.checkbox, selected && styles.checkboxSelected]}>
-                      {selected && (
-                        <Icons.Ionicons name="checkmark" size={16} color="#fff" />
-                      )}
+                      {selected && <Icons.Ionicons name="checkmark" size={16} color="#fff" />}
                     </View>
                   </TouchableOpacity>
 
-                  <Text style={[styles.cell, { width: 150 }]}>
-                    {deal.store}
+                  <Text style={[styles.cell, { width: 150 }]}>{deal.store}</Text>
+                  <Text style={[styles.cell, { width: 120, fontWeight: 'bold', color: '#E61F46' }]}>
+                    SZL {safePrice(deal.price)}
                   </Text>
-
-                  <Text style={[styles.cell, { width: 120, fontWeight: "bold", color: "#E61F46" }]}>
-                    SZL {deal.price.toFixed(2)}
+                  <Text style={[styles.cell, { width: 180 }]} numberOfLines={2}>
+                    {Array.isArray(deal.item) ? deal.item.join(' + ') : String(deal.item || 'N/A')}
                   </Text>
-
-                  <Text style={[styles.cell, { width: 120 }]}>
-                    {deal.name}
+                  <Text style={[styles.cell, { width: 100 }]}>
+                    {deal.unit || deal.perKg || '-'}
                   </Text>
-
-                  <Text style={[styles.cell, { width: 120 }]}>
-                    {deal.unit || deal.perKg ? `${deal.unit || deal.perKg + "/kg"}` : "-"}
-                  </Text>
-
-                  <Text style={[styles.cell, { width: 120 }]}>
-                    {deal.type}
-                  </Text>
+                  <Text style={[styles.cell, { width: 100 }]}>{deal.type || 'N/A'}</Text>
                 </View>
               );
             })}
@@ -248,18 +250,24 @@ export default function SearchCompareScreen({ navigation }) {
         <FlatList
           data={results}
           numColumns={2}
+          columnWrapperStyle={{ justifyContent: 'space-between' }}
           renderItem={({ item: deal }) => {
             const selected = isInBasket(deal);
-
             return (
               <TouchableOpacity
                 style={[styles.gridCard, selected && styles.selectedCard]}
-                onPress={() => addToBasket(deal, deal.store)}
+                onPress={() => toggleSelect(deal)}
               >
-                <Image source={deal.type === 'combo' ? Images.combo : Images.single} style={styles.gridImage} resizeMode="cover" />
-                <Text style={styles.gridName} numberOfLines={2}>{deal.name}</Text>
+                <Image
+                  source={deal.type?.includes('combo') ? Images.combo : Images.single}
+                  style={styles.gridImage}
+                  resizeMode="cover"
+                />
+                <Text style={styles.gridName} numberOfLines={2}>
+                  {Array.isArray(deal.item) ? deal.item.join(' + ') : String(deal.item || 'Item')}
+                </Text>
                 <Text style={styles.gridStore}>{deal.store}</Text>
-                <Text style={styles.gridPrice}>SZL {deal.price.toFixed(2)}</Text>
+                <Text style={styles.gridPrice}>SZL {safePrice(deal.price)}</Text>
                 {selected ? (
                   <Ionicons name="checkmark-circle" size={36} color="#4CAF50" style={styles.check} />
                 ) : (
@@ -268,12 +276,12 @@ export default function SearchCompareScreen({ navigation }) {
               </TouchableOpacity>
             );
           }}
-          keyExtractor={item => item.id}
-          contentContainerStyle={{ paddingBottom: 120 }}
+          keyExtractor={(item) => item.id.toString()}
+          contentContainerStyle={{ padding: 8, paddingBottom: 120 }}
         />
       )}
 
-      {/* Floating Action Button */}
+      {/* FAB */}
       {selectedCount > 0 && (
         <Animated.View style={[styles.fab, animatedFab]}>
           <TouchableOpacity
@@ -281,9 +289,7 @@ export default function SearchCompareScreen({ navigation }) {
             onPress={() => navigation.navigate('BasketScreen')}
           >
             <Ionicons name="bag-check" size={28} color="#fff" />
-            <Text style={styles.fabText}>
-              SZL {totalPrice}
-            </Text>
+            <Text style={styles.fabText}>SZL {totalPrice}</Text>
           </TouchableOpacity>
         </Animated.View>
       )}
@@ -291,115 +297,91 @@ export default function SearchCompareScreen({ navigation }) {
   );
 }
 
+// Updated Styles
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8f8f8' },
+  container: { flex: 1 },
   header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: "#E61F46",
-    marginTop: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#E61F46',
     paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 10
+    paddingTop: 50,
+    paddingBottom: 16,
   },
+  toggle: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 20,
+    padding: 4,
+  },
+  toggleBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 16 },
+  activeToggle: { backgroundColor: '#fff' },
+  activeText: { color: '#000', fontWeight: 'bold' },
+  inactiveText: { color: '#ddd' },
 
-  toggle: { flexDirection: 'row', backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: 20, padding: 4 },
-  toggleBtn: { padding: 8, borderRadius: 16 },
-  activeToggle: { backgroundColor: '#fff', borderRadius: 16 },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#fff',
-    marginHorizontal: 10,
+    marginHorizontal: 16,
+    marginTop: 16,
     borderRadius: 30,
     elevation: 6,
-    marginTop: 20
   },
-  input: { flex: 1, paddingVertical: 16, paddingHorizontal: 5, fontSize: 17 },
+  input: { flex: 1, paddingVertical: 16, paddingHorizontal: 12, fontSize: 17 },
+
   toggleBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#fff',
   },
-
   resultText: { fontSize: 16, fontWeight: '600', color: '#333' },
-  toggle: { flexDirection: 'row', backgroundColor: '#f0f0f0', borderRadius: 20, padding: 4 },
-  toggleBtn: { padding: 8 },
-  active: { backgroundColor: '#E61F46', borderRadius: 16 },
-
-  table: {
-    backgroundColor: "#fff",
-    borderRadius: 10,
-    overflow: "hidden",
-    marginLeft: 16,
-    marginRight: 16
-  },
 
   row: {
-    flexDirection: "row",
+    flexDirection: 'row',
     borderBottomWidth: 1,
-    borderColor: "#eee",
-    alignItems: "center"
+    borderColor: '#eee',
+    alignItems: 'center',
   },
-
   cellHeader: {
     padding: 12,
-    backgroundColor: "#E61F46",
-    color: "#fff",
-    fontWeight: "bold",
-    textAlign: "center"
+    backgroundColor: '#E61F46',
+    color: '#fff',
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
-
   cell: {
     padding: 12,
     fontSize: 14,
-    textAlign: "center"
+    textAlign: 'center',
   },
-
-  checkboxContainer: {
-    width: 50,
-    justifyContent: "center",
-    alignItems: "center"
-  },
-
+  checkboxContainer: { width: 50, justifyContent: 'center', alignItems: 'center' },
   checkbox: {
     height: 22,
     width: 22,
     borderRadius: 6,
     borderWidth: 2,
-    borderColor: "#E61F46",
-    justifyContent: "center",
-    alignItems: "center"
+    borderColor: '#E61F46',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-
-  checkboxSelected: {
-    backgroundColor: "#E61F46"
-  },
+  checkboxSelected: { backgroundColor: '#E61F46' },
 
   empty: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   emptyText: { marginTop: 20, fontSize: 18, color: '#999' },
 
-  // Table View
-  table: { margin: 16, backgroundColor: '#fff', borderRadius: 16, elevation: 6, overflow: 'hidden' },
-  tableRow: { flexDirection: 'row', padding: 14, alignItems: 'center', borderBottomWidth: 1, borderColor: '#eee' },
-  selectedRow: { backgroundColor: '#FFF3E0' },
-  tableImage: { width: 70, height: 70, borderRadius: 12, marginRight: 14 },
-  tableInfo: { flex: 1 },
-  tableName: { fontSize: 15, fontWeight: '600', color: '#333' },
-  tableStore: { fontSize: 14, color: '#E61F46', marginTop: 4 },
-  tablePrice: { fontSize: 18, fontWeight: 'bold', color: '#E61F46', marginTop: 6 },
-  bestPrice: { color: '#4CAF50', fontSize: 19 },
-  tableUnit: { fontSize: 13, color: '#666', marginTop: 2 },
-  radioOuter: { width: 32, height: 32, borderRadius: 16, borderWidth: 3, borderColor: '#E61F46', justifyContent: 'center', alignItems: 'center' },
-  radioFilled: { backgroundColor: '#E61F46' },
-  radioInner: { width: 16, height: 16, borderRadius: 8, backgroundColor: '#fff' },
-
-  // Grid View
-  gridCard: { flex: 1, margin: 8, backgroundColor: '#fff', borderRadius: 16, elevation: 5 },
+  gridCard: {
+    flex: 1,
+    margin: 8,
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    elevation: 6,
+    padding: 12,
+    maxWidth: '48%',
+  },
   selectedCard: { borderWidth: 4, borderColor: '#4CAF50' },
   gridImage: { width: '100%', height: 100, borderRadius: 12, marginBottom: 8 },
   gridName: { fontSize: 14, fontWeight: '600', textAlign: 'center' },
@@ -407,8 +389,18 @@ const styles = StyleSheet.create({
   gridPrice: { fontSize: 18, fontWeight: 'bold', color: '#E61F46', textAlign: 'center', marginTop: 6 },
   check: { position: 'absolute', top: 8, right: 8 },
 
-  // FAB
-  fab: { position: 'absolute', bottom: 70, right: 20 },
-  fabInner: { backgroundColor: '#E61F46', padding: 18, borderRadius: 30, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', elevation: 12 },
-  fabText: { color: '#fff', fontSize: 18, fontWeight: 'bold', marginLeft: 12 },
+  fab: { position: 'absolute', bottom: 80, right: 20 },
+  fabInner: {
+    backgroundColor: '#E61F46',
+    padding: 18,
+    borderRadius: 30,
+    flexDirection: 'row',
+    alignItems: 'center',
+    elevation: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  fabText: { color: '#fff', fontSize: 18, fontWeight: 'bold', marginLeft: 10 },
 });

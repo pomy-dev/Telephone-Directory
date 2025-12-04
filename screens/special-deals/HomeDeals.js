@@ -1,5 +1,5 @@
 // src/screens/HomeDealScreen.tsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   ImageBackground,
   Dimensions,
   ScrollView,
+  RefreshControl
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -22,7 +23,9 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Images } from '../../constants/Images';
 import { Icons } from '../../constants/Icons';
+import { AppContext } from '../../context/appContext';
 import CustomLoader from '../../components/customLoader';
+import { CustomToast } from '../../components/customToast';
 import ComboCard from '../../components/deals/comboCard';
 import { supabase } from '../../service/Supabase-Client';
 import SingleDealCard from '../../components/deals/singleDealCard';
@@ -162,50 +165,62 @@ function getCurrentMonth(format = 'long') {
 }
 
 export default function HomeDealScreen({ navigation }) {
+  const { theme, isDarkMode } = React.useContext(AppContext)
   const [deals, setDeals] = useState([])
   const [combos, setCombos] = useState([])
   const [singles, setSingles] = useState([])
   const [loading, setLoading] = useState(false)
+  const [page, setPage] = useState(1)
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   useEffect(() => {
-    getFlyerInfo();
-    // Listen for changes
-    const channel = supabase
-      .channel('flyer-items')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'pomy_flyer_items' },
-        (payload) => {
-          console.log('Realtime update:', payload);
+    try {
+      setLoading(true)
+      // Initial fetch
+      fetchFlyerItems(1).then((res) => setDeals(res.items));
 
-          const { eventType, new: newItem, old: oldItem } = payload;
+      // Listen for changes
+      const channel = supabase
+        .channel('flyer-items')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'pomy_flyer_items' },
+          (payload) => {
+            console.log('Realtime update:', payload);
 
-          setItems((prev) => {
-            let updated = [...prev];
+            const { eventType, new: newItem, old: oldItem } = payload;
 
-            if (eventType === 'INSERT') {
-              updated = [newItem, ...updated]; // add to top
-            }
+            setItems((prev) => {
+              let updated = [...prev];
 
-            if (eventType === 'UPDATE') {
-              updated = updated.map((i) =>
-                i.id === newItem.id ? newItem : i
-              );
-            }
+              if (eventType === 'INSERT') {
+                updated = [newItem, ...updated]; // add to top
+              }
 
-            if (eventType === 'DELETE') {
-              updated = updated.filter((i) => i.id !== oldItem.id);
-            }
+              if (eventType === 'UPDATE') {
+                updated = updated.map((i) =>
+                  i.id === newItem.id ? newItem : i
+                );
+              }
 
-            return updated;
-          });
-        }
-      )
-      .subscribe();
+              if (eventType === 'DELETE') {
+                updated = updated.filter((i) => i.id !== oldItem.id);
+              }
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+              return updated;
+            });
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
   }, []);
 
   useEffect(() => {
@@ -227,17 +242,32 @@ export default function HomeDealScreen({ navigation }) {
     filterDeals();
   }, [deals])
 
-  const getFlyerInfo = () => {
+  const loadMore = async () => {
+    console.log('Next page', page)
+    const nextPage = page + 1;
+    const res = await fetchFlyerItems(nextPage);
+    setPage(nextPage);
+    setDeals((prev) => [...prev, ...res.items]);
+  };
+
+  const handleRefresh = async () => {
     try {
-      setLoading(true)
-      // Initial fetch
-      fetchFlyerItems(1).then((res) => setDeals(res.items));
+      setIsRefreshing(true);
+      await loadMore();
+      CustomToast('Refreshed 👍', 'On-Sale deals refreshed');
+
     } catch (err) {
-      console.error(err)
+      console.log('General Error:', err.message);
+      err &&
+        CustomToast('Error', 'An error occurred.');
     } finally {
-      setLoading(false)
+      setIsRefreshing(false);
     }
-  }
+  };
+
+  const onRefresh = useCallback(() => {
+    handleRefresh();
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -293,7 +323,16 @@ export default function HomeDealScreen({ navigation }) {
       {loading ?
         <CustomLoader />
         :
-        <ScrollView>
+        <ScrollView
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={onRefresh}
+              colors={[theme.colors.primary]}
+              progressBackgroundColor={theme.colors.card}
+            />
+          }
+        >
           {/* Combo Deals - Horizontal Scroll */}
           <Text style={styles.section}>Combo Deals</Text>
           <FlatList
@@ -306,7 +345,7 @@ export default function HomeDealScreen({ navigation }) {
           />
 
           {/* Single Items - 2 Column Grid */}
-          <Text style={styles.section}>Items</Text>
+          <Text style={styles.section}>On-Special Items</Text>
           <View style={{ paddingBottom: 120, justifyContent: 'space-between', flexDirection: 'row', flexWrap: 'wrap' }}>
             {singles?.map((item, index) =>
               <SingleDealCard deal={item} key={index} />

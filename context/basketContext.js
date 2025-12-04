@@ -1,19 +1,6 @@
 import React, { createContext, useContext, useState } from 'react';
-import { mockDeals } from '../utils/mockData';
-
-// type Deal = typeof mockDeals.deals[0];
-// type BasketItem = Deal & { selectedStore: string };
-
-// interface BasketContextType {
-//   basket: BasketItem[];
-//   addToBasket: (deal: Deal, store: string) => void;
-//   removeFromBasket: (id: string) => void;
-//   clearBasket: () => void;
-//   total: number;
-// }
 
 const BasketContext = createContext(undefined);
-// const BasketContext = createContext<BasketContextType | undefined>(undefined);
 
 export const BasketProvider = ({ children }) => {
   const [basket, setBasket] = useState([]);

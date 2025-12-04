@@ -26,30 +26,6 @@ import { getForHireTransport } from '../../service/Supabase-Fuctions';
 import CustomLoader from '../../components/customLoader';
 import SecondaryNav from '../../components/SecondaryNav';
 
-// ──────────────────────────────────────────────────────────────
-// Haversine Distance Calculator
-// ──────────────────────────────────────────────────────────────
-const calculateDistance = (lat1, lon1, lat2, lon2) => {
-    const R = 6371;
-    const dLat = (lat2 - lat1) * Math.PI / 180;
-    const dLon = (lon2 - lon1) * Math.PI / 180;
-    const a =
-        Math.sin(dLat / 2) ** 2 +
-        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) ** 2;
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-};
-
-// ────── Reusable Active Filter Chip (with clear button) ──────
-const ActiveFilterChip = ({ label, onClear }) => (
-    <View style={styles.activeFilterChip}>
-        <Text style={styles.activeFilterText}>{label}</Text>
-        <TouchableOpacity onPress={onClear} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-            <Icons.Ionicons name="close-circle" size={18} color="#64748b" />
-        </TouchableOpacity>
-    </View>
-);
-
 // ────── Comment Bottom Sheet ──────
 const CommentBottomSheet = React.forwardRef(
     ({ vehicleId, commentText, setCommentText, suggestion, setSuggestion, onSubmit, onDismiss, renderBackdrop }, ref) => (

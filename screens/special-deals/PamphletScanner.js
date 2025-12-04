@@ -21,17 +21,17 @@ import {
 } from 'react-native-vision-camera';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Reanimated, {
+  FadeIn, FadeOut,
   useSharedValue,
-  useAnimatedProps,
   withTiming,
   withSpring,
-  runOnJS,
   useDerivedValue,
   useAnimatedStyle,
 } from 'react-native-reanimated';
 import { SaveFormat } from 'expo-image-manipulator';
 import * as ImageManipulator from 'expo-image-manipulator';
 import * as MediaLibrary from 'expo-media-library';
+import * as ImagePicker from 'expo-image-picker';
 import { useIsFocused } from '@react-navigation/core';
 import { API_BASE_URL } from '../../config/env';
 import * as FileSystem from 'expo-file-system';
@@ -81,18 +81,7 @@ const ZoomLevelButton = ({ level, zoom, onSelect }) => {
 };
 
 const CommentBottomSheet = React.forwardRef(
-  (
-    {
-      store,
-      setStoreName,
-      onSubmit,
-      onDismiss,
-      snapPoints,
-      renderBackdrop,
-      isSubmiting
-    },
-    ref
-  ) => {
+  ({ store, setStoreName, onSubmit, onDismiss, snapPoints, renderBackdrop, isSubmiting }, ref) => {
     return (
       <BottomSheetModal
         ref={ref}
@@ -155,6 +144,10 @@ const sheetStyles = StyleSheet.create({
 export default function PamphletScanner({ navigation }) {
   const { theme } = React.useContext(AppContext)
   const isFocused = useIsFocused();
+
+  // TOGGLE: Vision Camera vs Expo Image Picker
+  const [useVisionCamera, setUseVisionCamera] = useState(true);
+
   const device = useCameraDevice('back') || useCameraDevice('front');
   const camera = useRef(null);
 
@@ -167,6 +160,9 @@ export default function PamphletScanner({ navigation }) {
   const [geminiProcessing, setGeminiProcessing] = useState(false);
   const [isSubmiting, setIsSubmiting] = useState(false);
   const [isFAB, setIsFAB] = useState(false);
+
+  const [photoPreviewUri, setPhotoPreviewUri] = useState(null);
+  const [isPickingImg, setIsPickingImg] = useState(false)
 
   // Bottom Sheet
   const bottomSheetRef = useRef(null);
@@ -185,16 +181,23 @@ export default function PamphletScanner({ navigation }) {
 
   useEffect(() => {
     (async () => {
-      // camera permission
-      const cameraStatus = await Camera.requestCameraPermission();
-      setPermissionGranted(cameraStatus === 'granted');
-
-      const { status } = await MediaLibrary.requestPermissionsAsync();
-      if (status !== 'granted') {
-        Alert.alert('Permission needed', 'Please allow access to save photos to your gallery.');
+      if (useVisionCamera) {
+        const status = await Camera.requestCameraPermission();
+        setPermissionGranted(status === 'granted');
+      } else {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert('Permission required', 'Allow access to photos to pick flyers.');
+        }
+        const camStatus = await ImagePicker.requestCameraPermissionsAsync();
+        if (camStatus.status !== 'granted') {
+          Alert.alert('Camera permission needed', 'To take photos directly.');
+        }
       }
+
+      await MediaLibrary.requestPermissionsAsync();
     })();
-  }, []);
+  }, [useVisionCamera]);
 
   const focusRingAnimatedStyle = useAnimatedStyle(() => ({
     left: focusX.value * WINDOW_WIDTH - 40,
@@ -218,12 +221,7 @@ export default function PamphletScanner({ navigation }) {
 
   const renderBackdrop = useCallback(
     (props) => (
-      <BottomSheetBackdrop
-        {...props}
-        disappearsOnIndex={-1}
-        appearsOnIndex={0}
-        opacity={0.5}
-      />
+      <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.5} />
     ),
     []
   );
@@ -267,6 +265,48 @@ export default function PamphletScanner({ navigation }) {
     // camera.current?.setFocusPoint?.({ x, y });
   };
 
+  // === IMAGE PICKER MODE ===
+  const pickImage = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission Needed', 'Please allow access to your photos.');
+      return;
+    }
+
+    try {
+      setIsPickingImg(true)
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images', 'livePhotos'],
+        allowsEditing: true,
+        quality: 0.95
+      });
+
+
+      if (!result.canceled) {
+        setPhotoPreviewUri(result.assets[0].uri);
+      }
+    } catch (err) {
+      Alert.alert('Error', err.message)
+    } finally {
+      setIsPickingImg(false)
+    }
+  };
+
+  const onUseThisPhoto = async () => {
+    try {
+      if (!photoPreviewUri) return;
+      await GeminiAIProcess(photoPreviewUri);
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setPhotoPreviewUri(null);
+    }
+  };
+
+  const onRetake = () => {
+    setPhotoPreviewUri(null);
+  };
+
   const captureAndAnalyzeWithOpenAI = useCallback(async () => {
     if (!camera.current || !isFocused) return;
     setCapturing(true);
@@ -291,8 +331,13 @@ export default function PamphletScanner({ navigation }) {
 
   const GeminiAIProcess = async (path) => {
     setGeminiProcessing(true)
+    let photoUri;
     try {
-      const photoUri = `file://${path}`;
+      if (path.includes('file://')) {
+        photoUri = path;
+      } else {
+        photoUri = `file://${path}`;
+      }
 
       const base64 = await FileSystem.readAsStringAsync(photoUri, {
         encoding: FileSystem.EncodingType.Base64,
@@ -422,98 +467,165 @@ export default function PamphletScanner({ navigation }) {
 
   return (
     <BottomSheetModalProvider>
-      <View style={styles.container}>
-        <TouchableWithoutFeedback onPress={closeZoomPicker}>
-          <GestureDetector gesture={pinch}>
-            <TouchableWithoutFeedback onPress={handleTapToFocus}>
-              <Reanimated.View style={styles.cameraContainer}>
-                <AnimatedCamera
-                  ref={camera}
-                  style={styles.absoluteFill}
-                  device={device}
-                  isActive={isFocused && isInitialized}
-                  onInitialized={onInitialized}
-                  photo={true}
-                  torch={torch}
-                  exposure={0}
-                  enableFpsGraph={true}
-                  outputOrientation="device"
-                  audio={microphone.hasPermission}
-                  enableLocation={location.hasPermission}
-                  resizeMode="cover"
-                />
+      <View style={[styles.container, { backgroundColor: theme.colors.highlight }]}>
+        {/* Toggle Button */}
+        <TouchableOpacity
+          style={styles.toggleBtn}
+          onPress={() => setUseVisionCamera(prev => !prev)}
+        >
+          <Icons.MaterialIcons
+            name={useVisionCamera ? 'photo-library' : 'photo-camera'}
+            size={28}
+            color="#fff"
+          />
+          <Text style={styles.toggleText}>
+            {useVisionCamera ? 'Gallery' : 'Live Camera'}
+          </Text>
+        </TouchableOpacity>
 
-                {/* Focus Ring */}
-                <Reanimated.View style={[styles.focusRing, focusRingAnimatedStyle]} />
+        {/* PHOTO PREVIEW OVERLAY */}
+        <Reanimated.View
+          entering={FadeIn.duration(300)}
+          exiting={FadeOut.duration(200)}
+          style={[StyleSheet.absoluteFill, { zIndex: photoPreviewUri ? 1000 : -1 }]}
+        >
+          {photoPreviewUri && (
+            <View style={styles.previewContainer}>
+              <Image
+                source={{ uri: photoPreviewUri }}
+                style={styles.previewImage}
+                resizeMode="contain"
+              />
 
-                {/* Back Button */}
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-                  <Icons.Ionicons name="arrow-back" size={28} color="#fff" />
+              {/* Preview Controls */}
+              <View style={styles.previewControls}>
+                <TouchableOpacity style={styles.previewBtnCancel} onPress={onRetake}>
+                  <Icons.Feather name="x" size={24} color="#fff" />
+                  <Text style={styles.previewBtnText}>Retake</Text>
                 </TouchableOpacity>
 
-                {/* Top Bar */}
-                <View style={styles.topBar}>
-                  <Text style={styles.title}>Flyer Scanner</Text>
-                  <Text style={styles.subtitle}>Point at flyer → tap ADD ITEMS</Text>
-                </View>
+                <TouchableOpacity style={styles.previewBtnConfirm} onPress={onUseThisPhoto}>
+                  <Icons.Feather name="check" size={24} color="#000" />
+                  <Text style={[styles.previewBtnText, { color: '#000' }]}>Use This Photo</Text>
+                </TouchableOpacity>
+              </View>
 
-                {/* Bottom Controls */}
-                <View style={styles.bottomBar}>
-                  <TouchableOpacity style={styles.iconBtn} onPress={() => setFlash(f => f === 'off' ? 'on' : 'off')}>
-                    <Icons.MaterialIcons name={flash === 'on' ? 'flash-on' : 'flash-off'} size={28} color="#fff" />
+              {/* Close X */}
+              <TouchableOpacity style={styles.previewClose} onPress={onRetake}>
+                <Icons.Ionicons name="close-circle" size={40} color="#fff" />
+              </TouchableOpacity>
+            </View>
+          )}
+        </Reanimated.View>
+
+        {!photoPreviewUri && useVisionCamera ? (
+          /* ========== VISION CAMERA MODE ========== */
+          <TouchableWithoutFeedback onPress={closeZoomPicker}>
+            <GestureDetector gesture={pinch}>
+              <TouchableWithoutFeedback onPress={handleTapToFocus}>
+                <Reanimated.View style={styles.cameraContainer}>
+                  <AnimatedCamera
+                    ref={camera}
+                    style={styles.absoluteFill}
+                    device={device}
+                    isActive={isFocused && isInitialized}
+                    onInitialized={onInitialized}
+                    photo={true}
+                    torch={torch}
+                    exposure={0}
+                    enableFpsGraph={true}
+                    outputOrientation="device"
+                    audio={microphone.hasPermission}
+                    enableLocation={location.hasPermission}
+                    resizeMode="cover"
+                  />
+
+                  {/* Focus Ring */}
+                  <Reanimated.View style={[styles.focusRing, focusRingAnimatedStyle]} />
+
+                  {/* Back Button */}
+                  <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
+                    <Icons.Ionicons name="arrow-back" size={28} color="#fff" />
                   </TouchableOpacity>
 
-                  <TouchableOpacity
-                    style={[styles.captureBtn, capturing && styles.captureBtnDisabled]}
-                    onPress={captureAndAnalyzeWithOpenAI}
-                    disabled={capturing && geminiProcessing}
-                  >
-                    {capturing ? <ActivityIndicator color="#000" /> : <Text style={styles.captureText}>ADD ITEMS</Text>}
-                  </TouchableOpacity>
+                  {/* Top Bar */}
+                  <View style={styles.topBar}>
+                    <Text style={styles.title}>Flyer Scanner</Text>
+                    <Text style={styles.subtitle}>Point at flyer → tap ADD ITEMS</Text>
+                  </View>
 
-                  <TouchableOpacity style={styles.iconBtn} onPress={() => setItems([])}>
-                    <Icons.MaterialCommunityIcons name="delete-variant" size={28} color="#fff" />
-                    {items.length > 0 && <View style={styles.badge}><Text style={styles.badgeText}>{items.length}</Text></View>}
-                  </TouchableOpacity>
-                </View>
+                  {/* Bottom Controls */}
+                  <View style={styles.bottomBar}>
+                    <TouchableOpacity style={styles.iconBtn} onPress={() => setFlash(f => f === 'off' ? 'on' : 'off')}>
+                      <Icons.MaterialIcons name={flash === 'on' ? 'flash-on' : 'flash-off'} size={28} color="#fff" />
+                    </TouchableOpacity>
 
-                {/* ZOOM & TORCH CONTROLS */}
-                <View style={styles.zoomControlContainer} pointerEvents="box-none">
-                  {/* Torch Button */}
-                  <TouchableOpacity style={[styles.torchBtn, torch === 'on' && styles.torchActive]} onPress={() => setTorch(prev => prev === 'off' ? 'on' : 'off')} >
-                    <Icons.MaterialIcons name={torch === 'on' ? 'flashlight-on' : 'flashlight-off'} size={28} color={torch === 'on' ? '#ffd60a' : '#fff'} />
-                  </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.captureBtn, capturing && styles.captureBtnDisabled]}
+                      onPress={captureAndAnalyzeWithOpenAI}
+                      disabled={capturing && geminiProcessing}
+                    >
+                      {capturing ? <ActivityIndicator color="#000" /> : <Text style={styles.captureText}>ADD ITEMS</Text>}
+                    </TouchableOpacity>
 
-                  {/* Zoom Picker Button */}
-                  <TouchableOpacity
-                    style={styles.zoomPickerBtn}
-                    onPress={() => { isZoomPickerOpen.value = !isZoomPickerOpen.value; }}
-                  >
-                    <ReanimatedText style={styles.zoomPickerText}>
-                      {`${currentZoomDisplay?.value.toString()}`}x
-                    </ReanimatedText>
-                    <Icons.Feather name="chevron-right" size={24} color="#fff" style={{ marginLeft: 4 }} />
-                  </TouchableOpacity>
+                    <TouchableOpacity style={styles.iconBtn} onPress={() => setItems([])}>
+                      <Icons.MaterialCommunityIcons name="delete-variant" size={28} color="#fff" />
+                      {items.length > 0 && <View style={styles.badge}><Text style={styles.badgeText}>{items.length}</Text></View>}
+                    </TouchableOpacity>
+                  </View>
 
-                  {/* Zoom Level Panel */}
-                  <Reanimated.View style={[styles.zoomPickerPanel, animatedZoomPanelStyle]}>
-                    {zoomLevels.map((level) => (
-                      <ZoomLevelButton
-                        key={level}
-                        level={level}
-                        zoom={zoom}
-                        onSelect={(selected) => {
-                          zoom.value = withSpring(selected);
-                          isZoomPickerOpen.value = false;
-                        }}
-                      />
-                    ))}
-                  </Reanimated.View>
-                </View>
-              </Reanimated.View>
-            </TouchableWithoutFeedback>
-          </GestureDetector>
-        </TouchableWithoutFeedback>
+                  {/* ZOOM & TORCH CONTROLS */}
+                  <View style={styles.zoomControlContainer} pointerEvents="box-none">
+                    {/* Torch Button */}
+                    <TouchableOpacity style={[styles.torchBtn, torch === 'on' && styles.torchActive]} onPress={() => setTorch(prev => prev === 'off' ? 'on' : 'off')} >
+                      <Icons.MaterialIcons name={torch === 'on' ? 'flashlight-on' : 'flashlight-off'} size={28} color={torch === 'on' ? '#ffd60a' : '#fff'} />
+                    </TouchableOpacity>
+
+                    {/* Zoom Picker Button */}
+                    <TouchableOpacity
+                      style={styles.zoomPickerBtn}
+                      onPress={() => { isZoomPickerOpen.value = !isZoomPickerOpen.value; }}
+                    >
+                      <ReanimatedText style={styles.zoomPickerText}>
+                        {`${currentZoomDisplay?.value.toString()}`}x
+                      </ReanimatedText>
+                      <Icons.Feather name="chevron-right" size={24} color="#fff" style={{ marginLeft: 4 }} />
+                    </TouchableOpacity>
+
+                    {/* Zoom Level Panel */}
+                    <Reanimated.View style={[styles.zoomPickerPanel, animatedZoomPanelStyle]}>
+                      {zoomLevels.map((level) => (
+                        <ZoomLevelButton
+                          key={level}
+                          level={level}
+                          zoom={zoom}
+                          onSelect={(selected) => {
+                            zoom.value = withSpring(selected);
+                            isZoomPickerOpen.value = false;
+                          }}
+                        />
+                      ))}
+                    </Reanimated.View>
+                  </View>
+                </Reanimated.View>
+              </TouchableWithoutFeedback>
+            </GestureDetector>
+          </TouchableWithoutFeedback>
+        ) : !photoPreviewUri ? (
+          /* ========== IMAGE PICKER MODE ========== */
+          <View style={styles.pickerContainer}>
+            <Icons.Ionicons name='image-outline' color={theme.colors.text} size={60} />
+            <Text style={styles.pickerTitle}>Select or Take a Flyer Photo</Text>
+            <TouchableOpacity style={styles.pickerButton} onPress={pickImage}>
+              {isPickingImg
+                ? <ActivityIndicator color={theme.colors.indicator} size={30} />
+                : <Icons.Feather name="image" size={32} color="#fff" />
+              }
+              <Text style={styles.pickerButtonText}>Choose Photo</Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+
 
         {/* Results + FAB */}
         <View style={[styles.resultsContainer, { backgroundColor: theme.colors.background }]}>
@@ -568,10 +680,72 @@ export default function PamphletScanner({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#000' },
+  container: { flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#000' },
   loadingText: { color: '#fff', marginTop: 16, fontSize: 16 },
   cameraContainer: { height: WINDOW_HEIGHT * 0.6 },
+
+  pickerContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
+  placeholderImage: { width: 200, height: 300, borderRadius: 16, marginBottom: 30 },
+  pickerTitle: { fontSize: 22, color: '#fff', marginBottom: 30, textAlign: 'center' },
+  pickerButton: { backgroundColor: '#00d4ff', paddingHorizontal: 40, paddingVertical: 20, borderRadius: 50, flexDirection: 'row', alignItems: 'center', gap: 12 },
+  pickerButtonText: { color: '#000', fontSize: 18, fontWeight: 'bold' },
+  toggleBtn: { position: 'absolute', top: 30, right: 20, backgroundColor: 'rgba(46, 36, 90, 0.6)', padding: 12, borderRadius: 30, flexDirection: 'row', alignItems: 'center', gap: 8, zIndex: 10 },
+  toggleText: { color: '#fff', fontSize: 14 },
+
+  previewContainer: {
+    flex: 1,
+    backgroundColor: '(rgba(0,0,0,0.5))',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  previewImage: {
+    width: '100%',
+    height: '100%',
+  },
+  previewControls: {
+    position: 'absolute',
+    bottom: 80,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 20,
+    justifyContent: 'space-between',
+  },
+  previewBtnCancel: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 50,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  previewBtnConfirm: {
+    backgroundColor: '#00ff88',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 50,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+  },
+  previewBtnText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  previewClose: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+  },
+
   absoluteFill: {
     position: 'absolute',
     left: 0,

@@ -11,11 +11,11 @@ import {
   TextInput
 } from 'react-native';
 import { Modal } from 'react-native';
-import { Icons } from "../constants/Icons";
-import { AppContext } from '../context/appContext';
-import { AuthContext } from '../context/authProvider';
-import LoginScreen from '../components/loginModal';
-import { mockProfiles, allIndustries } from '../utils/mockData';
+import { Icons } from "../../constants/Icons";
+import { AppContext } from '../../context/appContext';
+import { AuthContext } from '../../context/authProvider';
+import LoginScreen from '../../components/loginModal';
+import { mockProfiles, allIndustries } from '../../utils/mockData';
 
 export default function PeopleScreen({ navigation }) {
   const { theme, isDarkMode } = React.useContext(AppContext);
