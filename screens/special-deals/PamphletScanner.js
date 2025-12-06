@@ -167,7 +167,7 @@ export default function PamphletScanner({ navigation }) {
   // Bottom Sheet
   const bottomSheetRef = useRef(null);
   const [storeName, setStoreName] = useState('');
-  const snapPoints = useMemo(() => ['50%', '55%'], []);
+  const snapPoints = useMemo(() => ['50%', '65%'], []);
 
   const microphone = useMicrophonePermission()
   const location = useLocationPermission()
@@ -178,6 +178,13 @@ export default function PamphletScanner({ navigation }) {
   const focusX = useSharedValue(0.5);
   const focusY = useSharedValue(0.5);
   const isZoomPickerOpen = useSharedValue(false);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -444,7 +451,7 @@ export default function PamphletScanner({ navigation }) {
     );
   }
 
-  const handleSaveFlyer = async () => {
+  const handleSaveFlyer = useCallback(async () => {
     if (!storeName.trim()) {
       Alert.alert('Missing Store', 'Please enter the store name');
       return;
@@ -453,17 +460,24 @@ export default function PamphletScanner({ navigation }) {
     setIsSubmiting(true)
     try {
       const savedItems = await addFlyerItems(storeName, items);
-      savedItems && CustomToast('Saved!', `${items.length} items from ${storeName} saved`)
+      if (savedItems && isMountedRef.current) {
+        CustomToast('Saved!', `${items.length} items from ${storeName} saved`);
+      }
     } catch (err) {
-      console.error(err.message)
-      setItems([]);
+      console.error(err.message);
+      if (isMountedRef.current) {
+        Alert.alert('Error', 'Failed to save items. Please try again.');
+      }
     } finally {
-      setIsSubmiting(false);
-      bottomSheetRef.current?.close();
-      setIsFAB(false);
-      setItems([]);
+      if (isMountedRef.current) {
+        setIsSubmiting(false);
+        bottomSheetRef.current?.close();
+        setIsFAB(false);
+        setItems([]);
+        setStoreName('');
+      }
     }
-  };
+  }, [storeName, items]);
 
   return (
     <BottomSheetModalProvider>

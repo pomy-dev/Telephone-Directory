@@ -8,15 +8,43 @@ import {
     StatusBar,
     Platform,
     TextInput,
+    Linking,
     Alert,
+    ActivityIndicator,
 } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { Icons } from '../../constants/Icons';
 import SecondaryNav from '../../components/SecondaryNav';
-import { mockTransportationVehicles } from '../../utils/mockData';
+
+// ────── Date Picker Helper ──────
+const useDatePicker = () => {
+    const [show, setShow] = useState(false);
+    const [date, setDate] = useState(new Date());
+
+    const showDatePicker = () => {
+        setShow(true);
+    };
+
+    const handleDateChange = (event, selectedDate) => {
+        if (Platform.OS === 'android') {
+            setShow(false);
+        }
+        if (selectedDate) {
+            setDate(selectedDate);
+            return selectedDate.toISOString().split('T')[0]; // Returns YYYY-MM-DD
+        }
+    };
+
+    const hideDatePicker = () => {
+        setShow(false);
+    };
+
+    return { show, date, showDatePicker, handleDateChange, hideDatePicker };
+};
 
 export default function BookTransportationScreen({ navigation, route }) {
-    const { vehicleId } = route.params;
-    const vehicle = mockTransportationVehicles.find(v => v.id === vehicleId);
+    const { vehicle } = route.params;
+    const datePicker = useDatePicker();
 
     const [formData, setFormData] = useState({
         bookingDate: '',
@@ -32,6 +60,7 @@ export default function BookTransportationScreen({ navigation, route }) {
 
     const [selectedRoute, setSelectedRoute] = useState(null);
     const [errors, setErrors] = useState({});
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     if (!vehicle) {
         return (
@@ -43,6 +72,12 @@ export default function BookTransportationScreen({ navigation, route }) {
             </View>
         );
     }
+
+    const handleDateSelect = (selectedDate) => {
+        const dateString = selectedDate.toISOString().split('T')[0];
+        handleInputChange('bookingDate', dateString);
+        datePicker.hideDatePicker();
+    };
 
     const handleInputChange = (field, value) => {
         setFormData(prev => ({ ...prev, [field]: value }));
@@ -68,8 +103,8 @@ export default function BookTransportationScreen({ navigation, route }) {
         // Validate booking time is within operating hours
         if (formData.bookingTime) {
             const bookingTime = formData.bookingTime;
-            const startTime = vehicle.operatingHours.start;
-            const endTime = vehicle.operatingHours.end;
+            const startTime = vehicle?.operating_start;
+            const endTime = vehicle?.operating_end;
             if (bookingTime < startTime || bookingTime > endTime) {
                 newErrors.bookingTime = `Booking time must be between ${startTime} and ${endTime}`;
             }
@@ -79,8 +114,8 @@ export default function BookTransportationScreen({ navigation, route }) {
         if (formData.bookingDate) {
             const date = new Date(formData.bookingDate);
             const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
-            if (!vehicle.operatingDays.includes(dayName)) {
-                newErrors.bookingDate = `Vehicle not available on ${dayName}. Available days: ${vehicle.operatingDays.join(', ')}`;
+            if (!vehicle.operating_days.includes(dayName)) {
+                newErrors.bookingDate = `Vehicle not available on ${dayName}. Available days: ${vehicle.operating_days.join(', ')}`;
             }
         }
 
@@ -88,22 +123,72 @@ export default function BookTransportationScreen({ navigation, route }) {
         return Object.keys(newErrors).length === 0;
     };
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         if (!validateForm()) {
             Alert.alert('Validation Error', 'Please fill in all required fields correctly.');
             return;
         }
 
-        Alert.alert(
-            'Booking Request Submitted',
-            'Your booking request has been submitted successfully. The vehicle owner will contact you soon to confirm.',
-            [
-                {
-                    text: 'OK',
-                    onPress: () => navigation.goBack(),
-                },
-            ]
-        );
+        try {
+            setIsSubmitting(true);
+            const messageLines = [
+                `Hello, I would like to book the following vehicle:`,
+                ``,
+                `Vehicle: ${vehicle.vehicle_category.replace(/_/g, ' ')
+                    .split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                    .join(' ')
+                } 
+                    (${vehicle.make} ${vehicle.model}, ${vehicle.year})`,
+                `Price: E ${vehicle.price || '-'}${getPriceLabel(vehicle.priceType) || '-'}`,
+            ];
+            if (selectedRoute !== null && vehicle.routes[selectedRoute]) {
+                const route = vehicle.routes[selectedRoute];
+                messageLines.push(`Route: ${route.origin} to ${route.destination} (${route.distance}, ${route.duration}) - E ${route.price}`);
+            }
+            messageLines.push(`Booking Date: ${formData.bookingDate}`);
+            messageLines.push(`Booking Time: ${formData.bookingTime}`);
+            messageLines.push(`Pickup Location: ${formData.pickupLocation}`);
+            messageLines.push(`Dropoff Location: ${formData.dropoffLocation}`);
+            if (formData.numberOfPassengers) {
+                messageLines.push(`Number of Passengers: ${formData.numberOfPassengers}`);
+            }
+            if (formData.specialRequests) {
+                messageLines.push(`Special Requests: ${formData.specialRequests}`);
+            }
+            messageLines.push(``);
+            messageLines.push(`Contact Information:`);
+            messageLines.push(`Name: ${formData.contactName}`);
+            messageLines.push(`Phone: ${formData.contactPhone}`);
+            messageLines.push(`Email: ${formData.contactEmail}`);
+            const message = messageLines.join('\n');
+
+            const smsUrl = Platform.OS === "ios"
+                ? `sms:${vehicle?.owner_info?.phone}&body=${encodeURIComponent(message)}`
+                : `smsto:${vehicle?.owner_info?.phone}?body=${encodeURIComponent(message)}`;
+            if (await Linking.canOpenURL(smsUrl))
+                await Linking.openURL(smsUrl);
+            else
+                throw new Error('SMS client not available');
+
+        } catch (error) {
+            Alert.alert('Error', 'Failed to open SMS app. Please try again.');
+        } finally {
+            setIsSubmitting(false);
+            setFormData({
+                bookingDate: '',
+                bookingTime: '',
+                pickupLocation: '',
+                dropoffLocation: '',
+                numberOfPassengers: '',
+                specialRequests: '',
+                contactName: '',
+                contactPhone: '',
+                contactEmail: '',
+            });
+            setSelectedRoute(null);
+            setErrors({});
+        }
+
     };
 
     const getPriceLabel = (priceType) => {
@@ -116,6 +201,29 @@ export default function BookTransportationScreen({ navigation, route }) {
         return labels[priceType] || '';
     };
 
+    const getVehicleTypeIcon = (type) => {
+        switch (type) {
+            case 'suv':
+                return { IconComponent: Icons.Ionicons, iconName: 'car' };
+            case 'minibus':
+                return { IconComponent: Icons.FontAwesome6, iconName: 'van-shuttle' };
+            case 'bus':
+                return { IconComponent: Icons.Ionicons, iconName: 'bus' };
+            case 'truck':
+                return { IconComponent: Icons.MaterialCommunityIcons, iconName: 'truck-flatbed' };
+            case 'motorcycle':
+                return { IconComponent: Icons.FontAwesome6, iconName: 'motorcycle' };
+            case 'van':
+                return { IconComponent: Icons.FontAwesome5, iconName: 'truck-pickup' };
+            case 'sprinter':
+                return { IconComponent: Icons.FontAwesome5, iconName: 'shuttle-van' };
+            case 'cargo':
+                return { IconComponent: Icons.FontAwesome6, iconName: 'truck-ramp-box' };
+            default:
+                return { IconComponent: Icons.Ionicons, iconName: 'car' };
+        }
+    }
+
     return (
         <View style={styles.container}>
             <StatusBar barStyle="dark-content" />
@@ -124,24 +232,38 @@ export default function BookTransportationScreen({ navigation, route }) {
             <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollView}>
                 {/* Vehicle Info */}
                 <View style={styles.vehicleInfoCard}>
-                    <Text style={styles.vehicleInfoTitle}>{vehicle.title}</Text>
-                    <Text style={styles.vehicleInfoSubtitle}>{vehicle.make} {vehicle.model} • {vehicle.year}</Text>
-                    <View style={styles.vehicleInfoRow}>
-                        <Text style={styles.vehicleInfoLabel}>Price:</Text>
-                        <Text style={styles.vehicleInfoValue}>
-                            E {vehicle.price.toLocaleString()}{getPriceLabel(vehicle.priceType)}
-                        </Text>
+                    <View style={{ alignItems: 'center' }}>
+                        {(() => {
+                            const { IconComponent, iconName } = getVehicleTypeIcon(vehicle.vehicle_type);
+                            return <IconComponent name={iconName} size={68} color="#2563eb" />;
+                        })()}
                     </View>
-                    {vehicle.capacity && (
+                    <Text style={styles.vehicleInfoTitle}>
+                        {
+                            vehicle.vehicle_category.replace(/_/g, ' ')
+                                .split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                .join(' ')
+                        }
+                    </Text>
+                    <Text style={styles.vehicleInfoSubtitle}>{vehicle.vehicle_make} {vehicle.vehicle_model} • {vehicle.year_made}</Text>
+                    {vehicle.price &&
+                        <View style={styles.vehicleInfoRow}>
+                            <Text style={styles.vehicleInfoLabel}>Price:</Text>
+                            <Text style={styles.vehicleInfoValue}>
+                                E {vehicle.price}{getPriceLabel(vehicle.priceType)}
+                            </Text>
+                        </View>
+                    }
+                    {vehicle.Vehicle_capacity && (
                         <View style={styles.vehicleInfoRow}>
                             <Text style={styles.vehicleInfoLabel}>Capacity:</Text>
-                            <Text style={styles.vehicleInfoValue}>{vehicle.capacity} seats</Text>
+                            <Text style={styles.vehicleInfoValue}>{vehicle.vehicle_capacity} seats</Text>
                         </View>
                     )}
-                    {vehicle.cargoCapacity && (
+                    {vehicle.cargo_capacity && (
                         <View style={styles.vehicleInfoRow}>
                             <Text style={styles.vehicleInfoLabel}>Cargo Capacity:</Text>
-                            <Text style={styles.vehicleInfoValue}>{vehicle.cargoCapacity} tons</Text>
+                            <Text style={styles.vehicleInfoValue}>{vehicle.cargo_capacity} tons</Text>
                         </View>
                     )}
                 </View>
@@ -158,10 +280,10 @@ export default function BookTransportationScreen({ navigation, route }) {
                             >
                                 <View style={styles.routeOptionContent}>
                                     <View style={styles.routeOptionHeader}>
-                                        <Ionicons name="location" size={18} color="#2563eb" />
+                                        <Icons.Ionicons name="location" size={18} color="#2563eb" />
                                         <Text style={styles.routeOptionOrigin}>{route.origin}</Text>
-                                        <Ionicons name="arrow-forward" size={16} color="#64748b" />
-                                        <Ionicons name="location" size={18} color="#10b981" />
+                                        <Icons.Ionicons name="arrow-forward" size={16} color="#64748b" />
+                                        <Icons.Ionicons name="location" size={18} color="#10b981" />
                                         <Text style={styles.routeOptionDestination}>{route.destination}</Text>
                                     </View>
                                     <View style={styles.routeOptionDetails}>
@@ -169,11 +291,11 @@ export default function BookTransportationScreen({ navigation, route }) {
                                         <Text style={styles.routeOptionDetail}>•</Text>
                                         <Text style={styles.routeOptionDetail}>{route.duration}</Text>
                                         <Text style={styles.routeOptionDetail}>•</Text>
-                                        <Text style={styles.routeOptionPrice}>E {route.price.toLocaleString()}</Text>
+                                        <Text style={styles.routeOptionPrice}>E {route.price}</Text>
                                     </View>
                                 </View>
                                 {selectedRoute === index && (
-                                    <Ionicons name="checkmark-circle" size={24} color="#10b981" />
+                                    <Icons.Ionicons name="checkmark-circle" size={24} color="#10b981" />
                                 )}
                             </TouchableOpacity>
                         ))}
@@ -185,23 +307,49 @@ export default function BookTransportationScreen({ navigation, route }) {
                     <Text style={styles.sectionTitle}>Booking Details</Text>
 
                     <View style={styles.detailsRow}>
-                        <View style={[styles.inputGroup, { flex: 1}]}>
+                        <View style={[styles.inputGroup, { flex: 1 }]}>
                             <Text style={styles.label}>
-                                Booking Date * <Text style={styles.required}>({vehicle.operatingDays.join(', ')})</Text>
+                                Booking Date * <Text style={styles.required}>({vehicle.operating_days?.join(', ')})</Text>
                             </Text>
-                            <TextInput
+                            <TouchableOpacity
                                 style={[styles.input, errors.bookingDate && styles.inputError]}
-                                placeholder="YYYY-MM-DD"
-                                value={formData.bookingDate}
-                                onChangeText={(value) => handleInputChange('bookingDate', value)}
-                                placeholderTextColor="#94a3b8"
-                            />
+                                onPress={datePicker.showDatePicker}
+                            >
+                                <Text style={{ color: formData.bookingDate ? '#000' : '#94a3b8', fontSize: 15 }}>
+                                    {formData.bookingDate || 'YYYY-MM-DD'}
+                                </Text>
+                            </TouchableOpacity>
                             {errors.bookingDate && <Text style={styles.errorText}>{errors.bookingDate}</Text>}
                         </View>
 
-                        <View style={[styles.inputGroup, { flex: 1}]}>
+                        {/* Date Picker Modal */}
+                        {datePicker.show && (
+                            <DateTimePicker
+                                value={datePicker.date}
+                                mode="date"
+                                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                                onChange={(event, selectedDate) => {
+                                    if (selectedDate) handleDateSelect(selectedDate);
+                                    if (Platform.OS === 'android') datePicker.hideDatePicker();
+                                }}
+                            />
+                        )}
+
+                        {/* iOS Date Picker Done Button */}
+                        {Platform.OS === 'ios' && datePicker.show && (
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16, marginBottom: 16 }}>
+                                <TouchableOpacity onPress={datePicker.hideDatePicker}>
+                                    <Text style={{ color: '#2563eb', fontSize: 16, fontWeight: '600' }}>Cancel</Text>
+                                </TouchableOpacity>
+                                <TouchableOpacity onPress={() => handleDateSelect(datePicker.date)}>
+                                    <Text style={{ color: '#2563eb', fontSize: 16, fontWeight: '600' }}>Done</Text>
+                                </TouchableOpacity>
+                            </View>
+                        )}
+
+                        <View style={[styles.inputGroup, { flex: 1 }]}>
                             <Text style={styles.label}>
-                                Booking Time * <Text style={styles.required}>({vehicle.operatingHours.start} - {vehicle.operatingHours.end})</Text>
+                                Booking Time * <Text style={styles.required}>({vehicle.operating_start} - {vehicle.operating_end})</Text>
                             </Text>
                             <TextInput
                                 style={[styles.input, errors.bookingTime && styles.inputError]}
@@ -238,12 +386,12 @@ export default function BookTransportationScreen({ navigation, route }) {
                         {errors.dropoffLocation && <Text style={styles.errorText}>{errors.dropoffLocation}</Text>}
                     </View>
 
-                    {vehicle.capacity && (
+                    {vehicle?.vehicle_capacity && (
                         <View style={styles.inputGroup}>
                             <Text style={styles.label}>Number of Passengers</Text>
                             <TextInput
                                 style={styles.input}
-                                placeholder={`Max ${vehicle.capacity} passengers`}
+                                placeholder={`Max ${vehicle?.vehicle_capacity} passengers`}
                                 value={formData.numberOfPassengers}
                                 onChangeText={(value) => handleInputChange('numberOfPassengers', value)}
                                 keyboardType="numeric"
@@ -316,14 +464,23 @@ export default function BookTransportationScreen({ navigation, route }) {
                     <View style={styles.summaryContainer}>
                         <View style={styles.summaryRow}>
                             <Text style={styles.summaryLabel}>Vehicle:</Text>
-                            <Text style={styles.summaryValue}>{vehicle.title}</Text>
-                        </View>
-                        <View style={styles.summaryRow}>
-                            <Text style={styles.summaryLabel}>Price:</Text>
                             <Text style={styles.summaryValue}>
-                                E {vehicle.price.toLocaleString()}{getPriceLabel(vehicle.priceType)}
+                                {
+                                    vehicle.vehicle_category.replace(/_/g, ' ')
+                                        .split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                                        .join(' ')
+                                }
                             </Text>
                         </View>
+                        {
+                            vehicle.price &&
+                            <View style={styles.summaryRow}>
+                                <Text style={styles.summaryLabel}>Price:</Text>
+                                <Text style={styles.summaryValue}>
+                                    E {vehicle.price}{getPriceLabel(vehicle.priceType)}
+                                </Text>
+                            </View>
+                        }
                         {selectedRoute !== null && vehicle.routes[selectedRoute] && (
                             <View style={styles.summaryRow}>
                                 <Text style={styles.summaryLabel}>Route:</Text>
@@ -352,9 +509,12 @@ export default function BookTransportationScreen({ navigation, route }) {
 
             {/* Submit Button */}
             <View style={styles.footer}>
-                <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-                    <Text style={styles.submitButtonText}>Submit Booking Request</Text>
-                    <Ionicons name="checkmark-circle" size={20} color="#fff" />
+                <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} disabled={isSubmitting}>
+                    <Text style={styles.submitButtonText}>Send via SMS</Text>
+                    {isSubmitting ?
+                        <ActivityIndicator color={'#fff'} size={20} />
+                        : <Icons.Ionicons name="checkmark-circle" size={20} color="#fff" />
+                    }
                 </TouchableOpacity>
             </View>
         </View>

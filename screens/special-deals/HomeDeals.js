@@ -165,7 +165,7 @@ function getCurrentMonth(format = 'long') {
 }
 
 export default function HomeDealScreen({ navigation }) {
-  const { theme, isDarkMode } = React.useContext(AppContext)
+  const { theme } = React.useContext(AppContext)
   const [deals, setDeals] = useState([])
   const [combos, setCombos] = useState([])
   const [singles, setSingles] = useState([])
@@ -175,9 +175,8 @@ export default function HomeDealScreen({ navigation }) {
 
   useEffect(() => {
     try {
-      setLoading(true)
       // Initial fetch
-      fetchFlyerItems(1).then((res) => setDeals(res.items));
+      loadItems();
 
       // Listen for changes
       const channel = supabase
@@ -218,8 +217,6 @@ export default function HomeDealScreen({ navigation }) {
       };
     } catch (err) {
       console.error(err)
-    } finally {
-      setLoading(false)
     }
   }, []);
 
@@ -241,6 +238,17 @@ export default function HomeDealScreen({ navigation }) {
 
     filterDeals();
   }, [deals])
+
+  const loadItems = async () => {
+    try {
+      setLoading(true)
+      await fetchFlyerItems(1).then((res) => setDeals(res.items));
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoading(false)
+    }
+  };
 
   const loadMore = async () => {
     console.log('Next page', page)
@@ -271,6 +279,8 @@ export default function HomeDealScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
+      {loading && <CustomLoader />}
+
       {/* Animated Hero Section */}
       <View style={styles.heroContainer}>
         <ImageBackground
@@ -320,39 +330,35 @@ export default function HomeDealScreen({ navigation }) {
         </TouchableOpacity>
       </View>
 
-      {loading ?
-        <CustomLoader />
-        :
-        <ScrollView
-          refreshControl={
-            <RefreshControl
-              refreshing={isRefreshing}
-              onRefresh={onRefresh}
-              colors={[theme.colors.primary]}
-              progressBackgroundColor={theme.colors.card}
-            />
-          }
-        >
-          {/* Combo Deals - Horizontal Scroll */}
-          <Text style={styles.section}>Combo Deals</Text>
-          <FlatList
-            data={combos}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            renderItem={({ item }) => <ComboCard deal={item} />}
-            keyExtractor={(item, index) => `${item.id}-${index}`}
-            contentContainerStyle={{ paddingHorizontal: 8 }}
+      <ScrollView
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={onRefresh}
+            colors={[theme.colors.primary]}
+            progressBackgroundColor={theme.colors.card}
           />
+        }
+      >
+        {/* Combo Deals - Horizontal Scroll */}
+        <Text style={styles.section}>Combo Deals</Text>
+        <FlatList
+          data={combos}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          renderItem={({ item }) => <ComboCard deal={item} />}
+          keyExtractor={(item, index) => `${item.id}-${index}`}
+          contentContainerStyle={{ paddingHorizontal: 8 }}
+        />
 
-          {/* Single Items - 2 Column Grid */}
-          <Text style={styles.section}>On-Special Items</Text>
-          <View style={{ paddingBottom: 120, justifyContent: 'space-between', flexDirection: 'row', flexWrap: 'wrap' }}>
-            {singles?.map((item, index) =>
-              <SingleDealCard deal={item} key={index} />
-            )}
-          </View>
-        </ScrollView>
-      }
+        {/* Single Items - 2 Column Grid */}
+        <Text style={styles.section}>On-Special Items</Text>
+        <View style={{ paddingBottom: 120, justifyContent: 'space-between', flexDirection: 'row', flexWrap: 'wrap' }}>
+          {singles?.map((item, index) =>
+            <SingleDealCard deal={item} key={index} />
+          )}
+        </View>
+      </ScrollView>
 
       {/* Floating Compare Button */}
       <FloatingCompareBtn />

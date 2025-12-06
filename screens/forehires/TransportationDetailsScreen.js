@@ -16,7 +16,6 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { Icons } from '../../constants/Icons';
 import SecondaryNav from '../../components/SecondaryNav';
-import { mockTransportationVehicles } from '../../utils/mockData';
 
 const { width } = Dimensions.get('window');
 
@@ -74,7 +73,7 @@ export default function TransportationDetailsScreen({ navigation, route }) {
         Alert.alert('Booking', 'Choose booking methods.', [
             { text: 'Cancel', style: 'cancel' },
             { text: 'Call', onPress: () => handleCall() },
-            { text: 'Fill From', onPress: () => navigation.navigate('BookTransportationScreen', { vehicleId: vehicle.id }) },
+            { text: 'Fill From', onPress: () => navigation.navigate('BookTransportationScreen', { vehicle: vehicle }) },
         ]);
     }
 
@@ -325,7 +324,7 @@ export default function TransportationDetailsScreen({ navigation, route }) {
                     <Icons.Feather name="share-2" size={20} color="#2563eb" />
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.bookButton} onPress={handleBook}>
-                    <Text style={styles.bookButtonText}>Book Now</Text>
+                    <Text style={styles.bookButtonText}>Request Service</Text>
                     <Ionicons name="arrow-forward" size={20} color="#fff" />
                 </TouchableOpacity>
             </View>

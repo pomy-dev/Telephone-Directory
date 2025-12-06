@@ -54,8 +54,13 @@ export default function PostTransportationScreen({ navigation }) {
     const [isPickingImg, setIsPickingImg] = useState(false);
     const [isSubmiting, setIsSubmiting] = useState(false);
 
-    const types = ['minibus', 'bus', 'van', 'truck', 'suv', 'sedan'];
-    const categories = ['public_transport', 'cargo', 'passenger', 'luxury'];
+    const types = ['minibus', 'bus', 'van', 'truck', 'suv', 'motorcycle','car','sprinter'];
+    const categories = [
+        'public_transport',
+        'cargo',
+        'passenger',
+        'luxury'
+    ];
     const cities = [
         'Mbabane', 'Manzini', 'Ezulwini', 'Nhlangano', 'Siteki', 'Big Bend',
         'Malkerns', 'Mhlume', 'Hluti', 'Simunye', 'Piggs Peak', 'Lobamba', 'Lavumisa'

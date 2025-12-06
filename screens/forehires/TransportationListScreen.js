@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
     View,
     Text,
@@ -73,7 +73,7 @@ const RatingBottomSheet = React.forwardRef(({ onSubmit, onDismiss, renderBackdro
         <BottomSheetModal
             ref={ref}
             index={0}
-            snapPoints={['38%']}
+            snapPoints={['40%']}
             backdropComponent={renderBackdrop}
             onDismiss={onDismiss}
             enablePanDownToClose
@@ -171,7 +171,7 @@ export default function TransportationListScreen({ navigation }) {
     const [ratingVehicleId, setRatingVehicleId] = useState(null);
     const [comments, setComments] = useState({});
 
-    const types = ['All', 'Minibus', 'Bus', 'Van', 'Truck', 'Lory', 'SUV', 'Sedan'];
+    const types = ['All', 'Minibus', 'Bus', 'Van', 'Truck', 'Motorcycle', 'Car', 'SUV', 'Sprinter'];
     const categories = ['All', 'Public Transport', 'Cargo', 'Passenger', 'Luxury'];
 
     // ────── Fetch vehicles onmount ──────
@@ -203,7 +203,13 @@ export default function TransportationListScreen({ navigation }) {
         let filtered = data?.filter(vehicle => {
             const matchesType = selectedType === 'All' ||
                 vehicle.vehicle_type.toLowerCase().trim() === selectedType.toLowerCase() ||
-                (selectedType === 'Minibus' && vehicle.vehicle_type.trim() === 'minibus');
+                (selectedType === 'Minibus' && vehicle.vehicle_type.trim() === 'minibus') ||
+                (selectedType === 'Bus' && vehicle.vehicle_type.trim() === 'bus') ||
+                (selectedType === 'Van' && vehicle.vehicle_type.trim() === 'van') ||
+                (selectedType === 'Truck' && vehicle.vehicle_type.trim() === 'truck') ||
+                (selectedType === 'SUV' && vehicle.vehicle_type.trim() === 'suv') ||
+                (selectedType === 'Car' && vehicle.vehicle_type.trim() === 'car') ||
+                (selectedType === 'Sprinter' && vehicle.vehicle_type.trim() === 'sprinter');
 
             const matchesCategory = sortByCategory === 'All' ||
                 (sortByCategory === 'Public Transport' && vehicle.vehicle_category.trim() === 'public_transport') ||

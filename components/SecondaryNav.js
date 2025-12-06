@@ -35,7 +35,7 @@ export default function SecondaryNav({
         <View style={[styles.container, { backgroundColor: theme.background }]}>
             {/* Left Back Button */}
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconButton} activeOpacity={0.7}>
-                <Ionicons name="chevron-back" size={26} color="#1A1A1A" />
+                <Ionicons name="arrow-back" size={26} color="#1A1A1A" />
             </TouchableOpacity>
 
             {/* Title or Location */}

@@ -3,6 +3,7 @@ import { Linking, Platform, Share, Alert } from "react-native";
 import { CustomToast } from "../components/customToast";
 import { fetchAllCompaniesOffline } from "../service/getApi";
 import SynonymsSearch from '../constants/synonymMap';
+import { Images } from '../constants/Images';
 
 export async function handleShareVia(method, business, selectedItem) {
   const deepLink = `https://industrylines.netlify.app/views/business-detail.html?id=${business._id}`; // Fallback URL
