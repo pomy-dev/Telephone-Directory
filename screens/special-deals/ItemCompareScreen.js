@@ -1,14 +1,16 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   ScrollView,
   View,
   Text,
   Image,
   FlatList,
+  TextInput,
   StatusBar,
   StyleSheet,
   TouchableOpacity
 } from 'react-native';
+import BottomSheet, { useBottomSheetSpringConfigs, BottomSheetScrollView } from '@gorhom/bottom-sheet';
 import { searchAllFlyerItems } from '../../service/Supabase-Fuctions';
 import { useBasket } from '../../context/basketContext';
 import { AppContext } from '../../context/appContext';
@@ -17,10 +19,42 @@ import { Images } from '../../constants/Images';
 
 export default function ItemCompareScreen({ navigation }) {
   const { theme, isDarkMode } = React.useContext(AppContext)
-  const { basket, addToBasket, picked } = useBasket();
+  const { basket, addToBasket, picked, budget, setBudget, spent = 0 } = useBasket();
   const [viewMode, setViewMode] = useState('table');
   const [selectedDealMap, setSelectedDealMap] = useState({});
   const [items, setItems] = useState([]);
+
+  const [tempBudget, setTempBudget] = useState('');
+
+  // Bottom Sheet
+  const bottomSheetRef = React.useRef(null);
+  const snapPoints = useMemo(() => ['25%', '50%', '70%'], []);
+  const animationConfigs = useBottomSheetSpringConfigs({
+    damping: 80,
+    overshootClamping: true,
+    restDisplacementThreshold: 0.1,
+    restSpeedThreshold: 0.1,
+    stiffness: 500,
+  });
+
+  const remaining = budget ? (budget - spent).toFixed(2) : null;
+
+  const openBudgetSheet = useCallback(() => {
+    bottomSheetRef.current?.snapToIndex(1);
+  }, []);
+
+  const confirmBudget = () => {
+    const value = parseFloat(tempBudget);
+    if (!isNaN(value) && value > 0) {
+      setBudget(value);
+      setTempBudget(''); // clear input
+    }
+    closeBudgetSheet();
+  };
+
+  const closeBudgetSheet = useCallback(() => {
+    bottomSheetRef.current?.close();
+  }, []);
 
   useEffect(() => {
     const findAllItems = async () => {
@@ -201,15 +235,83 @@ export default function ItemCompareScreen({ navigation }) {
     navigation.navigate("BasketScreen");
   };
 
+  const renderBottomSheet = () => (
+    <BottomSheet
+      ref={bottomSheetRef}
+      index={-1}
+      snapPoints={snapPoints}
+      animationConfigs={animationConfigs}
+      animateOnMount={true}
+      enableHandlePanningGesture={true}
+      enableDynamicSizing={false}
+      containerStyle={{ borderColor: theme.colors.border }}
+      backgroundStyle={{ backgroundColor: theme.colors.card }}
+    >
+      <View style={{ flex: 1, padding: 24 }}>
+        <Text style={{ fontSize: 22, fontWeight: 'bold', textAlign: 'center', marginBottom: 30 }}>
+          Set Shopping Budget
+        </Text>
+
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginBottom: 40 }}>
+          <Text style={{ fontSize: 28, marginRight: 10 }}>SZL</Text>
+          <TextInput
+            style={{
+              fontSize: 48,
+              fontWeight: 'bold',
+              borderBottomWidth: 3,
+              borderColor: '#E61F46',
+              width: 200,
+              textAlign: 'center',
+            }}
+            keyboardType="numeric"
+            placeholder="0.00"
+            value={tempBudget}
+            onChangeText={setTempBudget}
+          />
+        </View>
+
+        <View style={{ flexDirection: 'row', gap: 16 }}>
+          <TouchableOpacity
+            onPress={closeBudgetSheet}
+            style={{
+              flex: 1,
+              padding: 16,
+              backgroundColor: '#eee',
+              borderRadius: 12,
+              alignItems: 'center',
+            }}
+          >
+            <Text style={{ fontWeight: 'bold', color: '#333' }}>Cancel</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            onPress={confirmBudget}
+            style={{
+              flex: 1,
+              padding: 16,
+              backgroundColor: '#E61F46',
+              borderRadius: 12,
+              alignItems: 'center',
+            }}
+          >
+            <Text style={{ color: '#fff', fontWeight: 'bold' }}>Confirm</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </BottomSheet>
+  );
+
   return (
     <>
       <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-        <StatusBar barStyle="dark-content" />
+        <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
+
         {/* HEADER */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Icons.Ionicons name="arrow-back" size={28} color="#fff" />
           </TouchableOpacity>
+
           {/* View Toggle */}
           <View style={styles.toggle}>
             <TouchableOpacity
@@ -226,11 +328,25 @@ export default function ItemCompareScreen({ navigation }) {
               <Icons.FontAwesome6 name="table" size={20} color={viewMode === 'grid' ? '#000000' : '#999'} />
             </TouchableOpacity>
           </View>
-          <TouchableOpacity onPress={() => { }} style={{ borderRadius: 20, paddingHorizontal: 10, paddingVertical: 10, backgroundColor: 'rgba(255,255,255,0.2)' }}>
-            <Text style={styles.title}>Set Budget</Text>
+
+          <TouchableOpacity onPress={() => { budget === null && openBudgetSheet() }} style={{ borderRadius: 20, paddingHorizontal: 10, paddingVertical: 5, backgroundColor: 'rgba(255,255,255,0.2)' }}>
+            {budget !== null ? (
+              <View style={{ alignItems: 'flex-start' }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: 140 }}>
+                  <Text style={{ color: '#fff', fontSize: 14, opacity: 0.9 }}>
+                    💵: SZL {budget.toFixed(2)}
+                  </Text>
+                  <TouchableOpacity onPress={() => setBudget(null)} style={{ paddingHorizontal: 2, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.3)' }}>
+                    <Icons.FontAwesome name="remove" size={20} />
+                  </TouchableOpacity>
+                </View>
+                <Text style={{ color: remaining >= 0 ? '#5c50fbff' : '#ff6b6b', fontWeight: 'bold' }}>
+                  Remaining: SZL {remaining}
+                </Text>
+              </View>
+            ) : (<Text style={styles.title}>Set Budget</Text>)}
           </TouchableOpacity>
         </View>
-
 
         {viewMode === 'table' ? (
           <ScrollView>
@@ -382,6 +498,9 @@ export default function ItemCompareScreen({ navigation }) {
           <Text style={styles.floatingText}>{basket.length}</Text>
         </TouchableOpacity>
       )}
+
+      {/* ====================== BUDGET BOTTOM SHEET ====================== */}
+      {renderBottomSheet()}
     </>
   );
 }
@@ -514,14 +633,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-
-  // card: { flex: 1, backgroundColor: '#fff', margin: 8, padding: 16, borderRadius: 16, elevation: 4, alignItems: 'center' },
-  // selectedCard: { borderColor: '#4CAF50', borderWidth: 3 },
-  // cardStore: { fontSize: 16, fontWeight: 'bold', color: '#333' },
-  // cardPrice: { fontSize: 20, fontWeight: 'bold', color: '#E61F46', marginVertical: 8 },
-  // cardUnit: { color: '#666', fontSize: 12 },
-  // cardRadio: { position: 'absolute', top: 12, right: 12, width: 28, height: 28, borderRadius: 14, backgroundColor: '#4CAF50', justifyContent: 'center', alignItems: 'center' },
-  // cardRadioInner: { width: 16, height: 16, borderRadius: 8, backgroundColor: '#fff' },
 
   floatingBtn: {
     position: "absolute",

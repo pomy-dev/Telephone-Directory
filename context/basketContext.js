@@ -5,29 +5,35 @@ const BasketContext = createContext(undefined);
 export const BasketProvider = ({ children }) => {
   const [basket, setBasket] = useState([]);
   const [picked, setPicked] = useState([]);
+  const [budget, setBudget] = useState(null);           // total budget
+  const [spent, setSpent] = useState(0);
 
   const pickItem = (deal, store) => {
     setPicked(prev => {
       const exists = prev.find(i => i.id === deal.id);
-      if (exists) return prev;
-      return [...prev, { ...deal, selectedStore: store }];
+      if (exists) {
+        return prev.filter(i => i.id !== deal.id);
+      } else {
+        return [...prev, { ...deal, selectedStore: store }];
+      };
     });
-  };
-
-  const unpick = (id) => {
-    setPicked(prev => prev.filter(item => item.id !== id));
   };
 
   const addToBasket = (deal, store) => {
     setBasket(prev => {
       const exists = prev.find(i => i.id === deal.id);
-      if (exists) {
-        // Already in basket → REMOVE IT (toggle off)
-        return prev.filter(i => i.id !== deal.id);
-      } else {
-        // Not in basket → ADD IT (toggle on)
-        return [...prev, { ...deal, selectedStore: store }];
+
+      if (exists) return prev.filter(i => i.id !== deal.id);
+
+      const newBasket = [...prev, { ...deal, selectedStore: store }];
+
+      // ---- NEW: update spent amount in AppContext ----
+      if (setSpent) {
+        const price = parseFloat(String(deal.price).replace(/[$,]/g || /[R,]/g || /[E,]/g, '')) || 0;
+        setSpent(prevSpent => prevSpent + price);
       }
+      // -------------------------------------------------
+      return newBasket;
     });
   };
 
@@ -40,7 +46,7 @@ export const BasketProvider = ({ children }) => {
   const total = basket.reduce((sum, item) => sum + item.price, 0);
 
   return (
-    <BasketContext.Provider value={{ picked, basket, pickItem, unpick, addToBasket, removeFromBasket, clearBasket, total }}>
+    <BasketContext.Provider value={{ picked, basket, pickItem, budget, setBudget, spent, setSpent, addToBasket, removeFromBasket, clearBasket, total }}>
       {children}
     </BasketContext.Provider>
   );

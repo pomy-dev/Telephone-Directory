@@ -278,7 +278,7 @@ export default function HomeDealScreen({ navigation }) {
   }, []);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {loading && <CustomLoader />}
 
       {/* Animated Hero Section */}
@@ -341,7 +341,7 @@ export default function HomeDealScreen({ navigation }) {
         }
       >
         {/* Combo Deals - Horizontal Scroll */}
-        <Text style={styles.section}>Combo Deals</Text>
+        <Text style={styles.section}>{!loading && 'Combo Deals'}</Text>
         <FlatList
           data={combos}
           horizontal
@@ -352,7 +352,7 @@ export default function HomeDealScreen({ navigation }) {
         />
 
         {/* Single Items - 2 Column Grid */}
-        <Text style={styles.section}>On-Special Items</Text>
+        <Text style={styles.section}>{!loading && 'On-Special Items'}</Text>
         <View style={{ paddingBottom: 120, justifyContent: 'space-between', flexDirection: 'row', flexWrap: 'wrap' }}>
           {singles?.map((item, index) =>
             <SingleDealCard deal={item} key={index} />
@@ -367,7 +367,7 @@ export default function HomeDealScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8f8f8' },
+  container: { flex: 1 },
   heroContainer: {
     height: 200,
     overflow: 'hidden',

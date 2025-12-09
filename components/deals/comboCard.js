@@ -42,7 +42,7 @@ export default function ComboCard({ deal }) {
           <Text style={styles.items}>{deal?.item?.join(' + ')}</Text>
 
           <View style={styles.bottomRow}>
-            <Text style={styles.price}>SZL {deal?.price}</Text>
+            <Text style={styles.price} numberOfLines={1}>SZL {deal?.price?.replace(/[$,]/g || /[R,]/g || /[E,]/g, '')}</Text>
 
             <Icons.Feather
               name={isSelected ? 'check-circle' : 'plus-circle'}
@@ -92,6 +92,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   price: {
+    flex: 2,
     color: '#FFFFFF',
     fontSize: 38,
     fontWeight: '900',

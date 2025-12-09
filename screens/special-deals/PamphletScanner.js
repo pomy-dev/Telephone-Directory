@@ -178,13 +178,12 @@ export default function PamphletScanner({ navigation }) {
   const focusX = useSharedValue(0.5);
   const focusY = useSharedValue(0.5);
   const isZoomPickerOpen = useSharedValue(false);
-  const isMountedRef = useRef(true);
+  const itemsRef = useRef(items);
+  const setItemsRef = useRef(setItems);
 
   useEffect(() => {
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, []);
+    itemsRef.current = items;
+  }, [items]);
 
   useEffect(() => {
     (async () => {
@@ -336,6 +335,37 @@ export default function PamphletScanner({ navigation }) {
     }
   }, [camera, isFocused, flash]);
 
+  const onInitialized = useCallback(() => {
+    setIsInitialized(true);
+  }, []);
+
+  const handleSaveFlyer = useCallback(async () => {
+    if (!storeName.trim()) {
+      Alert.alert('Missing Store', 'Please enter the store name');
+      return;
+    }
+
+    setIsSubmiting(true);
+    try {
+      const savedItems = await addFlyerItems(storeName, items);
+      if (savedItems) {
+        CustomToast('Saved!', `${items.length} items from ${storeName} saved`);
+
+        // These will now work safely
+        setItemsRef.current([]);
+        // setItems([]);
+        setStoreName('');
+        setIsFAB(false);
+      }
+    } catch (err) {
+      console.error(err.message);
+      Alert.alert('Error', 'Failed to save items. Please try again.');
+    } finally {
+      setIsSubmiting(false);
+      bottomSheetRef.current?.close();
+    }
+  }, [storeName]);
+
   const GeminiAIProcess = async (path) => {
     setGeminiProcessing(true)
     let photoUri;
@@ -428,17 +458,13 @@ export default function PamphletScanner({ navigation }) {
       const croppedImage = imageContext.crop(cropRegion)
       const resultImg = await croppedImage.renderAsync()
       const cachedImg = await resultImg.saveAsync({ format: SaveFormat.PNG, })
-
+      console.log('Cropped image saved at:', cachedImg.uri);
       return cachedImg
     } catch (err) {
       console.warn('Manipulator crop failed:', err);
       return Images.product;
     }
   };
-
-  const onInitialized = useCallback(() => {
-    setIsInitialized(true);
-  }, []);
 
   if (!permissionGranted || !device) {
     return (
@@ -450,34 +476,6 @@ export default function PamphletScanner({ navigation }) {
       </View>
     );
   }
-
-  const handleSaveFlyer = useCallback(async () => {
-    if (!storeName.trim()) {
-      Alert.alert('Missing Store', 'Please enter the store name');
-      return;
-    }
-
-    setIsSubmiting(true)
-    try {
-      const savedItems = await addFlyerItems(storeName, items);
-      if (savedItems && isMountedRef.current) {
-        CustomToast('Saved!', `${items.length} items from ${storeName} saved`);
-      }
-    } catch (err) {
-      console.error(err.message);
-      if (isMountedRef.current) {
-        Alert.alert('Error', 'Failed to save items. Please try again.');
-      }
-    } finally {
-      if (isMountedRef.current) {
-        setIsSubmiting(false);
-        bottomSheetRef.current?.close();
-        setIsFAB(false);
-        setItems([]);
-        setStoreName('');
-      }
-    }
-  }, [storeName, items]);
 
   return (
     <BottomSheetModalProvider>
@@ -519,7 +517,10 @@ export default function PamphletScanner({ navigation }) {
                 </TouchableOpacity>
 
                 <TouchableOpacity style={styles.previewBtnConfirm} onPress={onUseThisPhoto}>
-                  <Icons.Feather name="check" size={24} color="#000" />
+                  {isSubmiting
+                    ? <ActivityIndicator color="#000" size={24} />
+                    : <Icons.Feather name="check" size={24} color="#000" />
+                  }
                   <Text style={[styles.previewBtnText, { color: '#000' }]}>Use This Photo</Text>
                 </TouchableOpacity>
               </View>
@@ -632,7 +633,7 @@ export default function PamphletScanner({ navigation }) {
             <Text style={styles.pickerTitle}>Select or Take a Flyer Photo</Text>
             <TouchableOpacity style={styles.pickerButton} onPress={pickImage}>
               {isPickingImg
-                ? <ActivityIndicator color={theme.colors.indicator} size={30} />
+                ? <ActivityIndicator color='#fff' size={30} />
                 : <Icons.Feather name="image" size={32} color="#fff" />
               }
               <Text style={styles.pickerButtonText}>Choose Photo</Text>
