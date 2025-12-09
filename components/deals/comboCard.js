@@ -42,7 +42,7 @@ export default function ComboCard({ deal }) {
           <Text style={styles.items}>{deal?.item?.join(' + ')}</Text>
 
           <View style={styles.bottomRow}>
-            <Text style={styles.price} numberOfLines={1}>SZL {deal?.price?.replace(/[$,]/g || /[R,]/g || /[E,]/g, '')}</Text>
+            <Text style={styles.price} numberOfLines={1}>SZL {deal?.price?.replace(/[^0-9.,]/g, '') || 'NaN'}</Text>
 
             <Icons.Feather
               name={isSelected ? 'check-circle' : 'plus-circle'}

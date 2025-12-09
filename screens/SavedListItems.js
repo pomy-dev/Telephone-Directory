@@ -118,7 +118,7 @@ export default function SavedListsScreen({ navigation }) {
   };
 
   const getPriceNumber = (price) => {
-    const cleaned = String(price || '0').replace(/[$,R\s]/g, '').trim();
+    const cleaned = String(price || '0.00').replace(/[^0-9.,]/g, '').trim();
     return parseFloat(cleaned) || 0;
   };
 
@@ -389,6 +389,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 30,
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 8,
   },
   deleteText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },

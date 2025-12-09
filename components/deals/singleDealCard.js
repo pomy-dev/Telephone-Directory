@@ -46,7 +46,7 @@ const SingleDealCard = ({ deal }) => {
             {deal?.item}
           </Text>
           <Text style={styles.store}>{deal?.store}</Text>
-          <Text style={styles.price}>SZL {deal?.price?.replace(/[$,]/g || /[R,]/g || /[E,]/g, '')}</Text>
+          <Text style={styles.price}>SZL {deal?.price?.replace(/[^0-9.,]/g, '') || 'NaN'}</Text>
         </View>
 
         {/* Selected Badge */}

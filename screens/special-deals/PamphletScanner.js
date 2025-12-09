@@ -15,7 +15,6 @@ import {
 import {
   Camera,
   useCameraDevice,
-  useFrameProcessor,
   useLocationPermission,
   useMicrophonePermission
 } from 'react-native-vision-camera';
@@ -324,8 +323,9 @@ export default function PamphletScanner({ navigation }) {
       });
       console.log('Taken photo')
       setCapturing(false);
-
-      await GeminiAIProcess(photo.path)
+      console.log('Photo path:', photo.path);
+      setPhotoPreviewUri(`file://${photo.path}`);
+      // await GeminiAIProcess(photo.path)
     } catch (err) {
       console.error('Capturing error:', err.message);
       Alert.alert(
@@ -655,7 +655,7 @@ export default function PamphletScanner({ navigation }) {
             ) : (
               items.map((item, i) => (
                 <View key={i} style={styles.card}>
-                  <Image source={Images.priceTag} style={styles.thumb} />
+                  <Image source={{ uri: item.image }} style={styles.thumb} />
                   <View style={styles.info}>
                     <Text style={styles.name}>{item.name}</Text>
                     <Text style={styles.price}>{item.price}</Text>

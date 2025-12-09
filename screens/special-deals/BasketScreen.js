@@ -1,4 +1,3 @@
-// screens/BasketScreen.tsx
 import React, { useState, useEffect } from 'react';
 import {
   ScrollView, View, Text, StyleSheet, TouchableOpacity,
@@ -75,7 +74,7 @@ export default function BasketScreen({ navigation }) {
         name: listName.trim(),
         items: basketItems,
         total: basketItems.reduce((sum, item) => {
-          const priceStr = String(item.price || '0').replace(/[$,]/g, '').trim();
+          const priceStr = String(item.price || '0.00').replace(/[^0-9.,]/g, '');
           return sum + (parseFloat(priceStr) || 0);
         }, 0),
         savedAt: new Date().toISOString(),
@@ -155,14 +154,12 @@ export default function BasketScreen({ navigation }) {
             />
 
             <View style={styles.itemInfo}>
-              <Text style={styles.itemName} numberOfLines={2}>
-                {item.item}
-              </Text>
+              <Text style={styles.itemName} numberOfLines={2}>{item.item}</Text>
               <View style={styles.storeRow}>
                 <Icons.Ionicons name="storefront" size={16} color="#E61F46" />
                 <Text style={styles.storeName}>{item.store}</Text>
               </View>
-              <Text style={styles.price}>SZL {parseFloat(item.price?.replace(/[$,]/g, ''))}</Text>
+              <Text style={styles.price}>SZL {parseFloat(String(item.price)?.replace(/[^0-9.,]/g, '') || '0.00').toFixed(2) || 'NaN'}</Text>
             </View>
 
             <TouchableOpacity

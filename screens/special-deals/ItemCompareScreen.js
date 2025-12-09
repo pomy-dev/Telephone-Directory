@@ -10,8 +10,9 @@ import {
   StyleSheet,
   TouchableOpacity
 } from 'react-native';
-import BottomSheet, { useBottomSheetSpringConfigs, BottomSheetScrollView } from '@gorhom/bottom-sheet';
+import BottomSheet, { useBottomSheetSpringConfigs } from '@gorhom/bottom-sheet';
 import { searchAllFlyerItems } from '../../service/Supabase-Fuctions';
+import { LoaderKitView } from 'react-native-loader-kit';
 import { useBasket } from '../../context/basketContext';
 import { AppContext } from '../../context/appContext';
 import { Icons } from '../../constants/Icons';
@@ -23,6 +24,7 @@ export default function ItemCompareScreen({ navigation }) {
   const [viewMode, setViewMode] = useState('table');
   const [selectedDealMap, setSelectedDealMap] = useState({});
   const [items, setItems] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   const [tempBudget, setTempBudget] = useState('');
 
@@ -58,8 +60,15 @@ export default function ItemCompareScreen({ navigation }) {
 
   useEffect(() => {
     const findAllItems = async () => {
-      const allItems = await searchAllFlyerItems();
-      setItems(allItems);
+      try {
+        setLoading(true);
+        const allItems = await searchAllFlyerItems();
+        setItems(allItems);
+      } catch (error) {
+        console.error(error);
+      } finally {
+        setLoading(false);
+      }
     };
 
     findAllItems();
@@ -74,20 +83,6 @@ export default function ItemCompareScreen({ navigation }) {
     if (Array.isArray(item)) return item;
     if (typeof item === 'string') return [item];
     return [];
-  };
-
-  // Safe string conversion – never crashes
-  const safeStr = (value) => {
-    if (value === null || value === undefined) return '';
-    if (typeof value === 'string') return value;
-    if (typeof value === 'number') return value.toString();
-    if (typeof value === 'object') {
-      // common patterns from your DB
-      if (value.value !== undefined) return String(value.value);
-      if (value.amount !== undefined) return String(value.amount);
-      return ''; // fallback
-    }
-    return String(value);
   };
 
   // Group deals by item name
@@ -216,8 +211,8 @@ export default function ItemCompareScreen({ navigation }) {
           );
         })
         .sort((a, b) => {
-          const priceA = parseFloat(a.price.replace(/[$,]/g, '')) || Infinity;
-          const priceB = parseFloat(b.price.replace(/[$,]/g, '')) || Infinity;
+          const priceA = parseFloat(a.price.replace((/[$,]/g || /[R,]/g || /[E,]/g), '')) || Infinity;
+          const priceB = parseFloat(b.price.replace((/[$,]/g || /[R,]/g || /[E,]/g), '')) || Infinity;
           return priceA - priceB;
         });
 
@@ -348,145 +343,150 @@ export default function ItemCompareScreen({ navigation }) {
           </TouchableOpacity>
         </View>
 
-        {viewMode === 'table' ? (
-          <ScrollView>
-            {groupedItems.map((group, index) => (
-              <View key={index} style={{ marginBottom: 25 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <Image source={Images.tagdeals} style={{ height: 50, width: 50, objectFit: 'cover', borderRadius: 10 }} />
-                  <Text style={{ fontSize: 14, color: '#666' }}>
-                    {normalizeItem(group.itemName).join(' + ')}
-                  </Text>
-                </View>
+        {loading ?
+          (
+            <LoaderKitView
+              style={{ width: 70, height: 70, alignSelf: 'center', marginTop: '50%' }}
+              name="BallGridPulse"
+              color={theme.colors.indicator}
+              animationSpeedMultiplier={1.0}
+            />
+          ) :
+          (viewMode === 'table'
+            ? (<ScrollView>
+              {groupedItems.map((group, index) => (
+                <View key={index} style={{ marginBottom: 25 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                    <Image source={Images.tagdeals} style={{ height: 50, width: 50, objectFit: 'cover', borderRadius: 10 }} />
+                    <Text style={{ fontSize: 14, color: '#666' }}>
+                      {normalizeItem(group.itemName).join(' + ')}
+                    </Text>
+                  </View>
 
-                {/* TABLE */}
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                  <View style={styles.table}>
-                    {/* TABLE HEADER */}
-                    <View style={styles.row}>
-                      <Text style={[styles.cellHeader, { width: 50 }]}>✔️</Text>
-                      <Text style={[styles.cellHeader, { width: 150 }]}>Store</Text>
-                      <Text style={[styles.cellHeader, { width: 120 }]}>Price</Text>
-                      <Text style={[styles.cellHeader, { width: 120 }]}>Unit</Text>
-                      <Text style={[styles.cellHeader, { width: 150 }]}>Type</Text>
+                  {/* TABLE */}
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    <View style={styles.table}>
+                      {/* TABLE HEADER */}
+                      <View style={styles.row}>
+                        <Text style={[styles.cellHeader, { width: 50 }]}>✔️</Text>
+                        <Text style={[styles.cellHeader, { width: 150 }]}>Store</Text>
+                        <Text style={[styles.cellHeader, { width: 120 }]}>Price</Text>
+                        <Text style={[styles.cellHeader, { width: 120 }]}>Unit</Text>
+                        <Text style={[styles.cellHeader, { width: 150 }]}>Type</Text>
+                      </View>
+
+                      {group.deals.length > 0 ? (
+                        group.deals.map((deal) => {
+                          const isSelected = basket.some(i => i.id === deal.id);
+
+                          return (
+                            <View key={deal.id} style={styles.row}>
+                              <TouchableOpacity
+                                onPress={() => addToBasket(deal, deal.store)}
+                                style={styles.checkboxContainer}
+                              >
+                                <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
+                                  {isSelected && <Icons.Ionicons name="checkmark" size={16} color="#fff" />}
+                                </View>
+                              </TouchableOpacity>
+
+                              <View style={[styles.cell, { width: 150 }]}>
+                                <Text style={{ fontWeight: 'bold', textAlign: 'center' }}>{deal.store}</Text>
+                              </View>
+
+                              <Text style={[styles.cell, { width: 120, fontWeight: "bold", color: "#E61F46" }]}>
+                                SZL {parseFloat(String(deal.price)?.replace(/[^0-9.,]/g, '') || '0.00').toFixed(2) || 'NaN'}
+                              </Text>
+
+                              <Text style={[styles.cell, { width: 120 }]}>
+                                {group.isCombo ? 'Combo' : (deal.unit || 'each')}
+                              </Text>
+
+                              <Text style={[styles.cell, { width: 150, fontSize: 11, color: '#555' }]}>
+                                {group.isCombo
+                                  ? `${group.deals[0].item.length} items`
+                                  : (deal.type || 'each')}
+                              </Text>
+                            </View>
+                          );
+                        })
+                      ) : (
+                        <View style={[styles.row, { justifyContent: 'center' }]}>
+                          <Text style={{ padding: 20, color: '#999' }}>No deals found</Text>
+                        </View>
+                      )}
                     </View>
+                  </ScrollView>
+                </View>
+              ))}
+            </ScrollView>)
+            :
+            <ScrollView style={{ flex: 1 }}>
+              {groupedItems.map((group, index) => (
+                <View key={index} style={{ marginBottom: 32, paddingHorizontal: 16 }}>
+                  {/* Group Header */}
+                  <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+                    <Image
+                      source={Images.tagdeals}
+                      style={{ height: 50, width: 50, borderRadius: 10 }}
+                    />
+                    <Text style={{ fontSize: 12, color: '#666', textAlign: 'center' }}>
+                      {group.displayName}
+                    </Text>
+                  </View>
 
+                  {/* Horizontal Scrollable Deals */}
+                  <ScrollView horizontal contentContainerStyle={{ alignItems: 'center', gap: 3, paddingHorizontal: 12 }}
+                    showsHorizontalScrollIndicator={false}
+                  >
                     {group.deals.length > 0 ? (
                       group.deals.map((deal) => {
-                        const isSelected = basket.some(i => i.id === deal.id);
+                        const isSelected = selectedDealMap[group.itemKey] === deal.id;
+                        const isInBasket = basket.some(i => i.id === deal.id);
 
                         return (
-                          <View key={deal.id} style={styles.row}>
-                            <TouchableOpacity
-                              onPress={() => addToBasket(deal, deal.store)}
-                              style={styles.checkboxContainer}
-                            >
-                              <View style={[styles.checkbox, isSelected && styles.checkboxSelected]}>
-                                {isSelected && <Icons.Ionicons name="checkmark" size={16} color="#fff" />}
+                          <TouchableOpacity
+                            key={deal.id}
+                            style={[
+                              styles.gridCard,
+                              (isSelected || isInBasket) && styles.selectedCard
+                            ]}
+                            onPress={() => {
+                              if (isInBasket) {
+                                addToBasket(deal, deal.store);
+                              } else {
+                                addToBasket(deal, deal.store);
+                              }
+                              setSelectedDealMap(prev => ({
+                                ...prev,
+                                [group.itemKey]: deal.id
+                              }));
+                            }}
+                          >
+                            <Text style={styles.cardStore}>{deal.store}</Text>
+                            <Text style={styles.cardPrice}>
+                              SZL {parseFloat(deal.price?.replace(/[^0-9.,]/g, '') || '0.00')?.toFixed(2) || 'NaN'}
+                            </Text>
+                            <Text style={styles.cardUnit}>
+                              {deal.unit || 'each'}
+                            </Text>
+                            {(isSelected || isInBasket) && (
+                              <View style={styles.cardCheck}>
+                                <Icons.Ionicons name="checkmark" size={20} color="#fff" />
                               </View>
-                            </TouchableOpacity>
-
-                            <View style={[styles.cell, { width: 150 }]}>
-                              <Text style={{ fontWeight: 'bold', textAlign: 'center' }}>{deal.store}</Text>
-                            </View>
-
-                            <Text style={[styles.cell, { width: 120, fontWeight: "bold", color: "#E61F46" }]}>
-                              SZL {parseFloat(String(deal.price).replace(/[$,]/g, '') || 0).toFixed(2)}
-                            </Text>
-
-                            <Text style={[styles.cell, { width: 120 }]}>
-                              {group.isCombo ? 'Combo' : (deal.unit || 'each')}
-                            </Text>
-
-                            <Text style={[styles.cell, { width: 150, fontSize: 11, color: '#555' }]}>
-                              {group.isCombo
-                                ? `${group.deals[0].item.length} items`
-                                : (deal.type || 'each')}
-                            </Text>
-                          </View>
+                            )}
+                          </TouchableOpacity>
                         );
                       })
                     ) : (
-                      <View style={[styles.row, { justifyContent: 'center' }]}>
-                        <Text style={{ padding: 20, color: '#999' }}>No deals found</Text>
+                      <View style={{ padding: 20, alignItems: 'center' }}>
+                        <Text style={{ color: '#999' }}>No deals found</Text>
                       </View>
                     )}
-                  </View>
-                </ScrollView>
-              </View>
-            ))}
-          </ScrollView>
-        ) :
-          <ScrollView style={{ flex: 1 }}>
-            {groupedItems.map((group, index) => (
-              <View key={index} style={{ marginBottom: 32, paddingHorizontal: 16 }}>
-                {/* Group Header */}
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-                  <Image
-                    source={Images.tagdeals}
-                    style={{ height: 50, width: 50, borderRadius: 10 }}
-                  />
-                  <Text style={{ fontSize: 12, color: '#666', textAlign: 'center' }}>
-                    {group.displayName}
-                  </Text>
+                  </ScrollView>
                 </View>
-
-                {/* Horizontal Scrollable Deals */}
-                <ScrollView horizontal contentContainerStyle={{ alignItems: 'center', gap: 3, paddingHorizontal: 12 }}
-                  showsHorizontalScrollIndicator={false}
-                >
-                  {group.deals.length > 0 ? (
-                    group.deals.map((deal) => {
-                      const isSelected = selectedDealMap[group.itemKey] === deal.id;
-                      const isInBasket = basket.some(i => i.id === deal.id);
-
-                      return (
-                        <TouchableOpacity
-                          key={deal.id}
-                          style={[
-                            styles.gridCard,
-                            (isSelected || isInBasket) && styles.selectedCard
-                          ]}
-                          onPress={() => {
-                            // In grid mode: toggle selection via context
-                            if (isInBasket) {
-                              // Optional: remove from basket if already added
-                              // Or just select the cheapest — your choice
-                              addToBasket(deal, deal.store);
-                            } else {
-                              addToBasket(deal, deal.store);
-                            }
-                            // Also update selectedDealMap for visual feedback
-                            setSelectedDealMap(prev => ({
-                              ...prev,
-                              [group.itemKey]: deal.id
-                            }));
-                          }}
-                        >
-                          <Text style={styles.cardStore}>{deal.store}</Text>
-                          <Text style={styles.cardPrice}>
-                            SZL {parseFloat(deal.price?.replace(/[$,]/g, '') || 0).toFixed(2)}
-                          </Text>
-                          <Text style={styles.cardUnit}>
-                            {safeStr(deal.unit) || 'each'}
-                          </Text>
-                          {(isSelected || isInBasket) && (
-                            <View style={styles.cardCheck}>
-                              <Icons.Ionicons name="checkmark" size={20} color="#fff" />
-                            </View>
-                          )}
-                        </TouchableOpacity>
-                      );
-                    })
-                  ) : (
-                    <View style={{ padding: 20, alignItems: 'center' }}>
-                      <Text style={{ color: '#999' }}>No deals found</Text>
-                    </View>
-                  )}
-                </ScrollView>
-              </View>
-            ))}
-          </ScrollView>
+              ))}
+            </ScrollView>)
         }
         <View style={{ height: 40 }} />
       </View>
