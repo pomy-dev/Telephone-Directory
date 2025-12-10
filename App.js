@@ -22,6 +22,7 @@ import LoanDetails from "./screens/loans/LoanDetails"
 import LoanCompare from "./screens/loans/LoanCompare"
 import LoanCalculator from "./screens/loans/LoanCalculator"
 import LoanAssist from "./screens/loans/LoanAssist"
+import AIAgentChat from "./screens/loans/AIAgent"
 
 // screens
 import HomeScreen from "./screens/HomeScreen"
@@ -407,6 +408,7 @@ function AppContent() {
                         <Stack.Screen name="LoanCompare" component={LoanCompare} />
                         <Stack.Screen name="LoanCalculator" component={LoanCalculator} />
                         <Stack.Screen name="LoanAssist" component={LoanAssist} />
+                        <Stack.Screen name="AIAgentChat" component={AIAgentChat} />
 
                         {/* deals assist */}
                         <Stack.Screen name="SpecialDeals" component={HomeDealScreen} />
