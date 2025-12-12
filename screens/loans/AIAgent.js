@@ -1,23 +1,14 @@
 import React, { useState, useRef, useEffect } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  FlatList,
-  TextInput,
-  TouchableOpacity,
-  KeyboardAvoidingView,
-  Platform,
-  Dimensions,
-  Animated,
-  ActivityIndicator,
-  Keyboard,
-  SafeAreaView,
+  View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, Platform,
+  Dimensions, Animated, ActivityIndicator, Keyboard, SafeAreaView,
 } from "react-native";
+import { API_BASE_URL } from "../../config/env";
+import { AppContext } from "../../context/appContext";
 import { Icons } from "../../constants/Icons";
 import SecondaryNav from "../../components/SecondaryNav";
 
-const { width, height } = Dimensions.get("window");
+const { width } = Dimensions.get("window");
 const isTablet = width >= 768;
 
 // Fallback: If you don't have the image yet, use this base64 pattern (WhatsApp-like)
@@ -58,7 +49,9 @@ const MessageBubble = ({ message, isUser, timestamp }) => {
   );
 };
 
-export default function AIAgentChat({ navigation, route }) {
+export default function AIAgentChat({ route }) {
+  const { theme } = React.useContext(AppContext);
+  const { context } = route.params;
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState("");
   const [inputHeight, setInputHeight] = useState(50);
@@ -66,8 +59,6 @@ export default function AIAgentChat({ navigation, route }) {
   const [keyboardHeight, setKeyboardHeight] = useState(60);
   const flatListRef = useRef(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
-
-  const context = route.params?.context;
 
   useEffect(() => {
     const keyboardDidShow = Keyboard.addListener("keyboardDidShow", (e) => {
@@ -116,29 +107,51 @@ export default function AIAgentChat({ navigation, route }) {
     }
   }, [messages]);
 
+  // Will have to use Redis Database
   const sendMessage = async () => {
     if (!inputText.trim() || isLoading) return;
 
-    const userMsg = {
-      id: Date.now().toString(),
-      text: inputText,
-      isUser: true,
-      timestamp: Date.now(),
-    };
-    setMessages(prev => [...prev, userMsg]);
-    setInputText("");
-    setIsLoading(true);
+    try {
+      const userMsg = {
+        id: Date.now().toString(),
+        text: inputText,
+        isUser: true,
+        timestamp: Date.now(),
+      };
+      setMessages(prev => [...prev, userMsg]);
+      setInputText("");
+      setIsLoading(true);
 
-    setTimeout(() => {
+      const res = await fetch(`${API_BASE_URL}/api/ask-grok`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: userMsg.text,
+          history: messages.map(msg => ({ role: msg.isUser ? 'user' : 'model', text: msg.text })),
+          context: context || null
+        }),
+      });
+
+      if (!res.ok) {
+        throw new Error(`Server error: ${res.status}`);
+      }
+
+      const data = await res.json();
+
       const aiReply = {
         id: (Date.now() + 1).toString(),
-        text: "Thank you for your message! I can help you compare loans, explain insurance policies, or guide you on investments. What would you like to know?",
+        text: data.reply,
         isUser: false,
         timestamp: Date.now(),
       };
+
       setMessages(prev => [...prev, aiReply]);
+    } catch (error) {
       setIsLoading(false);
-    }, 1500);
+      console.error("Error sending message to AI agent:", error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const renderMessage = ({ item }) => (
@@ -148,9 +161,7 @@ export default function AIAgentChat({ navigation, route }) {
   );
 
   return (
-    <SafeAreaView
-      style={styles.container}
-    >
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       {/* WhatsApp-style Background */}
       <WhatsAppPatternFallback />
       <View style={{ height: 25 }} />
@@ -204,13 +215,13 @@ export default function AIAgentChat({ navigation, route }) {
 
 // Enhanced Styles for Responsiveness
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#F9FAFB" },
+  container: { flex: 1 },
   bgOverlay: { ...StyleSheet.absoluteFillObject },
   patternContainer: { flex: 1 },
   patternRow: { flexDirection: "row" },
   patternDot: { width: 30, height: 30, backgroundColor: "#075E54" },
 
-  chatList: { paddingHorizontal: 5, paddingVertical: 8, paddingBottom: 80 },
+  chatList: { paddingHorizontal: 0, paddingVertical: 8, paddingBottom: 220 },
   messageWrapper: { flexDirection: "row", alignItems: "flex-end", marginVertical: 8 },
   userWrapper: { justifyContent: "flex-end" },
   aiWrapper: { justifyContent: "flex-start" },

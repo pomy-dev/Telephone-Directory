@@ -145,7 +145,7 @@ export default function FinancialHubScreen({ navigation }) {
 
   // FAB Press → Open AI Agent Chat
   const openAIAgent = () => {
-    navigation.navigate("AIAgentChat"); // Make sure this screen exists in your navigator
+    navigation.navigate("AIAgentChat", { context: null }); // Make sure this screen exists in your navigator
   };
 
   // Render Cards
