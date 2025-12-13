@@ -72,7 +72,7 @@ export default function AIAgentChat({ route }) {
       keyboardDidShow.remove();
       keyboardDidHide.remove();
     };
-  }, []);
+  }, [keyboardHeight]);
 
   useEffect(() => {
     if (context) {
@@ -181,7 +181,7 @@ export default function AIAgentChat({ route }) {
       {isLoading && (
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="small" color="#111827" />
-          <Text style={styles.loadingText}>AI is responding...</Text>
+          <Text style={styles.loadingText}>AI is processing...</Text>
         </View>
       )}
 

@@ -18,11 +18,11 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack"
 import { BasketProvider } from './context/basketContext';
 
 // loan assist
+import LoanAssist from "./screens/loans/LoanAssist"
+import AIAgentChat from "./screens/loans/AIAgent"
 import LoanDetails from "./screens/loans/LoanDetails"
 import LoanCompare from "./screens/loans/LoanCompare"
 import LoanCalculator from "./screens/loans/LoanCalculator"
-import LoanAssist from "./screens/loans/LoanAssist"
-import AIAgentChat from "./screens/loans/AIAgent"
 
 // screens
 import HomeScreen from "./screens/HomeScreen"
@@ -239,21 +239,6 @@ function AppContent() {
   const [isAppReady, setIsAppReady] = useState(false);
   const navigationRef = useNavigationContainerRef();
 
-  // useEffect(() => {
-  //   if (Platform.OS !== "android") return;
-
-  //   (async () => {
-  //     try {
-  //       // 1. Enable edge-to-edge (transparent system bars)
-  //       await NavigationBar.setPositionAsync("absolute");
-  //       await NavigationBar.setBackgroundColorAsync("#000000"); // transparent
-  //       await NavigationBar.setButtonStyleAsync("light");
-  //     } catch (e) {
-  //       console.warn("Edge-to-edge setup failed:", e);
-  //     }
-  //   })();
-  // }, []);
-
   // Notification observer logic
   useEffect(() => {
     let isMounted = true;
@@ -404,11 +389,11 @@ function AppContent() {
                         <Stack.Screen name="BookTransportationScreen" component={BookTransportationScreen} />
 
                         {/* loan assist */}
+                        <Stack.Screen name="LoanAssist" component={LoanAssist} />
+                        <Stack.Screen name="Ask-AI" component={AIAgentChat} />
                         <Stack.Screen name="LoanDetails" component={LoanDetails} />
                         <Stack.Screen name="LoanCompare" component={LoanCompare} />
                         <Stack.Screen name="LoanCalculator" component={LoanCalculator} />
-                        <Stack.Screen name="LoanAssist" component={LoanAssist} />
-                        <Stack.Screen name="AIAgentChat" component={AIAgentChat} />
 
                         {/* deals assist */}
                         <Stack.Screen name="SpecialDeals" component={HomeDealScreen} />

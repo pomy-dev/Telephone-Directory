@@ -144,9 +144,7 @@ export default function FinancialHubScreen({ navigation }) {
   };
 
   // FAB Press → Open AI Agent Chat
-  const openAIAgent = () => {
-    navigation.navigate("AIAgentChat", { context: null }); // Make sure this screen exists in your navigator
-  };
+  const openAIAgent = () => navigation.navigate("Ask-AI", { context: null });
 
   // Render Cards
   const renderLoanCard = ({ item }) => {
@@ -328,7 +326,7 @@ export default function FinancialHubScreen({ navigation }) {
 
       {/* Quick EMI Modal */}
       <QuickCalcModal visible={!!quickCalcLoan} loan={quickCalcLoan} onClose={() => setQuickCalcLoan(null)} navigation={navigation} />
-    </View>
+    </View >
   );
 }
 

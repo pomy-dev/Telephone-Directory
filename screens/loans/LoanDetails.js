@@ -98,7 +98,7 @@ export default function FinancialDetailsScreen({ route, navigation }) {
   const companyName = data.bank || data.company || "Financial Provider";
   const productName = data.type || "Financial Product";
 
-  const openAIAgent = () => navigation.navigate("AIAgentChat", { context: item });
+  const openAIAgent = () => navigation.navigate("Ask-AI", { context: item });
 
   const handleCall = (phone) => Linking.openURL(`tel:${phone}`);
   const handleEmail = (email) => Linking.openURL(`mailto:${email}`);
