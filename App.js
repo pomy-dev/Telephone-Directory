@@ -14,12 +14,11 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs"
 import { createNativeStackNavigator } from "@react-navigation/native-stack"
 
 // Basket Provider
-
 import { BasketProvider } from './context/basketContext';
 
 // loan assist
 import LoanAssist from "./screens/loans/LoanAssist"
-import AIAgentChat from "./screens/loans/AIAgent"
+import AIAgent from "./screens/loans/AIAgent"
 import LoanDetails from "./screens/loans/LoanDetails"
 import LoanCompare from "./screens/loans/LoanCompare"
 import LoanCalculator from "./screens/loans/LoanCalculator"
@@ -390,7 +389,7 @@ function AppContent() {
 
                         {/* loan assist */}
                         <Stack.Screen name="LoanAssist" component={LoanAssist} />
-                        <Stack.Screen name="Ask-AI" component={AIAgentChat} />
+                        <Stack.Screen name="Ask-AI" component={AIAgent} />
                         <Stack.Screen name="LoanDetails" component={LoanDetails} />
                         <Stack.Screen name="LoanCompare" component={LoanCompare} />
                         <Stack.Screen name="LoanCalculator" component={LoanCalculator} />
