@@ -162,10 +162,12 @@ export default function PamphletScanner({ navigation }) {
 
   const [photoPreviewUri, setPhotoPreviewUri] = useState(null);
   const [isPickingImg, setIsPickingImg] = useState(false)
+  const [selectedPhotoUri, setSelectedPhotoUri] = useState(null);
 
   // Bottom Sheet
   const bottomSheetRef = useRef(null);
   const [storeName, setStoreName] = useState('');
+
   const snapPoints = useMemo(() => ['50%', '65%'], []);
 
   const microphone = useMicrophonePermission()
@@ -183,6 +185,10 @@ export default function PamphletScanner({ navigation }) {
   useEffect(() => {
     itemsRef.current = items;
   }, [items]);
+
+  useEffect(() => {
+    setItemsRef.current = setItems;
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -272,6 +278,7 @@ export default function PamphletScanner({ navigation }) {
 
   // === IMAGE PICKER MODE ===
   const pickImage = async () => {
+    setPhotoPreviewUri(null)
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permission Needed', 'Please allow access to your photos.');
@@ -300,10 +307,14 @@ export default function PamphletScanner({ navigation }) {
   const onUseThisPhoto = async () => {
     try {
       if (!photoPreviewUri) return;
+      setSelectedPhotoUri(photoPreviewUri);
+      // Clear previous items when selecting new photo
+      setItems([]);
       await GeminiAIProcess(photoPreviewUri);
     } catch (err) {
       console.error(err)
       setPhotoPreviewUri(null);
+      setSelectedPhotoUri(null);
     } finally {
       setPhotoPreviewUri(null);
     }
@@ -424,7 +435,7 @@ export default function PamphletScanner({ navigation }) {
         })
       );
 
-      setItems((prev) => [...prev, ...newItems]);
+      setItemsRef.current((prev) => [...prev, ...newItems]);
       Alert.alert('Success!', `${newItems.length} items added with cropped images!`);
     } catch (e) {
       console.error('OpenAI error:', e);
@@ -517,12 +528,22 @@ export default function PamphletScanner({ navigation }) {
                   <Text style={styles.previewBtnText}>Retake</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.previewBtnConfirm} onPress={onUseThisPhoto}>
-                  {isSubmiting
+                <TouchableOpacity
+                  style={[
+                    styles.previewBtnConfirm,
+                    selectedPhotoUri === photoPreviewUri && { opacity: 0.6, backgroundColor: '#90EE90' }
+                  ]}
+                  onPress={onUseThisPhoto}
+                >
+                  {isSubmiting || (selectedPhotoUri === photoPreviewUri && geminiProcessing)
                     ? <ActivityIndicator color="#000" size={24} />
-                    : <Icons.Feather name="check" size={24} color="#000" />
+                    : selectedPhotoUri === photoPreviewUri
+                      ? <Icons.Feather name="check-circle" size={24} color="#000" />
+                      : <Icons.Feather name="check" size={24} color="#000" />
                   }
-                  <Text style={[styles.previewBtnText, { color: '#000' }]}>Use This Photo</Text>
+                  <Text style={[styles.previewBtnText, { color: '#000' }]}>
+                    {selectedPhotoUri === photoPreviewUri ? 'Processing...' : 'Use This Photo'}
+                  </Text>
                 </TouchableOpacity>
               </View>
 
