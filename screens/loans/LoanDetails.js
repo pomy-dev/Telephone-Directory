@@ -1,8 +1,18 @@
 import React from "react";
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Dimensions,
-  Linking, StatusBar
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Image,
+  Dimensions,
+  Linking,
+  StatusBar,
+  Share,
+  Platform,
 } from "react-native";
+import BottomSheet, { BottomSheetTextInput, BottomSheetScrollView } from "@gorhom/bottom-sheet"; // Ensure this package is installed
 import { Icons } from "../../constants/Icons";
 import { AppContext } from "../../context/appContext";
 import SecondaryNav from "../../components/SecondaryNav";
@@ -79,6 +89,18 @@ export default function FinancialDetailsScreen({ route, navigation }) {
   const { item } = route.params || {};
   const data = item;
 
+  const [isCommentSheetOpen, setIsCommentSheetOpen] = React.useState(false);
+  const [likes, setLikes] = React.useState(data?.likes); // Replace with real data if available
+  const [isLiked, setIsLiked] = React.useState(false);
+  const [reviews, setReviews] = React.useState(data?.reviews); // Replace with real data if available
+
+  const [rating, setRating] = React.useState(0);
+  const [reviewText, setReviewText] = React.useState("");
+  const [myComments, setMyComments] = React.useState([]);
+  const [submitSuccess, setSubmitSuccess] = React.useState(false);
+
+  const sheetRef = React.useRef(null);
+
   if (!data) {
     return (
       <View style={styles.container}>
@@ -101,18 +123,80 @@ export default function FinancialDetailsScreen({ route, navigation }) {
   const openAIAgent = () => navigation.navigate("Ask-AI", { context: item });
 
   const handleCall = (phone) => Linking.openURL(`tel:${phone}`);
+
   const handleEmail = (email) => Linking.openURL(`mailto:${email}`);
+
+  const handleLike = () => {
+    setIsLiked(!isLiked);
+    setLikes(isLiked ? likes - 1 : likes + 1);
+  };
+
+  const handleShare = async () => {
+    try {
+      const shareOptions = {
+        message: `Check out this financial product: ${productName} by ${companyName}. Learn more about it!`,
+      };
+      await Share.share(shareOptions);
+    } catch (error) {
+      alert("Error sharing the product. Please try again.");
+    }
+  };
+
+  const handleGetDirections = () => {
+    if (data.location.lat && data.location.long) {
+      const url =
+        Platform.OS === "ios"
+          ? `maps://app?daddr=${data.latitude},${data.longitude}`
+          : `geo:${data.latitude},${data.longitude}?q=${data.latitude},${data.longitude}`;
+      Linking.openURL(url).catch(() =>
+        Linking.openURL(
+          `https://www.google.com/maps/dir/?api=1&destination=${data.latitude},${data.longitude}`
+        )
+      );
+    } else {
+      alert("Location coordinates not available");
+    }
+  };
+
+  const openCommentSheet = () => {
+    setIsCommentSheetOpen(true);
+    sheetRef.current?.snapToIndex(0);
+  };
+
+  const handleSubmitReview = () => {
+    if (rating === 0 || reviewText.trim() === "") {
+      alert("Please provide a star rating and write a review.");
+      return;
+    }
+
+    const newComment = {
+      id: reviews.length + 1,
+      name: "You", // Replace with actual user name from context/auth
+      rating,
+      text: reviewText.trim(),
+      date: new Date().toISOString().split("T")[0],
+    };
+    setMyComments([...myComments, newComment]);
+
+    setReviews(reviews + 1);
+    setRating(0);
+    setReviewText("");
+    setSubmitSuccess(true);
+    setTimeout(() => setSubmitSuccess(false), 2000);
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
+      <StatusBar
+        barStyle={isDarkMode ? "light-content" : "dark-content"}
+        backgroundColor={theme.colors.background}
+      />
 
-      <View style={[styles.hero, { backgroundColor: theme.colors.card }]}>
+      <View style={styles.hero}>
         <TouchableOpacity style={styles.navHeader} onPress={() => navigation.goBack()}>
           <Icons.Ionicons name="arrow-back" size={24} color={theme.colors.text} />
         </TouchableOpacity>
 
-        {/* Hero Section */}
         <View style={styles.heroCard}>
           <BankLogo source={data.logo} name={companyName} />
           <View style={styles.heroTextContainer}>
@@ -124,6 +208,35 @@ export default function FinancialDetailsScreen({ route, navigation }) {
               </Text>
             </View>
           </View>
+        </View>
+
+        {/* Action Buttons */}
+        <View style={styles.actionButtonsContainer}>
+          <TouchableOpacity style={styles.actionButton} onPress={handleLike}>
+            <Icons.Ionicons
+              name={isLiked ? "heart" : "heart-outline"}
+              size={24}
+              color={isLiked ? "#DC2626" : "#1F2937"}
+            />
+            <Text style={styles.actionButtonText}>
+              {likes} Like{likes !== 1 ? "s" : ""}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.actionButton} onPress={handleShare}>
+            <Icons.Ionicons name="share-social-outline" size={24} color="#1F2937" />
+            <Text style={styles.actionButtonText}>Share</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.actionButton} onPress={openCommentSheet}>
+            <Icons.Ionicons name="chatbubble-outline" size={24} color="#1F2937" />
+            <Text style={styles.actionButtonText}>Comment</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.actionButton} onPress={handleGetDirections}>
+            <Icons.Ionicons name="location-outline" size={24} color="#1F2937" />
+            <Text style={styles.actionButtonText}>Directions</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -159,7 +272,6 @@ export default function FinancialDetailsScreen({ route, navigation }) {
           )}
         </View>
 
-        {/* Fixed Sections (Non-collapsible) */}
         <SectionCard title="About">
           <Text style={styles.paragraph}>
             {data.description ||
@@ -167,7 +279,6 @@ export default function FinancialDetailsScreen({ route, navigation }) {
           </Text>
         </SectionCard>
 
-        {/* Conditional Collapsible Sections */}
         {isLoan && (
           <>
             <CollapsibleSection title="Eligibility Requirements" initiallyOpen={true}>
@@ -188,30 +299,28 @@ export default function FinancialDetailsScreen({ route, navigation }) {
         )}
 
         {isInsurance && (
-          <>
-            <CollapsibleSection title="Coverage Details">
-              <Text style={styles.bullet}>• In-patient & out-patient treatment</Text>
-              <Text style={styles.bullet}>• Prescription medication coverage</Text>
-              <Text style={styles.bullet}>• Emergency medical evacuation</Text>
-              <Text style={styles.bullet}>• Dental & optical (limited)</Text>
-            </CollapsibleSection>
-          </>
+          <CollapsibleSection title="Coverage Details">
+            <Text style={styles.bullet}>• In-patient & out-patient treatment</Text>
+            <Text style={styles.bullet}>• Prescription medication coverage</Text>
+            <Text style={styles.bullet}>• Emergency medical evacuation</Text>
+            <Text style={styles.bullet}>• Dental & optical (limited)</Text>
+          </CollapsibleSection>
         )}
 
         {isInvestment && (
-          <>
-            <CollapsibleSection title="Investment Strategy">
-              <Text style={styles.paragraph}>
-                Diversified portfolio combining blue-chip equities, government bonds, and cash equivalents for stable long-term growth with controlled risk exposure.
-              </Text>
-            </CollapsibleSection>
-          </>
+          <CollapsibleSection title="Investment Strategy">
+            <Text style={styles.paragraph}>
+              Diversified portfolio combining blue-chip equities, government bonds, and cash equivalents
+              for stable long-term growth with controlled risk exposure.
+            </Text>
+          </CollapsibleSection>
         )}
 
-        {/* Always Visible Sections */}
         <SectionCard title="Terms & Conditions">
           <Text style={styles.paragraph}>
-            All applications are subject to final approval. Rates and terms may vary based on credit assessment. By proceeding, you agree to the provider’s terms of service, privacy policy, and compliance with FSRA regulations.
+            All applications are subject to final approval. Rates and terms may vary based on credit
+            assessment. By proceeding, you agree to the provider’s terms of service, privacy policy,
+            and compliance with FSRA regulations.
           </Text>
         </SectionCard>
 
@@ -223,7 +332,9 @@ export default function FinancialDetailsScreen({ route, navigation }) {
 
           <TouchableOpacity
             style={styles.contactRow}
-            onPress={() => handleEmail(`support@${companyName.toLowerCase().replace(/\s+/g, "")}.sz`)}
+            onPress={() =>
+              handleEmail(`support@${companyName.toLowerCase().replace(/\s+/g, "")}.sz`)
+            }
           >
             <Icons.Ionicons name="mail-outline" size={22} color="#1F2937" />
             <Text style={styles.contactText}>
@@ -239,6 +350,87 @@ export default function FinancialDetailsScreen({ route, navigation }) {
 
         <View style={{ height: 20 }} />
       </ScrollView>
+
+      {/* Comment Bottom Sheet */}
+      <BottomSheet
+        ref={sheetRef}
+        index={-1}
+        snapPoints={["60%", "90%"]}
+        enablePanDownToClose={true}
+        onClose={() => {
+          setIsCommentSheetOpen(false);
+          setRating(0);
+          setReviewText("");
+        }}
+        backgroundStyle={{ backgroundColor: theme.colors.background }}
+        handleIndicatorStyle={{ backgroundColor: "#94A3B8" }}
+      >
+        <BottomSheetScrollView style={styles.sheetContent}>
+          <Text style={styles.sheetTitle}>Reviews & Ratings</Text>
+
+          {/* Review Form */}
+          <View style={styles.reviewForm}>
+            <Text style={styles.formLabel}>Your Rating</Text>
+            <View style={styles.starContainer}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <TouchableOpacity key={star} onPress={() => setRating(star)} activeOpacity={0.7}>
+                  <Icons.Ionicons
+                    name={star <= rating ? "star" : "star-outline"}
+                    size={32}
+                    color="#FBBF24"
+                  />
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={styles.formLabel}>Write Your Review</Text>
+            <BottomSheetTextInput
+              style={styles.reviewInput}
+              placeholder="Share your experience..."
+              multiline
+              value={reviewText}
+              onChangeText={setReviewText}
+            />
+
+            <TouchableOpacity style={styles.submitButton} onPress={handleSubmitReview}>
+              <Text style={styles.submitButtonText}>
+                {submitSuccess ? "Submitted!" : "Submit Review"}
+              </Text>
+            </TouchableOpacity>
+
+            {submitSuccess && (
+              <Text style={styles.successText}>Thank you! Your review has been added.</Text>
+            )}
+          </View>
+
+          {/* Reviews List */}
+          <Text style={styles.reviewsListTitle}>All Reviews ({reviews})</Text>
+          {(reviews === 0 && rating === 0) ? (
+            <Text style={styles.noReviewsText}>No reviews yet. Be the first to review!</Text>
+          ) : (
+            myComments?.map((review) => (
+              <View key={review.id} style={styles.reviewItem}>
+                <View style={styles.reviewHeader}>
+                  <Text style={styles.reviewerName}>{review.name}</Text>
+                  <View style={styles.reviewStars}>
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Icons.Ionicons
+                        key={star}
+                        name={star <= review.rating ? "star" : "star-outline"}
+                        size={16}
+                        color="#FBBF24"
+                      />
+                    ))}
+                  </View>
+                </View>
+                <Text style={styles.reviewText}>{review.text}</Text>
+                <Text style={styles.reviewDate}>{review.date}</Text>
+              </View>
+            ))
+          )}
+          <View style={{ height: 40 }} />
+        </BottomSheetScrollView>
+      </BottomSheet>
 
       {/* Floating AI Agent FAB */}
       <TouchableOpacity style={styles.fab} onPress={openAIAgent} activeOpacity={0.9}>
@@ -257,7 +449,6 @@ const HighlightItem = ({ label, value, isRate = false }) => (
   </View>
 );
 
-// === PREMIUM CLASSIC STYLES ===
 const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollContent: { paddingBottom: 120 },
@@ -271,8 +462,6 @@ const styles = StyleSheet.create({
     color: "#94A3B8",
     fontWeight: "500",
   },
-
-  // nav header
   navHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -280,17 +469,16 @@ const styles = StyleSheet.create({
     gap: 12,
   },
 
-  // Hero
+  // Hero (refined for classic look)
   hero: {
     marginBottom: 20,
     padding: 24,
     borderBottomLeftRadius: 24,
     borderBottomRightRadius: 24,
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
+    backgroundColor: "#FFFFFF",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.08,
     shadowRadius: 20,
     elevation: 12,
   },
@@ -310,7 +498,7 @@ const styles = StyleSheet.create({
   },
   tag: {
     marginTop: 12,
-    backgroundColor: "#111827",
+    backgroundColor: "#1E40AF", // Deep blue for professional feel
     alignSelf: "flex-start",
     paddingHorizontal: 14,
     paddingVertical: 6,
@@ -322,7 +510,25 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 
-  // Highlights
+  actionButtonsContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: 5,
+    paddingHorizontal: 10,
+  },
+  actionButton: {
+    alignItems: "center",
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    minWidth: 70,
+  },
+  actionButtonText: {
+    fontSize: 14,
+    color: "#1F2937",
+    fontWeight: "500",
+  },
+
   highlightsCard: {
     marginHorizontal: 16,
     backgroundColor: "#FFFFFF",
@@ -360,7 +566,6 @@ const styles = StyleSheet.create({
     fontWeight: "800",
   },
 
-  // Cards
   sectionCard: {
     marginHorizontal: 16,
     marginBottom: 16,
@@ -388,7 +593,6 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingTop: 8,
   },
-
   collapsibleHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -441,7 +645,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: "#111827",
+    backgroundColor: "#1E40AF", // Matching classic blue
     justifyContent: "center",
     alignItems: "center",
     shadowColor: "#000",
@@ -449,5 +653,110 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 16,
     elevation: 14,
+  },
+
+  sheetContent: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+  },
+  sheetTitle: {
+    fontSize: 22,
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 20,
+    textAlign: "center",
+  },
+  reviewForm: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+  formLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#1F2937",
+    marginBottom: 8,
+  },
+  starContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 8,
+    marginBottom: 20,
+  },
+  reviewInput: {
+    borderWidth: 1,
+    borderColor: "#D1D5DB",
+    borderRadius: 12,
+    padding: 14,
+    fontSize: 16,
+    minHeight: 100,
+    textAlignVertical: "top",
+    backgroundColor: "#F9FAFB",
+    marginBottom: 16,
+  },
+  submitButton: {
+    backgroundColor: "#1E40AF",
+    paddingVertical: 14,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  submitButtonText: {
+    color: "#FFFFFF",
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  successText: {
+    color: "#059669",
+    textAlign: "center",
+    marginTop: 10,
+    fontWeight: "500",
+  },
+  reviewsListTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#111827",
+    marginBottom: 12,
+  },
+  noReviewsText: {
+    fontSize: 16,
+    color: "#64748B",
+    textAlign: "center",
+    marginTop: 40,
+  },
+  reviewItem: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 6,
+    borderWidth: 1,
+    borderColor: "#E2E8F0",
+  },
+  reviewHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  reviewerName: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#1F2937",
+  },
+  reviewStars: {
+    flexDirection: "row",
+    gap: 4,
+  },
+  reviewText: {
+    fontSize: 15,
+    color: "#4B5563",
+    lineHeight: 22,
+  },
+  reviewDate: {
+    fontSize: 13,
+    color: "#9CA3AF",
+    marginTop: 8,
   },
 });

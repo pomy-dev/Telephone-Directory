@@ -24,25 +24,25 @@ const isTablet = width >= 768;
 
 // === DATA ===
 const loanData = [
-  { id: "1", bank: "Nedbank Eswatini", logo: require("../../assets/banks/bank1.jpeg"), type: "Personal Loan", category: 'loan', rate: "9.5%", max: "E150,000", term: "Up to 60 months", featured: true, description: "Flexible personal loans.", processingTime: "24 hours" },
-  { id: "2", bank: "Standard Bank", logo: require("../../assets/banks/bank2.png"), type: "Home Loan", category: 'loan', rate: "8.25%", max: "E2,500,000", term: "Up to 20 years", featured: true, description: "Build or buy your dream home.", processingTime: "3–5 days" },
-  { id: "3", bank: "FNB Eswatini", logo: require("../../assets/banks/bank3.jpeg"), type: "Business Loan", category: 'loan', rate: "11.0%", max: "E500,000", term: "Up to 84 months", featured: false, description: "Grow your business.", processingTime: "48 hours" },
-  { id: "4", bank: "Eswatini Bank", logo: require("../../assets/banks/bank1.jpeg"), type: "Vehicle Finance", category: 'loan', rate: "10.2%", max: "E300,000", term: "Up to 72 months", featured: false, description: "Drive away today.", processingTime: "24 hours" },
-  { id: "5", bank: "Swazi MTN MoMo", logo: require("../../assets/banks/bank2.png"), type: "Micro Loan", category: 'loan', rate: "15.0%", max: "E5,000", term: "30 days", featured: false, description: "Instant cash via phone.", processingTime: "5 mins" },
+  { id: "1", bank: "Nedbank Eswatini", logo: require("../../assets/banks/bank1.jpeg"), type: "Personal Loan", category: 'loan', rate: "9.5%", max: "E150,000", term: "Up to 60 months", featured: true, description: "Flexible personal loans.", processingTime: "24 hours", location: { lat: -26.3275, long: 31.1420 }, likes: 120, reviews: 45 },
+  { id: "2", bank: "Standard Bank", logo: require("../../assets/banks/bank2.png"), type: "Home Loan", category: 'loan', rate: "8.25%", max: "E2,500,000", term: "Up to 20 years", featured: true, description: "Build or buy your dream home.", processingTime: "3–5 days", location: { lat: -26.3050, long: 31.1365 }, likes: 200, reviews: 60 },
+  { id: "3", bank: "FNB Eswatini", logo: require("../../assets/banks/bank3.jpeg"), type: "Business Loan", category: 'loan', rate: "11.0%", max: "E500,000", term: "Up to 84 months", featured: false, description: "Grow your business.", processingTime: "48 hours", location: { lat: -26.3180, long: 31.1450 }, likes: 150, reviews: 30 },
+  { id: "4", bank: "Eswatini Bank", logo: require("../../assets/banks/bank1.jpeg"), type: "Vehicle Finance", category: 'loan', rate: "10.2%", max: "E300,000", term: "Up to 72 months", featured: false, description: "Drive away today.", processingTime: "24 hours", location: { lat: -26.3200, long: 31.1500 }, likes: 80, reviews: 20 },
+  { id: "5", bank: "Swazi MTN MoMo", logo: require("../../assets/banks/bank2.png"), type: "Micro Loan", category: 'loan', rate: "15.0%", max: "E5,000", term: "30 days", featured: false, description: "Instant cash via phone.", processingTime: "5 mins", location: { lat: -26.3300, long: 31.1400 }, likes: 300, reviews: 75 },
 ];
 
 const insuranceData = [
-  { id: "i1", company: "Swaziland Insurance", logo: require("../../assets/banks/bank2.png"), type: "Medical Aid", category: 'insurance', cover: "Up to E500k", premium: "From E420/pm", featured: true },
-  { id: "i2", company: "Old Mutual", logo: require("../../assets/banks/bank1.jpeg"), type: "Life Cover", category: 'insurance', cover: "E1M+", premium: "From E280/pm", featured: true },
-  { id: "i3", company: "Liberty Eswatini", logo: require("../../assets/banks/bank3.jpeg"), type: "Funeral Plan", category: 'insurance', cover: "E50,000", premium: "E95/pm", featured: false },
-  { id: "i4", company: "Momentum", logo: require("../../assets/banks/bank2.png"), type: "Car Insurance", category: 'insurance', cover: "Comprehensive", premium: "From E650/pm", featured: false },
+  { id: "i1", company: "Swaziland Insurance", logo: require("../../assets/banks/bank2.png"), type: "Medical Aid", category: 'insurance', cover: "Up to E500k", premium: "From E420/pm", featured: true, location: { lat: -26.3275, long: 31.1420 }, likes: 180, reviews: 50 },
+  { id: "i2", company: "Old Mutual", logo: require("../../assets/banks/bank1.jpeg"), type: "Life Cover", category: 'insurance', cover: "E1M+", premium: "From E280/pm", featured: true, location: { lat: -26.3050, long: 31.1365 }, likes: 220, reviews: 65 },
+  { id: "i3", company: "Liberty Eswatini", logo: require("../../assets/banks/bank3.jpeg"), type: "Funeral Plan", category: 'insurance', cover: "E50,000", premium: "E95/pm", featured: false, location: { lat: -26.3180, long: 31.1450 }, likes: 140, reviews: 40 },
+  { id: "i4", company: "Momentum", logo: require("../../assets/banks/bank2.png"), type: "Car Insurance", category: 'insurance', cover: "Comprehensive", premium: "From E650/pm", featured: false, location: { lat: -26.3200, long: 31.1500 }, likes: 160, reviews: 55 },
 ];
 
 const investmentData = [
-  { id: "v1", company: "Eswatini Stock Exchange", logo: require("../../assets/banks/bank2.png"), type: "Shares & ETFs", category: 'investment', min: "E1,000", returns: "8–15% p.a.", featured: true },
-  { id: "v2", company: "Nedbank Wealth", logo: require("../../assets/banks/bank3.jpeg"), type: "Unit Trusts", category: 'investment', min: "E5,000", returns: "7–12% p.a.", featured: true },
-  { id: "v3", company: "Stanlib Eswatini", logo: require("../../assets/banks/bank1.jpeg"), type: "Fixed Deposits", category: 'investment', min: "E10,000", returns: "9.2% p.a.", featured: false },
-  { id: "v4", company: "Allan Gray", logo: require("../../assets/banks/bank3.jpeg"), type: "Offshore Funds", category: 'investment', min: "E50,000", returns: "10–18% p.a.", featured: false },
+  { id: "v1", company: "Eswatini Stock Exchange", logo: require("../../assets/banks/bank2.png"), type: "Shares & ETFs", category: 'investment', min: "E1,000", returns: "8–15% p.a.", featured: true, location: { lat: -26.3275, long: 31.1420 }, likes: 190, reviews: 48 },
+  { id: "v2", company: "Nedbank Wealth", logo: require("../../assets/banks/bank3.jpeg"), type: "Unit Trusts", category: 'investment', min: "E5,000", returns: "7–12% p.a.", featured: true, location: { lat: -26.3050, long: 31.1365 }, likes: 210, reviews: 52 },
+  { id: "v3", company: "Stanlib Eswatini", logo: require("../../assets/banks/bank1.jpeg"), type: "Fixed Deposits", category: 'investment', min: "E10,000", returns: "9.2% p.a.", featured: false, location: { lat: -26.3180, long: 31.1450 }, likes: 130, reviews: 35 },
+  { id: "v4", company: "Allan Gray", logo: require("../../assets/banks/bank3.jpeg"), type: "Offshore Funds", category: 'investment', min: "E50,000", returns: "10–18% p.a.", featured: false, location: { lat: -26.3200, long: 31.1500 }, likes: 170, reviews: 60 },
 ];
 
 // === REUSABLE LOGO WITH FALLBACK ===
@@ -402,7 +402,7 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: "#111827",
+    backgroundColor: "#1E40AF",
     justifyContent: "center",
     alignItems: "center",
     shadowColor: "#000",
