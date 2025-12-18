@@ -9,8 +9,8 @@ import PersonalizedAdsSection from "../components/PersonalizedAdsSection"
 
 export default function HomeScreen({ navigation }) {
   const { theme, isDarkMode, selectedState, isOnline, notificationsEnabled, notifications } = React.useContext(AppContext)
-  const [greetingText, setGreetingText] = useState("")
-  const [startingText, setStartingText] = useState("")
+  const [greetingText, setGreetingText] = useState("");
+  const [startingText, setStartingText] = useState("");
 
   const sampleAds = [
     {

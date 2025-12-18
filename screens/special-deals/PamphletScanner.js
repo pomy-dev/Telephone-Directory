@@ -303,6 +303,7 @@ export default function PamphletScanner({ navigation }) {
       await GeminiAIProcess(photoPreviewUri);
     } catch (err) {
       console.error(err)
+      setPhotoPreviewUri(null);
     } finally {
       setPhotoPreviewUri(null);
     }
@@ -312,7 +313,8 @@ export default function PamphletScanner({ navigation }) {
     setPhotoPreviewUri(null);
   };
 
-  const captureAndAnalyzeWithOpenAI = useCallback(async () => {
+  const takePhoto = useCallback(async () => {
+    setPhotoPreviewUri(null);
     if (!camera.current || !isFocused) return;
     setCapturing(true);
 
@@ -325,7 +327,6 @@ export default function PamphletScanner({ navigation }) {
       setCapturing(false);
       console.log('Photo path:', photo.path);
       setPhotoPreviewUri(`file://${photo.path}`);
-      // await GeminiAIProcess(photo.path)
     } catch (err) {
       console.error('Capturing error:', err.message);
       Alert.alert(
@@ -431,7 +432,7 @@ export default function PamphletScanner({ navigation }) {
         'No items returned',
         e.message.includes('rate limit')
           ? 'Rate limited. Try again in a minute.'
-          : 'Could not read the flyer. Try better lighting or a clearer image.'
+          : e.message || 'Could not process the flyer. Please try again.'
       );
     } finally {
       setGeminiProcessing(false)
@@ -577,7 +578,7 @@ export default function PamphletScanner({ navigation }) {
 
                     <TouchableOpacity
                       style={[styles.captureBtn, capturing && styles.captureBtnDisabled]}
-                      onPress={captureAndAnalyzeWithOpenAI}
+                      onPress={takePhoto}
                       disabled={capturing && geminiProcessing}
                     >
                       {capturing ? <ActivityIndicator color="#000" /> : <Text style={styles.captureText}>ADD ITEMS</Text>}
