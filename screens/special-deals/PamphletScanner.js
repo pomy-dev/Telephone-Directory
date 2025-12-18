@@ -663,7 +663,6 @@ export default function PamphletScanner({ navigation }) {
           </View>
         ) : null}
 
-
         {/* Results + FAB */}
         <View style={[styles.resultsContainer, { backgroundColor: theme.colors.background }]}>
           <ScrollView contentContainerStyle={styles.results}>
