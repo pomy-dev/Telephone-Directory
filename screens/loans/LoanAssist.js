@@ -12,6 +12,7 @@ import {
   Dimensions,
   Animated,
   Modal,
+  ActivityIndicator,
 } from "react-native";
 import { Icons } from "../../constants/Icons";
 import SecondaryNav from "../../components/SecondaryNav";

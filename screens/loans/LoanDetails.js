@@ -9,6 +9,7 @@ import {
   Dimensions,
   Linking,
   StatusBar,
+  ActivityIndicator,
   Share,
   Platform,
 } from "react-native";
@@ -355,17 +356,17 @@ export default function FinancialDetailsScreen({ route, navigation }) {
       <BottomSheet
         ref={sheetRef}
         index={-1}
-        snapPoints={["60%", "90%"]}
+        snapPoints={["50%", "90%"]}
         enablePanDownToClose={true}
         onClose={() => {
           setIsCommentSheetOpen(false);
           setRating(0);
           setReviewText("");
         }}
-        backgroundStyle={{ backgroundColor: theme.colors.background }}
+        backgroundStyle={{ backgroundColor: theme.colors.card }}
         handleIndicatorStyle={{ backgroundColor: "#94A3B8" }}
       >
-        <BottomSheetScrollView style={styles.sheetContent}>
+        <BottomSheetScrollView style={{}}>
           <Text style={styles.sheetTitle}>Reviews & Ratings</Text>
 
           {/* Review Form */}
@@ -655,11 +656,9 @@ const styles = StyleSheet.create({
     elevation: 14,
   },
 
-  sheetContent: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-  },
   sheetTitle: {
+    marginHorizontal: 10,
+    marginVertical: 5,
     fontSize: 22,
     fontWeight: "700",
     color: "#111827",
@@ -668,6 +667,8 @@ const styles = StyleSheet.create({
   },
   reviewForm: {
     backgroundColor: "#FFFFFF",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: 16,
     padding: 20,
     marginBottom: 24,
@@ -715,6 +716,8 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
   reviewsListTitle: {
+    marginHorizontal: 10,
+    marginVertical: 5,
     fontSize: 18,
     fontWeight: "700",
     color: "#111827",
@@ -728,10 +731,9 @@ const styles = StyleSheet.create({
   },
   reviewItem: {
     backgroundColor: "#FFFFFF",
-    borderRadius: 16,
     padding: 16,
     marginBottom: 6,
-    borderWidth: 1,
+    borderBottomWidth: 1,
     borderColor: "#E2E8F0",
   },
   reviewHeader: {

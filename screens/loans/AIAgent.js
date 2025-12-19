@@ -184,8 +184,8 @@ export default function AIAgent({ route }) {
     } catch (error) {
       console.error("AI Error:", error);
       const errorMsg = {
-        id: "error",
-        text: "Failed to reach AI. Please try again.",
+        id: new Date().toISOString(),
+        text: error.message,
         isUser: false,
         timestamp: Date.now(),
       };
@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
     maxWidth: "100%",
   },
   aiWrapper: { alignSelf: "flex-start" },
-  userWrapper: { alignSelf: "flex-end", flexDirection: "row-reverse" },
+  userWrapper: { alignSelf: "flex-end" },
 
   avatar: { marginHorizontal: 8 },
 
