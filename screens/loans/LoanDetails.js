@@ -118,10 +118,17 @@ export default function FinancialDetailsScreen({ route, navigation }) {
   const isInsurance = data?.category === "insurance";
   const isInvestment = data?.category === "investment";
 
+  const getDealType = () => {
+    if (isLoan) return "Loans";
+    if (isInsurance) return "Insurances";
+    if (isInvestment) return "Investments";
+    return "Financial Product";
+  }
+
   const companyName = data.bank || data.company || "Financial Provider";
   const productName = data.type || "Financial Product";
 
-  const openAIAgent = () => navigation.navigate("Ask-AI", { context: item });
+  const openAIAgent = () => navigation.navigate("Ask-AI", { context: item, dealType: getDealType() });
 
   const handleCall = (phone) => Linking.openURL(`tel:${phone}`);
 

@@ -92,7 +92,7 @@ const LoadingBubble = () => (
 
 export default function AIAgent({ route }) {
   const { theme } = useContext(AppContext);
-  const { context } = route.params;
+  const { context, dealType } = route.params;
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState("");
   const [inputHeight, setInputHeight] = useState(50);
@@ -166,6 +166,7 @@ export default function AIAgent({ route }) {
             content: msg.text,
           })),
           context: context || null,
+          dealType: dealType || null
         }),
       });
 
@@ -210,7 +211,7 @@ export default function AIAgent({ route }) {
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : isKeyboardOpen ? -50 : -80}
       >
         <View style={{ height: 25 }} />
-        <SecondaryNav title="AI Scheme Agent" />
+        <SecondaryNav title="AI Agent" rightIcon={(dealType !== null) ? 'bookmark' : null} />
 
         <FlatList
           ref={flatListRef}

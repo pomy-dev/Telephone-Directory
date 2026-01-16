@@ -135,7 +135,8 @@ export default function FinancialHubScreen({ navigation }) {
     const search = searchQuery.toLowerCase();
     const name = (item.bank || item.company || "").toLowerCase();
     const type = (item.type || "").toLowerCase();
-    return name.includes(search) || type.includes(search);
+    const category = (item.category || "").toLowerCase();
+    return name.includes(search) || type.includes(search) || category.includes(search);
   });
 
   const featuredItems = currentData.filter(i => i.featured);
@@ -145,7 +146,7 @@ export default function FinancialHubScreen({ navigation }) {
   };
 
   // FAB Press → Open AI Agent Chat
-  const openAIAgent = () => navigation.navigate("Ask-AI", { context: null });
+  const openAIAgent = () => navigation.navigate("Ask-AI", { context: null, dealType: null });
 
   // Render Cards
   const renderLoanCard = ({ item }) => {
