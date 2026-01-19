@@ -602,7 +602,7 @@ export default function PamphletScanner({ navigation }) {
                       onPress={takePhoto}
                       disabled={capturing && geminiProcessing}
                     >
-                      {capturing ? <ActivityIndicator color="#000" /> : <Text style={styles.captureText}>ADD ITEMS</Text>}
+                      {capturing ? <ActivityIndicator color="#000" /> : <Text style={styles.captureText}>CAPTURE</Text>}
                     </TouchableOpacity>
 
                     <TouchableOpacity style={styles.iconBtn} onPress={() => setItems([])}>
@@ -693,7 +693,7 @@ export default function PamphletScanner({ navigation }) {
                 setIsFAB(true)
               }}
               style={styles.fabButton}
-              disabled={isFAB}
+            // disabled={isFAB}
             >
               <Icons.Feather name="send" size={32} color="#fff" />
             </TouchableOpacity>

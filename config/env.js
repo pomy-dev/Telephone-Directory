@@ -3,7 +3,7 @@ export const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 
 // export const API_BASE_URL = 'https://phone-bool-eswatini.onrender.com';
 // export const API_BASE_URL = 'https://phone-book-api-qpil.onrender.com';
-export const API_BASE_URL = 'http://10.150.14.221:5000';
+export const API_BASE_URL = 'http://10.150.14.116:5000';
 
 export const GOOGLE_MAPS_API_KEY = 'AIzaSyCk4R94IPXuKkXvSm7RIr5fWlmIRzr6UA0';
 
