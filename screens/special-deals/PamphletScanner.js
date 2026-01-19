@@ -446,6 +446,8 @@ export default function PamphletScanner({ navigation }) {
           : e.message || 'Could not process the flyer. Please try again.'
       );
     } finally {
+      setTorch('off')
+      setPhotoPreviewUri(null)
       setGeminiProcessing(false)
     }
   }
@@ -513,7 +515,7 @@ export default function PamphletScanner({ navigation }) {
           exiting={FadeOut.duration(200)}
           style={[StyleSheet.absoluteFill, { zIndex: photoPreviewUri ? 1000 : -1 }]}
         >
-          {photoPreviewUri && (
+          {photoPreviewUri !== null && (
             <View style={styles.previewContainer}>
               <Image
                 source={{ uri: photoPreviewUri }}
