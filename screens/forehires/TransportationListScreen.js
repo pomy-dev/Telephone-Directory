@@ -23,6 +23,7 @@ import {
 import { CustomToast } from '../../components/customToast';
 import { AppContext } from "../../context/appContext"
 import { getForHireTransport } from '../../service/Supabase-Fuctions';
+import { checkNetworkConnectivity } from '../../service/checkNetwork';
 import CustomLoader from '../../components/customLoader';
 import SecondaryNav from '../../components/SecondaryNav';
 
@@ -161,10 +162,12 @@ export default function TransportationListScreen({ navigation }) {
     const [vehicles, setVehicles] = useState([]);
     const [filteredVehicles, setFilteredVehicles] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [isConnected, setIsConnected] = useState(null);
 
     // Bottom sheets
     const commentSheetRef = useRef(null);
     const ratingSheetRef = useRef(null);
+    const scrollViewRef = useRef(null);
     const [modalVehicleId, setModalVehicleId] = useState(null);
     const [commentText, setCommentText] = useState('');
     const [commentSuggestion, setCommentSuggestion] = useState('');
@@ -176,7 +179,14 @@ export default function TransportationListScreen({ navigation }) {
 
     // ────── Fetch vehicles onmount ──────
     useEffect(() => {
-        getAllForeHire();
+        const checkAndFetch = async () => {
+            const connected = await checkNetworkConnectivity();
+            setIsConnected(connected);
+            if (connected) {
+                getAllForeHire();
+            }
+        };
+        checkAndFetch();
     }, []);
 
     useEffect(() => {
@@ -280,6 +290,12 @@ export default function TransportationListScreen({ navigation }) {
         <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.5} />
     ), []);
 
+    const scrollToVehicles = () => {
+        if (filteredVehicles.length > 0) {
+            scrollViewRef.current?.scrollTo({ y: 450, animated: true });
+        }
+    };
+
     const ActiveFilterChip = ({ label, icon, onClear }) => {
         return (
             <View style={styles.activeFilterChip}>
@@ -308,14 +324,20 @@ export default function TransportationListScreen({ navigation }) {
     };
 
     const handleSMS = async (vehicle) => {
+        console.log('Preparing to send SMS to:', vehicle?.owner_info?.phone);
         shareMessage = `Hello ${vehicle?.owner_info.name}!\n\n`;
         const smsUrl = Platform.OS === "ios"
             ? `sms:${vehicle?.owner_info?.phone}&body=${encodeURIComponent(shareMessage)}` // iOS uses semicolon
             : `smsto:${vehicle?.owner_info?.phone}?body=${encodeURIComponent(shareMessage)}`;
-        if (await Linking.canOpenURL(smsUrl))
+        if (await Linking.canOpenURL(smsUrl)) {
             await Linking.openURL(smsUrl);
-        else
+            console.log('Preparing to send SMS to:', vehicle?.owner_info?.phone);
+        }
+        else {
+            console.log('SMS client not available for URL:', smsUrl);
             throw new Error('SMS client not available');
+        }
+        console.log('After sending SMS');
     };
 
     // ────── Helper Labels ──────
@@ -437,6 +459,11 @@ export default function TransportationListScreen({ navigation }) {
     const handleRefresh = async () => {
         try {
             setIsRefreshing(true);
+            const connected = await checkNetworkConnectivity();
+            if (!connected) {
+                CustomToast('No Internet', 'Please check your connection and try again.');
+                return;
+            }
             await getAllForeHire();
             CustomToast('Refreshed 👍', 'Fore-Hire vehicles refreshed successfully');
 
@@ -465,9 +492,6 @@ export default function TransportationListScreen({ navigation }) {
                     onRightPress={() => setShowSortOptions(true)}
                 />
 
-                {loading && <CustomLoader />}
-
-                {/* Active Filters Bar – Premium & Always Visible When Filters Applied */}
                 {(sortByCategory !== 'All' || sortByBorderCrossing !== 'All') && (
                     <View style={styles.activeFiltersBar}>
                         <ScrollView
@@ -542,6 +566,14 @@ export default function TransportationListScreen({ navigation }) {
                     ))}
                 </ScrollView>
 
+                <TouchableOpacity
+                    style={styles.postBtn}
+                    onPress={() => navigation.navigate('PostTransportationScreen')}
+                >
+                    <Icons.Ionicons name="add-circle-outline" size={20} color="#2563eb" />
+                    <Text style={styles.postBtnText}>Post Vehicle</Text>
+                </TouchableOpacity>
+
                 {/* Sort Modal */}
                 {showSortOptions && (
                     <>
@@ -591,39 +623,46 @@ export default function TransportationListScreen({ navigation }) {
                     </>
                 )}
 
-                {/* Main Content */}
-                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 30 }}
-                    refreshControl={
-                        <RefreshControl
-                            refreshing={isRefreshing}
-                            onRefresh={onRefresh}
-                            colors={[theme.colors.primary]}
-                            progressBackgroundColor={theme.colors.card}
-                        />
-                    }
-                >
-                    <View style={styles.resultsHeader}>
-                        <Text style={styles.resultsCount}>{filteredVehicles?.length} vehicles available</Text>
-                        <TouchableOpacity
-                            style={styles.postBtn}
-                            onPress={() => navigation.navigate('PostTransportationScreen')}
+                {isConnected === null || loading ? (
+                    <CustomLoader />
+                ) : !isConnected ? (
+                    <View style={styles.center}>
+                        <Icons.Feather name="wifi-off" size={50} color="#94a3b8" />
+                        <Text style={{ color: '#94a3b8', fontSize: 16, marginTop: 10 }}>No internet connection</Text>
+                    </View>
+                ) : filteredVehicles.length === 0 ? (
+                    <View style={styles.center}>
+                        <Icons.Ionicons name="list-outline" size={50} color="#94a3b8" />
+                        <Text style={{ color: '#94a3b8', fontSize: 16, marginTop: 10 }}>No vehicles found</Text>
+                    </View>
+                ) : (
+                    <>
+                        {/* Main Content */}
+                        <ScrollView ref={scrollViewRef} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 30 }}
+                            refreshControl={
+                                <RefreshControl
+                                    refreshing={isRefreshing}
+                                    onRefresh={onRefresh}
+                                    colors={[theme.colors.primary]}
+                                    progressBackgroundColor={theme.colors.card}
+                                />
+                            }
                         >
-                            <Icons.Ionicons name="add-circle-outline" size={20} color="#2563eb" />
-                            <Text style={styles.postBtnText}>Post Vehicle</Text>
-                        </TouchableOpacity>
-                    </View>
 
-                    {/* Nearby Section */}
-                    <View style={styles.section}>
-                        <View style={styles.sectionHeader}>
-                            <Text style={styles.sectionTitle}>All Vehicles ({filteredVehicles?.length})</Text>
-                            <TouchableOpacity onPress={() => { }}>
-                                <Text style={styles.seeAllText}>See all</Text>
-                            </TouchableOpacity>
-                        </View>
-                        {filteredVehicles.map(renderVehicleCard)}
-                    </View>
-                </ScrollView>
+                            {/* Vehicle Counting */}
+                            <View style={styles.section}>
+                                <View style={styles.sectionHeader}>
+                                    <Text style={styles.sectionTitle}>All Vehicles ({filteredVehicles?.length})</Text>
+                                    {/* scroll down */}
+                                    <TouchableOpacity onPress={scrollToVehicles}>
+                                        <Text style={styles.seeAllText}>See all</Text>
+                                    </TouchableOpacity>
+                                </View>
+                                {filteredVehicles.map(renderVehicleCard)}
+                            </View>
+                        </ScrollView>
+                    </>
+                )}
 
                 {/* Bottom Sheets */}
                 <CommentBottomSheet
@@ -931,10 +970,25 @@ const styles = StyleSheet.create({
     },
     typeBadgeText: { color: '#2563eb', fontSize: 12, fontWeight: '700' },
 
-    // Rest of your existing styles (search, filters, etc.) stay the same
-    resultsHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, marginTop: 10 },
-    resultsCount: { fontSize: 15, color: '#64748b' },
-    postBtn: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#eff6ff', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 30, gap: 6 },
+    center: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingVertical: 50,
+    },
+
+    postBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#eff6ff',
+        paddingHorizontal: 16,
+        marginHorizontal: 16,
+        marginBottom: 10,
+        paddingVertical: 10,
+        borderRadius: 30,
+        gap: 6
+    },
     postBtnText: { color: '#2563eb', fontWeight: '600' },
     section: { marginTop: 8 },
     sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', marginHorizontal: 20, marginBottom: 12 },

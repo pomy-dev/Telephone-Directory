@@ -539,7 +539,7 @@ export default function PostTransportationScreen({ navigation }) {
 
                             <TextInput style={styles.input} placeholder="WhatsApp (Optional)" value={formData.ownerInfo.whatsapp} keyboardType="phone-pad" onChangeText={v => updateForm('ownerInfo', { ...formData.ownerInfo, whatsapp: v })} />
 
-                            <TextInput style={styles.input} placeholder="Within 2 hrs" value={formData.ownerInfo.responsetime} keyboardType="default" onChangeText={v => updateForm('ownerInfo', { ...formData.ownerInfo, responsetime: v })} />
+                            <TextInput style={styles.input} placeholder="Response Time (Within 2 hrs)" value={formData.ownerInfo.responsetime} keyboardType="default" onChangeText={v => updateForm('ownerInfo', { ...formData.ownerInfo, responsetime: v })} />
                         </View>
                     )}
 

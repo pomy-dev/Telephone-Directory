@@ -117,7 +117,7 @@ export default function TransportationDetailsScreen({ navigation, route }) {
                     )}
                     <TouchableOpacity style={styles.bookmarkButton} onPress={() => setIsBookmarked(!isBookmarked)}>
                         <Ionicons
-                            name={isBookmarked ? 'bookmark' : 'bookmark-outline'}
+                            name={isBookmarked ? 'heart' : 'heart-outline'}
                             size={24}
                             color={isBookmarked ? '#2563eb' : '#fff'}
                         />
@@ -396,8 +396,8 @@ const styles = StyleSheet.create({
         position: 'absolute',
         top: 16,
         right: 16,
-        width: 44,
-        height: 44,
+        width: 33,
+        height: 33,
         borderRadius: 22,
         backgroundColor: 'rgba(0, 0, 0, 0.3)',
         alignItems: 'center',
