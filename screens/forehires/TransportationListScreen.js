@@ -632,7 +632,7 @@ export default function TransportationListScreen({ navigation }) {
                     </View>
                 ) : filteredVehicles.length === 0 ? (
                     <View style={styles.center}>
-                        <Icons.Ionicons name="list-outline" size={50} color="#94a3b8" />
+                        <Icons.Ionicons name="search-outline" size={50} color="#94a3b8" />
                         <Text style={{ color: '#94a3b8', fontSize: 16, marginTop: 10 }}>No vehicles found</Text>
                     </View>
                 ) : (
