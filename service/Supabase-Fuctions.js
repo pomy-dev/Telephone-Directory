@@ -132,3 +132,76 @@ export async function getForHireTransport() {
   return data;
 }
 
+// ──────────────────────────────────────────────────────────────
+// Vehicle Interactions - Likes, Ratings, Comments
+// ──────────────────────────────────────────────────────────────
+
+export async function updateVehicleLike(vehicleId, increment = true) {
+  try {
+    const change = increment ? 1 : -1;
+
+    const { error } = await supabase.rpc('update_pomyvehicle_likes', {
+      vehicle_id: vehicleId,
+      change
+    });
+
+    if (error) throw error;
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating like:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function submitVehicleRating(vehicleId, rating) {
+  try {
+    const { error } = await supabase.rpc('update_pomyvehicle_rating', {
+      vehicle_id: vehicleId,
+      rating
+    });
+
+    if (error) throw error;
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error updating rating:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function submitVehicleComment(vehicleId, comment, suggestion = null, userNumber) {
+  try {
+    const { error } = await supabase.rpc('add_pomyvehicle_review', {
+      vehicle_id: vehicleId,
+      comment,
+      suggestion,
+      user_number: userNumber
+    });
+
+    if (error) throw error;
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error adding review:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getVehicleComments(vehicleId) {
+  try {
+    const { data, error } = await supabase
+      .from('vehicle_comments')
+      .select('*')
+      .eq('vehicle_id', vehicleId)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    return { success: true, data };
+  } catch (error) {
+    console.error('Error fetching comments:', error);
+    return { success: false, error: error.message };
+  }
+}
+

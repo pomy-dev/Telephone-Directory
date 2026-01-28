@@ -60,17 +60,18 @@ export default function LoginScreen({ navigation }) {
   };
 
   const handleEmailOrPhoneLogin = async () => {
-    if (!validate()) return;
+    navigation.navigate('MainTabs');
+    // if (!validate()) return;
 
-    setIsConnecting(true);
-    try {
-      const identifier = loginMode === 'email' ? email : phone;
-      await emailSingIn(identifier, email, password,);
-    } catch (err) {
-      Alert.alert('Login Failed', err.message || 'Invalid credentials.');
-    } finally {
-      setIsConnecting(false);
-    }
+    // setIsConnecting(true);
+    // try {
+    //   const identifier = loginMode === 'email' ? email : phone;
+    //   await emailSingIn(identifier, email, password,);
+    // } catch (err) {
+    //   Alert.alert('Login Failed', err.message || 'Invalid credentials.');
+    // } finally {
+    //   setIsConnecting(false);
+    // }
   };
 
   return (

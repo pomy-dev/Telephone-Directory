@@ -13,6 +13,7 @@ import {
     RefreshControl,
     Alert,
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Icons } from '../../constants/Icons';
 import {
     BottomSheetModal,
@@ -22,18 +23,18 @@ import {
 } from '@gorhom/bottom-sheet';
 import { CustomToast } from '../../components/customToast';
 import { AppContext } from "../../context/appContext"
-import { getForHireTransport } from '../../service/Supabase-Fuctions';
+import { getForHireTransport, updateVehicleLike, submitVehicleRating, submitVehicleComment } from '../../service/Supabase-Fuctions';
 import { checkNetworkConnectivity } from '../../service/checkNetwork';
 import CustomLoader from '../../components/customLoader';
 import SecondaryNav from '../../components/SecondaryNav';
 
 // ────── Comment Bottom Sheet ──────
 const CommentBottomSheet = React.forwardRef(
-    ({ vehicleId, commentText, setCommentText, suggestion, setSuggestion, onSubmit, onDismiss, renderBackdrop }, ref) => (
+    ({ vehicleId, commentText, setCommentText, suggestion, setSuggestion, userNumber, setUserNumber, onSubmit, onDismiss, renderBackdrop }, ref) => (
         <BottomSheetModal
             ref={ref}
             index={0}
-            snapPoints={['65%', '85%']}
+            snapPoints={['65%', '75%']}
             backdropComponent={renderBackdrop}
             onDismiss={onDismiss}
             enablePanDownToClose
@@ -43,7 +44,7 @@ const CommentBottomSheet = React.forwardRef(
             <BottomSheetView style={sheetStyles.container}>
                 <Text style={sheetStyles.title}>Write a Review</Text>
                 <TextInput
-                    style={sheetStyles.textArea}
+                    style={[sheetStyles.textArea, { height: 100 }]}
                     placeholder="Share your experience with this vehicle..."
                     value={commentText}
                     onChangeText={setCommentText}
@@ -58,6 +59,13 @@ const CommentBottomSheet = React.forwardRef(
                     multiline
                     textAlignVertical="top"
                 />
+                <TextInput
+                    style={[sheetStyles.input]}
+                    placeholder="+268 7612 3456 (Your Contact Number)"
+                    keyboardType='numeric'
+                    value={userNumber}
+                    onChangeText={setUserNumber}
+                />
                 <TouchableOpacity style={sheetStyles.submitButton} onPress={onSubmit}>
                     <Text style={sheetStyles.submitButtonText}>Submit Review</Text>
                 </TouchableOpacity>
@@ -69,7 +77,7 @@ CommentBottomSheet.displayName = 'CommentBottomSheet';
 
 // ────── Rating Bottom Sheet ──────
 const RatingBottomSheet = React.forwardRef(({ onSubmit, onDismiss, renderBackdrop }, ref) => {
-    const [rating, setRating] = useState(5);
+    const [rating, setRating] = useState(0);
     return (
         <BottomSheetModal
             ref={ref}
@@ -92,6 +100,7 @@ const RatingBottomSheet = React.forwardRef(({ onSubmit, onDismiss, renderBackdro
                         </TouchableOpacity>
                     ))}
                 </View>
+
                 <TouchableOpacity
                     style={ratingSheetStyles.submitButton}
                     onPress={() => {
@@ -108,7 +117,7 @@ const RatingBottomSheet = React.forwardRef(({ onSubmit, onDismiss, renderBackdro
 RatingBottomSheet.displayName = 'RatingBottomSheet';
 
 const sheetStyles = StyleSheet.create({
-    container: { flex: 1, padding: 24 },
+    container: { flex: 1, paddingVertical: 24, paddingHorizontal: 12 },
     title: { fontSize: 22, fontWeight: '700', textAlign: 'center', marginBottom: 24, color: '#1e293b' },
     textArea: {
         borderWidth: 1.5,
@@ -117,8 +126,18 @@ const sheetStyles = StyleSheet.create({
         padding: 16,
         backgroundColor: '#fff',
         fontSize: 16,
-        marginBottom: 16,
+        marginBottom: 10,
         height: 120,
+    },
+    input: {
+        borderWidth: 1.5,
+        borderColor: '#e2e8f0',
+        borderRadius: 16,
+        padding: 16,
+        backgroundColor: '#fff',
+        fontSize: 16,
+        marginBottom: 10,
+        height: 60,
     },
     submitButton: {
         backgroundColor: '#2563eb',
@@ -171,6 +190,7 @@ export default function TransportationListScreen({ navigation }) {
     const [modalVehicleId, setModalVehicleId] = useState(null);
     const [commentText, setCommentText] = useState('');
     const [commentSuggestion, setCommentSuggestion] = useState('');
+    const [userNumber, setUserNumber] = useState('');
     const [ratingVehicleId, setRatingVehicleId] = useState(null);
     const [comments, setComments] = useState({});
 
@@ -182,12 +202,35 @@ export default function TransportationListScreen({ navigation }) {
         const checkAndFetch = async () => {
             const connected = await checkNetworkConnectivity();
             setIsConnected(connected);
+            // Load liked vehicles from AsyncStorage
+            await loadLikedVehicles();
             if (connected) {
                 getAllForeHire();
             }
         };
         checkAndFetch();
     }, []);
+
+    // Load liked vehicles from AsyncStorage
+    const loadLikedVehicles = async () => {
+        try {
+            const stored = await AsyncStorage.getItem('likedVehicles');
+            if (stored) {
+                setLikedVehicles(new Set(JSON.parse(stored)));
+            }
+        } catch (err) {
+            console.error('Error loading liked vehicles:', err);
+        }
+    };
+
+    // Save liked vehicles to AsyncStorage
+    const saveLikedVehicles = async (likedSet) => {
+        try {
+            await AsyncStorage.setItem('likedVehicles', JSON.stringify([...likedSet]));
+        } catch (err) {
+            console.error('Error saving liked vehicles:', err.message);
+        }
+    };
 
     useEffect(() => {
         const filtered_v = filterVehicles(vehicles);
@@ -244,25 +287,71 @@ export default function TransportationListScreen({ navigation }) {
     };
 
     // ────── Interactions ──────
-    const toggleLike = (id) => {
-        setLikedVehicles(prev => {
-            const copy = new Set(prev);
-            copy.has(id) ? copy.delete(id) : copy.add(id);
-            return copy;
-        });
+    const toggleLike = async (id) => {
+        const isCurrentlyLiked = likedVehicles.has(id);
+
+        try {
+            // Update UI first (optimistic update)
+            setLikedVehicles(prev => {
+                const copy = new Set(prev);
+                if (copy.has(id)) {
+                    copy.delete(id);
+                } else {
+                    copy.add(id);
+                }
+                saveLikedVehicles(copy);
+                return copy;
+            });
+
+            // Then update backend
+            const result = await updateVehicleLike(id, !isCurrentlyLiked);
+
+            if (!result.success) {
+                // Revert if failed
+                throw new Error(result.error);
+            }
+
+        } catch (err) {
+            console.error('Error toggling like:', err);
+            // Revert the optimistic update
+            setLikedVehicles(prev => {
+                const copy = new Set(prev);
+                if (isCurrentlyLiked) {
+                    copy.add(id);
+                } else {
+                    copy.delete(id);
+                }
+                saveLikedVehicles(copy);
+                return copy;
+            });
+        }
     };
 
+    // Open rating bottom sheet
     const handleRate = (id) => {
         setRatingVehicleId(id);
         ratingSheetRef.current?.present();
     };
 
-    const submitRating = (value) => {
-        setVehicleRatings(prev => ({ ...prev, [ratingVehicleId]: value }));
-        Alert.alert('Thank You!', 'Your rating has been recorded.');
-        setRatingVehicleId(null);
+    // Submit ratings
+    const submitRating = async (value) => {
+        try {
+            const result = await submitVehicleRating(ratingVehicleId, value);
+
+            if (result.success) {
+                setVehicleRatings(prev => ({ ...prev, [ratingVehicleId]: value }));
+                CustomToast('Rating Submitted! ⭐', `Your ${value}-star rating has been saved`);
+                setRatingVehicleId(null);
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (err) {
+            console.error('Error submitting rating:', err);
+            CustomToast('Error', 'Failed to submit rating');
+        }
     };
 
+    // Open comment bottom sheet
     const openCommentSheet = (id) => {
         setModalVehicleId(id);
         setCommentText('');
@@ -270,20 +359,46 @@ export default function TransportationListScreen({ navigation }) {
         commentSheetRef.current?.present();
     };
 
-    const submitComment = () => {
-        if (!commentText.trim()) {
-            Alert.alert('Missing Comment', 'Please write something before submitting.');
+    // Save comment
+    const submitComment = async () => {
+        if (!commentText.trim() && !userNumber.trim()) {
+            Alert.alert('Missing Details', 'Fill all none optional spaces.');
             return;
         }
-        setComments(prev => ({
-            ...prev,
-            [modalVehicleId]: [
-                ...(prev[modalVehicleId] || []),
-                { text: commentText.trim(), suggestion: commentSuggestion.trim(), date: new Date() }
-            ]
-        }));
-        commentSheetRef.current?.close();
-        Alert.alert('Success', 'Review submitted successfully!');
+
+        try {
+            // Submit to database
+            const result = await submitVehicleComment(modalVehicleId, commentText, commentSuggestion, userNumber);
+
+            if (result.success) {
+                // Update local state
+                const newComment = {
+                    text: commentText.trim(),
+                    suggestion: commentSuggestion.trim(),
+                    date: new Date()
+                };
+
+                setComments(prev => ({
+                    ...prev,
+                    [modalVehicleId]: [
+                        ...(prev[modalVehicleId] || []),
+                        newComment
+                    ]
+                }));
+
+                commentSheetRef.current?.close();
+                CustomToast('Thank You! 🙏🏾', 'Your review is valuable');
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (err) {
+            console.error('Error submitting comment:', err);
+            CustomToast('Error', 'Failed to submit review');
+        }finally{
+            setCommentText('');
+            setCommentSuggestion('');
+            setUserNumber('');
+        }
     };
 
     const renderBackdrop = useCallback(props => (
@@ -347,7 +462,7 @@ export default function TransportationListScreen({ navigation }) {
     const renderVehicleCard = (vehicle) => {
         const isLiked = likedVehicles.has(vehicle.id);
         const userRating = vehicleRatings[vehicle.id];
-        const rating = userRating || vehicle.rating || 0;
+        const rating = userRating || vehicle.rating_average || 0;
         const likes = isLiked ? (vehicle.likes || 0) + 1 : vehicle.likes || 0;
         const vehicleComments = comments[vehicle.id] || [];
         const latestComment = vehicleComments[vehicleComments.length - 1];
@@ -672,6 +787,8 @@ export default function TransportationListScreen({ navigation }) {
                     setCommentText={setCommentText}
                     suggestion={commentSuggestion}
                     setSuggestion={setCommentSuggestion}
+                    userNumber={userNumber}
+                    setUserNumber={setUserNumber}
                     onSubmit={submitComment}
                     onDismiss={() => setModalVehicleId(null)}
                     renderBackdrop={renderBackdrop}
