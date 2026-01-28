@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Auth0 from 'react-native-auth0';
+import { getAuth, createUserWithEmailAndPassword, signOut } from '@react-native-firebase/auth';
 import { jwtDecode } from 'jwt-decode';
 import { AUTH0_DOMAIN, AUTH0_CLIENT_ID, AUTH0_REDIRECT_URI, AUTH0_LOGOUT_REDIRECT_URI } from '../config/env';
 
@@ -30,7 +31,7 @@ export const AuthProvider = ({ children }) => {
     loadSession();
   }, []);
 
-  const socialLogin = async (connection) => {
+  const googleLogin = async (connection) => {
     try {
       const credentials = await auth0.webAuth.authorize({
         scope: 'openid profile email',
@@ -54,12 +55,35 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const emailSignIn = async (name, email, password) => {
+    await createUserWithEmailAndPassword(getAuth(), email, password).then(async (userCredential) => {
+      var user = userCredential.user;
+      console.log('Registered with:', user.email);
+      await user.updateProfile({ displayName: name.trim() });
+    }).catch((error) => {
+      setIsConnecting(false);
+      console.log('Sign Up Failed', error.message || 'Please try again.');
+    });
+  }
+
+  const emailLogin = async (email, password) => {
+    auth.createUserWithEmailAndPassword(email, password).then((userCredential) => {
+      var user = userCredential.user;
+      console.log('Registered with:', user.email);
+    }).catch((error) => {
+      setIsConnecting(false);
+      Alert.alert('Login Failed', error.message || 'Please try again.');
+    });
+  }
+
   const logout = async () => {
     try {
       await auth0.webAuth.clearSession({
         federated: true,
         returnTo: AUTH0_LOGOUT_REDIRECT_URI,
       });
+
+      await signOut(getAuth()).then(() => console.log('User signed out from firebase!'));
 
       setAccessToken(null);
       setUser(null);
@@ -71,7 +95,7 @@ export const AuthProvider = ({ children }) => {
   };
 
 
-  const value = { socialLogin, logout, accessToken, user, loading };
+  const value = { googleLogin, emailSignIn, emailLogin, logout, accessToken, user, loading };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

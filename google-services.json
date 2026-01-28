@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "200364606139",
+    "project_id": "busineinkauth",
+    "storage_bucket": "busineinkauth.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:200364606139:android:f3523113f7b89374b95f9e",
+        "android_client_info": {
+          "package_name": "com.pld.phonebook"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBeFpnJSEkKlo-LJMucaEsepAj7UpmK0cA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

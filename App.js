@@ -27,8 +27,10 @@ import LoanCalculator from "./screens/loans/LoanCalculator"
 import HomeScreen from "./screens/HomeScreen"
 import SavedListsScreen from './screens/SavedListItems'
 import FavoritesScreen from "./screens/FavoritesScreen"
-import PeopleScreen from "./screens/people/PeopleProfiles"
+// import PeopleScreen from "./screens/people/PeopleProfiles"
 import SettingsScreen from "./screens/SettingsScreen"
+import LoginScreen from "./screens/Login"
+import SignupScreen from "./screens/SignUp"
 
 // business directory screens
 import DirectoryScreen from "./screens/directory/DirectoryHome"
@@ -143,7 +145,7 @@ function Tabs() {
         tabBarInactiveTintColor: "#94a3b8",
       }}
     >
-      <Tab.Screen
+      {/* <Tab.Screen
         name="SavedListScreen"
         component={SavedListsScreen}
         options={{
@@ -151,7 +153,7 @@ function Tabs() {
             <Icons.Ionicons name={focused ? "list" : "list-outline"} size={28} color={color} />
           )
         }}
-      />
+      /> */}
       <Tab.Screen
         name="Favorites"
         component={FavoritesScreen}
@@ -192,7 +194,7 @@ function Tabs() {
           },
         }}
       />
-      <Tab.Screen
+      {/* <Tab.Screen
         name="PeopleScreen"
         component={PeopleScreen}
         options={{
@@ -200,7 +202,7 @@ function Tabs() {
             <Icons.MaterialCommunityIcons name={focused ? "account-group" : "account-group-outline"} size={28} color={color} />
           )
         }}
-      />
+      /> */}
       <Tab.Screen
         name="Settings"
         component={SettingsScreen}
@@ -329,7 +331,11 @@ function AppContent() {
                 <PaperProvider theme={theme}>
                   <BasketProvider>
                     <NavigationContainer ref={navigationRef} theme={theme}>
-                      <Stack.Navigator screenOptions={{ headerShown: false }}>
+                      <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Login">
+                        {/* Login Screen */}
+                        <Stack.Screen name="Login" component={LoginScreen} />
+                        <Stack.Screen name="Signup" component={SignupScreen} />
+
                         {/* Tabs as main screen */}
                         <Stack.Screen name="MainTabs" component={Tabs} />
 
@@ -342,9 +348,6 @@ function AppContent() {
 
                         {/* Liked Businesses */}
                         <Stack.Screen name="Favorites" component={FavoritesScreen} />
-
-                        {/* People */}
-                        <Stack.Screen name="PeopleScreen" component={PeopleScreen} />
 
                         {/* list items screen */}
                         <Stack.Screen name="SavedListScreen" component={SavedListsScreen} />

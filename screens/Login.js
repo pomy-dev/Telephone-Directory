@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import {
   View,
   Text,
@@ -17,10 +17,11 @@ import { AppContext } from '../context/appContext';
 import { AuthContext } from '../context/authProvider';
 import { CustomLoader } from '../components/customLoader';
 import { TextInput } from 'react-native-paper';
+import auth from '@react-native-firebase/auth';
 
 export default function LoginScreen({ navigation }) {
   const { theme } = useContext(AppContext);
-  const { socialLogin, emailLogin, user, logout, loading } = useContext(AuthContext);
+  const { googleLogin, emailLogin, user, loading } = useContext(AuthContext);
 
   const [isConnecting, setIsConnecting] = useState(false);
   const [loginMode, setLoginMode] = useState('email');
@@ -29,6 +30,13 @@ export default function LoginScreen({ navigation }) {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
+
+  // Navigate to MainTabs if user is logged in
+  useEffect(() => {
+    if (user) {
+      navigation.navigate('MainTabs');
+    }
+  }, [user, navigation]);
 
   // Validation
   const validate = () => {
@@ -57,39 +65,13 @@ export default function LoginScreen({ navigation }) {
     setIsConnecting(true);
     try {
       const identifier = loginMode === 'email' ? email : phone;
-      await emailLogin(identifier, password, loginMode);
+      await emailSingIn(identifier, email, password,);
     } catch (err) {
       Alert.alert('Login Failed', err.message || 'Invalid credentials.');
     } finally {
       setIsConnecting(false);
     }
   };
-
-  if (user) {
-    return (
-      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-        <ScrollView contentContainerStyle={styles.scrollContent}>
-          <View style={styles.loggedInCard}>
-            <Icons.Ionicons name="checkmark-circle" size={80} color={theme.colors.primary} />
-            <Text style={[styles.welcomeTitle, { color: theme.colors.text }]}>
-              Welcome back!
-            </Text>
-            <Text style={[styles.welcomeEmail, { color: theme.colors.textSecondary }]}>
-              {user.email || user.phone}
-            </Text>
-
-            <TouchableOpacity
-              style={[styles.logoutBtn, { backgroundColor: theme.colors.error }]}
-              onPress={logout}
-            >
-              <Icons.AntDesign name="logout" size={20} color="#fff" />
-              <Text style={styles.logoutText}>Sign Out</Text>
-            </TouchableOpacity>
-          </View>
-        </ScrollView>
-      </SafeAreaView>
-    );
-  }
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>

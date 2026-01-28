@@ -16,6 +16,7 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.pomy.phonebook",
+      "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "UIBackgroundModes": [
           "remote-notification"
@@ -51,6 +52,7 @@
       ],
       "edgeToEdgeEnabled": true,
       "package": "com.pld.phonebook",
+      "googleServicesFile": "./google-services.json",
       "config": {
         "googleMaps": {
           "apiKey": "AIzaSyCk4R94IPXuKkXvSm7RIr5fWlmIRzr6UA0"
@@ -122,6 +124,16 @@
           "microphonePermissionText": "$(PRODUCT_NAME) needs access to your Microphone."
         }
       ],
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
+      ],
+      "@react-native-firebase/app",
+      "@react-native-firebase/auth",
       "expo-asset",
       "expo-font"
     ],
