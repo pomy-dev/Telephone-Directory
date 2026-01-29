@@ -4,11 +4,14 @@ import { StyleSheet, Platform, StatusBar, Text, View, Image, TouchableOpacity, F
 import React, { useEffect, useState } from "react"
 import TopNav from "../components/TopNav"
 import { AppContext } from "../context/appContext"
+import { AuthContext } from "../context/authProvider"
+import { CustomToast } from "../components/customToast"
 import { Images } from '../constants/Images'
 import PersonalizedAdsSection from "../components/PersonalizedAdsSection"
 
 export default function HomeScreen({ navigation }) {
   const { theme, isDarkMode, selectedState, isOnline, notificationsEnabled, notifications } = React.useContext(AppContext)
+  const { logout } = React.useContext(AuthContext)
   const [greetingText, setGreetingText] = useState("");
   const [startingText, setStartingText] = useState("");
 
@@ -97,6 +100,17 @@ export default function HomeScreen({ navigation }) {
     </TouchableOpacity>
   )
 
+  const handleLogout = () => {
+    try {
+      logout()
+      CustomToast("Logged out 🚶🏾‍♂️‍➡️", "Sign In to start again")
+      // Reset the navigation stack to the auth screen (root stack route is named 'Login')
+      // navigation.reset({ index: 0, routes: [{ name: 'Login' }] })
+    } catch (error) {
+      console.log("Logout error:", error.message)
+    }
+  }
+
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
@@ -105,6 +119,7 @@ export default function HomeScreen({ navigation }) {
         onCartPress={() => console.log("Cart pressed")}
         onNotificationPress={() => console.log("Notifications pressed")}
         onSearch={() => console.log("Search tapped")}
+        onLogout={() => handleLogout()}
       />
 
       <View style={styles.greetingSection}>

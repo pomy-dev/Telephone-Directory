@@ -1,7 +1,6 @@
 import React, { createContext, useState, useEffect } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import Auth0 from 'react-native-auth0';
-import { getAuth, createUserWithEmailAndPassword, signOut } from '@react-native-firebase/auth';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, signInWithPhoneNumber } from '@react-native-firebase/auth';
 import { jwtDecode } from 'jwt-decode';
 import { AUTH0_DOMAIN, AUTH0_CLIENT_ID, AUTH0_REDIRECT_URI, AUTH0_LOGOUT_REDIRECT_URI } from '../config/env';
 
@@ -16,20 +15,29 @@ export const AuthProvider = ({ children }) => {
   const [accessToken, setAccessToken] = useState(null);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const firebaseAuth = getAuth();
 
-  // Check for existing session
+  // Listen to Firebase auth state changes
   useEffect(() => {
-    const loadSession = async () => {
-      const token = await AsyncStorage.getItem('accessToken');
-      const userInfo = await AsyncStorage.getItem('user');
-      if (token && userInfo) {
-        setAccessToken(token);
-        setUser(JSON.parse(userInfo));
+    const unsubscribe = onAuthStateChanged(firebaseAuth, async (firebaseUser) => {
+      if (firebaseUser) {
+        // User is signed in
+        const userData = {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          displayName: firebaseUser.displayName,
+          photoURL: firebaseUser.photoURL,
+        };
+        setUser(userData);
+      } else {
+        // User is signed out
+        setUser(null);
       }
       setLoading(false);
-    };
-    loadSession();
-  }, []);
+    });
+
+    return () => unsubscribe();
+  }, [firebaseAuth]);
 
   const googleLogin = async (connection) => {
     try {
@@ -45,8 +53,6 @@ export const AuthProvider = ({ children }) => {
       // Store tokens & user info
       setAccessToken(credentials.accessToken);
       setUser(decodedUser);
-      await AsyncStorage.setItem('accessToken', credentials.accessToken);
-      await AsyncStorage.setItem('user', JSON.stringify(decodedUser));
 
       return credentials;
     } catch (error) {
@@ -55,47 +61,73 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const emailSignIn = async (name, email, password) => {
-    await createUserWithEmailAndPassword(getAuth(), email, password).then(async (userCredential) => {
-      var user = userCredential.user;
-      console.log('Registered with:', user.email);
-      await user.updateProfile({ displayName: name.trim() });
-    }).catch((error) => {
-      setIsConnecting(false);
-      console.log('Sign Up Failed', error.message || 'Please try again.');
-    });
-  }
-
-  const emailLogin = async (email, password) => {
-    auth.createUserWithEmailAndPassword(email, password).then((userCredential) => {
-      var user = userCredential.user;
-      console.log('Registered with:', user.email);
-    }).catch((error) => {
-      setIsConnecting(false);
-      Alert.alert('Login Failed', error.message || 'Please try again.');
-    });
-  }
-
-  const logout = async () => {
+  const emailSignUp = async (name, email, password) => {
     try {
-      await auth0.webAuth.clearSession({
-        federated: true,
-        returnTo: AUTH0_LOGOUT_REDIRECT_URI,
-      });
-
-      await signOut(getAuth()).then(() => console.log('User signed out from firebase!'));
-
-      setAccessToken(null);
-      setUser(null);
-      await AsyncStorage.removeItem('accessToken');
-      await AsyncStorage.removeItem('user');
+      const userCredential = await createUserWithEmailAndPassword(firebaseAuth, email, password);
+      const user = userCredential.user;
+      await user.updateProfile({ displayName: name.trim() });
+      console.log('Registered with:', user.email);
+      return user;
     } catch (error) {
-      console.error('Logout failed:', error);
+      console.error('Sign Up Failed:', error.message);
+      throw error;
     }
   };
 
+  const emailLogin = async (email, password) => {
+    try {
+      const userCredential = await signInWithEmailAndPassword(firebaseAuth, email, password);
+      const user = userCredential.user;
+      console.log('Logged in with:', user.email);
+      return user;
+    } catch (error) {
+      console.error('Login Failed:', error.message);
+      throw error;
+    }
+  };
 
-  const value = { googleLogin, emailSignIn, emailLogin, logout, accessToken, user, loading };
+  const phoneLogin = async (phoneNumber) => {
+    try {
+      const confirmationResult = await signInWithPhoneNumber(firebaseAuth, phoneNumber);
+      return confirmationResult;
+    } catch (error) {
+      console.error('Phone Login Failed:', error.message);
+      throw error;
+    }
+  };
+
+  const verifyOTP = async (confirmationResult, otp) => {
+    try {
+      const userCredential = await confirmationResult.confirm(otp);
+      const user = userCredential.user;
+      console.log('Verified phone:', user.phoneNumber);
+      return user;
+    } catch (error) {
+      console.error('OTP Verification Failed:', error.message);
+      throw error;
+    }
+  };
+
+  const logout = async () => {
+    try {
+      if (accessToken && user)
+        await auth0.webAuth.clearSession({
+          federated: true,
+          returnTo: AUTH0_LOGOUT_REDIRECT_URI,
+        });
+
+      await signOut(firebaseAuth);
+
+      setAccessToken(null);
+      setUser(null);
+      console.log('User signed out successfully!');
+    } catch (error) {
+      console.error('Logout failed:', error);
+      throw error;
+    }
+  };
+
+  const value = { googleLogin, emailSignUp, emailLogin, phoneLogin, verifyOTP, logout, accessToken, user, loading };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

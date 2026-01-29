@@ -15,9 +15,9 @@ import {
 import { useState, useEffect } from "react"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import * as Location from "expo-location"
-import { Ionicons } from "@expo/vector-icons"
+import { Icons } from '../constants/Icons'
 
-export default function TopNav({ onCartPress, onSearch, onNotificationPress }) {
+export default function TopNav({ onCartPress, onSearch, onNotificationPress, onLogout }) {
   const [location, setLocation] = useState("Fetching location...")
   const [modalVisible, setModalVisible] = useState(false)
   const [tempLocation, setTempLocation] = useState("")
@@ -78,26 +78,32 @@ export default function TopNav({ onCartPress, onSearch, onNotificationPress }) {
       {/* Header Row */}
       <View style={styles.headerRow}>
         <TouchableOpacity style={styles.locationButton} onPress={handleLocationPress} activeOpacity={0.7}>
-          <Ionicons name="location" size={20} color="#1A1A1A" style={{ marginRight: 8 }} />
+          <Icons.Ionicons name="location" size={20} color="#1A1A1A" style={{ marginRight: 8 }} />
           <View style={styles.locationTextContainer}>
             <Text style={styles.locationLabel}>Current Location</Text>
             <View style={styles.locationRow}>
               <Text style={styles.locationText} numberOfLines={1}>
                 {location}
               </Text>
-              <Ionicons name="chevron-down" size={16} color="#1A1A1A" style={{ marginLeft: 4 }} />
+              <Icons.Ionicons name="chevron-down" size={16} color="#1A1A1A" style={{ marginLeft: 4 }} />
             </View>
           </View>
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={onNotificationPress} style={styles.iconButton} activeOpacity={0.7}>
-          <Ionicons name="notifications-outline" size={24} color="#1A1A1A" />
-        </TouchableOpacity>
+        <>
+          <TouchableOpacity onPress={onNotificationPress} style={styles.iconButton} activeOpacity={0.7}>
+            <Icons.Ionicons name="notifications-outline" size={24} color="#1A1A1A" />
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={onLogout} style={styles.iconButton} activeOpacity={0.7}>
+            <Icons.AntDesign name="logout" size={20} color="#1A1A1A" />
+          </TouchableOpacity>
+        </>
       </View>
 
       {/* Search Bar */}
       <TouchableOpacity style={styles.searchContainer} activeOpacity={0.8} onPress={handleSearchPress}>
-        <Ionicons name="search" size={20} color="#8E8E93" style={styles.searchIcon} />
+        <Icons.Ionicons name="search" size={20} color="#8E8E93" style={styles.searchIcon} />
         <Text style={styles.searchPlaceholder}>What are you looking for?</Text>
       </TouchableOpacity>
 
@@ -120,12 +126,12 @@ export default function TopNav({ onCartPress, onSearch, onNotificationPress }) {
                 <View style={styles.modalHeader}>
                   <Text style={styles.modalTitle}>Update Location</Text>
                   <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeButton}>
-                    <Ionicons name="close" size={24} color="#8E8E93" />
+                    <Icons.Ionicons name="close" size={24} color="#8E8E93" />
                   </TouchableOpacity>
                 </View>
 
                 <View style={styles.inputContainer}>
-                  <Ionicons name="location-outline" size={20} color="#8E8E93" style={{ marginRight: 10 }} />
+                  <Icons.Ionicons name="location-outline" size={20} color="#8E8E93" style={{ marginRight: 10 }} />
                   <TextInput
                     style={styles.modalInput}
                     placeholder="Enter your address"
@@ -139,7 +145,7 @@ export default function TopNav({ onCartPress, onSearch, onNotificationPress }) {
                 </View>
 
                 <TouchableOpacity style={styles.currentLocationButton} onPress={getCurrentLocation} activeOpacity={0.7}>
-                  <Ionicons name="navigate" size={20} color="#007AFF" style={{ marginRight: 8 }} />
+                  <Icons.Ionicons name="navigate" size={20} color="#007AFF" style={{ marginRight: 8 }} />
                   <Text style={styles.currentLocationText}>Use current location</Text>
                 </TouchableOpacity>
 
@@ -151,6 +157,7 @@ export default function TopNav({ onCartPress, onSearch, onNotificationPress }) {
                   >
                     <Text style={styles.cancelText}>Cancel</Text>
                   </Pressable>
+
                   <Pressable
                     style={[styles.modalButton, styles.saveButton]}
                     onPress={() => saveLocation(tempLocation)}

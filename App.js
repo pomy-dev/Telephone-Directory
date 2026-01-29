@@ -88,7 +88,7 @@ import SplashScreen from "./screens/SplashScreen";
 
 // App Context
 import { AppContext, AppProvider } from "./context/appContext";
-import { AuthProvider } from "./context/authProvider";
+import { AuthProvider, AuthContext } from "./context/authProvider";
 
 // Directory Model
 import { Entity, PhoneObject, SocialMediaObject, WorkingHoursObject, TeamMember, GeoPoint, Review } from './models/Entity';
@@ -219,7 +219,9 @@ function Tabs() {
 export default function App() {
   return (
     <AppProvider>
-      <AppContent />
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
     </AppProvider>
   );
 }
@@ -237,6 +239,7 @@ function AppContent() {
     toggleNotifications,
     toggleOnlineMode,
   } = useContext(AppContext);
+  const { user, loading } = useContext(AuthContext);
   const [isAppReady, setIsAppReady] = useState(false);
   const navigationRef = useNavigationContainerRef();
 
@@ -325,93 +328,106 @@ function AppContent() {
         {!isAppReady ? (
           <SplashScreen onConnectionSuccess={() => setIsAppReady(true)} />
         ) : (
-          <AuthProvider>
-            <>
-              <GestureHandlerRootView style={{ flex: 1 }}>
-                <PaperProvider theme={theme}>
-                  <BasketProvider>
-                    <NavigationContainer ref={navigationRef} theme={theme}>
-                      <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Login">
-                        {/* Login Screen */}
-                        <Stack.Screen name="Login" component={LoginScreen} />
-                        <Stack.Screen name="Signup" component={SignupScreen} />
+          <>
+            <GestureHandlerRootView style={{ flex: 1 }}>
+              <PaperProvider theme={theme}>
+                <BasketProvider>
+                  <NavigationContainer ref={navigationRef} theme={theme}>
+                    <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName={loading ? "SplashLoading" : (user ? "MainTabs" : "Login")}>
+                      {/* Loading state */}
+                      {loading && (
+                        <Stack.Screen
+                          name="SplashLoading"
+                          component={SplashScreen}
+                          options={{ animationEnabled: false }}
+                        />
+                      )}
 
-                        {/* Tabs as main screen */}
-                        <Stack.Screen name="MainTabs" component={Tabs} />
+                      {/* Auth Screens */}
+                      {!user ? (
+                        <>
+                          <Stack.Screen name="Login" component={LoginScreen} options={{ animationEnabled: false }} />
+                          <Stack.Screen name="Signup" component={SignupScreen} />
+                        </>
+                      ) : (
+                        <>
+                          {/* Main App Screens */}
+                          <Stack.Screen name="MainTabs" component={Tabs} options={{ animationEnabled: false }} />
 
-                        {/* Business Directory */}
-                        <Stack.Screen name="DirectoryScreen" component={DirectoryScreen} />
-                        <Stack.Screen name="BusinessList" component={BusinessList} />
-                        <Stack.Screen name="BusinessesScreen" component={BusinessScreen} />
-                        <Stack.Screen name="FeaturedList" component={FeaturedScreen} />
-                        <Stack.Screen name="BusinessDetails" component={BusinessDetailScreen} />
+                          {/* Business Directory */}
+                          <Stack.Screen name="DirectoryScreen" component={DirectoryScreen} />
+                          <Stack.Screen name="BusinessList" component={BusinessList} />
+                          <Stack.Screen name="BusinessesScreen" component={BusinessScreen} />
+                          <Stack.Screen name="FeaturedList" component={FeaturedScreen} />
+                          <Stack.Screen name="BusinessDetails" component={BusinessDetailScreen} />
 
-                        {/* Liked Businesses */}
-                        <Stack.Screen name="Favorites" component={FavoritesScreen} />
+                          {/* Liked Businesses */}
+                          <Stack.Screen name="Favorites" component={FavoritesScreen} />
 
-                        {/* list items screen */}
-                        <Stack.Screen name="SavedListScreen" component={SavedListsScreen} />
+                          {/* list items screen */}
+                          <Stack.Screen name="SavedListScreen" component={SavedListsScreen} />
 
-                        {/* Tenders  */}
-                        <Stack.Screen name="AddTenderScreen" component={AddTenderScreen} />
-                        <Stack.Screen name="TenderDetailsScreen" component={TenderDetailsScreen} />
-                        <Stack.Screen name="PublishedTendersScreen" component={PublishedTendersScreen} />
-                        <Stack.Screen name="BidTenderScreen" component={BidTenderScreen} />
-                        <Stack.Screen name="MyBidsScreen" component={MyBidsScreen} />
+                          {/* Tenders  */}
+                          <Stack.Screen name="AddTenderScreen" component={AddTenderScreen} />
+                          <Stack.Screen name="TenderDetailsScreen" component={TenderDetailsScreen} />
+                          <Stack.Screen name="PublishedTendersScreen" component={PublishedTendersScreen} />
+                          <Stack.Screen name="BidTenderScreen" component={BidTenderScreen} />
+                          <Stack.Screen name="MyBidsScreen" component={MyBidsScreen} />
 
-                        {/* Piece Jobs  */}
-                        <Stack.Screen name="GigsScreen" component={GigsScreen} />
-                        <Stack.Screen name="JobDetailScreen" component={JobDetailScreen} />
-                        <Stack.Screen name="PostJobScreen" component={PostJobScreen} />
+                          {/* Piece Jobs  */}
+                          <Stack.Screen name="GigsScreen" component={GigsScreen} />
+                          <Stack.Screen name="JobDetailScreen" component={JobDetailScreen} />
+                          <Stack.Screen name="PostJobScreen" component={PostJobScreen} />
 
-                        {/* vacancies */}
-                        <Stack.Screen name="VacanciesScreen" component={VacanciesScreen} />
+                          {/* vacancies */}
+                          <Stack.Screen name="VacanciesScreen" component={VacanciesScreen} />
 
-                        {/* rental houses */}
-                        <Stack.Screen name="PropertyScreen" component={PropertyScreen} />
-                        {/* <Stack.Screen name="RentalHousesScreen" component={RentalHousesScreen} /> */}
-                        <Stack.Screen name="MoreHouses" component={MoreHouses} />
-                        <Stack.Screen name="HouseDetailsScreen" component={HouseDetailsScreen} />
-                        <Stack.Screen name="HouseMapScreen" component={HouseMapScreen} />
-                        <Stack.Screen name="AgentDetailsScreen" component={AgentDetailsScreen} />
-                        {/* <Stack.Screen name="RentalHouseDetailsScreen" component={RentalHouseDetailsScreen} /> */}
-                        <Stack.Screen name="PostRentalHouseScreen" component={PostRentalHouseScreen} />
-                        <Stack.Screen name="ApplyRentalScreen" component={ApplyRentalScreen} />
-                        <Stack.Screen name="MyRentalApplicationsScreen" component={MyRentalApplicationsScreen} />
+                          {/* rental houses */}
+                          <Stack.Screen name="PropertyScreen" component={PropertyScreen} />
+                          {/* <Stack.Screen name="RentalHousesScreen" component={RentalHousesScreen} /> */}
+                          <Stack.Screen name="MoreHouses" component={MoreHouses} />
+                          <Stack.Screen name="HouseDetailsScreen" component={HouseDetailsScreen} />
+                          <Stack.Screen name="HouseMapScreen" component={HouseMapScreen} />
+                          <Stack.Screen name="AgentDetailsScreen" component={AgentDetailsScreen} />
+                          {/* <Stack.Screen name="RentalHouseDetailsScreen" component={RentalHouseDetailsScreen} /> */}
+                          <Stack.Screen name="PostRentalHouseScreen" component={PostRentalHouseScreen} />
+                          <Stack.Screen name="ApplyRentalScreen" component={ApplyRentalScreen} />
+                          <Stack.Screen name="MyRentalApplicationsScreen" component={MyRentalApplicationsScreen} />
 
-                        {/* lease items */}
-                        <Stack.Screen name="LeaseItemsScreen" component={LeaseItemsScreen} />
-                        <Stack.Screen name="PostLeaseItemScreen" component={PostLeaseItemScreen} />
-                        <Stack.Screen name="LeaseItemDetailsScreen" component={LeaseItemDetailsScreen} />
+                          {/* lease items */}
+                          <Stack.Screen name="LeaseItemsScreen" component={LeaseItemsScreen} />
+                          <Stack.Screen name="PostLeaseItemScreen" component={PostLeaseItemScreen} />
+                          <Stack.Screen name="LeaseItemDetailsScreen" component={LeaseItemDetailsScreen} />
 
-                        {/* transport for hire */}
-                        <Stack.Screen name="TransportationListScreen" component={TransportationListScreen} />
-                        <Stack.Screen name="TransportationDetailsScreen" component={TransportationDetailsScreen} />
-                        <Stack.Screen name="PostTransportationScreen" component={PostTransportationScreen} />
-                        <Stack.Screen name="BookTransportationScreen" component={BookTransportationScreen} />
+                          {/* transport for hire */}
+                          <Stack.Screen name="TransportationListScreen" component={TransportationListScreen} />
+                          <Stack.Screen name="TransportationDetailsScreen" component={TransportationDetailsScreen} />
+                          <Stack.Screen name="PostTransportationScreen" component={PostTransportationScreen} />
+                          <Stack.Screen name="BookTransportationScreen" component={BookTransportationScreen} />
 
-                        {/* loan assist */}
-                        <Stack.Screen name="LoanAssist" component={LoanAssist} />
-                        <Stack.Screen name="Ask-AI" component={AIAgent} />
-                        <Stack.Screen name="LoanDetails" component={LoanDetails} />
-                        <Stack.Screen name="LoanCompare" component={LoanCompare} />
-                        <Stack.Screen name="LoanCalculator" component={LoanCalculator} />
+                          {/* loan assist */}
+                          <Stack.Screen name="LoanAssist" component={LoanAssist} />
+                          <Stack.Screen name="Ask-AI" component={AIAgent} />
+                          <Stack.Screen name="LoanDetails" component={LoanDetails} />
+                          <Stack.Screen name="LoanCompare" component={LoanCompare} />
+                          <Stack.Screen name="LoanCalculator" component={LoanCalculator} />
 
-                        {/* deals assist */}
-                        <Stack.Screen name="SpecialDeals" component={HomeDealScreen} />
-                        <Stack.Screen name="SearchDeal" component={SearchDealScreen} />
-                        <Stack.Screen name="ItemComparison" component={ItemCompareScreen} />
-                        <Stack.Screen name="BasketScreen" component={BasketScreen} />
-                        <Stack.Screen name="ScanDealScreen" component={PamphletScanner} />
-                      </Stack.Navigator>
-                      <StatusBar style={isDarkMode ? "light" : "dark"} />
-                    </NavigationContainer>
-                  </BasketProvider>
-                </PaperProvider>
-                <Toast config={toastConfig} />
-              </GestureHandlerRootView>
-            </>
-          </AuthProvider>
+                          {/* deals assist */}
+                          <Stack.Screen name="SpecialDeals" component={HomeDealScreen} />
+                          <Stack.Screen name="SearchDeal" component={SearchDealScreen} />
+                          <Stack.Screen name="ItemComparison" component={ItemCompareScreen} />
+                          <Stack.Screen name="BasketScreen" component={BasketScreen} />
+                          <Stack.Screen name="ScanDealScreen" component={PamphletScanner} />
+                        </>
+                      )}
+                    </Stack.Navigator>
+                    <StatusBar style={isDarkMode ? "light" : "dark"} />
+                  </NavigationContainer>
+                </BasketProvider>
+              </PaperProvider>
+              <Toast config={toastConfig} />
+            </GestureHandlerRootView>
+          </>
         )}
       </RealmProvider>
     </SafeAreaProvider>

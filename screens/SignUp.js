@@ -6,6 +6,7 @@ import {
   Image,
   StyleSheet,
   ScrollView,
+  StatusBar,
   KeyboardAvoidingView,
   Platform,
   Alert,
@@ -18,12 +19,13 @@ import CustomLoader from '../components/customLoader';
 import { TextInput } from 'react-native-paper';
 
 export default function SignupScreen({ navigation }) {
-  const { theme } = useContext(AppContext);
-  const { emailSignIn, user, loading } = useContext(AuthContext);
+  const { theme, isDarkMode } = useContext(AppContext);
+  const { emailSignUp, user, loading } = useContext(AuthContext);
 
   const [isConnecting, setIsConnecting] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -36,6 +38,7 @@ export default function SignupScreen({ navigation }) {
 
     if (!name.trim()) newErrors.name = 'Full name is required';
     if (!email.includes('@') || !email.includes('.')) newErrors.email = 'Valid email required';
+    if (!phone || phone.replace(/\D/g, '').length < 8) newErrors.phone = 'Valid phone number required';
     if (!password || password.length < 6) newErrors.password = 'Password must be 6+ characters';
     if (password !== confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
 
@@ -48,12 +51,17 @@ export default function SignupScreen({ navigation }) {
 
     setIsConnecting(true);
     try {
-      // Example using Firebase Auth – replace with your actual signup logic
-      await emailSignIn(name.trim(), email.trim(), password);
+      await emailSignUp(name.trim(), email.trim(), password, phone.trim());
 
-      // You might want to navigate or show success
       Alert.alert('Success', 'Account created! You can now sign in.', [
-        { text: 'Go to Sign In', onPress: () => navigation.navigate('Login') },
+        {
+          text: 'Close', onPress: () => {
+            setConfirmPassword('');
+            setEmail('');
+            setName('');
+            setPassword('');
+          }
+        },
       ]);
     } catch (err) {
       let message = err.message;
@@ -67,15 +75,12 @@ export default function SignupScreen({ navigation }) {
       Alert.alert('Sign Up Failed', message);
     } finally {
       setIsConnecting(false);
-      setConfirmPassword('');
-      setEmail('');
-      setName('');
-      setPassword('');
     }
   };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
@@ -115,6 +120,18 @@ export default function SignupScreen({ navigation }) {
             style={styles.input}
             theme={{ roundness: 12 }}
             left={<TextInput.Icon icon="email" />}
+          />
+
+          <TextInput
+            label="Phone Number"
+            value={phone}
+            onChangeText={setPhone}
+            mode="outlined"
+            keyboardType="phone-pad"
+            error={!!errors.phone}
+            style={styles.input}
+            theme={{ roundness: 12 }}
+            left={<TextInput.Icon icon="phone" />}
           />
 
           <TextInput

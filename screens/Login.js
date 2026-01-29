@@ -1,27 +1,29 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useContext } from 'react';
 import {
   View,
   Text,
   TouchableOpacity,
   Image,
   StyleSheet,
+  StatusBar,
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
   Alert,
+  Modal,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Images } from '../constants/Images';
-import { Icons } from '../constants/Icons';
 import { AppContext } from '../context/appContext';
 import { AuthContext } from '../context/authProvider';
-import { CustomLoader } from '../components/customLoader';
-import { TextInput } from 'react-native-paper';
-import auth from '@react-native-firebase/auth';
+import { TextInput as PaperTextInput } from 'react-native-paper';
+import { Icons } from '../constants/Icons';
 
 export default function LoginScreen({ navigation }) {
-  const { theme } = useContext(AppContext);
-  const { googleLogin, emailLogin, user, loading } = useContext(AuthContext);
+  const { theme, isDarkMode } = useContext(AppContext);
+  const { googleLogin, emailLogin, phoneLogin, verifyOTP } = useContext(AuthContext);
 
   const [isConnecting, setIsConnecting] = useState(false);
   const [loginMode, setLoginMode] = useState('email');
@@ -31,19 +33,19 @@ export default function LoginScreen({ navigation }) {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
 
-  // Navigate to MainTabs if user is logged in
-  useEffect(() => {
-    if (user) {
-      navigation.navigate('MainTabs');
-    }
-  }, [user, navigation]);
+  // OTP verification states
+  const [showOTPSheet, setShowOTPSheet] = useState(false);
+  const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [confirmationResult, setConfirmationResult] = useState(null);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [waitingForOTP, setWaitingForOTP] = useState(true);
 
   // Validation
   const validate = () => {
     const newErrors = {};
     if (loginMode === 'email' && !email.includes('@')) newErrors.email = 'Valid email required';
     if (loginMode === 'phone' && phone.length < 8) newErrors.phone = 'Valid phone number required';
-    if (!password || password.length < 6) newErrors.password = 'Password must be 6+ characters';
+    if (loginMode === 'email' && (!password || password.length < 6)) newErrors.password = 'Password must be 6+ characters';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -51,7 +53,7 @@ export default function LoginScreen({ navigation }) {
   const handleSocialLogin = async (connection) => {
     setIsConnecting(true);
     try {
-      await socialLogin(connection);
+      await googleLogin(connection);
     } catch (err) {
       Alert.alert('Login Failed', err.message || 'Please try again.');
     } finally {
@@ -60,22 +62,87 @@ export default function LoginScreen({ navigation }) {
   };
 
   const handleEmailOrPhoneLogin = async () => {
-    navigation.navigate('MainTabs');
-    // if (!validate()) return;
+    if (!validate()) return;
 
-    // setIsConnecting(true);
-    // try {
-    //   const identifier = loginMode === 'email' ? email : phone;
-    //   await emailSingIn(identifier, email, password,);
-    // } catch (err) {
-    //   Alert.alert('Login Failed', err.message || 'Invalid credentials.');
-    // } finally {
-    //   setIsConnecting(false);
-    // }
+    setIsConnecting(true);
+    try {
+      if (loginMode === 'email') {
+        await emailLogin(email.trim(), password);
+      } else {
+        // Send OTP for phone
+        const confirmation = await phoneLogin(phone.trim());
+        if (confirmation) {
+          setConfirmationResult(confirmation);
+          setShowOTPSheet(true);
+          setWaitingForOTP(true);
+          setOtp(['', '', '', '', '', '']);
+          console.log('OTP sent to:', phone.trim());
+        } else {
+          Alert.alert('Failed', 'Could not send OTP. Please try again.');
+        }
+      }
+    } catch (err) {
+      let message = err.message || 'Invalid credentials.';
+      if (err.code === 'auth/user-not-found') {
+        message = 'No account found with this email/phone.';
+      } else if (err.code === 'auth/wrong-password') {
+        message = 'Incorrect password.';
+      } else if (err.code === 'auth/invalid-email') {
+        message = 'Invalid email format.';
+      }
+      Alert.alert('Login Failed', message);
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  const handleOTPChange = (index, value) => {
+    // Only allow digits
+    const numericValue = value.replace(/[^0-9]/g, '');
+    const newOtp = [...otp];
+    newOtp[index] = numericValue;
+    setOtp(newOtp);
+
+    // Check if all fields are filled
+    const isComplete = newOtp.every(digit => digit !== '');
+    if (isComplete) {
+      setWaitingForOTP(false);
+    } else {
+      setWaitingForOTP(true);
+    }
+
+    // Auto-move to next field
+    if (numericValue && index < 5) {
+      // Automatically focus next input by storing refs
+      const nextInput = document.getElementById(`otpInput${index + 1}`);
+      if (nextInput) nextInput.focus();
+    }
+  };
+
+  const handleConfirmOTP = async () => {
+    if (!confirmationResult || otp.some(digit => digit === '')) {
+      Alert.alert('Invalid', 'Please enter all 6 digits.');
+      return;
+    }
+
+    setIsVerifying(true);
+    try {
+      const otpCode = otp.join('');
+      await verifyOTP(confirmationResult, otpCode);
+      setShowOTPSheet(false);
+      setOtp(['', '', '', '', '', '']);
+      setConfirmationResult(null);
+    } catch (err) {
+      Alert.alert('Verification Failed', err.message || 'Invalid OTP. Please try again.');
+    } finally {
+      setIsVerifying(false);
+    }
   };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
+
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
@@ -118,6 +185,7 @@ export default function LoginScreen({ navigation }) {
                 Email
               </Text>
             </TouchableOpacity>
+
             <TouchableOpacity
               style={[styles.modeBtn, loginMode === 'phone' && styles.modeBtnActive]}
               onPress={() => setLoginMode('phone')}
@@ -130,18 +198,39 @@ export default function LoginScreen({ navigation }) {
 
           {/* Inputs */}
           {loginMode === 'email' ? (
-            <TextInput
-              label="Email Address"
-              value={email}
-              onChangeText={setEmail}
-              mode="outlined"
-              error={!!errors.email}
-              style={styles.input}
-              theme={{ roundness: 12 }}
-              left={<TextInput.Icon icon="email" />}
-            />
+            <>
+              <PaperTextInput
+                label="Email Address"
+                value={email}
+                onChangeText={setEmail}
+                autoCapitalize="none"
+                mode="outlined"
+                error={!!errors.email}
+                style={styles.input}
+                theme={{ roundness: 12 }}
+                left={<PaperTextInput.Icon icon="email" />}
+              />
+
+              <PaperTextInput
+                label="Password"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                mode="outlined"
+                error={!!errors.password}
+                style={styles.input}
+                theme={{ roundness: 12 }}
+                left={<PaperTextInput.Icon icon="lock" />}
+                right={
+                  <PaperTextInput.Icon
+                    icon={showPassword ? 'eye-off' : 'eye'}
+                    onPress={() => setShowPassword(!showPassword)}
+                  />
+                }
+              />
+            </>
           ) : (
-            <TextInput
+            <PaperTextInput
               label="Phone Number"
               value={phone}
               onChangeText={setPhone}
@@ -150,27 +239,9 @@ export default function LoginScreen({ navigation }) {
               error={!!errors.phone}
               style={styles.input}
               theme={{ roundness: 12 }}
-              left={<TextInput.Icon icon="phone" />}
+              left={<PaperTextInput.Icon icon="phone" />}
             />
           )}
-
-          <TextInput
-            label="Password"
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry={!showPassword}
-            mode="outlined"
-            error={!!errors.password}
-            style={styles.input}
-            theme={{ roundness: 12 }}
-            left={<TextInput.Icon icon="lock" />}
-            right={
-              <TextInput.Icon
-                icon={showPassword ? 'eye-off' : 'eye'}
-                onPress={() => setShowPassword(!showPassword)}
-              />
-            }
-          />
 
           {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
           {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
@@ -183,9 +254,9 @@ export default function LoginScreen({ navigation }) {
             disabled={isConnecting}
           >
             {isConnecting ? (
-              <CustomLoader size="small" color="#fff" />
+              <ActivityIndicator size={20} color="#fff" />
             ) : (
-              <Text style={styles.signInText}>Sign In</Text>
+              <Text style={styles.signInText}>{loginMode === 'email' ? 'Sign In' : 'Send OTP'}</Text>
             )}
           </TouchableOpacity>
 
@@ -201,6 +272,80 @@ export default function LoginScreen({ navigation }) {
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* OTP Bottom Sheet Modal */}
+      <Modal
+        visible={showOTPSheet}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => !isVerifying && setShowOTPSheet(false)}
+      >
+        <View style={styles.otpModalOverlay}>
+          <View style={[styles.otpBottomSheet, { backgroundColor: theme.colors.background }]}>
+            {/* Close Button */}
+            <TouchableOpacity
+              style={styles.closeOTPBtn}
+              onPress={() => !isVerifying && setShowOTPSheet(false)}
+              disabled={isVerifying}
+            >
+              <Icons.Ionicons name="close" size={24} color={theme.colors.text} />
+            </TouchableOpacity>
+
+            {/* Title */}
+            <Text style={[styles.otpTitle, { color: theme.colors.text }]}>Enter OTP</Text>
+            <Text style={[styles.otpSubtitle, { color: theme.colors.textSecondary }]}>
+              We've sent a 6-digit code to {phone}
+            </Text>
+
+            {/* OTP Input Squares */}
+            <View style={styles.otpInputContainer}>
+              {otp.map((digit, index) => (
+                <TextInput
+                  key={index}
+                  style={[
+                    styles.otpInput,
+                    { borderColor: digit ? theme.colors.primary : theme.colors.border },
+                  ]}
+                  maxLength={1}
+                  keyboardType="number-pad"
+                  value={digit}
+                  onChangeText={(value) => handleOTPChange(index, value)}
+                  editable={!isVerifying}
+                  placeholderTextColor={theme.colors.textSecondary}
+                />
+              ))}
+            </View>
+
+            {/* Waiting for OTP Spinner */}
+            {waitingForOTP && (
+              <View style={styles.spinnerContainer}>
+                <ActivityIndicator size="large" color={theme.colors.primary} />
+                <Text style={[styles.waitingText, { color: theme.colors.textSecondary }]}>
+                  Waiting for code...
+                </Text>
+              </View>
+            )}
+
+            {/* Confirm Button */}
+            <TouchableOpacity
+              style={[
+                styles.confirmBtn,
+                {
+                  backgroundColor: !waitingForOTP && !isVerifying ? theme.colors.primary : '#ccc',
+                },
+              ]}
+              onPress={handleConfirmOTP}
+              disabled={waitingForOTP || isVerifying || otp.some(d => d === '')}
+            >
+              {isVerifying ? (
+                <ActivityIndicator size={20} color="#fff" />
+              ) : (
+                <Text style={styles.confirmText}>Confirm</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -359,6 +504,64 @@ const styles = StyleSheet.create({
   logoutText: {
     color: '#fff',
     fontSize: 16,
+    fontWeight: '600',
+  },
+  otpModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  otpBottomSheet: {
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 32,
+    paddingBottom: Platform.OS === 'ios' ? 40 : 32,
+  },
+  closeOTPBtn: {
+    alignSelf: 'flex-end',
+    marginBottom: 16,
+  },
+  otpTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    marginBottom: 8,
+  },
+  otpSubtitle: {
+    fontSize: 14,
+    marginBottom: 32,
+  },
+  otpInputContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 32,
+  },
+  otpInput: {
+    width: 50,
+    height: 60,
+    borderWidth: 2,
+    borderRadius: 12,
+    textAlign: 'center',
+    fontSize: 24,
+    fontWeight: '600',
+  },
+  spinnerContainer: {
+    alignItems: 'center',
+    marginBottom: 32,
+  },
+  waitingText: {
+    marginTop: 12,
+    fontSize: 14,
+  },
+  confirmBtn: {
+    borderRadius: 16,
+    paddingVertical: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  confirmText: {
+    color: '#fff',
+    fontSize: 17,
     fontWeight: '600',
   },
 });
