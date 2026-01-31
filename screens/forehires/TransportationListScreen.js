@@ -12,6 +12,8 @@ import {
     TextInput,
     RefreshControl,
     Alert,
+    Modal,
+    Animated,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Icons } from '../../constants/Icons';
@@ -19,7 +21,7 @@ import {
     BottomSheetModal,
     BottomSheetModalProvider,
     BottomSheetView,
-    BottomSheetBackdrop,
+    BottomSheetBackdrop
 } from '@gorhom/bottom-sheet';
 import { CustomToast } from '../../components/customToast';
 import { AppContext } from "../../context/appContext"
@@ -116,6 +118,142 @@ const RatingBottomSheet = React.forwardRef(({ onSubmit, onDismiss, renderBackdro
 });
 RatingBottomSheet.displayName = 'RatingBottomSheet';
 
+// ────── Sort/Filter Bottom Sheet Modal ──────
+const SortFilterBottomSheet = React.forwardRef(
+    ({ sortByCategory, setSortByCategory, sortByBorderCrossing, setSortByBorderCrossing, isVisible, onClose }, ref) => {
+        const slideAnim = useRef(new Animated.Value(400)).current;
+        const categories = ['All', 'Public Transport', 'Cargo', 'Passenger', 'Luxury'];
+
+        useEffect(() => {
+            if (isVisible) {
+                Animated.timing(slideAnim, {
+                    toValue: 0,
+                    duration: 300,
+                    useNativeDriver: true,
+                }).start();
+            } else {
+                Animated.timing(slideAnim, {
+                    toValue: 400,
+                    duration: 300,
+                    useNativeDriver: true,
+                }).start();
+            }
+        }, [isVisible]);
+
+        return (
+            <Modal
+                visible={isVisible}
+                transparent
+                animationType="none"
+                onRequestClose={onClose}
+            >
+                {/* Backdrop */}
+                <TouchableOpacity
+                    style={sortFilterModalStyles.backdrop}
+                    activeOpacity={1}
+                    onPress={onClose}
+                />
+
+                {/* Animated Bottom Sheet */}
+                <Animated.View
+                    style={[
+                        sortFilterModalStyles.container,
+                        { transform: [{ translateY: slideAnim }] }
+                    ]}
+                >
+                    {/* Drag Handle */}
+                    <View style={sortFilterModalStyles.dragHandleContainer}>
+                        <View style={sortFilterModalStyles.dragHandle} />
+                    </View>
+
+                    {/* Header */}
+                    <View style={sortFilterModalStyles.header}>
+                        <Text style={sortFilterModalStyles.title}>Filter & Sort</Text>
+                        <TouchableOpacity onPress={onClose}>
+                            <Text style={sortFilterModalStyles.closeButton}>✕</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* Divider */}
+                    <View style={sortFilterModalStyles.divider} />
+
+                    {/* Scrollable Content */}
+                    <ScrollView
+                        style={sortFilterModalStyles.scrollContainer}
+                        showsVerticalScrollIndicator={false}
+                        scrollEnabled={true}
+                    >
+                        {/* Category Section */}
+                        <View style={sortFilterModalStyles.section}>
+                            <Text style={sortFilterModalStyles.sectionTitle}>Category</Text>
+                            <ScrollView
+                                horizontal
+                                showsHorizontalScrollIndicator={false}
+                                contentContainerStyle={sortFilterModalStyles.chipContainer}
+                                bounces={true}
+                                nestedScrollEnabled={true}
+                            >
+                                {categories.map(cat => (
+                                    <TouchableOpacity
+                                        key={cat}
+                                        style={[
+                                            sortFilterModalStyles.chip,
+                                            sortByCategory === cat && sortFilterModalStyles.chipActive
+                                        ]}
+                                        onPress={() => setSortByCategory(cat)}
+                                    >
+                                        <Text style={[
+                                            sortFilterModalStyles.chipText,
+                                            sortByCategory === cat && sortFilterModalStyles.chipTextActive
+                                        ]}>
+                                            {cat}
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </ScrollView>
+                        </View>
+
+                        {/* Border Crossing Section */}
+                        <View style={sortFilterModalStyles.section}>
+                            <Text style={sortFilterModalStyles.sectionTitle}>Border Crossing</Text>
+                            <View style={sortFilterModalStyles.borderOptions}>
+                                {['All', 'Yes', 'No'].map(opt => (
+                                    <TouchableOpacity
+                                        key={opt}
+                                        style={[
+                                            sortFilterModalStyles.borderChip,
+                                            sortByBorderCrossing === opt && sortFilterModalStyles.borderChipActive
+                                        ]}
+                                        onPress={() => setSortByBorderCrossing(opt)}
+                                    >
+                                        <Text style={[
+                                            sortFilterModalStyles.borderChipText,
+                                            sortByBorderCrossing === opt && sortFilterModalStyles.borderChipTextActive
+                                        ]}>
+                                            {opt}
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+                        </View>
+                    </ScrollView>
+
+                    {/* Footer Action */}
+                    <View style={sortFilterModalStyles.footer}>
+                        <TouchableOpacity
+                            style={sortFilterModalStyles.applyButton}
+                            onPress={onClose}
+                        >
+                            <Text style={sortFilterModalStyles.applyButtonText}>Apply Filters</Text>
+                        </TouchableOpacity>
+                    </View>
+                </Animated.View>
+            </Modal>
+        );
+    }
+);
+SortFilterBottomSheet.displayName = 'SortFilterBottomSheet';
+
 const sheetStyles = StyleSheet.create({
     container: { flex: 1, paddingVertical: 24, paddingHorizontal: 12 },
     title: { fontSize: 22, fontWeight: '700', textAlign: 'center', marginBottom: 24, color: '#1e293b' },
@@ -162,6 +300,146 @@ const ratingSheetStyles = StyleSheet.create({
     submitButtonText: { color: '#fff', fontSize: 16, fontWeight: '600' },
 });
 
+const sortFilterModalStyles = StyleSheet.create({
+    backdrop: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+    container: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        backgroundColor: '#fff',
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        maxHeight: '80%',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 8,
+        elevation: 10,
+    },
+    dragHandleContainer: {
+        alignItems: 'center',
+        paddingVertical: 12,
+    },
+    dragHandle: {
+        width: 40,
+        height: 4,
+        borderRadius: 2,
+        backgroundColor: '#cbd5e1',
+    },
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 24,
+        paddingVertical: 16,
+    },
+    title: {
+        fontSize: 24,
+        fontWeight: '800',
+        color: '#1e293b',
+    },
+    closeButton: {
+        fontSize: 28,
+        color: '#64748b',
+        fontWeight: '300',
+    },
+    divider: {
+        height: 1,
+        backgroundColor: '#e2e8f0',
+    },
+    scrollContainer: {
+        flexGrow: 0,
+        maxHeight: 300,
+    },
+    section: {
+        paddingHorizontal: 12,
+        paddingVertical: 20,
+    },
+    sectionTitle: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: '#475569',
+        marginBottom: 14,
+        letterSpacing: 0.3,
+    },
+    chipContainer: {
+        paddingVertical: 8,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+    },
+    chip: {
+        paddingHorizontal: 18,
+        paddingVertical: 10,
+        borderRadius: 25,
+        backgroundColor: '#f1f5f9',
+        borderWidth: 1.5,
+        borderColor: '#e2e8f0',
+    },
+    chipActive: {
+        backgroundColor: '#2563eb',
+        borderColor: '#2563eb',
+    },
+    chipText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#64748b',
+    },
+    chipTextActive: {
+        color: '#fff',
+    },
+    borderOptions: {
+        flexDirection: 'row',
+        gap: 12,
+    },
+    borderChip: {
+        flex: 1,
+        paddingVertical: 13,
+        borderRadius: 12,
+        backgroundColor: '#f1f5f9',
+        alignItems: 'center',
+        borderWidth: 1.5,
+        borderColor: '#e2e8f0',
+    },
+    borderChipActive: {
+        backgroundColor: '#2563eb',
+        borderColor: '#2563eb',
+    },
+    borderChipText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#64748b',
+    },
+    borderChipTextActive: {
+        color: '#fff',
+    },
+    footer: {
+        paddingHorizontal: 24,
+        paddingVertical: 20,
+        borderTopWidth: 1,
+        borderTopColor: '#e2e8f0',
+    },
+    applyButton: {
+        backgroundColor: '#2563eb',
+        paddingVertical: 15,
+        borderRadius: 12,
+        alignItems: 'center',
+    },
+    applyButtonText: {
+        color: '#fff',
+        fontSize: 16,
+        fontWeight: '700',
+    },
+});
+
 // ──────────────────────────────────────────────────────────────
 // MAIN SCREEN
 // ──────────────────────────────────────────────────────────────
@@ -172,7 +450,6 @@ export default function TransportationListScreen({ navigation }) {
     const [sortByCategory, setSortByCategory] = useState('All');
     const [sortByBorderCrossing, setSortByBorderCrossing] = useState('All');
     const [searchQuery, setSearchQuery] = useState('');
-    const [showSortOptions, setShowSortOptions] = useState(false);
     const [likedVehicles, setLikedVehicles] = useState(new Set());
     const [vehicleRatings, setVehicleRatings] = useState({});
     const [isRefreshing, setIsRefreshing] = useState(false);
@@ -187,6 +464,7 @@ export default function TransportationListScreen({ navigation }) {
     const commentSheetRef = useRef(null);
     const ratingSheetRef = useRef(null);
     const scrollViewRef = useRef(null);
+    const [sortFilterModalVisible, setSortFilterModalVisible] = useState(false);
     const [modalVehicleId, setModalVehicleId] = useState(null);
     const [commentText, setCommentText] = useState('');
     const [commentSuggestion, setCommentSuggestion] = useState('');
@@ -195,7 +473,6 @@ export default function TransportationListScreen({ navigation }) {
     const [comments, setComments] = useState({});
 
     const types = ['All', 'Minibus', 'Bus', 'Van', 'Truck', 'Motorcycle', 'Car', 'SUV', 'Sprinter'];
-    const categories = ['All', 'Public Transport', 'Cargo', 'Passenger', 'Luxury'];
 
     // ────── Fetch vehicles onmount ──────
     useEffect(() => {
@@ -241,11 +518,15 @@ export default function TransportationListScreen({ navigation }) {
         try {
             setLoading(true);
             const data = await getForHireTransport();
-            data?.length !== 0 && setVehicles(data);
+            const vehiclesData = Array.isArray(data) ? data : [];
+            // set raw vehicles and synchronously compute filtered list so UI shows loader
+            setVehicles(vehiclesData);
+            const filtered_v = filterVehicles(vehiclesData);
+            setFilteredVehicles(filtered_v);
         } catch (err) {
             console.error('Error fetching vehicles:', err);
             setVehicles([]);
-            setLoading(false)
+            setFilteredVehicles([]);
         } finally {
             setLoading(false);
         }
@@ -394,7 +675,7 @@ export default function TransportationListScreen({ navigation }) {
         } catch (err) {
             console.error('Error submitting comment:', err);
             CustomToast('Error', 'Failed to submit review');
-        }finally{
+        } finally {
             setCommentText('');
             setCommentSuggestion('');
             setUserNumber('');
@@ -463,7 +744,7 @@ export default function TransportationListScreen({ navigation }) {
         const isLiked = likedVehicles.has(vehicle.id);
         const userRating = vehicleRatings[vehicle.id];
         const rating = userRating || vehicle.rating_average || 0;
-        const likes = isLiked ? (vehicle.likes || 0) + 1 : vehicle.likes || 0;
+        const likes = vehicle.likes || 0;  // Trust backend count, don't add +1 here
         const vehicleComments = comments[vehicle.id] || [];
         const latestComment = vehicleComments[vehicleComments.length - 1];
 
@@ -604,7 +885,7 @@ export default function TransportationListScreen({ navigation }) {
                 <SecondaryNav
                     title="Transport For Hire"
                     rightIcon="options-outline"
-                    onRightPress={() => setShowSortOptions(true)}
+                    onRightPress={() => setSortFilterModalVisible(true)}
                 />
 
                 {(sortByCategory !== 'All' || sortByBorderCrossing !== 'All') && (
@@ -660,7 +941,7 @@ export default function TransportationListScreen({ navigation }) {
                         placeholderTextColor="#94a3b8"
                     />
                     {(sortByCategory !== 'All' || sortByBorderCrossing !== 'All') && (
-                        <TouchableOpacity onPress={() => setShowSortOptions(true)}>
+                        <TouchableOpacity onPress={() => setSortFilterModalVisible(true)}>
                             <Icons.Ionicons name="options" size={24} color="#2563eb" />
                         </TouchableOpacity>
                     )}
@@ -688,55 +969,6 @@ export default function TransportationListScreen({ navigation }) {
                     <Icons.Ionicons name="add-circle-outline" size={20} color="#2563eb" />
                     <Text style={styles.postBtnText}>Post Vehicle</Text>
                 </TouchableOpacity>
-
-                {/* Sort Modal */}
-                {showSortOptions && (
-                    <>
-                        <TouchableOpacity style={StyleSheet.absoluteFillObject} activeOpacity={1} onPress={() => setShowSortOptions(false)} />
-                        <View style={styles.sortModal}>
-                            <View style={styles.sortHeader}>
-                                <Text style={styles.sortTitle}>Filter & Sort</Text>
-                                <TouchableOpacity onPress={() => setShowSortOptions(false)}>
-                                    <Icons.Ionicons name="close" size={28} color="#1e293b" />
-                                </TouchableOpacity>
-                            </View>
-
-                            <View style={styles.sortSection}>
-                                <Text style={styles.sortLabel}>Category</Text>
-                                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingVertical: 8 }}>
-                                    {categories.map(cat => (
-                                        <TouchableOpacity
-                                            key={cat}
-                                            style={[styles.filterChip, sortByCategory === cat && styles.filterChipActive]}
-                                            onPress={() => setSortByCategory(cat)}
-                                        >
-                                            <Text style={[styles.filterChipText, sortByCategory === cat && styles.filterChipTextActive]}>
-                                                {cat}
-                                            </Text>
-                                        </TouchableOpacity>
-                                    ))}
-                                </ScrollView>
-                            </View>
-
-                            <View style={styles.sortSection}>
-                                <Text style={styles.sortLabel}>Border Crossing</Text>
-                                <View style={styles.borderOptions}>
-                                    {['All', 'Yes', 'No'].map(opt => (
-                                        <TouchableOpacity
-                                            key={opt}
-                                            style={[styles.borderChip, sortByBorderCrossing === opt && styles.borderChipActive]}
-                                            onPress={() => setSortByBorderCrossing(opt)}
-                                        >
-                                            <Text style={[styles.borderChipText, sortByBorderCrossing === opt && styles.borderChipTextActive]}>
-                                                {opt}
-                                            </Text>
-                                        </TouchableOpacity>
-                                    ))}
-                                </View>
-                            </View>
-                        </View>
-                    </>
-                )}
 
                 {isConnected === null || loading ? (
                     <CustomLoader />
@@ -799,6 +1031,15 @@ export default function TransportationListScreen({ navigation }) {
                     onSubmit={submitRating}
                     onDismiss={() => setRatingVehicleId(null)}
                     renderBackdrop={renderBackdrop}
+                />
+
+                <SortFilterBottomSheet
+                    sortByCategory={sortByCategory}
+                    setSortByCategory={setSortByCategory}
+                    sortByBorderCrossing={sortByBorderCrossing}
+                    setSortByBorderCrossing={setSortByBorderCrossing}
+                    isVisible={sortFilterModalVisible}
+                    onClose={() => setSortFilterModalVisible(false)}
                 />
             </View>
         </BottomSheetModalProvider>
@@ -888,90 +1129,6 @@ const styles = StyleSheet.create({
     typeTabActive: { backgroundColor: '#2563eb' },
     typeTabText: { fontSize: 14, fontWeight: '600', color: '#64748b' },
     typeTabTextActive: { color: '#fff' },
-
-    // ──────────────────────────────
-    // SORT / FILTER MODAL (popup)
-    // ──────────────────────────────
-    sortModal: {
-        position: 'absolute',
-        top: Platform.OS === 'ios' ? 140 : 120,
-        left: 24,
-        right: 24,
-        backgroundColor: '#fff',
-        borderRadius: 24,
-        padding: 24,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 12 },
-        shadowOpacity: 0.25,
-        shadowRadius: 25,
-        elevation: 20,
-        zIndex: 1000,
-    },
-    sortHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 24,
-    },
-    sortTitle: {
-        fontSize: 21,
-        fontWeight: '800',
-        color: '#1e293b',
-    },
-
-    sortSection: {
-        marginBottom: 28,
-    },
-    sortLabel: {
-        fontSize: 15,
-        fontWeight: '700',
-        color: '#475569',
-        marginBottom: 12,
-    },
-
-    // Category chips inside modal
-    filterChip: {
-        paddingHorizontal: 20,
-        paddingVertical: 11,
-        borderRadius: 30,
-        backgroundColor: '#f1f5f9',
-        marginRight: 12,
-    },
-    filterChipActive: {
-        backgroundColor: '#2563eb',
-    },
-    filterChipText: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#64748b',
-    },
-    filterChipTextActive: {
-        color: '#fff',
-    },
-
-    // Border Crossing chips (Yes/No/All)
-    borderOptions: {
-        flexDirection: 'row',
-        gap: 12,
-    },
-    borderChip: {
-        flex: 1,
-        paddingVertical: 14,
-        borderRadius: 16,
-        backgroundColor: '#f1f5f9',
-        alignItems: 'center',
-    },
-    borderChipActive: {
-        backgroundColor: '#2563eb',
-    },
-    borderChipText: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#64748b',
-    },
-    borderChipTextActive: {
-        color: '#fff',
-    },
 
     // CARD – Modern Overlay Design
     vehicleCard: {

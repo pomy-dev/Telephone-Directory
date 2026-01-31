@@ -6,7 +6,7 @@ import { useState } from "react"
 
 const PropertyCard = ({ property, onPress, onMapPress, onAgentPress }) => {
   const { width } = Dimensions.get("window")
-  const cardWidth = width - 32
+  const cardWidth = width - 1
   const [isFavorite, setIsFavorite] = useState(false)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
 
@@ -176,7 +176,6 @@ const PropertyCard = ({ property, onPress, onMapPress, onAgentPress }) => {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: "#fff",
-    borderRadius: 12,
     overflow: "hidden",
     marginBottom: 18,
     borderWidth: 1,

@@ -71,10 +71,12 @@ const JobDetailScreen = ({ route, navigation }) => {
 
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Contact Information</Text>
+                        
                         <TouchableOpacity style={styles.contactButton}>
                             <Ionicons name="call-outline" size={20} color="#fff" />
                             <Text style={styles.contactButtonText}>Call {job.postedBy}</Text>
                         </TouchableOpacity>
+
                         <TouchableOpacity style={styles.contactButtonSecondary}>
                             <Ionicons name="chatbubble-outline" size={20} color="#000" />
                             <Text style={styles.contactButtonTextSecondary}>Send Message</Text>

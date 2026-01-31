@@ -15,7 +15,6 @@ import {
   Dimensions,
   RefreshControl,
 } from 'react-native';
-import { Badge } from 'react-native-paper';
 import { useRealm, } from '@realm/react';
 import { Icons } from '../../constants/Icons';
 import {
@@ -553,9 +552,6 @@ const DirectoryScreen = ({ navigation }) => {
         onClose={() => setUpgradeModalVisible(false)}
       />
 
-      {/* Login Modal */}
-      <LoginScreen isLoginVisible={showLogin} onClose={() => setShowLogin(false)} />
-
       {/* Show ProfileScreen Modal */}
       {showProfile && (
         <ProfileScreen
@@ -653,16 +649,13 @@ const DirectoryScreen = ({ navigation }) => {
                 </Text>
                 <View style={styles.buttonContainer}>
                   <TouchableOpacity
-                    style={[styles.button, { backgroundColor: theme.primary }]}
+                    style={[styles.button, { backgroundColor: theme.colors.primary }]}
                     onPress={handleRetry}
                   >
                     <Text style={styles.buttonText}>Retry</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    style={[
-                      styles.button,
-                      { backgroundColor: theme.primary + "90" },
-                    ]}
+                    style={[styles.button, { backgroundColor: theme.colors.primary }]}
                     onPress={openNetworkSettings}
                   >
                     <Text style={styles.buttonText}>Network Help</Text>
@@ -884,7 +877,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
-  buttonText: { color: "#FFFFFF", fontWeight: "bold", fontSize: 16 },
+  buttonText: { color: "#fff", fontWeight: "bold", fontSize: 16 },
   offlineButton: {
     paddingVertical: 12,
     paddingHorizontal: 24,

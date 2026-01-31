@@ -391,7 +391,7 @@ const MoreHouses = ({ navigation }) => {
         >
             <View style={styles.header}>
                 <SecondaryNav
-                    title="Estate"
+                    title="Houses for Rent"
                     rightIcon="options-outline"
                     onRightPress={() => setFilterDrawerVisible(true)}
                     onBackPress={() => navigation?.goBack()}
@@ -508,7 +508,7 @@ const styles = StyleSheet.create({
         color: "#8A8A8A",
     },
     listContent: {
-        paddingHorizontal: 16,
+        paddingHorizontal: 0,
         paddingTop: 8,
         paddingBottom: 16,
     },

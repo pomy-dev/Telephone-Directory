@@ -307,7 +307,6 @@ const styles = StyleSheet.create({
     },
     jobCard: {
         backgroundColor: "#fff",
-        borderRadius: 12,
         marginBottom: 16,
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },

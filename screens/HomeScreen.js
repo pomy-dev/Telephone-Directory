@@ -58,7 +58,7 @@ export default function HomeScreen({ navigation }) {
     { id: "5", screen: "SpecialDeals", name: "Special Deals", image: Images.deals },
     { id: "6", screen: "VacanciesScreen", name: "Vacancies", image: Images.vacancies },
     { id: "7", screen: "PublishedTendersScreen", name: "Tenders", image: Images.tender },
-    { id: "8", screen: "DirectoryScreen", name: "Phonebook", image: Images.Phonebook },
+    { id: "8", screen: "DirectoryScreen", name: "B.E Directory", image: Images.bs_eswatini },
   ]
 
   useEffect(() => {

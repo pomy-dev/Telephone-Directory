@@ -412,10 +412,7 @@ const styles = StyleSheet.create({
         color: '#000',
     },
     categoryContainer: {
-        backgroundColor: '#fff',
         paddingVertical: 12,
-        borderBottomWidth: 1,
-        borderBottomColor: '#e2e8f0',
     },
     categoryScroll: {
         paddingHorizontal: 20,
@@ -425,7 +422,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 20,
         paddingVertical: 8,
         borderRadius: 20,
-        backgroundColor: '#f1f5f9',
+        backgroundColor: '#f8F4FF',
         marginRight: 8,
     },
     categoryChipActive: {
