@@ -110,8 +110,8 @@ export const uploadVehicles = async (path, files = []) => {
   return uploaded;
 };
 
-export const uploadAttachments = async (path, files = []) => {
-  console.log('Path: ', path, '\nImages: ', files)
+export const uploadAttachments = async (path, subpath, files = []) => {
+  console.log('Path: ', path, '\nSubpath: ', subpath, '\nImages: ', files)
   const uploaded = [];
   for (const file of files) {
     if (!file?.uri) continue;
@@ -158,7 +158,7 @@ export const uploadAttachments = async (path, files = []) => {
       // === 4. Upload to Supabase Storage ===
       const { data, error } = await supabase.storage
         .from(path)
-        .upload(`vehicles/${fileName}`, bytes, {
+        .upload(`${subpath}/${fileName}`, bytes, {
           contentType: mimeType,
           upsert: false,
         });

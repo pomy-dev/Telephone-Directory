@@ -188,19 +188,30 @@ export async function submitVehicleComment(vehicleId, comment, suggestion = null
   }
 }
 
-export async function getVehicleComments(vehicleId) {
+export async function submitGig(jobData) {
   try {
-    const { data, error } = await supabase
-      .from('vehicle_comments')
-      .select('*')
-      .eq('vehicle_id', vehicleId)
-      .order('created_at', { ascending: false });
+    const { data, error } = await supabase.rpc("create_pomy_gig", {
+      p_title: jobData.title,
+      p_description: jobData.description,
+      p_category: jobData.category,
+      p_price: jobData.price,
+      p_postedby: jobData.postedBy,
+      p_location: jobData.locationSpot,
+      p_requirements: jobData.requirements,
+      p_images: jobData.photos,
+      p_status: jobData.status
+    })
 
-    if (error) throw error;
+    if (error) {
+      console.error("Failed to create job:", error)
+      throw error
+    } else {
+      console.log("Job created:", data[0])
+    }
 
-    return { success: true, data };
+    return { success: true, data: data[0] };
   } catch (error) {
-    console.error('Error fetching comments:', error);
+    console.error('Error posting gig:', error);
     return { success: false, error: error.message };
   }
 }

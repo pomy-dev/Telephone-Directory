@@ -20,6 +20,8 @@ import * as Location from "expo-location"
 import { CustomToast } from "../../components/customToast";
 import SecondaryNav from "../../components/SecondaryNav"
 import { AuthContext } from "../../context/authProvider";
+import { uploadAttachments } from '../../service/uploadFiles';
+import { submitGig } from "../../service/Supabase-Fuctions";
 
 const CATEGORIES = ["Moving", "Cleaning", "Groundsman", "LandScaping", "Delivery", "Gardening", "Pet Care", "Tech"]
 const STEPS = ["Job Details", "Description", "Photos", "Contacts"]
@@ -134,6 +136,7 @@ const PostGigScreen = ({ navigation }) => {
             })
 
             setLocation({
+                ...location,
                 latitude: loc.coords.latitude.toFixed(6),
                 longitude: loc.coords.longitude.toFixed(6),
             })
@@ -151,10 +154,14 @@ const PostGigScreen = ({ navigation }) => {
         }
     }, [step])
 
-    const handlePostGig = () => {
+    const handlePostGig = async () => {
         if (!validateCurrentStep()) return
 
         try {
+            setUploading(true)
+            const imagesUpload = await uploadAttachments('piece-jobs', 'gig-images', images)
+            const imageUrls = imagesUpload.map(img => img.url)
+
             const jobData = {
                 title,
                 description,
@@ -163,12 +170,18 @@ const PostGigScreen = ({ navigation }) => {
                 postedBy: { name: user?.displayName.trim(), phone: phone?.trim(), email: user?.email.trim() },
                 locationSpot: location || { latitude: "", longitude: "" },
                 requirements,
-                photos: images,
+                photos: imageUrls,
+                status: "open"
             }
 
-            console.log("Posting job:", jobData) // Replace with real API call
+            console.log("Posting job:", jobData)
 
-            CustomToast("Success👍", "Your gig has been posted!")
+            const { success, data } = await submitGig(jobData);
+
+            if (success)
+                CustomToast("Success👍", "Your gig has been posted!")
+            else
+                throw new Error("Failed to post gig")
         } catch (err) {
             console.error("Error posting job:", err)
             Alert.alert("Error", "There was an error posting your gig. Please try again.")
@@ -183,6 +196,7 @@ const PostGigScreen = ({ navigation }) => {
             setRequirements([])
             setImages([])
             setErrors({})
+            setUploading(false)
         }
     }
 
