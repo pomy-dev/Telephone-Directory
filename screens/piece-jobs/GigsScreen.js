@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, FlatList, Image, SafeAreaView } from "react-native"
-import { Ionicons } from "@expo/vector-icons"
+import { Icons } from "../../constants/Icons"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import SecondaryNav from "../../components/SecondaryNav"
 
@@ -106,16 +106,16 @@ const JOBS_DATA = [
     },
 ];
 
-
 const CATEGORIES = [
-    { id: "all", name: "All", icon: "grid-outline" },
-    { id: "Moving", name: "Moving", icon: "cube-outline" },
-    { id: "Cleaning", name: "Cleaning", icon: "sparkles-outline" },
-    { id: "Handyman", name: "Handyman", icon: "hammer-outline" },
-    { id: "Delivery", name: "Delivery", icon: "bicycle-outline" },
-    { id: "Gardening", name: "Gardening", icon: "leaf-outline" },
-    { id: "Pet Care", name: "Pet Care", icon: "paw-outline" },
-    { id: "Tech", name: "Tech", icon: "laptop-outline" },
+    { id: "all", name: "All", iconName: "grid-outline", iconType: Icons.Ionicons },
+    { id: "Moving", name: "Moving", iconName: "cube-outline", iconType: Icons.Ionicons },
+    { id: "Cleaning", name: "Cleaning", iconName: "sparkles-outline", iconType: Icons.Ionicons },
+    { id: "Groundsman", name: "Groundsman", iconName: "hammer-outline", iconType: Icons.Ionicons },
+    { id: "LandScaping", name: "LandScaping", iconName: "spade", iconType: Icons.MaterialCommunityIcons },
+    { id: "Delivery", name: "Delivery", iconName: "bicycle-outline", iconType: Icons.Ionicons },
+    { id: "Gardening", name: "Gardening", iconName: "leaf-outline", iconType: Icons.Ionicons },
+    { id: "Pet Care", name: "Pet Care", iconName: "paw-outline", iconType: Icons.Ionicons },
+    { id: "Tech", name: "Tech", iconName: "laptop-outline", iconType: Icons.Ionicons },
 ]
 
 // Calculate distance between two coordinates (Haversine formula)
@@ -183,7 +183,7 @@ const GigsScreen = ({ navigation }) => {
                 </Text>
                 <View style={styles.jobFooter}>
                     <View style={styles.locationContainer}>
-                        <Ionicons name="location-outline" size={14} color="#666" />
+                        <Icons.Ionicons name="location-outline" size={14} color="#666" />
                         <Text style={styles.locationText}>{item.location}</Text>
                     </View>
                     {item.distance && <Text style={styles.distanceText}>{item.distance.toFixed(1)} km away</Text>}
@@ -219,7 +219,8 @@ const GigsScreen = ({ navigation }) => {
                         onPress={() => setSelectedCategory(category.id)}
                         activeOpacity={0.7}
                     >
-                        <Ionicons name={category.icon} size={20} color={selectedCategory === category.id ? "#fff" : "#666"} />
+                        {<category.iconType name={category.iconName} size={20} color={selectedCategory === category.id ? "#fff" : "#666"} />}
+                        {/* <Ionicons name={category.icon} size={20} color={selectedCategory === category.id ? "#fff" : "#666"} /> */}
                         <Text style={[styles.categoryText, selectedCategory === category.id && styles.categoryTextActive]}>
                             {category.name}
                         </Text>

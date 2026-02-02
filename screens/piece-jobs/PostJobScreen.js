@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import {
     View,
     Text,
@@ -17,12 +17,15 @@ import {
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from "@expo/vector-icons"
 import * as Location from "expo-location"
+import { CustomToast } from "../../components/customToast";
 import SecondaryNav from "../../components/SecondaryNav"
+import { AuthContext } from "../../context/authProvider";
 
-const CATEGORIES = ["Moving", "Cleaning", "Handyman", "Delivery", "Gardening", "Pet Care", "Tech"]
+const CATEGORIES = ["Moving", "Cleaning", "Groundsman", "LandScaping", "Delivery", "Gardening", "Pet Care", "Tech"]
 const STEPS = ["Job Details", "Description", "Photos", "Contacts"]
 
 const PostGigScreen = ({ navigation }) => {
+    const { user } = React.useContext(AuthContext)
     const [step, setStep] = useState(0)
 
     // Form fields
@@ -30,9 +33,7 @@ const PostGigScreen = ({ navigation }) => {
     const [description, setDescription] = useState("")
     const [category, setCategory] = useState("")
     const [price, setPrice] = useState("")
-    const [name, setName] = useState("")
     const [phone, setPhone] = useState("")
-    const [email, setEmail] = useState("")
     const [location, setLocation] = useState({
         address: "",
         latitude: "",
@@ -49,6 +50,9 @@ const PostGigScreen = ({ navigation }) => {
 
     const validateCurrentStep = () => {
         const newErrors = {}
+        if (!user || user === null) {
+            Alert.alert("Not Logged In", "It seems you are not logged in. Please log in to post a gig.")
+        }
         if (step === 0) {
             if (!title.trim()) newErrors.title = "Job title is required"
         }
@@ -58,9 +62,7 @@ const PostGigScreen = ({ navigation }) => {
             if (!price.trim() || isNaN(Number(price))) newErrors.price = "Valid budget (R) is required"
         }
         if (step === 3) {
-            if (!name.trim()) newErrors.name = "Name is required"
             if (!phone.trim()) newErrors.phone = "Phone number is required"
-            if (!email.trim()) newErrors.email = "Email account is required"
             if (!location.address.trim()) newErrors.location = "Local address is required"
         }
         setErrors(newErrors)
@@ -152,22 +154,36 @@ const PostGigScreen = ({ navigation }) => {
     const handlePostGig = () => {
         if (!validateCurrentStep()) return
 
-        const jobData = {
-            title,
-            description,
-            category,
-            price: Number(price),
-            postedBy: { name, phone },
-            locationSpot: location || { latitude: "", longitude: "" },
-            requirements,
-            // photos: [] // implement later
+        try {
+            const jobData = {
+                title,
+                description,
+                category,
+                price: Number(price),
+                postedBy: { name: user?.displayName.trim(), phone: phone?.trim(), email: user?.email.trim() },
+                locationSpot: location || { latitude: "", longitude: "" },
+                requirements,
+                photos: images,
+            }
+
+            console.log("Posting job:", jobData) // Replace with real API call
+
+            CustomToast("Success👍", "Your gig has been posted!")
+        } catch (err) {
+            console.error("Error posting job:", err)
+            Alert.alert("Error", "There was an error posting your gig. Please try again.")
+        } finally {
+            setStep(0)
+            setTitle("")
+            setDescription("")
+            setCategory("")
+            setPrice("")
+            setPhone("")
+            setLocation({ address: "", latitude: "", longitude: "" })
+            setRequirements([])
+            setImages([])
+            setErrors({})
         }
-
-        console.log("Posting job:", jobData) // Replace with real API call
-
-        Alert.alert("Success", "Your gig has been posted!", [
-            { text: "OK", onPress: () => navigation.goBack() },
-        ])
     }
 
     const renderStepContent = () => {
@@ -363,16 +379,6 @@ const PostGigScreen = ({ navigation }) => {
             case 3:
                 return (
                     <>
-                        <Text style={styles.label}>Your Name *</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Full name"
-                            value={name}
-                            onChangeText={setName}
-                            placeholderTextColor="#999"
-                        />
-                        {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
-
                         <Text style={styles.label}>Phone Number *</Text>
                         <TextInput
                             style={styles.input}
@@ -384,18 +390,6 @@ const PostGigScreen = ({ navigation }) => {
                         />
                         {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
 
-                        <Text style={styles.label}>Email Address *</Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="e.g email@gmail.com"
-                            value={email}
-                            autoCapitalize="none"
-                            onChangeText={setEmail}
-                            keyboardType="email-address"
-                            placeholderTextColor="#999"
-                        />
-                        {errors.email && <Text style={styles.errorText}>{errors.email}</Text>}
-
                         <Text style={[styles.label, { marginTop: 24 }]}>Local Address *</Text>
                         <TextInput
                             style={styles.input}
@@ -406,7 +400,6 @@ const PostGigScreen = ({ navigation }) => {
                             placeholderTextColor="#999"
                         />
                         {errors.location && <Text style={styles.errorText}>{errors.location}</Text>}
-
 
                         <View style={styles.locationSection}>
                             <Text style={styles.label}>Location</Text>
