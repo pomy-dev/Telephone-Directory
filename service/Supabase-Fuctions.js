@@ -1,5 +1,5 @@
 import { supabase } from './Supabase-Client';
-import { UploadImage, uploadVehicles } from '../service/uploadFiles';
+import { UploadImage, uploadImages } from '../service/uploadFiles';
 
 export async function subscribeRealtime() {
   const channel = supabase
@@ -117,7 +117,7 @@ export async function addForhire(formData) {
     p_location: formData?.location,
     p_certifications: formData?.certifications,
     p_owner_info: formData?.ownerInfo,
-    p_images: await uploadVehicles('for_hires', formData?.images),
+    p_images: await uploadImages('for_hires', 'vehicles', formData?.images),
   });
 
   if (error) console.error('RPC failed:', error);
@@ -205,8 +205,6 @@ export async function submitGig(jobData) {
     if (error) {
       console.error("Failed to create job:", error)
       throw error
-    } else {
-      console.log("Job created:", data[0])
     }
 
     return { success: true, data: data[0] };

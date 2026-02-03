@@ -20,7 +20,7 @@ import * as Location from "expo-location"
 import { CustomToast } from "../../components/customToast";
 import SecondaryNav from "../../components/SecondaryNav"
 import { AuthContext } from "../../context/authProvider";
-import { uploadAttachments } from '../../service/uploadFiles';
+import { uploadImages } from '../../service/uploadFiles';
 import { submitGig } from "../../service/Supabase-Fuctions";
 
 const CATEGORIES = ["Moving", "Cleaning", "Groundsman", "LandScaping", "Delivery", "Gardening", "Pet Care", "Tech"]
@@ -159,7 +159,7 @@ const PostGigScreen = ({ navigation }) => {
 
         try {
             setUploading(true)
-            const imagesUpload = await uploadAttachments('piece-jobs', 'gig-images', images)
+            const imagesUpload = await uploadImages('piece-jobs', 'gig-images', images)
             const imageUrls = imagesUpload.map(img => img.url)
 
             const jobData = {
@@ -174,14 +174,13 @@ const PostGigScreen = ({ navigation }) => {
                 status: "open"
             }
 
-            console.log("Posting job:", jobData)
-
             const { success, data } = await submitGig(jobData);
 
             if (success)
                 CustomToast("Success👍", "Your gig has been posted!")
             else
                 throw new Error("Failed to post gig")
+            
         } catch (err) {
             console.error("Error posting job:", err)
             Alert.alert("Error", "There was an error posting your gig. Please try again.")

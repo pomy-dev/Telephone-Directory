@@ -41,15 +41,15 @@ export const UploadImage = async (file) => {
   }
 }
 
-export const uploadVehicles = async (path, files = []) => {
-  console.log('Path: ', path, '\nImages: ', files)
+export const uploadImages = async (path, subpath, files = []) => {
+  console.log('Path: ', path, '\nSubpath: ', subpath, '\nImages: ', files)
   if (files?.length === 0) return;
 
   const uploaded = [];
   for (const file of files) {
     try {
       // === 1. Extract file info ===
-      const fileName = `vehicle_${Date.now()}`;
+      const fileName = `img_${Date.now()}`;
 
       // === 1. Read file as Base64 ===
       const base64 = await FileSystem.readAsStringAsync(file, {
@@ -70,7 +70,7 @@ export const uploadVehicles = async (path, files = []) => {
       // === 4. Upload to Supabase Storage ===
       const { data, error } = await supabase.storage
         .from(path)
-        .upload(`vehicles/${fileName}`, bytes, {
+        .upload(`${subpath}/${fileName}`, bytes, {
           contentType: mimeType,
           upsert: false,
         });
