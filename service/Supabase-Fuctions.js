@@ -214,3 +214,54 @@ export async function submitGig(jobData) {
   }
 }
 
+
+/**
+ * Fetches gigs with support for filtering and cursor-based pagination
+ */
+export async function getPomyGigs(filters = {}) {
+  const {
+    pageSize = 20,
+    afterCreatedAt = null,
+    afterId = null,
+    category = null,
+    minPrice = null,
+    maxPrice = null,
+    status = 'open', // Defaulting to open jobs
+    searchTerm = null,
+    locationFilter = null
+  } = filters;
+
+  try {
+    const { data, error } = await supabase.rpc('fetch_pomy_gigs', {
+      p_page_size: pageSize,
+      p_after_created_at: afterCreatedAt,
+      p_after_id: afterId,
+      p_job_category: category,
+      p_min_price: minPrice,
+      p_max_price: maxPrice,
+      p_job_status: status,
+      p_search_term: searchTerm,
+      p_location_filter: locationFilter
+    });
+
+    if (error) throw error;
+    return { success: true, data };
+  } catch (error) {
+    console.error('Error fetching gigs:', error);
+    return { success: false, error: error.message, data: [] };
+  }
+}
+
+export const subscribeToGigs = (onCallback) => {
+  return supabase
+    .channel('gigs-changes')
+    .on(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'pomy_gigs' },
+      (payload) => {
+        console.log('Change received!', payload);
+        onCallback(); // Trigger the refresh in the UI
+      }
+    )
+    .subscribe();
+};

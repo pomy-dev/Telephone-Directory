@@ -21,6 +21,7 @@ import { CustomToast } from "../../components/customToast";
 import SecondaryNav from "../../components/SecondaryNav"
 import { AuthContext } from "../../context/authProvider";
 import { submitGig } from "../../service/Supabase-Fuctions";
+import { supabase } from '../../service/Supabase-Client';
 
 const CATEGORIES = ["Moving", "Cleaning", "Groundsman", "LandScaping", "Delivery", "Gardening", "Pet Care", "Tech"]
 const STEPS = ["Job Details", "Description", "Photos", "Contacts"]
