@@ -264,8 +264,6 @@ const GigsScreen = ({ navigation }) => {
     };
   }, []);
 
-
-
   // Realtime Subscription
   useEffect(() => {
     const subscription = subscribeToGigs(() => {
