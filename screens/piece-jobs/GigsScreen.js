@@ -19,110 +19,6 @@ import { getPomyGigs, subscribeToGigs } from "../../service/Supabase-Fuctions";
 import { AppContext } from "../../context/appContext";
 import { supabase } from "../../service/Supabase-Client";
 
-// Dummy job data
-const JOBS_DATA = [
-  {
-    id: "1",
-    title: "Help Moving Furniture",
-    description:
-      "Need help moving a couch and fridge from Matsapha to Manzini.",
-    category: "Moving",
-    price: 300,
-    location: "Matsapha Industrial Site",
-    coordinates: { lat: -26.5167, lng: 31.3167 },
-    postedBy: "Sabelo D.",
-    postedTime: "2h ago",
-    image: "https://images.unsplash.com/photo-1600518464441-9154a4dea21b?w=400",
-  },
-  {
-    id: "2",
-    title: "House Cleaning Service",
-    description:
-      "3-room house in Logoba needs thorough cleaning and window wash.",
-    category: "Cleaning",
-    price: 250,
-    location: "Logoba, Manzini",
-    coordinates: { lat: -26.5008, lng: 31.3831 },
-    postedBy: "Thandeka M.",
-    postedTime: "4h ago",
-    image: "https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=400",
-  },
-  {
-    id: "3",
-    title: "Plumbing Repair Needed",
-    description: "Leaking kitchen tap needs fixing today — bring tools.",
-    category: "Handyman",
-    price: 200,
-    location: "Ngwane Park, Manzini",
-    coordinates: { lat: -26.5122, lng: 31.3719 },
-    postedBy: "Muzi T.",
-    postedTime: "1h ago",
-    image: "https://images.unsplash.com/photo-1607472586893-edb57bdc0e39?w=400",
-  },
-  {
-    id: "4",
-    title: "Grocery Delivery",
-    description: "Pick up groceries from Spar Manzini and deliver to Fairview.",
-    category: "Delivery",
-    price: 80,
-    location: "Fairview, Manzini",
-    coordinates: { lat: -26.4961, lng: 31.3849 },
-    postedBy: "Lungile K.",
-    postedTime: "30min ago",
-    image: "https://images.unsplash.com/photo-1542838132924-5185137a7f0b?w=400",
-  },
-  {
-    id: "5",
-    title: "Garden Maintenance",
-    description: "Trim hedges, mow lawn, and remove weeds from small yard.",
-    category: "Gardening",
-    price: 180,
-    location: "Sidwashini, Mbabane",
-    coordinates: { lat: -26.3167, lng: 31.1333 },
-    postedBy: "Sifiso P.",
-    postedTime: "5h ago",
-    image: "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=400",
-  },
-  {
-    id: "6",
-    title: "Painting Interior Walls",
-    description: "Need 2 rooms painted in Matsapha, paint already available.",
-    category: "Handyman",
-    price: 450,
-    location: "Matsapha, Eswatini",
-    coordinates: { lat: -26.5167, lng: 31.3167 },
-    postedBy: "Nomsa W.",
-    postedTime: "3h ago",
-    image: "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=400",
-  },
-  {
-    id: "7",
-    title: "Pet Sitting for Weekend",
-    description:
-      "Need someone to look after 2 small dogs in Ezulwini this weekend.",
-    category: "Pet Care",
-    price: 250,
-    location: "Ezulwini, Lobamba",
-    coordinates: { lat: -26.4333, lng: 31.2 },
-    postedBy: "Banele C.",
-    postedTime: "6h ago",
-    image: "https://images.unsplash.com/photo-154819997303cce0bbc87b?w=400",
-  },
-  {
-    id: "8",
-    title: "Computer Repair",
-    description:
-      "Laptop not turning on, need someone to check power supply issue.",
-    category: "Tech",
-    price: 300,
-    location: "Mbabane City Centre",
-    coordinates: { lat: -26.3167, lng: 31.1333 },
-    postedBy: "Phindile S.",
-    postedTime: "1h ago",
-    image: "https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=400",
-  },
-];
-
 const CATEGORIES = [
   {
     id: "all",
@@ -208,20 +104,17 @@ const mapDatabaseToUI = (dbGigs, userLocation = null) => {
     const lng = job.job_location?.lng || 0;
 
     // Default placeholder
-    let displayImage = "https://via.placeholder.com/400";
-    
+    let displayImages = ["https://via.placeholder.com/400"];
+
     // 1. Check if job_images exists and has items
     if (job.job_images && job.job_images.length > 0) {
-      const firstImageEntry = job.job_images[0];
-      
-      // 2. Extract the 'url' property from the JSON object
-      // If Supabase returns it as a stringified JSON, we parse it; 
-      // otherwise, access .url directly.
-      const imageObj = typeof firstImageEntry === 'string' 
-        ? JSON.parse(firstImageEntry) 
-        : firstImageEntry;
-
-      displayImage = imageObj.url || imageObj.uri || displayImage;
+      displayImages = [];
+      job?.job_images?.forEach((img) => {
+        if (img?.url) {
+          // push url to displayImages
+          displayImages.push(img.url);
+        }
+      });
     }
 
     return {
@@ -232,9 +125,10 @@ const mapDatabaseToUI = (dbGigs, userLocation = null) => {
       price: job.job_price,
       location: job.job_location?.address || "Location N/A",
       coordinates: { lat, lng },
-      postedBy: job.postedby?.name || "Anonymous",
+      applications: job.application_count || 0,
+      postedBy: { name: job.postedby?.name, email: job.postedby?.email, phone: job.postedby?.phone },
       postedTime: job.created_at ? new Date(job.created_at).toLocaleDateString() : "Just now",
-      image: displayImage, // This now contains the correct .url string
+      images: displayImages, // This now contains the correct .url string
       distance: userLocation
         ? calculateDistance(userLocation.lat, userLocation.lng, lat, lng)
         : null,
@@ -243,7 +137,7 @@ const mapDatabaseToUI = (dbGigs, userLocation = null) => {
 };
 
 const GigsScreen = ({ navigation }) => {
-  const { theme, isDarkMode } = React.useContext(AppContext);
+  const { theme } = React.useContext(AppContext);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [userLocation, setUserLocation] = useState(null);
   const [jobs, setJobs] = useState([]); // This is our single source of truth
@@ -308,7 +202,6 @@ const GigsScreen = ({ navigation }) => {
     };
 
     const result = await getPomyGigs(filters);
-    console.log("Fetched gigs:", result);
 
     if (result.success) {
       const mappedData = mapDatabaseToUI(result.data, userLocation);
@@ -332,7 +225,7 @@ const GigsScreen = ({ navigation }) => {
 
   const renderJobCard = ({ item }) => {
     // Check if the image is a real URL from your Supabase bucket
-    const hasImage = item?.image && !item?.image?.includes("via.placeholder.com");
+    const hasImage = item?.images && !item?.images?.includes("via.placeholder.com");
 
     return (
       <TouchableOpacity
@@ -341,11 +234,11 @@ const GigsScreen = ({ navigation }) => {
       >
         {hasImage ? (
           // SMART VIEW: If image exists, show the full image
-          <Image source={{ uri: item.image?.url }} style={styles.jobImage} />
+          <Image source={{ uri: item.images[0] }} style={styles.jobImage} />
         ) : (
           // SMART VIEW: If no image, show a styled box with the full description instead
           <View style={styles.noImageDescriptionContainer}>
-            <Text style={styles.noImageDescriptionText} numberOfLines={6}>
+            <Text style={styles.noImageDescriptionText} ellipsizeMode="tail" numberOfLines={6}>
               {item.description}
             </Text>
           </View>
@@ -378,7 +271,7 @@ const GigsScreen = ({ navigation }) => {
           </View>
 
           <View style={styles.jobMeta}>
-            <Text style={styles.postedBy}>{item.postedBy}</Text>
+            <Text style={styles.postedBy}>{item.postedBy?.name}</Text>
             <Text style={styles.postedTime}>{item.postedTime}</Text>
           </View>
         </View>
