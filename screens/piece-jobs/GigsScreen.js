@@ -303,6 +303,7 @@ const GigsScreen = ({ navigation }) => {
     };
 
     const result = await getPomyGigs(filters);
+    console.log("Fetched gigs:", result);
 
     if (result.success) {
       const mappedData = mapDatabaseToUI(result.data, userLocation);
@@ -335,7 +336,7 @@ const GigsScreen = ({ navigation }) => {
       >
         {hasImage ? (
           // SMART VIEW: If image exists, show the full image
-          <Image source={{ uri: item.image }} style={styles.jobImage} />
+          <Image source={{ uri: item.image?.url }} style={styles.jobImage} />
         ) : (
           // SMART VIEW: If no image, show a styled box with the full description instead
           <View style={styles.noImageDescriptionContainer}>
