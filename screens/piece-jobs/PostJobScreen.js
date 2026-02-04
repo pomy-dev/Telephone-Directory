@@ -20,7 +20,6 @@ import * as Location from "expo-location"
 import { CustomToast } from "../../components/customToast";
 import SecondaryNav from "../../components/SecondaryNav"
 import { AuthContext } from "../../context/authProvider";
-import { uploadImages } from '../../service/uploadFiles';
 import { submitGig } from "../../service/Supabase-Fuctions";
 import { supabase } from '../../service/Supabase-Client';
 
@@ -47,6 +46,7 @@ const PostGigScreen = ({ navigation }) => {
     const [newRequirement, setNewRequirement] = useState("")
     const [images, setImages] = useState([])
     const [uploading, setUploading] = useState(false)
+    const [isSubmiting, setIsSubmiting] = useState(false)
 
     // Errors
     const [errors, setErrors] = useState({})
@@ -102,10 +102,8 @@ const PostGigScreen = ({ navigation }) => {
                 mediaTypes: ['videos', 'images'],
             });
             if (!result.canceled) {
-                const newImgs = result.assets.map(asset => ({
-                    id: asset.assetId || Date.now(),
-                    uri: asset.uri,
-                }));
+                const newImgs = result.assets.map(a => a.uri);
+
                 if ((newImgs.length + images.length) > 8) {
                     Alert.alert("Limit Exceeded", "You can only upload up to 8 photos.")
                 } else {
@@ -159,9 +157,7 @@ const PostGigScreen = ({ navigation }) => {
         if (!validateCurrentStep()) return
 
         try {
-            setUploading(true)
-            const imagesUpload = await uploadImages('piece-jobs', 'gig-images', images)
-            const imageUrls = imagesUpload.map(img => img.url)
+            setIsSubmiting(true)
 
             const jobData = {
                 title,
@@ -171,7 +167,7 @@ const PostGigScreen = ({ navigation }) => {
                 postedBy: { name: user?.displayName.trim(), phone: phone?.trim(), email: user?.email.trim() },
                 locationSpot: location || { latitude: "", longitude: "" },
                 requirements,
-                photos: imageUrls,
+                photos: images,
                 status: "open"
             }
 
@@ -181,7 +177,7 @@ const PostGigScreen = ({ navigation }) => {
                 CustomToast("Success👍", "Your gig has been posted!")
             else
                 throw new Error("Failed to post gig")
-            
+
         } catch (err) {
             console.error("Error posting job:", err)
             Alert.alert("Error", "There was an error posting your gig. Please try again.")
@@ -196,7 +192,7 @@ const PostGigScreen = ({ navigation }) => {
             setRequirements([])
             setImages([])
             setErrors({})
-            setUploading(false)
+            setIsSubmiting(false)
         }
     }
 
@@ -326,7 +322,7 @@ const PostGigScreen = ({ navigation }) => {
                                 {images.map((img, index) => (
                                     <View key={index} style={styles.imagePreviewWrapper}>
                                         <Image
-                                            source={{ uri: img.uri }}
+                                            source={{ uri: img }}
                                             style={styles.imagePreview}
                                             resizeMode="cover"
                                         />
@@ -416,7 +412,7 @@ const PostGigScreen = ({ navigation }) => {
                         {errors.location && <Text style={styles.errorText}>{errors.location}</Text>}
 
                         <View style={styles.locationSection}>
-                            <Text style={styles.label}>Location</Text>
+                            <Text style={styles.label}>Location Co-ordinates</Text>
                             {locationLoading ? (
                                 <ActivityIndicator size="small" color="#000" />
                             ) : location ? (
@@ -427,7 +423,7 @@ const PostGigScreen = ({ navigation }) => {
                                 <Text style={styles.locationText}>Not fetched yet</Text>
                             )}
                             <TouchableOpacity onPress={fetchCurrentLocation} disabled={locationLoading}>
-                                <Text style={styles.retryText}>Refresh location</Text>
+                                <Text style={styles.retryText}>Get/Refresh co-ordinates</Text>
                             </TouchableOpacity>
                         </View>
 
@@ -477,10 +473,11 @@ const PostGigScreen = ({ navigation }) => {
                         </TouchableOpacity>
                     )}
 
-                    <TouchableOpacity style={styles.nextButton} onPress={nextStep}>
+                    <TouchableOpacity style={styles.nextButton} onPress={nextStep} disabled={isSubmiting}>
                         <Text style={styles.nextButtonText}>
                             {step === STEPS.length - 1 ? "Post Gig" : "Next"}
                         </Text>
+                        {isSubmiting && <ActivityIndicator color="#fff" style={{ marginLeft: 10 }} />}
                     </TouchableOpacity>
                 </View>
             </View>
@@ -733,6 +730,8 @@ const styles = StyleSheet.create({
     backButtonText: { fontSize: 16, fontWeight: "600", color: "#333" },
     nextButton: {
         flex: 2,
+        flexDirection: "row",
+        justifyContent: "center",
         backgroundColor: "#000",
         paddingVertical: 16,
         borderRadius: 12,

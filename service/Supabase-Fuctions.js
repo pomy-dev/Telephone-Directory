@@ -198,7 +198,7 @@ export async function submitGig(jobData) {
       p_postedby: jobData.postedBy,
       p_location: jobData.locationSpot,
       p_requirements: jobData.requirements,
-      p_images: jobData.photos,
+      p_images: await uploadImages('piece-jobs', 'gig-images', jobData?.photos) || [],
       p_status: jobData.status
     })
 
