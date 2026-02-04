@@ -207,13 +207,21 @@ const mapDatabaseToUI = (dbGigs, userLocation = null) => {
     const lat = job.job_location?.lat || 0;
     const lng = job.job_location?.lng || 0;
 
-    // Determine the image URL safely from the jsonb[] array
+    // Default placeholder
     let displayImage = "https://via.placeholder.com/400";
+    
+    // 1. Check if job_images exists and has items
+    if (job.job_images && job.job_images.length > 0) {
+      const firstImageEntry = job.job_images[0];
+      
+      // 2. Extract the 'url' property from the JSON object
+      // If Supabase returns it as a stringified JSON, we parse it; 
+      // otherwise, access .url directly.
+      const imageObj = typeof firstImageEntry === 'string' 
+        ? JSON.parse(firstImageEntry) 
+        : firstImageEntry;
 
-    if (Array.isArray(job.job_images) && job.job_images.length > 0) {
-      const firstImage = job.job_images[0];
-      // Handle if the array contains objects {uri: '...'} or just strings
-      displayImage = typeof firstImage === 'object' ? firstImage.uri : firstImage;
+      displayImage = imageObj.url || imageObj.uri || displayImage;
     }
 
     return {
@@ -225,11 +233,8 @@ const mapDatabaseToUI = (dbGigs, userLocation = null) => {
       location: job.job_location?.address || "Location N/A",
       coordinates: { lat, lng },
       postedBy: job.postedby?.name || "Anonymous",
-      // Formatting the date to a localized string
       postedTime: job.created_at ? new Date(job.created_at).toLocaleDateString() : "Just now",
-      // UI uses this key for the Smart View logic
-      image: displayImage,
-      // Calculate distance if user location is available
+      image: displayImage, // This now contains the correct .url string
       distance: userLocation
         ? calculateDistance(userLocation.lat, userLocation.lng, lat, lng)
         : null,
