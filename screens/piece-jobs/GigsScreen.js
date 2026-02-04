@@ -15,7 +15,9 @@ import {
 import { Icons } from "../../constants/Icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import SecondaryNav from "../../components/SecondaryNav";
-import { getPomyGigs, subscribeToGigs} from "../../service/Supabase-Fuctions";
+import { getPomyGigs, subscribeToGigs } from "../../service/Supabase-Fuctions";
+import { AppContext } from "../../context/appContext";
+import { supabase } from "../../service/Supabase-Client";
 
 // Dummy job data
 const JOBS_DATA = [
@@ -207,7 +209,7 @@ const mapDatabaseToUI = (dbGigs, userLocation = null) => {
 
     // Determine the image URL safely from the jsonb[] array
     let displayImage = "https://via.placeholder.com/400";
-    
+
     if (Array.isArray(job.job_images) && job.job_images.length > 0) {
       const firstImage = job.job_images[0];
       // Handle if the array contains objects {uri: '...'} or just strings
