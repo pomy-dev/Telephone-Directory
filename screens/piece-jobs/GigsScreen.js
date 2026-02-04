@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -15,7 +15,9 @@ import {
 import { Icons } from "../../constants/Icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import SecondaryNav from "../../components/SecondaryNav";
-import { getPomyGigs, subscribeToGigs} from "../../service/Supabase-Fuctions";
+import { getPomyGigs, subscribeToGigs } from "../../service/Supabase-Fuctions";
+import { AppContext } from "../../context/appContext";
+import { supabase } from "../../service/Supabase-Client";
 
 // Dummy job data
 const JOBS_DATA = [
@@ -176,6 +178,12 @@ const CATEGORIES = [
     iconName: "laptop-outline",
     iconType: Icons.Ionicons,
   },
+  {
+    id: "Catering",
+    name: "Catering",
+    iconName: "pot-steam-outline",
+    iconType: Icons.MaterialCommunityIcons,
+  },
 ];
 
 // Calculate distance between two coordinates (Haversine formula)
@@ -186,9 +194,9 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
+    Math.cos((lat2 * Math.PI) / 180) *
+    Math.sin(dLon / 2) *
+    Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   const distance = R * c;
   return distance;
@@ -225,13 +233,13 @@ const mapDatabaseToUI = (dbGigs, userLocation = null) => {
 
 
 const GigsScreen = ({ navigation }) => {
+  const { theme, isDarkMode } = React.useContext(AppContext);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [userLocation, setUserLocation] = useState(null);
   const [jobs, setJobs] = useState([]); // This is our single source of truth
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [nextCursor, setNextCursor] = useState({ createdAt: null, id: null });
-
 
   // 1. Move this function ABOVE your useEffect calls
   const loadUserLocation = async () => {
@@ -267,7 +275,7 @@ const GigsScreen = ({ navigation }) => {
   // Realtime Subscription
   useEffect(() => {
     const subscription = subscribeToGigs(() => {
-      fetchLiveGigs(false); 
+      fetchLiveGigs(false);
     });
     return () => {
       if (subscription) supabase.removeChannel(subscription);
@@ -310,9 +318,9 @@ const GigsScreen = ({ navigation }) => {
     fetchLiveGigs(false);
   }, [selectedCategory, userLocation]);
 
-    const renderJobCard = ({ item }) => {
+  const renderJobCard = ({ item }) => {
     // Check if the image is a real URL from your Supabase bucket
-    const hasImage = item.image && !item.image.includes("via.placeholder.com");
+    const hasImage = item?.image && !item?.image?.includes("via.placeholder.com");
 
     return (
       <TouchableOpacity
@@ -432,7 +440,7 @@ const GigsScreen = ({ navigation }) => {
           </View>
         )}
         ListFooterComponent={() => loading && (
-          <ActivityIndicator style={{ margin: 20 }} color="#10b981" />
+          <ActivityIndicator style={{ margin: 20 }} color={theme.colors.indicator} />
         )}
       />
     </SafeAreaView>
@@ -635,7 +643,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     backgroundColor: "#fafafa",
     // Ensure it doesn't float
-    width: '100%', 
+    width: '100%',
   },
 });
 
