@@ -16,6 +16,7 @@ import { Icons } from "../../constants/Icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import SecondaryNav from "../../components/SecondaryNav";
 import { getPomyGigs, subscribeToGigs} from "../../service/Supabase-Fuctions";
+import { supabase } from '../../service/Supabase-Client';
 
 // Dummy job data
 const JOBS_DATA = [
@@ -199,6 +200,15 @@ const mapDatabaseToUI = (dbGigs, userLocation = null) => {
     const lat = job.job_location?.lat || 0;
     const lng = job.job_location?.lng || 0;
 
+    // Determine the image URL safely from the jsonb[] array
+    let displayImage = "https://via.placeholder.com/400";
+    
+    if (Array.isArray(job.job_images) && job.job_images.length > 0) {
+      const firstImage = job.job_images[0];
+      // Handle if the array contains objects {uri: '...'} or just strings
+      displayImage = typeof firstImage === 'object' ? firstImage.uri : firstImage;
+    }
+
     return {
       id: job.id.toString(),
       title: job.job_title,
@@ -208,13 +218,10 @@ const mapDatabaseToUI = (dbGigs, userLocation = null) => {
       location: job.job_location?.address || "Location N/A",
       coordinates: { lat, lng },
       postedBy: job.postedby?.name || "Anonymous",
-      // Formatting the date to a "2h ago" style or similar
-      postedTime: new Date(job.created_at).toLocaleDateString(),
-      // Get the first image from the array or use a placeholder
-      image:
-        job.job_images && job.job_images.length > 0
-          ? job.job_images[0]
-          : "https://via.placeholder.com/400",
+      // Formatting the date to a localized string
+      postedTime: job.created_at ? new Date(job.created_at).toLocaleDateString() : "Just now",
+      // UI uses this key for the Smart View logic
+      image: displayImage,
       // Calculate distance if user location is available
       distance: userLocation
         ? calculateDistance(userLocation.lat, userLocation.lng, lat, lng)
@@ -223,7 +230,6 @@ const mapDatabaseToUI = (dbGigs, userLocation = null) => {
   });
 };
 
-
 const GigsScreen = ({ navigation }) => {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [userLocation, setUserLocation] = useState(null);
@@ -231,6 +237,7 @@ const GigsScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [nextCursor, setNextCursor] = useState({ createdAt: null, id: null });
+  
 
 
   // 1. Move this function ABOVE your useEffect calls

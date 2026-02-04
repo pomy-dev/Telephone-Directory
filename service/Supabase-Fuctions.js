@@ -218,6 +218,10 @@ export async function submitGig(jobData) {
 /**
  * Fetches gigs with support for filtering and cursor-based pagination
  */
+
+/**
+ * Fetches gigs with support for filtering and cursor-based pagination
+ */
 export async function getPomyGigs(filters = {}) {
   const {
     pageSize = 20,
@@ -226,7 +230,7 @@ export async function getPomyGigs(filters = {}) {
     category = null,
     minPrice = null,
     maxPrice = null,
-    status = 'open', // Defaulting to open jobs
+    status = 'open',
     searchTerm = null,
     locationFilter = null
   } = filters;
@@ -245,6 +249,8 @@ export async function getPomyGigs(filters = {}) {
     });
 
     if (error) throw error;
+    
+    // The data returned will now include the correct job_images jsonb array
     return { success: true, data };
   } catch (error) {
     console.error('Error fetching gigs:', error);
