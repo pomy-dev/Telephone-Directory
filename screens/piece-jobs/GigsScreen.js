@@ -129,11 +129,12 @@ const mapDatabaseToUI = (dbGigs, userLocation = null) => {
       price: job.job_price,
       location: job.job_location?.address || "Location N/A",
       coordinates: { lat, lng },
-      postedBy: job.postedby?.name || "Anonymous",
+      applications: job.application_count || 0,
+      postedBy: { name: job.postedby?.name, email: job.postedby?.email, phone: job.postedby?.phone },
       postedTime: job.created_at
         ? new Date(job.created_at).toLocaleDateString()
         : "Just now",
-      image: displayImage, // This now contains the correct .url string
+      images: displayImages, // This now contains the correct .url string
       distance: userLocation
         ? calculateDistance(userLocation.lat, userLocation.lng, lat, lng)
         : null,
@@ -142,7 +143,7 @@ const mapDatabaseToUI = (dbGigs, userLocation = null) => {
 };
 
 const GigsScreen = ({ navigation }) => {
-  const { theme, isDarkMode } = React.useContext(AppContext);
+  const { theme } = React.useContext(AppContext);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [userLocation, setUserLocation] = useState(null);
   const [jobs, setJobs] = useState([]); // This is our single source of truth
@@ -242,11 +243,11 @@ const GigsScreen = ({ navigation }) => {
       >
         {hasImage ? (
           // SMART VIEW: If image exists, show the full image
-          <Image source={{ uri: item.image }} style={styles.jobImage} />
+          <Image source={{ uri: item.images[0] }} style={styles.jobImage} />
         ) : (
           // SMART VIEW: If no image, show a styled box with the full description instead
           <View style={styles.noImageDescriptionContainer}>
-            <Text style={styles.noImageDescriptionText} numberOfLines={6}>
+            <Text style={styles.noImageDescriptionText} ellipsizeMode="tail" numberOfLines={6}>
               {item.description}
             </Text>
           </View>
@@ -279,7 +280,7 @@ const GigsScreen = ({ navigation }) => {
           </View>
 
           <View style={styles.jobMeta}>
-            <Text style={styles.postedBy}>{item.postedBy}</Text>
+            <Text style={styles.postedBy}>{item.postedBy?.name}</Text>
             <Text style={styles.postedTime}>{item.postedTime}</Text>
           </View>
         </View>

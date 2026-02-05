@@ -1,5 +1,5 @@
 import { supabase } from './Supabase-Client';
-import { UploadImage, uploadImages } from '../service/uploadFiles';
+import { UploadImage, uploadImages, uploadAttachments } from '../service/uploadFiles';
 
 export async function subscribeRealtime() {
   const channel = supabase
@@ -249,7 +249,7 @@ export async function getPomyGigs(filters = {}) {
     });
 
     if (error) throw error;
-    
+
     // The data returned will now include the correct job_images jsonb array
     return { success: true, data };
   } catch (error) {
@@ -372,3 +372,32 @@ export async function getApplicantsForGig(gigId) {
     return { success: false, error: error.message };
   }
 }
+
+/** apply for a gig job */
+export async function applyForGig(formData) {
+  try {
+    const files = formData?.attachments?.filter(file => file.uri);
+    const uploadedAttachments = await uploadAttachments('gig_applications', 'attachments', files);
+
+    console.log('Uploaded Attachments: ', uploadedAttachments)
+
+    const { data, error } = await supabase.rpc('apply_forpomy_gig', {
+      p_job_id: formData.jobId,
+      p_applicant: formData.user,
+      p_skill_set: formData.skillSet,
+      p_status: formData.status,
+      p_attachments: uploadedAttachments.map(file => ({ url: file.url, name: file.name, type: file.type, mimeType: file.mimeType }))
+    });
+
+    if (error) throw error;
+
+    return {
+      success: true,
+      data: data[0]
+    };
+  } catch (error) {
+    console.error('Error applying for gig:', error);
+    return { success: false, error: error.message };
+  }
+}
+
