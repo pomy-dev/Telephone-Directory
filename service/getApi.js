@@ -1,5 +1,7 @@
+import React from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useQuery } from '@realm/react';
+import { getAppliedGigs } from "./Supabase-Fuctions";
 import { API_BASE_URL } from "../config/env";
 
 export const addUser = async (userData) => {
@@ -531,16 +533,18 @@ export const fetchCompanyNews = async (companyId) => {
 
 export const fetchNotifications = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/notifications`, {
+    // fetch notifications from mongoDB
+    const mongoNots = await fetch(`${API_BASE_URL}/api/notifications`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
       },
     });
-    if (!response.ok) {
-      throw new Error('Failed to fetch notifications');
+
+    if (!mongoNots.ok) {
+      throw new Error('Failed to fetch Mongo Notifications notifications');
     }
-    const notifications = await response.json();
+    const notifications = await mongoNots.json();
     return notifications;
   } catch (err) {
     console.error('Error fetching notifications:', err);

@@ -27,7 +27,7 @@ import LoanCalculator from "./screens/loans/LoanCalculator"
 import HomeScreen from "./screens/HomeScreen"
 import SavedListsScreen from './screens/SavedListItems'
 import FavoritesScreen from "./screens/FavoritesScreen"
-// import PeopleScreen from "./screens/people/PeopleProfiles"
+import NotificationListScreen from "./screens/notifications/NotificationList"
 import SettingsScreen from "./screens/SettingsScreen"
 import LoginScreen from "./screens/Login"
 import SignupScreen from "./screens/SignUp"
@@ -199,7 +199,7 @@ function Tabs() {
         component={PeopleScreen}
         options={{
           tabBarIcon: ({ focused, color }) => (
-            <Icons.MaterialCommunityIcons name={focused ? "account-group" : "account-group-outline"} size={28} color={color} />
+            <Icons.MaterialCommunityIcons name={focused ? "account-cog" : "account-cog-outline"} size={28} color={color} />
           )
         }}
       /> */}
@@ -208,7 +208,7 @@ function Tabs() {
         component={SettingsScreen}
         options={{
           tabBarIcon: ({ focused, color }) => (
-            <Icons.Ionicons name={focused ? "settings" : "settings-outline"} size={24} color={color} />
+            <Icons.MaterialCommunityIcons name={focused ? "account-cog" : "account-cog-outline"} size={28} color={color} />
           )
         }}
       />
@@ -354,6 +354,9 @@ function AppContent() {
                           {/* Main App Screens */}
                           <Stack.Screen name="MainTabs" component={Tabs} options={{ animationEnabled: false }} />
 
+                          {/* Notification List Screen */}
+                          <Stack.Screen name="Nots" component={NotificationListScreen} />
+
                           {/* Business Directory */}
                           <Stack.Screen name="DirectoryScreen" component={DirectoryScreen} />
                           <Stack.Screen name="BusinessList" component={BusinessList} />
@@ -384,12 +387,10 @@ function AppContent() {
 
                           {/* rental houses */}
                           <Stack.Screen name="PropertyScreen" component={PropertyScreen} />
-                          {/* <Stack.Screen name="RentalHousesScreen" component={RentalHousesScreen} /> */}
                           <Stack.Screen name="MoreHouses" component={MoreHouses} />
                           <Stack.Screen name="HouseDetailsScreen" component={HouseDetailsScreen} />
                           <Stack.Screen name="HouseMapScreen" component={HouseMapScreen} />
                           <Stack.Screen name="AgentDetailsScreen" component={AgentDetailsScreen} />
-                          {/* <Stack.Screen name="RentalHouseDetailsScreen" component={RentalHouseDetailsScreen} /> */}
                           <Stack.Screen name="PostRentalHouseScreen" component={PostRentalHouseScreen} />
                           <Stack.Screen name="ApplyRentalScreen" component={ApplyRentalScreen} />
                           <Stack.Screen name="MyRentalApplicationsScreen" component={MyRentalApplicationsScreen} />

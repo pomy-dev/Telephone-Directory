@@ -16,8 +16,9 @@ import { useState, useEffect } from "react"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import * as Location from "expo-location"
 import { Icons } from '../constants/Icons'
+import { Badge } from 'react-native-paper';
 
-export default function TopNav({ onCartPress, onSearch, onNotificationPress, onLogout }) {
+export default function TopNav({ onCartPress, onSearch, onNotificationPress, onLogout, notificationCount = 0 }) {
   const [location, setLocation] = useState("Fetching location...")
   const [modalVisible, setModalVisible] = useState(false)
   const [tempLocation, setTempLocation] = useState("")
@@ -92,6 +93,10 @@ export default function TopNav({ onCartPress, onSearch, onNotificationPress, onL
 
         <>
           <TouchableOpacity onPress={onNotificationPress} style={styles.iconButton} activeOpacity={0.7}>
+            {/* badge for notifications count */}
+            {notificationCount > 0 &&
+              <Badge size={16} style={{ position: 'absolute', top: 2, right: 3, zIndex: 1 }}>{notificationCount}</Badge>
+            }
             <Icons.Ionicons name="notifications-outline" size={24} color="#1A1A1A" />
           </TouchableOpacity>
 

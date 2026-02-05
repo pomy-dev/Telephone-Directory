@@ -10,7 +10,7 @@ import { Images } from '../constants/Images'
 import PersonalizedAdsSection from "../components/PersonalizedAdsSection"
 
 export default function HomeScreen({ navigation }) {
-  const { theme, isDarkMode, selectedState, isOnline, notificationsEnabled, notifications } = React.useContext(AppContext)
+  const { theme, isDarkMode, notifications } = React.useContext(AppContext)
   const { logout } = React.useContext(AuthContext)
   const [greetingText, setGreetingText] = useState("");
   const [startingText, setStartingText] = useState("");
@@ -111,13 +111,23 @@ export default function HomeScreen({ navigation }) {
     }
   }
 
+  const handleNotificationPress = () => {
+    if (notifications.length > 0) {
+      navigation.navigate("Nots")
+    } else {
+      CustomToast("No notifications", "You have no new notifications at the moment.")
+      return
+    }
+  }
+
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
 
       <TopNav
         onCartPress={() => console.log("Cart pressed")}
-        onNotificationPress={() => console.log("Notifications pressed")}
+        onNotificationPress={handleNotificationPress}
+        notificationCount={notifications.length}
         onSearch={() => console.log("Search tapped")}
         onLogout={() => handleLogout()}
       />

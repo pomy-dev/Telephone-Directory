@@ -214,11 +214,6 @@ export async function submitGig(jobData) {
   }
 }
 
-
-/**
- * Fetches gigs with support for filtering and cursor-based pagination
- */
-
 /**
  * Fetches gigs with support for filtering and cursor-based pagination
  */
@@ -300,3 +295,59 @@ export async function applyForGig(formData) {
   }
 }
 
+/** fetch gigs applied for */
+export async function getAppliedGigs(userEmail) {
+  console.log('Fetching gigs for user:', userEmail);
+  try {
+    const { data, error } = await supabase.rpc(
+      "get_applications_for_my_gigs",
+      { p_email: userEmail.trim() }
+    )
+
+    if (error) throw error;
+
+    return { success: true, data };
+  } catch (error) {
+    console.error('Error fetching applied gigs:', error);
+    return { success: false, error: error.message, data: [] };
+  }
+}
+
+/** fetch approved gigs */
+export async function getApprovedGigs(userEmail) {
+  try {
+    const { data, error } = await supabase.rpc(
+      "get_my_approved_gigs",
+      { p_email: userEmail }
+    )
+
+    if (error) throw error;
+
+    return { success: true, data };
+  } catch (error) {
+    console.error('Error fetching approved gigs:', error);
+    return { success: false, error: error.message, data: [] };
+  }
+}
+
+/** approve application */
+export async function approveApplication(applicationId) {
+  console.log('Approving application:', applicationId);
+  try {
+    const { data, error } = await supabase.rpc(
+      "approve_gig_application",
+      { p_application_id: applicationId }
+    )
+
+    if (error) {
+      console.error(error)
+    } else {
+      console.log("Approved application:", data[0])
+    }
+
+    return { success: true, data: data[0] };
+  } catch (error) {
+    console.error('Error approving application:', error);
+    return { success: false, error: error.message };
+  }
+}

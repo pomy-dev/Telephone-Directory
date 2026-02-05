@@ -1,8 +1,10 @@
 // AppContext.js
-import { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useContext } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CustomDarkTheme, CustomLightTheme } from '../constants/theme';
-import { fetchNotifications } from '../service/getApi'; // <-- your API call
+import { fetchNotifications } from '../service/getApi';
+import { getAppliedGigs } from '../service/Supabase-Fuctions';
+import { AuthContext } from './authProvider';
 
 export const AppContext = createContext();
 
@@ -14,6 +16,8 @@ export const AppProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // const { user } = useContext(AuthContext);
+
   // Load persisted state + fetch fresh notifications
   useEffect(() => {
     const loadSettings = async () => {
@@ -24,7 +28,6 @@ export const AppProvider = ({ children }) => {
         const notifEnabled = await AsyncStorage.getItem('notificationsEnabled');
 
         if (state && state !== "" && state !== "undefined" && state !== "null") {
-          console.log('State from storage:', JSON.parse(state))
           setSelectedState(JSON.parse(state))
         } else {
           console.log('No state found in storage, setting to Business eSwatini')
@@ -56,6 +59,20 @@ export const AppProvider = ({ children }) => {
         console.log('Error fetching notifications:', err);
       }
     };
+
+    const loadUserNotifications = async () => {
+      try {
+        if (isOnline && notificationsEnabled) {
+          const userNots = await getAppliedGigs('mdzeshh@gmail.com');
+          console.log('User notifications fetched:', userNots.data);
+          setNotifications(userNots.data); // overwrite with user-specific ones
+        }
+      } catch (err) {
+        console.log('Error fetching user notifications:', err);
+      }
+    };
+
+    loadUserNotifications();
     loadApiNotifications();
   }, [isOnline, notificationsEnabled]);
 
@@ -92,7 +109,7 @@ export const AppProvider = ({ children }) => {
   const addNotification = (notification) => {
     setNotifications((prev) => {
       // Check if the notification already exists
-      const exists = prev.some((item) => item._id === notification._id);
+      const exists = prev.some((item) => item.id === notification.id || item._id === notification._id);
       if (!exists) {
         // If it doesn't exist, add it to the list
         return [notification, ...prev];
