@@ -19,110 +19,6 @@ import { getPomyGigs, subscribeToGigs } from "../../service/Supabase-Fuctions";
 import { AppContext } from "../../context/appContext";
 import { supabase } from "../../service/Supabase-Client";
 
-// Dummy job data
-const JOBS_DATA = [
-  {
-    id: "1",
-    title: "Help Moving Furniture",
-    description:
-      "Need help moving a couch and fridge from Matsapha to Manzini.",
-    category: "Moving",
-    price: 300,
-    location: "Matsapha Industrial Site",
-    coordinates: { lat: -26.5167, lng: 31.3167 },
-    postedBy: "Sabelo D.",
-    postedTime: "2h ago",
-    image: "https://images.unsplash.com/photo-1600518464441-9154a4dea21b?w=400",
-  },
-  {
-    id: "2",
-    title: "House Cleaning Service",
-    description:
-      "3-room house in Logoba needs thorough cleaning and window wash.",
-    category: "Cleaning",
-    price: 250,
-    location: "Logoba, Manzini",
-    coordinates: { lat: -26.5008, lng: 31.3831 },
-    postedBy: "Thandeka M.",
-    postedTime: "4h ago",
-    image: "https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=400",
-  },
-  {
-    id: "3",
-    title: "Plumbing Repair Needed",
-    description: "Leaking kitchen tap needs fixing today — bring tools.",
-    category: "Handyman",
-    price: 200,
-    location: "Ngwane Park, Manzini",
-    coordinates: { lat: -26.5122, lng: 31.3719 },
-    postedBy: "Muzi T.",
-    postedTime: "1h ago",
-    image: "https://images.unsplash.com/photo-1607472586893-edb57bdc0e39?w=400",
-  },
-  {
-    id: "4",
-    title: "Grocery Delivery",
-    description: "Pick up groceries from Spar Manzini and deliver to Fairview.",
-    category: "Delivery",
-    price: 80,
-    location: "Fairview, Manzini",
-    coordinates: { lat: -26.4961, lng: 31.3849 },
-    postedBy: "Lungile K.",
-    postedTime: "30min ago",
-    image: "https://images.unsplash.com/photo-1542838132924-5185137a7f0b?w=400",
-  },
-  {
-    id: "5",
-    title: "Garden Maintenance",
-    description: "Trim hedges, mow lawn, and remove weeds from small yard.",
-    category: "Gardening",
-    price: 180,
-    location: "Sidwashini, Mbabane",
-    coordinates: { lat: -26.3167, lng: 31.1333 },
-    postedBy: "Sifiso P.",
-    postedTime: "5h ago",
-    image: "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=400",
-  },
-  {
-    id: "6",
-    title: "Painting Interior Walls",
-    description: "Need 2 rooms painted in Matsapha, paint already available.",
-    category: "Handyman",
-    price: 450,
-    location: "Matsapha, Eswatini",
-    coordinates: { lat: -26.5167, lng: 31.3167 },
-    postedBy: "Nomsa W.",
-    postedTime: "3h ago",
-    image: "https://images.unsplash.com/photo-1589939705384-5185137a7f0f?w=400",
-  },
-  {
-    id: "7",
-    title: "Pet Sitting for Weekend",
-    description:
-      "Need someone to look after 2 small dogs in Ezulwini this weekend.",
-    category: "Pet Care",
-    price: 250,
-    location: "Ezulwini, Lobamba",
-    coordinates: { lat: -26.4333, lng: 31.2 },
-    postedBy: "Banele C.",
-    postedTime: "6h ago",
-    image: "https://images.unsplash.com/photo-154819997303cce0bbc87b?w=400",
-  },
-  {
-    id: "8",
-    title: "Computer Repair",
-    description:
-      "Laptop not turning on, need someone to check power supply issue.",
-    category: "Tech",
-    price: 300,
-    location: "Mbabane City Centre",
-    coordinates: { lat: -26.3167, lng: 31.1333 },
-    postedBy: "Phindile S.",
-    postedTime: "1h ago",
-    image: "https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=400",
-  },
-];
-
 const CATEGORIES = [
   {
     id: "all",
@@ -194,9 +90,9 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos((lat1 * Math.PI) / 180) *
-    Math.cos((lat2 * Math.PI) / 180) *
-    Math.sin(dLon / 2) *
-    Math.sin(dLon / 2);
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   const distance = R * c;
   return distance;
@@ -209,17 +105,18 @@ const mapDatabaseToUI = (dbGigs, userLocation = null) => {
 
     // Default placeholder
     let displayImage = "https://via.placeholder.com/400";
-    
+
     // 1. Check if job_images exists and has items
     if (job.job_images && job.job_images.length > 0) {
       const firstImageEntry = job.job_images[0];
-      
+
       // 2. Extract the 'url' property from the JSON object
-      // If Supabase returns it as a stringified JSON, we parse it; 
+      // If Supabase returns it as a stringified JSON, we parse it;
       // otherwise, access .url directly.
-      const imageObj = typeof firstImageEntry === 'string' 
-        ? JSON.parse(firstImageEntry) 
-        : firstImageEntry;
+      const imageObj =
+        typeof firstImageEntry === "string"
+          ? JSON.parse(firstImageEntry)
+          : firstImageEntry;
 
       displayImage = imageObj.url || imageObj.uri || displayImage;
     }
@@ -233,7 +130,9 @@ const mapDatabaseToUI = (dbGigs, userLocation = null) => {
       location: job.job_location?.address || "Location N/A",
       coordinates: { lat, lng },
       postedBy: job.postedby?.name || "Anonymous",
-      postedTime: job.created_at ? new Date(job.created_at).toLocaleDateString() : "Just now",
+      postedTime: job.created_at
+        ? new Date(job.created_at).toLocaleDateString()
+        : "Just now",
       image: displayImage, // This now contains the correct .url string
       distance: userLocation
         ? calculateDistance(userLocation.lat, userLocation.lng, lat, lng)
@@ -250,7 +149,6 @@ const GigsScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [nextCursor, setNextCursor] = useState({ createdAt: null, id: null });
-
 
   // 1. Move this function ABOVE your useEffect calls
   const loadUserLocation = async () => {
@@ -315,7 +213,10 @@ const GigsScreen = ({ navigation }) => {
 
       const lastItem = result.data[result.data.length - 1];
       if (lastItem?.next_created_at) {
-        setNextCursor({ createdAt: lastItem.next_created_at, id: lastItem.next_id });
+        setNextCursor({
+          createdAt: lastItem.next_created_at,
+          id: lastItem.next_id,
+        });
       } else {
         setNextCursor({ createdAt: null, id: null });
       }
@@ -331,7 +232,8 @@ const GigsScreen = ({ navigation }) => {
 
   const renderJobCard = ({ item }) => {
     // Check if the image is a real URL from your Supabase bucket
-    const hasImage = item?.image && !item?.image?.includes("via.placeholder.com");
+    const hasImage =
+      item?.image && !item?.image?.includes("via.placeholder.com");
 
     return (
       <TouchableOpacity
@@ -388,12 +290,26 @@ const GigsScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={{ height: 30 }} />
-      <SecondaryNav
-        title="Explore Gigs"
-        rightIcon="add-circle-outline"
-        onRightPress={() => navigation.navigate("PostJobScreen")}
-        onBackPress={() => navigation.goBack()}
-      />
+      {/* Custom Modern Header */}
+<View style={styles.customHeader}>
+  <TouchableOpacity 
+    style={styles.headerIconButton} 
+    onPress={() => navigation.openDrawer()}
+  >
+    <Icons.Ionicons name="menu-outline" size={28} color="#000" />
+  </TouchableOpacity>
+
+  <Text style={styles.headerTitleText}>Explore Gigs</Text>
+
+  <TouchableOpacity 
+    style={styles.headerIconButton} 
+    onPress={() => navigation.navigate("MyPostedGigs")}
+  >
+    <Icons.Ionicons name="briefcase-outline" size={24} color="#000" />
+    {/* Optional: Small notification dot if they have active gigs */}
+    <View style={styles.dot} />
+  </TouchableOpacity>
+</View>
 
       {/* FIXED TOP SECTION */}
       <View style={styles.headerGroup}>
@@ -417,7 +333,12 @@ const GigsScreen = ({ navigation }) => {
                 size={18}
                 color={selectedCategory === category.id ? "#fff" : "#666"}
               />
-              <Text style={[styles.categoryText, selectedCategory === category.id && styles.categoryTextActive]}>
+              <Text
+                style={[
+                  styles.categoryText,
+                  selectedCategory === category.id && styles.categoryTextActive,
+                ]}
+              >
                 {category.name}
               </Text>
             </TouchableOpacity>
@@ -443,16 +364,25 @@ const GigsScreen = ({ navigation }) => {
         refreshing={refreshing}
         onEndReached={() => fetchLiveGigs(true)}
         onEndReachedThreshold={0.3}
-        ListEmptyComponent={() => !refreshing && (
-          <View style={styles.emptyContainer}>
-            <Icons.Ionicons name="search-outline" size={50} color="#DDD" />
-            <Text style={styles.emptyTitle}>No Gigs Available</Text>
-            <Text style={styles.emptySubtitle}>We couldn't find anything in {selectedCategory}.</Text>
-          </View>
-        )}
-        ListFooterComponent={() => loading && (
-          <ActivityIndicator style={{ margin: 20 }} color={theme.colors.indicator} />
-        )}
+        ListEmptyComponent={() =>
+          !refreshing && (
+            <View style={styles.emptyContainer}>
+              <Icons.Ionicons name="search-outline" size={50} color="#DDD" />
+              <Text style={styles.emptyTitle}>No Gigs Available</Text>
+              <Text style={styles.emptySubtitle}>
+                We couldn't find anything in {selectedCategory}.
+              </Text>
+            </View>
+          )
+        }
+        ListFooterComponent={() =>
+          loading && (
+            <ActivityIndicator
+              style={{ margin: 20 }}
+              color={theme.colors.indicator}
+            />
+          )
+        }
       />
     </SafeAreaView>
   );
@@ -654,7 +584,43 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     backgroundColor: "#fafafa",
     // Ensure it doesn't float
-    width: '100%',
+    width: "100%",
+  },
+  customHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#fff',
+    // Subtle shadow for depth
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  headerTitleText: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#000',
+    letterSpacing: -0.5,
+  },
+  headerIconButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 12,
+    backgroundColor: '#f8f9fa', // Light grey background for the buttons
+  },
+  dot: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#10b981', // Green dot for "My Gigs"
+    borderWidth: 1.5,
+    borderColor: '#fff',
   },
 });
 

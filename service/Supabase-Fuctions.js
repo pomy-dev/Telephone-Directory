@@ -271,3 +271,104 @@ export const subscribeToGigs = (onCallback) => {
     )
     .subscribe();
 };
+
+
+/**
+ * Register a new worker with the updated schema including skills array
+ * @param {Object} workerData - The worker profile information
+ * @param {string} workerData.user_id - The Supabase Auth ID
+ * @param {string} workerData.name - Full name
+ * @param {string} workerData.phone - Unique phone number
+ * @param {Object} workerData.location - JSON object with address/coords
+ * @param {string} workerData.bio - Professional summary
+ * @param {Array} workerData.skills - Array of strings e.g., ["Plumbing", "Leaks"]
+ */
+export async function registerAsWorker(workerData) {
+  try {
+    // Validation: ensure skills is an array even if empty
+    const skillsArray = Array.isArray(workerData.skills) ? workerData.skills : [];
+
+    const { data, error } = await supabase
+      .from('pomy_workers')
+      .insert([
+        {
+          user_id: workerData.user_id, // Added user_id mapping
+          name: workerData.name,
+          phone: workerData.phone,
+          location: workerData.location,
+          bio: workerData.bio,
+          skills: skillsArray, // Updated to use the JSONB skills array
+          is_available: true,  // Defaulting to true on registration
+        }
+      ])
+      .select(); // Returns the inserted data
+
+    if (error) throw error;
+    
+    return { success: true, data: data[0] };
+  } catch (error) {
+    console.error('Registration Error:', error.message);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Update availability status for an existing worker
+ */
+export async function updateWorkerAvailability(workerId, isAvailable) {
+  try {
+    const { error } = await supabase
+      .from('pomy_workers')
+      .update({ is_available: isAvailable })
+      .eq('id', workerId);
+
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+// Fetch applicants for a specific gig (for the employer)
+export async function getGigApplicants(gigId) {
+  try {
+    const { data, error } = await supabase
+      .from('pomy_gig_applications')
+      .select('*')
+      .eq('gig_id', gigId)
+      .order('applied_at', { ascending: false });
+
+    if (error) throw error;
+    return { success: true, data };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+// Hire/Accept a worker
+export async function updateApplicationStatus(applicationId, status) {
+  try {
+    const { error } = await supabase
+      .from('pomy_gig_applications')
+      .update({ application_status: status })
+      .eq('id', applicationId);
+    if (error) throw error;
+    return { success: true };
+  } catch (error) {
+    return { success: false };
+  }
+}
+
+export async function getApplicantsForGig(gigId) {
+  try {
+    const { data, error } = await supabase
+      .from('pomy_gig_applications')
+      .select('*')
+      .eq('gig_id', gigId);
+
+    if (error) throw error;
+    return { success: true, data };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}

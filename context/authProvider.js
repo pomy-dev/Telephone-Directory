@@ -16,6 +16,19 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const firebaseAuth = getAuth();
+  const [isWorker, setIsWorker] = useState(false);
+
+  // Function to check status (you can call this after login)
+const checkWorkerStatus = async (uid) => {
+  if (!uid) return;
+  const { data } = await supabase
+    .from('pomy_workers')
+    .select('id')
+    .eq('user_id', uid)
+    .single();
+  
+  setIsWorker(!!data); // sets true if data exists, false otherwise
+};
 
   // Listen to Firebase auth state changes
   useEffect(() => {
@@ -29,6 +42,7 @@ export const AuthProvider = ({ children }) => {
           photoURL: firebaseUser.photoURL,
         };
         setUser(userData);
+        await checkWorkerStatus(firebaseUser.uid);
       } else {
         // User is signed out
         setUser(null);
@@ -127,7 +141,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const value = { googleLogin, emailSignUp, emailLogin, phoneLogin, verifyOTP, logout, accessToken, user, loading };
+  const value = { googleLogin, emailSignUp, emailLogin, phoneLogin, verifyOTP, logout, accessToken, user, loading, isWorker, setIsWorker, checkWorkerStatus };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
