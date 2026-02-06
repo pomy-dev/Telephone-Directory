@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect,useContext } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
   View,
   Text,
@@ -19,6 +19,7 @@ import { getPomyGigs, subscribeToGigs } from "../../service/Supabase-Fuctions";
 import { AppContext } from "../../context/appContext";
 import { supabase } from "../../service/Supabase-Client";
 import { AuthContext } from "../../context/authProvider";
+import { MoreDropdown } from "../../components/moreDropDown";
 
 const CATEGORIES = [
   {
@@ -138,7 +139,7 @@ const mapDatabaseToUI = (dbGigs, userLocation = null) => {
 };
 
 const GigsScreen = ({ navigation }) => {
-  const { user } = React.useContext(AuthContext);
+  const { user, isWorker } = React.useContext(AuthContext);
   const { theme } = React.useContext(AppContext);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [userLocation, setUserLocation] = useState(null);
@@ -147,6 +148,32 @@ const GigsScreen = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [nextCursor, setNextCursor] = useState({ createdAt: null, id: null });
 
+  const moreItems = [
+    {
+      title: "Hire Workers",
+      icon: "MaterialCommunityIcons",
+      iconName: "briefcase-account-outline",
+      onPress: () => navigation.navigate("WorkerDirectory"),
+    },
+    {
+      title: "My Applications",
+      icon: "FontAwesome6",
+      iconName: "list-check",
+      onPress: () => navigation.navigate("MyPostedGigs"),
+    },
+    {
+      title: "My Posted Gigs",
+      icon: "Ionicons",
+      iconName: "newspaper-outline",
+      onPress: () => navigation.navigate("JobInbox"),
+    },
+    {
+      title: isWorker ? "My Worker Profile" : "Become a Worker",
+      icon: "Ionicons",
+      iconName: isWorker ? "person-circle-outline" : "construct-outline",
+      onPress: () => navigation.navigate("WorkerRegistration"),
+    },
+  ];
 
   // 1. Move this function ABOVE your useEffect calls
   const loadUserLocation = async () => {
@@ -285,25 +312,24 @@ const GigsScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={{ height: 30 }} />
-            {/* Custom Modern Header */}
+      {/* Custom Modern Header */}
       <View style={styles.customHeader}>
-        <TouchableOpacity 
-          style={styles.headerIconButton} 
+        <TouchableOpacity
+          style={styles.headerIconButton}
           onPress={() => navigation.openDrawer()}
         >
           <Icons.Ionicons name="menu-outline" size={28} color="#000" />
         </TouchableOpacity>
-      
+
         <Text style={styles.headerTitleText}>Explore Gigs</Text>
-      
-        <TouchableOpacity 
-          style={styles.headerIconButton} 
+
+        {/* <TouchableOpacity
+          style={styles.headerIconButton}
           onPress={() => navigation.navigate("MyPostedGigs")}
         >
-          <Icons.Ionicons name="briefcase-outline" size={24} color="#000" />
-          {/* Optional: Small notification dot if they have active gigs */}
-          <View style={styles.dot} />
-        </TouchableOpacity>
+          <Icons.MaterialCommunityIcons name="dots-vertical" size={24} color="#000" />
+        </TouchableOpacity> */}
+        <MoreDropdown items={moreItems} />
       </View>
 
       {/* FIXED TOP SECTION */}
