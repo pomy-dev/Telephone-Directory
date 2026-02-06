@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect,useContext } from "react";
 import {
   View,
   Text,
@@ -18,6 +18,7 @@ import SecondaryNav from "../../components/SecondaryNav";
 import { getPomyGigs, subscribeToGigs } from "../../service/Supabase-Fuctions";
 import { AppContext } from "../../context/appContext";
 import { supabase } from "../../service/Supabase-Client";
+import { AuthContext } from "../../context/authProvider";
 
 const CATEGORIES = [
   {
@@ -90,9 +91,9 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
+    Math.cos((lat2 * Math.PI) / 180) *
+    Math.sin(dLon / 2) *
+    Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   const distance = R * c;
   return distance;
@@ -104,21 +105,17 @@ const mapDatabaseToUI = (dbGigs, userLocation = null) => {
     const lng = job.job_location?.lng || 0;
 
     // Default placeholder
-    let displayImage = "https://via.placeholder.com/400";
+    let displayImages = ["https://via.placeholder.com/400"];
 
     // 1. Check if job_images exists and has items
     if (job.job_images && job.job_images.length > 0) {
-      const firstImageEntry = job.job_images[0];
-
-      // 2. Extract the 'url' property from the JSON object
-      // If Supabase returns it as a stringified JSON, we parse it;
-      // otherwise, access .url directly.
-      const imageObj =
-        typeof firstImageEntry === "string"
-          ? JSON.parse(firstImageEntry)
-          : firstImageEntry;
-
-      displayImage = imageObj.url || imageObj.uri || displayImage;
+      displayImages = [];
+      job?.job_images?.forEach((img) => {
+        if (img?.url) {
+          // push url to displayImages
+          displayImages.push(img.url);
+        }
+      });
     }
 
     return {
@@ -131,9 +128,7 @@ const mapDatabaseToUI = (dbGigs, userLocation = null) => {
       coordinates: { lat, lng },
       applications: job.application_count || 0,
       postedBy: { name: job.postedby?.name, email: job.postedby?.email, phone: job.postedby?.phone },
-      postedTime: job.created_at
-        ? new Date(job.created_at).toLocaleDateString()
-        : "Just now",
+      postedTime: job.created_at ? new Date(job.created_at).toLocaleDateString() : "Just now",
       images: displayImages, // This now contains the correct .url string
       distance: userLocation
         ? calculateDistance(userLocation.lat, userLocation.lng, lat, lng)
@@ -143,6 +138,7 @@ const mapDatabaseToUI = (dbGigs, userLocation = null) => {
 };
 
 const GigsScreen = ({ navigation }) => {
+  const { user } = React.useContext(AuthContext);
   const { theme } = React.useContext(AppContext);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [userLocation, setUserLocation] = useState(null);
@@ -150,6 +146,7 @@ const GigsScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [nextCursor, setNextCursor] = useState({ createdAt: null, id: null });
+
 
   // 1. Move this function ABOVE your useEffect calls
   const loadUserLocation = async () => {
@@ -204,6 +201,7 @@ const GigsScreen = ({ navigation }) => {
       afterCreatedAt: isLoadMore ? nextCursor.createdAt : null,
       afterId: isLoadMore ? nextCursor.id : null,
       pageSize: 15,
+      p_exclude_email: user?.email
     };
 
     const result = await getPomyGigs(filters);
@@ -214,10 +212,7 @@ const GigsScreen = ({ navigation }) => {
 
       const lastItem = result.data[result.data.length - 1];
       if (lastItem?.next_created_at) {
-        setNextCursor({
-          createdAt: lastItem.next_created_at,
-          id: lastItem.next_id,
-        });
+        setNextCursor({ createdAt: lastItem.next_created_at, id: lastItem.next_id });
       } else {
         setNextCursor({ createdAt: null, id: null });
       }
@@ -233,8 +228,7 @@ const GigsScreen = ({ navigation }) => {
 
   const renderJobCard = ({ item }) => {
     // Check if the image is a real URL from your Supabase bucket
-    const hasImage =
-      item?.image && !item?.image?.includes("via.placeholder.com");
+    const hasImage = item?.images && !item?.images?.includes("via.placeholder.com");
 
     return (
       <TouchableOpacity
@@ -291,26 +285,26 @@ const GigsScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={{ height: 30 }} />
-      {/* Custom Modern Header */}
-<View style={styles.customHeader}>
-  <TouchableOpacity 
-    style={styles.headerIconButton} 
-    onPress={() => navigation.openDrawer()}
-  >
-    <Icons.Ionicons name="menu-outline" size={28} color="#000" />
-  </TouchableOpacity>
-
-  <Text style={styles.headerTitleText}>Explore Gigs</Text>
-
-  <TouchableOpacity 
-    style={styles.headerIconButton} 
-    onPress={() => navigation.navigate("MyPostedGigs")}
-  >
-    <Icons.Ionicons name="briefcase-outline" size={24} color="#000" />
-    {/* Optional: Small notification dot if they have active gigs */}
-    <View style={styles.dot} />
-  </TouchableOpacity>
-</View>
+            {/* Custom Modern Header */}
+      <View style={styles.customHeader}>
+        <TouchableOpacity 
+          style={styles.headerIconButton} 
+          onPress={() => navigation.openDrawer()}
+        >
+          <Icons.Ionicons name="menu-outline" size={28} color="#000" />
+        </TouchableOpacity>
+      
+        <Text style={styles.headerTitleText}>Explore Gigs</Text>
+      
+        <TouchableOpacity 
+          style={styles.headerIconButton} 
+          onPress={() => navigation.navigate("MyPostedGigs")}
+        >
+          <Icons.Ionicons name="briefcase-outline" size={24} color="#000" />
+          {/* Optional: Small notification dot if they have active gigs */}
+          <View style={styles.dot} />
+        </TouchableOpacity>
+      </View>
 
       {/* FIXED TOP SECTION */}
       <View style={styles.headerGroup}>
@@ -334,12 +328,7 @@ const GigsScreen = ({ navigation }) => {
                 size={18}
                 color={selectedCategory === category.id ? "#fff" : "#666"}
               />
-              <Text
-                style={[
-                  styles.categoryText,
-                  selectedCategory === category.id && styles.categoryTextActive,
-                ]}
-              >
+              <Text style={[styles.categoryText, selectedCategory === category.id && styles.categoryTextActive]}>
                 {category.name}
               </Text>
             </TouchableOpacity>
@@ -365,25 +354,16 @@ const GigsScreen = ({ navigation }) => {
         refreshing={refreshing}
         onEndReached={() => fetchLiveGigs(true)}
         onEndReachedThreshold={0.3}
-        ListEmptyComponent={() =>
-          !refreshing && (
-            <View style={styles.emptyContainer}>
-              <Icons.Ionicons name="search-outline" size={50} color="#DDD" />
-              <Text style={styles.emptyTitle}>No Gigs Available</Text>
-              <Text style={styles.emptySubtitle}>
-                We couldn't find anything in {selectedCategory}.
-              </Text>
-            </View>
-          )
-        }
-        ListFooterComponent={() =>
-          loading && (
-            <ActivityIndicator
-              style={{ margin: 20 }}
-              color={theme.colors.indicator}
-            />
-          )
-        }
+        ListEmptyComponent={() => !refreshing && (
+          <View style={styles.emptyContainer}>
+            <Icons.Ionicons name="search-outline" size={50} color="#DDD" />
+            <Text style={styles.emptyTitle}>No Gigs Available</Text>
+            <Text style={styles.emptySubtitle}>We couldn't find anything in {selectedCategory}.</Text>
+          </View>
+        )}
+        ListFooterComponent={() => loading && (
+          <ActivityIndicator style={{ margin: 20 }} color={theme.colors.indicator} />
+        )}
       />
     </SafeAreaView>
   );

@@ -224,7 +224,7 @@ export async function submitGig(jobData) {
  */
 export async function getPomyGigs(filters = {}) {
   const {
-    pageSize = 20,
+    pageSize = 30,
     afterCreatedAt = null,
     afterId = null,
     category = null,
@@ -232,8 +232,10 @@ export async function getPomyGigs(filters = {}) {
     maxPrice = null,
     status = 'open',
     searchTerm = null,
-    locationFilter = null
+    locationFilter = null,
+    p_exclude_email=null
   } = filters;
+
 
   try {
     const { data, error } = await supabase.rpc('fetch_pomy_gigs', {
@@ -245,13 +247,16 @@ export async function getPomyGigs(filters = {}) {
       p_max_price: maxPrice,
       p_job_status: status,
       p_search_term: searchTerm,
-      p_location_filter: locationFilter
+      p_location_filter: locationFilter,
+      p_exclude_email: p_exclude_email, 
     });
 
     if (error) throw error;
 
-    // The data returned will now include the correct job_images jsonb array
-    return { success: true, data };
+    return { 
+      success: true, 
+      data: data || [] // Ensure data is at least an empty array, never null
+    };
   } catch (error) {
     console.error('Error fetching gigs:', error);
     return { success: false, error: error.message, data: [] };
@@ -271,6 +276,24 @@ export const subscribeToGigs = (onCallback) => {
     )
     .subscribe();
 };
+
+
+/** Fetch all applications for a specific gig */
+export async function getGigApplicants(gigId) {
+  try {
+    const { data, error } = await supabase
+      .from('pomy_gig_app') // Updated to your new table name
+      .select('*')
+      .eq('job_id', gigId) // Matching your job_id column
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return { success: true, data };
+  } catch (error) {
+    console.error('Error fetching applicants:', error.message);
+    return { success: false, error: error.message };
+  }
+}
 
 
 /**
@@ -312,6 +335,45 @@ export async function registerAsWorker(workerData) {
   }
 }
 
+
+/**
+ * Fetches a worker profile by user_id
+ */
+export async function getWorkerProfile(userId) {
+  try {
+    const { data, error } = await supabase
+      .from('pomy_workers')
+      .select('*')
+      .eq('user_id', userId)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error; // PGRST116 is "no rows found"
+    
+    return { success: true, data: data || null };
+  } catch (error) {
+    console.error('Fetch Worker Error:', error.message);
+    return { success: false, error: error.message };
+  }
+}
+
+/**
+ * Updates an existing worker profile
+ */
+export async function updateWorkerProfile(uid, updateData) {
+  try {
+    const { data, error } = await supabase
+      .from('pomy_workers')
+      .update(updateData)
+      .eq('user_id', uid)
+      .select();
+
+    if (error) throw error;
+    return { success: true, data: data[0] };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
 /**
  * Update availability status for an existing worker
  */
@@ -329,21 +391,27 @@ export async function updateWorkerAvailability(workerId, isAvailable) {
   }
 }
 
-// Fetch applicants for a specific gig (for the employer)
-export async function getGigApplicants(gigId) {
+/** * Approves a specific application, marks the gig as 'taken', 
+ * and rejects all other applicants via Database RPC.
+ */
+export async function approveGigApplication(applicationId) {
   try {
-    const { data, error } = await supabase
-      .from('pomy_gig_applications')
-      .select('*')
-      .eq('gig_id', gigId)
-      .order('applied_at', { ascending: false });
+    const { data, error } = await supabase.rpc('approve_gig_application', {
+      p_application_id: applicationId
+    });
 
     if (error) throw error;
-    return { success: true, data };
+
+    return { 
+      success: true, 
+      data: data[0] // Returns the summary of the approved application
+    };
   } catch (error) {
+    console.error('Error approving application:', error.message);
     return { success: false, error: error.message };
   }
 }
+
 
 // Hire/Accept a worker
 export async function updateApplicationStatus(applicationId, status) {

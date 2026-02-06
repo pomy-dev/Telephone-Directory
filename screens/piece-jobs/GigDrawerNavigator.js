@@ -19,16 +19,38 @@ const Drawer = createDrawerNavigator();
 
 // Custom Drawer Content to add the Header matching GigsScreen feel
 function CustomDrawerContent(props) {
+    const { user, isWorker } = useContext(AuthContext);
+
   return (
     <DrawerContentScrollView
       {...props}
       contentContainerStyle={{ paddingTop: 0 }}
     >
       <View style={styles.drawerHeader}>
-        <Text style={styles.brandText}>
-          POMY<Text style={{ color: "#10b981" }}>.</Text>
-        </Text>
-        <Text style={styles.subtitleText}>Gig Economy Eswatini</Text>
+        {/* User Info Section */}
+        <View style={styles.userSection}>
+          <View style={styles.avatarCircle}>
+            <Text style={styles.avatarLetter}>
+              {user?.displayName ? user.displayName.charAt(0).toUpperCase() : (user?.email ? user.email.charAt(0).toUpperCase() : 'U')}
+            </Text>
+          </View>
+          
+          <View style={styles.userInfo}>
+            <Text style={styles.brandText}>
+              {user?.displayName || "User Account"}
+              <Text style={{ color: "#10b981" }}>.</Text>
+            </Text>
+            
+            <View style={styles.statusBadgeRow}>
+                <Text style={styles.subtitleText}>{user?.email || "Welcome to Pomy"}</Text>
+                {isWorker && (
+                    <View style={styles.workerBadge}>
+                        <Text style={styles.workerBadgeText}>WORKER</Text>
+                    </View>
+                )}
+            </View>
+          </View>
+        </View>
       </View>
       <DrawerItemList {...props} />
     </DrawerContentScrollView>
@@ -36,7 +58,7 @@ function CustomDrawerContent(props) {
 }
 
 export default function GigDrawerNavigator() {
-    const { isWorker } = useContext(AuthContext);
+    const { user, isWorker } = useContext(AuthContext);
 
 
   return (
@@ -114,7 +136,7 @@ export default function GigDrawerNavigator() {
         component={WorkerRegistration}
         options={{
           // Toggles label and icon based on worker status
-          title: isWorker ? "My Worker Profile" : "Become a Worker",
+          title: isWorker ? " My Worker Profile" : " Become a Worker",
           drawerIcon: ({ color }) => (
             <Icons.Ionicons 
               name={isWorker ? "person-circle-outline" : "construct-outline"} 
@@ -129,25 +151,64 @@ export default function GigDrawerNavigator() {
 }
 
 const styles = StyleSheet.create({
+
   drawerHeader: {
-    padding: 24,
+    padding: 20,
     paddingTop: 60,
     backgroundColor: "#fff",
     borderBottomWidth: 1,
     borderBottomColor: "#f0f0f0",
     marginBottom: 10,
   },
+  userSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  avatarCircle: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#000',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 15,
+  },
+  avatarLetter: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: '800',
+  },
+  userInfo: {
+    flex: 1,
+  },
   brandText: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: "900",
     color: "#000",
-    letterSpacing: -1,
+    letterSpacing: -0.5,
+  },
+  statusBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 2,
   },
   subtitleText: {
     fontSize: 12,
     color: "#999",
-    marginTop: 4,
     fontWeight: "500",
-    textTransform: "uppercase",
+  },
+  workerBadge: {
+    backgroundColor: '#f0fdf4',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 4,
+    marginLeft: 8,
+    borderWidth: 1,
+    borderColor: '#dcfce7',
+  },
+  workerBadgeText: {
+    color: '#10b981',
+    fontSize: 9,
+    fontWeight: '800',
   },
 });

@@ -3,6 +3,8 @@ import Auth0 from 'react-native-auth0';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, signInWithPhoneNumber } from '@react-native-firebase/auth';
 import { jwtDecode } from 'jwt-decode';
 import { AUTH0_DOMAIN, AUTH0_CLIENT_ID, AUTH0_REDIRECT_URI, AUTH0_LOGOUT_REDIRECT_URI } from '../config/env';
+import { supabase } from "../service/Supabase-Client";
+
 
 const auth0 = new Auth0({
   domain: AUTH0_DOMAIN,
@@ -19,39 +21,42 @@ export const AuthProvider = ({ children }) => {
   const [isWorker, setIsWorker] = useState(false);
 
   // Function to check status (you can call this after login)
-const checkWorkerStatus = async (uid) => {
-  if (!uid) return;
-  const { data } = await supabase
-    .from('pomy_workers')
-    .select('id')
-    .eq('user_id', uid)
-    .single();
-  
-  setIsWorker(!!data); // sets true if data exists, false otherwise
-};
+  const checkWorkerStatus = async (uid) => {
+    if (!uid) {
+      setIsWorker(false);
+      return;
+    }
+    try {
+      const { data, error } = await supabase
+        .from('pomy_workers')
+        .select('id')
+        .eq('user_id', uid)
+        .maybeSingle(); // maybeSingle is safer than .single() as it won't throw an error if not found
+      
+      setIsWorker(!!data); 
+    } catch (err) {
+      console.error("Worker check failed:", err);
+      setIsWorker(false);
+    }
+  };
 
   // Listen to Firebase auth state changes
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(firebaseAuth, async (firebaseUser) => {
-      if (firebaseUser) {
-        // User is signed in
-        const userData = {
-          uid: firebaseUser.uid,
-          email: firebaseUser.email,
-          displayName: firebaseUser.displayName,
-          photoURL: firebaseUser.photoURL,
-        };
-        setUser(userData);
-        await checkWorkerStatus(firebaseUser.uid);
+    const unsubscribe = onAuthStateChanged(firebaseAuth, async (currentUser) => {
+      setUser(currentUser);
+      
+      if (currentUser) {
+        // App is opening with an existing logged-in user
+        await checkWorkerStatus(currentUser.uid);
       } else {
-        // User is signed out
-        setUser(null);
+        setIsWorker(false);
       }
+      
       setLoading(false);
     });
 
-    return () => unsubscribe();
-  }, [firebaseAuth]);
+    return unsubscribe;
+  }, []);
 
   const googleLogin = async (connection) => {
     try {
