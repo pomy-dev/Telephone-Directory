@@ -134,13 +134,14 @@ async function requestNotificationPermissions() {
 
 // Bottom Tabs
 function Tabs() {
+  const { theme } = useContext(AppContext);
   return (
     <Tab.Navigator
       initialRouteName="Home"
       screenOptions={{
         headerShown: false,
         tabBarShowLabel: false,
-        tabBarStyle: styles.tabBar,
+        tabBarStyle: [styles.tabBar, { backgroundColor: theme.colors.card, borderTopColor: theme.colors.border }],
         tabBarActiveTintColor: "#0f172a",
         tabBarInactiveTintColor: "#94a3b8",
       }}
@@ -230,14 +231,8 @@ function AppContent() {
   const {
     isDarkMode,
     theme,
-    selectedState,
-    setSelectedState,
     notificationsEnabled,
-    addNotification,
-    isOnline,
-    toggleTheme,
-    toggleNotifications,
-    toggleOnlineMode,
+    addNotification
   } = useContext(AppContext);
   const { user, loading } = useContext(AuthContext);
   const [isAppReady, setIsAppReady] = useState(false);
@@ -441,9 +436,9 @@ const styles = StyleSheet.create({
     left: 16,
     right: 16,
     bottom: 50,
-    height: 64,
+    height: 50,
     marginHorizontal: 10,
-    borderRadius: 20,
+    borderRadius: 70,
     backgroundColor: "#fff",
     borderTopWidth: 0,
     shadowColor: "#0f172a",
@@ -456,7 +451,7 @@ const styles = StyleSheet.create({
     paddingTop: 10
   },
   fabButtonWrapper: {
-    top: -28,
+    top: -10,
     justifyContent: "center",
     alignItems: "center",
   },

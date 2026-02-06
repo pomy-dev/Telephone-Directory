@@ -8,12 +8,13 @@ import {
     StyleSheet,
     Dimensions,
 } from 'react-native';
+import { AppContext } from '../context/appContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const { width } = Dimensions.get('window');
 
 // Individual Ad Card Component
-const AdCard = ({ ad, onPress, onView }) => {
+const AdCard = ({ ad, onPress, onView, theme }) => {
     const viewedRef = useRef(false);
 
     useEffect(() => {
@@ -26,7 +27,7 @@ const AdCard = ({ ad, onPress, onView }) => {
 
     return (
         <TouchableOpacity
-            style={styles.adCard}
+            style={[styles.adCard, { backgroundColor: theme.colors.background, borderColor: theme.colors.highlight }]}
             onPress={() => onPress(ad)}
             activeOpacity={0.8}
         >
@@ -36,9 +37,9 @@ const AdCard = ({ ad, onPress, onView }) => {
                     {ad.brandLogo && (
                         <Image source={{ uri: ad.brandLogo }} style={styles.brandLogo} />
                     )}
-                    <Text style={styles.brandName}>{ad.brandName}</Text>
+                    <Text style={[styles.brandName, { color: theme.colors.text }]}>{ad.brandName}</Text>
                 </View>
-                <Text style={styles.adTitle} numberOfLines={2}>
+                <Text style={[styles.adTitle, { color: theme.colors.sub_text }]} numberOfLines={2}>
                     {ad.title}
                 </Text>
             </View>
@@ -48,6 +49,7 @@ const AdCard = ({ ad, onPress, onView }) => {
 
 // Main Personalized Ads Component
 const PersonalizedAdsSection = ({ ads = [], maxAdsToShow = 10 }) => {
+    const { theme } = React.useContext(AppContext);
     const [personalizedAds, setPersonalizedAds] = useState([]);
     const [userBehavior, setUserBehavior] = useState({});
     const [loading, setLoading] = useState(true);
@@ -177,9 +179,9 @@ const PersonalizedAdsSection = ({ ads = [], maxAdsToShow = 10 }) => {
     }
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
             <View style={styles.header}>
-                <Text style={styles.headerTitle}>Suggested for you</Text>
+                <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Suggested for you</Text>
                 {/* <Text style={styles.headerSubtitle}>Sponsored</Text> */}
             </View>
 
@@ -192,6 +194,7 @@ const PersonalizedAdsSection = ({ ads = [], maxAdsToShow = 10 }) => {
                     <AdCard
                         key={ad.id}
                         ad={ad}
+                        theme={theme}
                         onPress={handleAdClick}
                         onView={handleAdView}
                     />
@@ -199,7 +202,7 @@ const PersonalizedAdsSection = ({ ads = [], maxAdsToShow = 10 }) => {
             </ScrollView>
 
             <TouchableOpacity style={styles.seeMoreButton}>
-                <Text style={styles.seeMoreText}>See more</Text>
+                <Text style={[styles.seeMoreText, { color: theme.colors.sub_text }]}>See more</Text>
             </TouchableOpacity>
         </View>
     );
@@ -207,7 +210,6 @@ const PersonalizedAdsSection = ({ ads = [], maxAdsToShow = 10 }) => {
 
 const styles = StyleSheet.create({
     container: {
-        backgroundColor: '#fff',
         paddingTop: 16,
         paddingBottom: 80,
     },
@@ -218,12 +220,10 @@ const styles = StyleSheet.create({
     headerTitle: {
         fontSize: 18,
         fontWeight: '600',
-        color: '#0f172a',
         marginBottom: 2,
     },
     headerSubtitle: {
         fontSize: 13,
-        color: '#666',
     },
     scrollContent: {
         paddingHorizontal: 16,
@@ -231,7 +231,6 @@ const styles = StyleSheet.create({
     adCard: {
         width: width * 0.45,
         marginHorizontal: 4,
-        backgroundColor: '#fff',
         borderRadius: 8,
         overflow: 'hidden',
         elevation: 2,
@@ -262,30 +261,25 @@ const styles = StyleSheet.create({
     brandName: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#0f172a',
     },
     adTitle: {
         fontSize: 13,
-        color: '#333',
         // lineHeight: 18,
     },
     seeMoreButton: {
         marginHorizontal: 24,
         marginTop: 12,
         paddingVertical: 12,
-        backgroundColor: '#f0f0f0',
         borderRadius: 8,
         alignItems: 'center',
     },
     seeMoreText: {
         fontSize: 15,
         fontWeight: '500',
-        color: '#333',
     },
     loadingText: {
         textAlign: 'center',
         padding: 20,
-        color: '#666',
     },
 });
 

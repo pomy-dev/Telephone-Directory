@@ -128,7 +128,7 @@ const NotificationListScreen = ({ navigation }) => {
           ]}
           numberOfLines={2}
         >
-          Applied for : {item.title || item.job_title + `, Worth: E${item.job_price}` || "Untitled Notification"}
+          Applied for : {item.title || item.job_title + `, \n Worth: E${item.job_price}` || "Untitled Notification"}
         </Text>
 
         <Text

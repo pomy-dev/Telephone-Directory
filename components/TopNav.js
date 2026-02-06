@@ -6,19 +6,22 @@ import {
   View,
   TouchableOpacity,
   TextInput,
+  StatusBar,
   Modal,
   Pressable,
   Keyboard,
   TouchableWithoutFeedback,
   Platform,
 } from "react-native"
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 import * as Location from "expo-location"
 import { Icons } from '../constants/Icons'
+import { AppContext } from "../context/appContext"
 import { Badge } from 'react-native-paper';
 
 export default function TopNav({ onCartPress, onSearch, onNotificationPress, onLogout, notificationCount = 0 }) {
+  const { theme, isDarkMode } = React.useContext(AppContext)
   const [location, setLocation] = useState("Fetching location...")
   const [modalVisible, setModalVisible] = useState(false)
   const [tempLocation, setTempLocation] = useState("")
@@ -75,18 +78,19 @@ export default function TopNav({ onCartPress, onSearch, onNotificationPress, onL
   }
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
       {/* Header Row */}
       <View style={styles.headerRow}>
         <TouchableOpacity style={styles.locationButton} onPress={handleLocationPress} activeOpacity={0.7}>
-          <Icons.Ionicons name="location" size={20} color="#1A1A1A" style={{ marginRight: 8 }} />
+          <Icons.Ionicons name="location" size={20} color={theme.colors.text} style={{ marginRight: 8 }} />
           <View style={styles.locationTextContainer}>
             <Text style={styles.locationLabel}>Current Location</Text>
             <View style={styles.locationRow}>
-              <Text style={styles.locationText} numberOfLines={1}>
+              <Text style={[styles.locationText, { color: theme.colors.text }]} numberOfLines={1}>
                 {location}
               </Text>
-              <Icons.Ionicons name="chevron-down" size={16} color="#1A1A1A" style={{ marginLeft: 4 }} />
+              <Icons.Ionicons name="chevron-down" size={16} color={theme.colors.text} style={{ marginLeft: 4 }} />
             </View>
           </View>
         </TouchableOpacity>
@@ -97,17 +101,17 @@ export default function TopNav({ onCartPress, onSearch, onNotificationPress, onL
             {notificationCount > 0 &&
               <Badge size={16} style={{ position: 'absolute', top: 2, right: 3, zIndex: 1 }}>{notificationCount}</Badge>
             }
-            <Icons.Ionicons name="notifications-outline" size={24} color="#1A1A1A" />
+            <Icons.Ionicons name="notifications-outline" size={24} color={theme.colors.text} />
           </TouchableOpacity>
 
           <TouchableOpacity onPress={onLogout} style={styles.iconButton} activeOpacity={0.7}>
-            <Icons.AntDesign name="logout" size={20} color="#1A1A1A" />
+            <Icons.AntDesign name="logout" size={20} color="#ef4444" />
           </TouchableOpacity>
         </>
       </View>
 
       {/* Search Bar */}
-      <TouchableOpacity style={styles.searchContainer} activeOpacity={0.8} onPress={handleSearchPress}>
+      <TouchableOpacity style={[styles.searchContainer, { backgroundColor: theme.colors.sub_card, borderColor: theme.colors.border }]} activeOpacity={0.8} onPress={handleSearchPress}>
         <Icons.Ionicons name="search" size={20} color="#8E8E93" style={styles.searchIcon} />
         <Text style={styles.searchPlaceholder}>What are you looking for?</Text>
       </TouchableOpacity>
@@ -182,7 +186,6 @@ export default function TopNav({ onCartPress, onSearch, onNotificationPress, onL
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#FFFFFF",
     paddingHorizontal: 10,
     paddingTop: 12,
     paddingBottom: 12,
@@ -224,7 +227,6 @@ const styles = StyleSheet.create({
   },
   locationText: {
     fontSize: 16,
-    color: "#1A1A1A",
     fontWeight: "600",
     flexShrink: 1,
   },
@@ -235,7 +237,6 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#F2F2F7",
     borderRadius: 22,
     paddingVertical: 12,
     paddingHorizontal: 16,

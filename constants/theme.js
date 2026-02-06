@@ -69,6 +69,7 @@ export const CustomDarkTheme = {
     primary2: '#151775ff',
     background: '#1E293B',
     secondary: '#CCCC',
+    disabled: '#BDBDBD',
     card: '#415970ff',
     sub_card: '#415970ff',
     text: '#CCC',

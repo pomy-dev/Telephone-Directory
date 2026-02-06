@@ -2,48 +2,45 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ImageBackground, Platform, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icons } from '../constants/Icons';
+import { AppContext } from '../context/appContext';
+import { AuthContext } from '../context/authProvider';
 import { LinearGradient } from 'expo-linear-gradient'; // Optional: install expo-linear-gradient
 
 // Reusable Menu Item Component
-const MenuItem = ({ item, hideCount = false }) => (
+const MenuItem = ({ item, theme, darkMode }) => (
   <TouchableOpacity style={styles.menuItem} activeOpacity={0.7}>
     <View style={styles.menuItemLeft}>
-      <View style={styles.menuIconContainer}>
-        <Icons.Ionicons name={item.icon} size={20} color="#1a1a1a" />
+      <View style={[styles.menuIconContainer, darkMode && styles.iconContainerDark]}>
+        <Icons.Ionicons name={item.icon} size={20} color={theme.colors.text} />
       </View>
-      <Text style={styles.menuItemTitle}>{item.title}</Text>
+      <Text style={[styles.menuItemTitle, darkMode && { color: theme.colors.text }]}>{item.title}</Text>
     </View>
     <View style={styles.menuItemRight}>
-      {!hideCount && item.count && (
-        <View style={styles.countBadge}>
-          <Text style={styles.countText}>{item.count}</Text>
-        </View>
-      )}
-      <Icons.Feather name="chevron-right" size={20} color="#94a3b8" />
+      <Icons.Feather name="chevron-right" size={20} color={theme.colors.sub_text} />
     </View>
   </TouchableOpacity>
 );
 
-const PreferenceItem = ({ item, darkMode, isDarkMode, isOnline, isNotifications, onToggleDarkMode, onToggleOnline, onToggleNotifications }) => {
+const PreferenceItem = ({ item, theme, darkMode, isDarkMode, isOnline, isNotifications, onToggleDarkMode, onToggleOnline, onToggleNotifications }) => {
   const isToggle = item.toggle;
 
   return (
     <View style={styles.menuItem}>
       <View style={styles.menuItemLeft}>
         <View style={[styles.menuIconContainer, darkMode && styles.iconContainerDark]}>
-          <Icons.Feather name={isToggle ? item.icon1 : item.icon2} size={20} color={darkMode ? '#e2e8f0' : '#1a1a1a'} />
+          <Icons.Feather name={isDarkMode ? item.icon1 : isOnline ? item.icon1 : isNotifications ? item.icon1 : item.icon2} size={20} color={darkMode ? '#e2e8f0' : '#1a1a1a'} />
         </View>
-        <Text style={[styles.menuItemTitle, darkMode && styles.textDark]}>{item.title}</Text>
+        <Text style={[styles.menuItemTitle, darkMode && { color: theme.colors.text }]}>{item.title}</Text>
       </View>
 
       {isToggle ? (
         <Switch
-          value={item.title === 'Dark Mode' ? isDarkMode : isNotifications}
+          value={item.title === 'Dark Mode' ? isDarkMode : item.title === 'Is Online' ? isOnline : isNotifications}
           onValueChange={(value) =>
-            item.title === 'Dark Mode' ? onToggleDarkMode(value) : isOnline ? onToggleOnline : onToggleNotifications(value)
+            item.title === 'Dark Mode' ? onToggleDarkMode(value) : item.title === 'Is Online' ? onToggleOnline(value) : onToggleNotifications(value)
           }
           trackColor={{ false: '#cbd5e1', true: '#3b82f6' }}
-          thumbColor={item.title === 'Dark Mode' && isDarkMode ? '#1e40af' : '#f1f5f9'}
+          thumbColor={(item.title === 'Dark Mode' && isDarkMode) || (item.title === 'Is Online' && isOnline) || (item.title === 'Notifications' && isNotifications) ? '#1e40af' : '#f1f5f9'}
           ios_backgroundColor="#e2e8f0"
         />
       ) : (
@@ -52,12 +49,6 @@ const PreferenceItem = ({ item, darkMode, isDarkMode, isOnline, isNotifications,
     </View>
   );
 };
-
-const menuItems = [
-  { id: '1', title: 'My House Applications', icon: 'bookmarks-outline', count: '5' },
-  { id: '2', title: 'My Tender Bids Progress', icon: 'albums-outline', count: '12' },
-  { id: '3', title: 'My Vacancy Applications', icon: 'person-circle-outline', count: '8' },
-];
 
 const preferencesItems = [
   { id: '4', title: 'Dark Mode', icon1: 'sun', icon2: 'moon', toggle: true },
@@ -72,83 +63,75 @@ const supportItems = [
 ];
 
 export default function ProfileScreen() {
-  const [darkMode, setDarkMode] = useState(false);
-  const [isOnline, setIsOnline] = useState(false);
-  const [notifications, setNotifications] = useState(true);
+  const { theme, isDarkMode, notificationsEnabled, isOnline, toggleTheme, toggleNotifications, toggleOnlineMode } = React.useContext(AppContext);
+  const { user, logout } = React.useContext(AuthContext);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
-        {/* Header */}
-        <View style={styles.header}>
-          <Text style={styles.title}>My Profile</Text>
-          {/* Logout Button */}
-          <TouchableOpacity style={styles.logoutButton}>
-            <Icons.AntDesign name="logout" size={20} color="#ef4444" />
-            <Text style={styles.logoutText}>Sign Out</Text>
-          </TouchableOpacity>
-        </View>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      {/* Header */}
+      <View style={styles.header}>
+        {/* Profile text */}
+        <Text style={[styles.title, { color: theme.colors.text }]}>Profile</Text>
 
-        {/* Hero Profile Card with Gradient */}
-        <ImageBackground
-          source={{ uri: 'https://images.unsplash.com/photo-1506784983877-45594f17c721?w=800&q=80' }}
-          style={styles.heroCard}
-          imageStyle={{ borderRadius: 20, opacity: 0.15 }}
-        >
-          <LinearGradient
-            colors={['rgba(255,255,255,0.1)', 'rgba(255,255,255,0.9)']}
-            style={StyleSheet.absoluteFill}
-          />
-          <View style={styles.heroContent}>
-            <View style={styles.avatarContainer}>
-              <View style={styles.avatar}>
-                <Icons.Ionicons name="person" size={48} color="#fff" />
-              </View>
-              <View style={styles.onlineIndicator} />
+        {/* Logout Button */}
+        <TouchableOpacity onPress={logout} style={styles.logoutButton}>
+          <Icons.AntDesign name="logout" size={20} color="#ef4444" />
+          <Text style={[styles.logoutText, { color: '#ef4444' }]}>Sign Out</Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Hero Profile Card with Gradient */}
+      <ImageBackground
+        source={{ uri: 'https://images.unsplash.com/photo-1506784983877-45594f17c721?w=800&q=80' }}
+        style={styles.heroCard}
+        imageStyle={{ borderRadius: 20, opacity: 0.15 }}
+      >
+        <LinearGradient
+          colors={[theme.colors.background, 'rgba(250, 210, 247, 0.9)']}
+          style={StyleSheet.absoluteFill}
+        />
+        <View style={styles.heroContent}>
+          <View style={styles.avatarContainer}>
+            <View style={styles.avatar}>
+              <Icons.Ionicons name="person" size={48} color="#fff" />
             </View>
+            <View style={styles.onlineIndicator} />
+          </View>
 
-            <View style={styles.profileInfo}>
-              <Text style={styles.name}>John Doe</Text>
-              <Text style={styles.email}>john.doe@example.com</Text>
+          <View style={styles.profileInfo}>
+            <Text style={[styles.name, { color: theme.colors.text }]}>{user.displayName}</Text>
+            <Text style={[styles.email, { color: theme.colors.sub_text }]}>{user.email}</Text>
+            {user.uid &&
               <View style={styles.verifiedBadge}>
-                <Icons.Feather name="check-circle" size={16} color="#10b981" />
-                <Text style={styles.verifiedText}>Verified Account</Text>
+                <Icons.Feather name="check-circle" size={16} color={theme.colors.primary} />
+                <Text style={[styles.verifiedText, { color: theme.colors.primary }]}>Verified Account</Text>
               </View>
-            </View>
-
-            <TouchableOpacity style={styles.editButton}>
-              <Icons.Feather name="edit-2" size={18} color="#fff" />
-              <Text style={styles.editButtonText}>Edit</Text>
-            </TouchableOpacity>
-          </View>
-        </ImageBackground>
-
-        {/* Menu Sections */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Activity</Text>
-          <View style={styles.menuCard}>
-            {menuItems.map((item, index) => (
-              <View key={item.id}>
-                <MenuItem item={item} />
-                {index < menuItems.length - 1 && <View style={styles.divider} />}
-              </View>
-            ))}
+            }
           </View>
         </View>
 
+        <TouchableOpacity style={[styles.editButton, { backgroundColor: theme.colors.indicator }]} activeOpacity={0.8}>
+          <Icons.Feather name="edit-2" size={18} color="#fff" />
+          <Text style={styles.editButtonText}>Edit</Text>
+        </TouchableOpacity>
+      </ImageBackground>
+
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
         <View style={styles.section}>
-          <Text style={[styles.sectionTitle, darkMode && styles.textDark]}>Preferences</Text>
-          <View style={[styles.menuCard, darkMode && styles.cardDark]}>
+          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Preferences</Text>
+          <View style={[styles.menuCard, { backgroundColor: theme.colors.card }]}>
             {preferencesItems.map((item, index) => (
               <View key={item.id}>
                 <PreferenceItem
                   item={item}
-                  darkMode={darkMode}
-                  isDarkMode={item.title === 'Dark Mode' && darkMode}
+                  theme={theme}
+                  darkMode={isDarkMode}
+                  isDarkMode={item.title === 'Dark Mode' && isDarkMode}
                   isOnline={item.title === 'Is Online' && isOnline}
-                  isNotifications={item.title === 'Notifications' && notifications}
-                  onToggleDarkMode={setDarkMode}
-                  onToggleNotifications={setNotifications}
+                  isNotifications={item.title === 'Notifications' && notificationsEnabled}
+                  onToggleDarkMode={toggleTheme}
+                  onToggleOnline={toggleOnlineMode}
+                  onToggleNotifications={toggleNotifications}
                 />
                 {index < preferencesItems.length - 1 && <View style={styles.divider} />}
               </View>
@@ -156,12 +139,12 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Support</Text>
-          <View style={styles.menuCard}>
+        <View style={[styles.section, { marginBottom: 60 }]}>
+          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Support</Text>
+          <View style={[styles.menuCard, { backgroundColor: theme.colors.card }]}>
             {supportItems.map((item, index) => (
               <View key={item.id}>
-                <MenuItem item={item} hideCount />
+                <MenuItem item={item} theme={theme} darkMode={isDarkMode} />
                 {index < supportItems.length - 1 && <View style={styles.divider} />}
               </View>
             ))}
@@ -183,7 +166,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 16,
-    backgroundColor: '#fff',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
@@ -192,23 +174,22 @@ const styles = StyleSheet.create({
         shadowRadius: 8,
       },
       android: {
-        elevation: 4,
+        elevation: 1,
       },
     }),
   },
   title: {
     fontSize: 28,
-    fontWeight: '700',
-    color: '#0f172a',
+    fontWeight: '200',
     letterSpacing: -0.5,
   },
   settingsBtn: {
     padding: 8,
   },
   heroCard: {
-    marginVertical: 16,
-    marginHorizontal: 10,
-    borderRadius: 20,
+    marginBottom: 1,
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
     overflow: 'hidden',
     backgroundColor: '#fff',
     ...Platform.select({
@@ -219,7 +200,7 @@ const styles = StyleSheet.create({
         shadowRadius: 12,
       },
       android: {
-        elevation: 8,
+        elevation: 0,
       },
     }),
   },
@@ -259,12 +240,10 @@ const styles = StyleSheet.create({
   name: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#0f172a',
     marginBottom: 4,
   },
   email: {
     fontSize: 14,
-    color: '#64748b',
     marginBottom: 6,
   },
   verifiedBadge: {
@@ -274,16 +253,18 @@ const styles = StyleSheet.create({
   },
   verifiedText: {
     fontSize: 13,
-    color: '#10b981',
     fontWeight: '600',
   },
   editButton: {
+    position: 'absolute',
+    bottom: 10,
+    right: 15,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#3b82f6',
+    alignSelf: 'flex-end',
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 24,
+    borderRadius: 100,
     gap: 6,
   },
   editButtonText: {
@@ -339,7 +320,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.8,
   },
   menuCard: {
-    backgroundColor: '#fff',
     borderRadius: 16,
     overflow: 'hidden',
     ...Platform.select({
@@ -350,7 +330,7 @@ const styles = StyleSheet.create({
         shadowRadius: 6,
       },
       android: {
-        elevation: 3,
+        elevation: 1,
       },
     }),
   },
@@ -414,18 +394,22 @@ const styles = StyleSheet.create({
     backgroundColor: '#fef2f2',
     gap: 10,
   },
+  approvalButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    borderRadius: 16,
+    backgroundColor: '#f5f2feff',
+    gap: 10,
+  },
   containerDark: {
     backgroundColor: '#0f172a',
-  },
-  cardDark: {
-    backgroundColor: '#1e293b',
   },
   iconContainerDark: {
     backgroundColor: '#334155',
     borderColor: '#475569',
-  },
-  textDark: {
-    color: '#e2e8f0',
   },
 
   // Update section title in dark mode
@@ -439,7 +423,6 @@ const styles = StyleSheet.create({
   },
   logoutText: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#ef4444',
+    fontWeight: '600'
   },
 });

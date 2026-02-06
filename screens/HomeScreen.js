@@ -90,11 +90,11 @@ export default function HomeScreen({ navigation }) {
   }, [])
 
   const renderService = ({ item }) => (
-    <TouchableOpacity style={styles.serviceItem} activeOpacity={0.7} onPress={() => { navigation.navigate(item.screen) }}>
-      <View style={styles.serviceIconContainer}>
+    <TouchableOpacity style={[styles.serviceItem]} activeOpacity={0.7} onPress={() => { navigation.navigate(item.screen) }}>
+      <View style={[styles.serviceIconContainer, { backgroundColor: theme.colors.sub_card, borderColor:'#eeececff' }]}>
         <Image source={item.image} style={styles.serviceIcon} resizeMode="contain" />
       </View>
-      <Text style={styles.serviceText} numberOfLines={2}>
+      <Text style={[styles.serviceText, { color: theme.colors.text }]} numberOfLines={2}>
         {item.name}
       </Text>
     </TouchableOpacity>
@@ -133,11 +133,11 @@ export default function HomeScreen({ navigation }) {
       />
 
       <View style={styles.greetingSection}>
-        <Text style={styles.greetingText}>Good {greetingText} 👋</Text>
+        <Text style={[styles.greetingText, { color: theme.colors.text }]}>Good {greetingText} 👋</Text>
         <Text style={styles.startingText}>{startingText}</Text>
       </View>
 
-      <View style={styles.servicesSection}>
+      <View style={[styles.servicesSection, { backgroundColor: theme.colors.card }]}>
         <FlatList
           data={services}
           renderItem={renderService}
@@ -156,7 +156,6 @@ export default function HomeScreen({ navigation }) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: "#fff",
     flex: 1,
     paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 50,
   },
@@ -168,7 +167,6 @@ const styles = StyleSheet.create({
   greetingText: {
     fontSize: 16,
     fontWeight: "200",
-    color: "#0f172a",
     letterSpacing: -0.5,
     marginBottom: 8,
   },
@@ -181,7 +179,6 @@ const styles = StyleSheet.create({
   },
   servicesSection: {
     paddingHorizontal: 10,
-    backgroundColor: "#fff",
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     marginTop: 8,
@@ -199,8 +196,6 @@ const styles = StyleSheet.create({
     height: 65,
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: "#e2e8f0",
-    backgroundColor: "#f8fafc",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 10,

@@ -332,7 +332,6 @@ export async function getApprovedGigs(userEmail) {
 
 /** approve application */
 export async function approveApplication(applicationId) {
-  console.log('Approving application:', applicationId);
   try {
     const { data, error } = await supabase.rpc(
       "approve_gig_application",
