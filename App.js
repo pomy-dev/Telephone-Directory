@@ -3,87 +3,95 @@ import "react-native-gesture-handler";
 import React, { useContext, useState, useEffect } from "react";
 import { View, Text, StyleSheet, StatusBar, Platform } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { NavigationContainer, useNavigationContainerRef } from "@react-navigation/native";
+import {
+  NavigationContainer,
+  useNavigationContainerRef,
+} from "@react-navigation/native";
 import { Icons } from "./constants/Icons";
 import Toast from "react-native-toast-message";
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { Provider as PaperProvider } from 'react-native-paper';
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { Provider as PaperProvider } from "react-native-paper";
 import * as Notifications from "expo-notifications";
-import { RealmProvider } from '@realm/react';
-import { createBottomTabNavigator } from "@react-navigation/bottom-tabs"
-import { createNativeStackNavigator } from "@react-navigation/native-stack"
+import { RealmProvider } from "@realm/react";
+import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
+import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
 // Basket Provider
-import { BasketProvider } from './context/basketContext';
+import { BasketProvider } from "./context/basketContext";
 
 // loan assist
-import LoanAssist from "./screens/loans/LoanAssist"
-import AIAgent from "./screens/loans/AIAgent"
-import LoanDetails from "./screens/loans/LoanDetails"
-import LoanCompare from "./screens/loans/LoanCompare"
-import LoanCalculator from "./screens/loans/LoanCalculator"
+import LoanAssist from "./screens/loans/LoanAssist";
+import AIAgent from "./screens/loans/AIAgent";
+import LoanDetails from "./screens/loans/LoanDetails";
+import LoanCompare from "./screens/loans/LoanCompare";
+import LoanCalculator from "./screens/loans/LoanCalculator";
 
 // screens
 import HomeScreen from "./screens/HomeScreen"
 import SavedListsScreen from './screens/SavedListItems'
 import FavoritesScreen from "./screens/FavoritesScreen"
-import NotificationListScreen from "./screens/notifications/NotificationList"
+// import PeopleScreen from "./screens/people/PeopleProfiles"
 import SettingsScreen from "./screens/SettingsScreen"
 import LoginScreen from "./screens/Login"
 import SignupScreen from "./screens/SignUp"
 
 // business directory screens
-import DirectoryScreen from "./screens/directory/DirectoryHome"
-import BusinessDetailScreen from "./screens/directory/BusinessDetailsScreen"
-import BusinessScreen from "./screens/directory/BusinessesScreen"
-import FeaturedScreen from "./screens/directory/FeaturedScreen"
-import BusinessList from "./screens/directory/BusinessListScreen"
+import DirectoryScreen from "./screens/directory/DirectoryHome";
+import BusinessDetailScreen from "./screens/directory/BusinessDetailsScreen";
+import BusinessScreen from "./screens/directory/BusinessesScreen";
+import FeaturedScreen from "./screens/directory/FeaturedScreen";
+import BusinessList from "./screens/directory/BusinessListScreen";
 
 // business tenders
-import AddTenderScreen from "./screens/tenders/AddTenderScreen"
-import TenderDetailsScreen from "./screens/tenders/TenderDetailsScreen"
-import PublishedTendersScreen from "./screens/tenders/PublishedTendersScreen"
-import BidTenderScreen from "./screens/tenders/BidTenderScreen"
-import MyBidsScreen from "./screens/tenders/MyBidsScreen"
+import AddTenderScreen from "./screens/tenders/AddTenderScreen";
+import TenderDetailsScreen from "./screens/tenders/TenderDetailsScreen";
+import PublishedTendersScreen from "./screens/tenders/PublishedTendersScreen";
+import BidTenderScreen from "./screens/tenders/BidTenderScreen";
+import MyBidsScreen from "./screens/tenders/MyBidsScreen";
 
 // vancancies screens
-import VacanciesScreen from "./screens/vacancies/VacanciesScreen"
+import VacanciesScreen from "./screens/vacancies/VacanciesScreen";
 
 // gigs
-import GigsScreen from "./screens/piece-jobs/GigsScreen"
-import PostJobScreen from "./screens/piece-jobs/PostJobScreen"
+import GigsScreen from "./screens/piece-jobs/GigsScreen";
+import GigDrawerNavigator from "./screens/piece-jobs/GigDrawerNavigator";
+import PostJobScreen from "./screens/piece-jobs/PostJobScreen";
+
 // jobs
-import JobDetailScreen from "./screens/piece-jobs/JobDetailScreen"
+import JobDetailScreen from "./screens/piece-jobs/JobDetailScreen";
+import WorkerRegistrationScreen from "./screens/piece-jobs/WorkerRegistration";
+import MyPostedGigsScreen from "./screens/piece-jobs/MyPostedGigsScreen";
+import JobInboxScreen from "./screens/piece-jobs/JobInboxScreen";
 
 // Property Rental
-import PropertyScreen from "./screens/property-rental/PropertyScreen"
+import PropertyScreen from "./screens/property-rental/PropertyScreen";
 // import RentalHousesScreen from "./screens/property-rental/RentalHousesScreen"
-import MoreHouses from "./screens/property-rental/MoreHouses"
-import HouseDetailsScreen from "./screens/property-rental/HouseDetailsScreen"
-import HouseMapScreen from "./screens/property-rental/HouseMapScreen"
-import RentalHouseDetailsScreen from "./screens/property-rental/RentalHouseDetailsScreen"
-import PostRentalHouseScreen from "./screens/property-rental/PostRentalHouseScreen"
-import ApplyRentalScreen from "./screens/property-rental/ApplyRentalScreen"
-import MyRentalApplicationsScreen from "./screens/property-rental/MyRentalApplicationsScreen"
-import LeaseItemsScreen from "./screens/property-rental/LeaseItemsScreen"
-import PostLeaseItemScreen from "./screens/property-rental/PostLeaseItemScreen"
-import LeaseItemDetailsScreen from "./screens/property-rental/LeaseItemDetailsScreen"
+import MoreHouses from "./screens/property-rental/MoreHouses";
+import HouseDetailsScreen from "./screens/property-rental/HouseDetailsScreen";
+import HouseMapScreen from "./screens/property-rental/HouseMapScreen";
+import RentalHouseDetailsScreen from "./screens/property-rental/RentalHouseDetailsScreen";
+import PostRentalHouseScreen from "./screens/property-rental/PostRentalHouseScreen";
+import ApplyRentalScreen from "./screens/property-rental/ApplyRentalScreen";
+import MyRentalApplicationsScreen from "./screens/property-rental/MyRentalApplicationsScreen";
+import LeaseItemsScreen from "./screens/property-rental/LeaseItemsScreen";
+import PostLeaseItemScreen from "./screens/property-rental/PostLeaseItemScreen";
+import LeaseItemDetailsScreen from "./screens/property-rental/LeaseItemDetailsScreen";
 
-import AgentDetailsScreen from "./screens/property-rental/AgentDetailsScreen"
+import AgentDetailsScreen from "./screens/property-rental/AgentDetailsScreen";
 
 // forehires (transportation)
-import TransportationListScreen from "./screens/forehires/TransportationListScreen"
-import TransportationDetailsScreen from "./screens/forehires/TransportationDetailsScreen"
-import PostTransportationScreen from "./screens/forehires/PostTransportationScreen"
-import BookTransportationScreen from "./screens/forehires/BookTransportationScreen"
+import TransportationListScreen from "./screens/forehires/TransportationListScreen";
+import TransportationDetailsScreen from "./screens/forehires/TransportationDetailsScreen";
+import PostTransportationScreen from "./screens/forehires/PostTransportationScreen";
+import BookTransportationScreen from "./screens/forehires/BookTransportationScreen";
 
-import HomeDealScreen from './screens/special-deals/HomeDeals'
-import SearchDealScreen from './screens/special-deals/SearchScreen'
-import ItemCompareScreen from './screens/special-deals/ItemCompareScreen'
-import BasketScreen from './screens/special-deals/BasketScreen'
-import PamphletScanner from './screens/special-deals/PamphletScanner'
+import HomeDealScreen from "./screens/special-deals/HomeDeals";
+import SearchDealScreen from "./screens/special-deals/SearchScreen";
+import ItemCompareScreen from "./screens/special-deals/ItemCompareScreen";
+import BasketScreen from "./screens/special-deals/BasketScreen";
+import PamphletScanner from "./screens/special-deals/PamphletScanner";
 
-// Splash Screen 
+// Splash Screen
 import SplashScreen from "./screens/SplashScreen";
 
 // App Context
@@ -91,7 +99,15 @@ import { AppContext, AppProvider } from "./context/appContext";
 import { AuthProvider, AuthContext } from "./context/authProvider";
 
 // Directory Model
-import { Entity, PhoneObject, SocialMediaObject, WorkingHoursObject, TeamMember, GeoPoint, Review } from './models/Entity';
+import {
+  Entity,
+  PhoneObject,
+  SocialMediaObject,
+  WorkingHoursObject,
+  TeamMember,
+  GeoPoint,
+  Review,
+} from "./models/Entity";
 
 // Configure notification handler
 Notifications.setNotificationHandler({
@@ -103,8 +119,8 @@ Notifications.setNotificationHandler({
   }),
 });
 
-const Tab = createBottomTabNavigator()
-const Stack = createNativeStackNavigator()
+const Tab = createBottomTabNavigator();
+const Stack = createNativeStackNavigator();
 
 // Request notification permissions
 async function requestNotificationPermissions() {
@@ -160,8 +176,12 @@ function Tabs() {
         component={FavoritesScreen}
         options={{
           tabBarIcon: ({ focused, color }) => (
-            <Icons.MaterialCommunityIcons name={focused ? "notebook-check" : "notebook-check-outline"} size={24} color={color} />
-          )
+            <Icons.MaterialCommunityIcons
+              name={focused ? "notebook-check" : "notebook-check-outline"}
+              size={24}
+              color={color}
+            />
+          ),
         }}
       />
       <Tab.Screen
@@ -209,12 +229,12 @@ function Tabs() {
         component={SettingsScreen}
         options={{
           tabBarIcon: ({ focused, color }) => (
-            <Icons.MaterialCommunityIcons name={focused ? "account-cog" : "account-cog-outline"} size={28} color={color} />
+            <Icons.Ionicons name={focused ? "settings" : "settings-outline"} size={24} color={color} />
           )
         }}
       />
     </Tab.Navigator>
-  )
+  );
 }
 
 export default function App() {
@@ -274,7 +294,7 @@ function AppContent() {
     const subscription = Notifications.addNotificationResponseReceivedListener(
       (response) => {
         handleNotification(response.notification);
-      }
+      },
     );
 
     // Request permissions on mount
@@ -318,7 +338,15 @@ function AppContent() {
     <SafeAreaProvider>
       <RealmProvider
         schemaVersion={2}
-        schema={[Entity, PhoneObject, SocialMediaObject, WorkingHoursObject, TeamMember, GeoPoint, Review]}
+        schema={[
+          Entity,
+          PhoneObject,
+          SocialMediaObject,
+          WorkingHoursObject,
+          TeamMember,
+          GeoPoint,
+          Review,
+        ]}
       >
         {!isAppReady ? (
           <SplashScreen onConnectionSuccess={() => setIsAppReady(true)} />
@@ -328,92 +356,214 @@ function AppContent() {
               <PaperProvider theme={theme}>
                 <BasketProvider>
                   <NavigationContainer ref={navigationRef} theme={theme}>
-                    <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName={loading ? "SplashLoading" : (user ? "MainTabs" : "Login")}>
+                    <Stack.Navigator
+                      screenOptions={{ headerShown: false }}
+                      initialRouteName={
+                        user ? "MainTabs" : "Login"
+                        // loading ? "SplashLoading" : user ? "MainTabs" : "Login"
+                      }
+                    >
                       {/* Loading state */}
-                      {loading && (
+                      {/* {loading && (
                         <Stack.Screen
                           name="SplashLoading"
                           component={SplashScreen}
                           options={{ animationEnabled: false }}
                         />
-                      )}
+                      )} */}
+
 
                       {/* Auth Screens */}
                       {!user ? (
                         <>
-                          <Stack.Screen name="Login" component={LoginScreen} options={{ animationEnabled: false }} />
-                          <Stack.Screen name="Signup" component={SignupScreen} />
+                          <Stack.Screen
+                            name="Login"
+                            component={LoginScreen}
+                            options={{ animationEnabled: false }}
+                          />
+                          <Stack.Screen
+                            name="Signup"
+                            component={SignupScreen}
+                          />
                         </>
                       ) : (
                         <>
                           {/* Main App Screens */}
                           <Stack.Screen name="MainTabs" component={Tabs} options={{ animationEnabled: false }} />
 
-                          {/* Notification List Screen */}
-                          <Stack.Screen name="Nots" component={NotificationListScreen} />
-
                           {/* Business Directory */}
-                          <Stack.Screen name="DirectoryScreen" component={DirectoryScreen} />
-                          <Stack.Screen name="BusinessList" component={BusinessList} />
-                          <Stack.Screen name="BusinessesScreen" component={BusinessScreen} />
-                          <Stack.Screen name="FeaturedList" component={FeaturedScreen} />
-                          <Stack.Screen name="BusinessDetails" component={BusinessDetailScreen} />
+                          <Stack.Screen
+                            name="DirectoryScreen"
+                            component={DirectoryScreen}
+                          />
+                          <Stack.Screen
+                            name="BusinessList"
+                            component={BusinessList}
+                          />
+                          <Stack.Screen
+                            name="BusinessesScreen"
+                            component={BusinessScreen}
+                          />
+                          <Stack.Screen
+                            name="FeaturedList"
+                            component={FeaturedScreen}
+                          />
+                          <Stack.Screen
+                            name="BusinessDetails"
+                            component={BusinessDetailScreen}
+                          />
 
                           {/* Liked Businesses */}
-                          <Stack.Screen name="Favorites" component={FavoritesScreen} />
+                          <Stack.Screen
+                            name="Favorites"
+                            component={FavoritesScreen}
+                          />
 
                           {/* list items screen */}
-                          <Stack.Screen name="SavedListScreen" component={SavedListsScreen} />
+                          <Stack.Screen
+                            name="SavedListScreen"
+                            component={SavedListsScreen}
+                          />
 
                           {/* Tenders  */}
-                          <Stack.Screen name="AddTenderScreen" component={AddTenderScreen} />
-                          <Stack.Screen name="TenderDetailsScreen" component={TenderDetailsScreen} />
-                          <Stack.Screen name="PublishedTendersScreen" component={PublishedTendersScreen} />
-                          <Stack.Screen name="BidTenderScreen" component={BidTenderScreen} />
-                          <Stack.Screen name="MyBidsScreen" component={MyBidsScreen} />
+                          <Stack.Screen
+                            name="AddTenderScreen"
+                            component={AddTenderScreen}
+                          />
+                          <Stack.Screen
+                            name="TenderDetailsScreen"
+                            component={TenderDetailsScreen}
+                          />
+                          <Stack.Screen
+                            name="PublishedTendersScreen"
+                            component={PublishedTendersScreen}
+                          />
+                          <Stack.Screen
+                            name="BidTenderScreen"
+                            component={BidTenderScreen}
+                          />
+                          <Stack.Screen
+                            name="MyBidsScreen"
+                            component={MyBidsScreen}
+                          />
 
                           {/* Piece Jobs  */}
-                          <Stack.Screen name="GigsScreen" component={GigsScreen} />
-                          <Stack.Screen name="JobDetailScreen" component={JobDetailScreen} />
-                          <Stack.Screen name="PostJobScreen" component={PostJobScreen} />
+                          <Stack.Screen
+                            name="GigsScreen"
+                            component={GigDrawerNavigator}
+                          />
+                          <Stack.Screen
+                            name="JobDetailScreen"
+                            component={JobDetailScreen}
+                          />
+                          <Stack.Screen
+                            name="PostJobScreen"
+                            component={PostJobScreen}
+                          />
+
+                          <Stack.Screen
+                            name="WorkerRegistration"
+                            component={WorkerRegistrationScreen}
+                          />
+                          <Stack.Screen
+                            name="MyPostedGigs"
+                            component={MyPostedGigsScreen}
+                          />
+                          <Stack.Screen
+                            name="JobInbox"
+                            component={JobInboxScreen}
+                          />
 
                           {/* vacancies */}
-                          <Stack.Screen name="VacanciesScreen" component={VacanciesScreen} />
+                          <Stack.Screen
+                            name="VacanciesScreen"
+                            component={VacanciesScreen}
+                          />
 
                           {/* rental houses */}
                           <Stack.Screen name="PropertyScreen" component={PropertyScreen} />
+                          {/* <Stack.Screen name="RentalHousesScreen" component={RentalHousesScreen} /> */}
                           <Stack.Screen name="MoreHouses" component={MoreHouses} />
                           <Stack.Screen name="HouseDetailsScreen" component={HouseDetailsScreen} />
                           <Stack.Screen name="HouseMapScreen" component={HouseMapScreen} />
                           <Stack.Screen name="AgentDetailsScreen" component={AgentDetailsScreen} />
+                          {/* <Stack.Screen name="RentalHouseDetailsScreen" component={RentalHouseDetailsScreen} /> */}
                           <Stack.Screen name="PostRentalHouseScreen" component={PostRentalHouseScreen} />
                           <Stack.Screen name="ApplyRentalScreen" component={ApplyRentalScreen} />
                           <Stack.Screen name="MyRentalApplicationsScreen" component={MyRentalApplicationsScreen} />
 
                           {/* lease items */}
-                          <Stack.Screen name="LeaseItemsScreen" component={LeaseItemsScreen} />
-                          <Stack.Screen name="PostLeaseItemScreen" component={PostLeaseItemScreen} />
-                          <Stack.Screen name="LeaseItemDetailsScreen" component={LeaseItemDetailsScreen} />
+                          <Stack.Screen
+                            name="LeaseItemsScreen"
+                            component={LeaseItemsScreen}
+                          />
+                          <Stack.Screen
+                            name="PostLeaseItemScreen"
+                            component={PostLeaseItemScreen}
+                          />
+                          <Stack.Screen
+                            name="LeaseItemDetailsScreen"
+                            component={LeaseItemDetailsScreen}
+                          />
 
                           {/* transport for hire */}
-                          <Stack.Screen name="TransportationListScreen" component={TransportationListScreen} />
-                          <Stack.Screen name="TransportationDetailsScreen" component={TransportationDetailsScreen} />
-                          <Stack.Screen name="PostTransportationScreen" component={PostTransportationScreen} />
-                          <Stack.Screen name="BookTransportationScreen" component={BookTransportationScreen} />
+                          <Stack.Screen
+                            name="TransportationListScreen"
+                            component={TransportationListScreen}
+                          />
+                          <Stack.Screen
+                            name="TransportationDetailsScreen"
+                            component={TransportationDetailsScreen}
+                          />
+                          <Stack.Screen
+                            name="PostTransportationScreen"
+                            component={PostTransportationScreen}
+                          />
+                          <Stack.Screen
+                            name="BookTransportationScreen"
+                            component={BookTransportationScreen}
+                          />
 
                           {/* loan assist */}
-                          <Stack.Screen name="LoanAssist" component={LoanAssist} />
+                          <Stack.Screen
+                            name="LoanAssist"
+                            component={LoanAssist}
+                          />
                           <Stack.Screen name="Ask-AI" component={AIAgent} />
-                          <Stack.Screen name="LoanDetails" component={LoanDetails} />
-                          <Stack.Screen name="LoanCompare" component={LoanCompare} />
-                          <Stack.Screen name="LoanCalculator" component={LoanCalculator} />
+                          <Stack.Screen
+                            name="LoanDetails"
+                            component={LoanDetails}
+                          />
+                          <Stack.Screen
+                            name="LoanCompare"
+                            component={LoanCompare}
+                          />
+                          <Stack.Screen
+                            name="LoanCalculator"
+                            component={LoanCalculator}
+                          />
 
                           {/* deals assist */}
-                          <Stack.Screen name="SpecialDeals" component={HomeDealScreen} />
-                          <Stack.Screen name="SearchDeal" component={SearchDealScreen} />
-                          <Stack.Screen name="ItemComparison" component={ItemCompareScreen} />
-                          <Stack.Screen name="BasketScreen" component={BasketScreen} />
-                          <Stack.Screen name="ScanDealScreen" component={PamphletScanner} />
+                          <Stack.Screen
+                            name="SpecialDeals"
+                            component={HomeDealScreen}
+                          />
+                          <Stack.Screen
+                            name="SearchDeal"
+                            component={SearchDealScreen}
+                          />
+                          <Stack.Screen
+                            name="ItemComparison"
+                            component={ItemCompareScreen}
+                          />
+                          <Stack.Screen
+                            name="BasketScreen"
+                            component={BasketScreen}
+                          />
+                          <Stack.Screen
+                            name="ScanDealScreen"
+                            component={PamphletScanner}
+                          />
                         </>
                       )}
                     </Stack.Navigator>
@@ -448,7 +598,7 @@ const styles = StyleSheet.create({
     elevation: 12,
     paddingHorizontal: 12,
     paddingVertical: 0,
-    paddingTop: 10
+    paddingTop: 10,
   },
   fabButtonWrapper: {
     top: -10,
@@ -467,4 +617,4 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 12,
   },
-})
+});

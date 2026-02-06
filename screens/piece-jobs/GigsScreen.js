@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect,useContext } from "react";
 import {
   View,
   Text,
@@ -18,6 +18,7 @@ import SecondaryNav from "../../components/SecondaryNav";
 import { getPomyGigs, subscribeToGigs } from "../../service/Supabase-Fuctions";
 import { AppContext } from "../../context/appContext";
 import { supabase } from "../../service/Supabase-Client";
+import { AuthContext } from "../../context/authProvider";
 
 const CATEGORIES = [
   {
@@ -137,6 +138,7 @@ const mapDatabaseToUI = (dbGigs, userLocation = null) => {
 };
 
 const GigsScreen = ({ navigation }) => {
+  const { user } = React.useContext(AuthContext);
   const { theme } = React.useContext(AppContext);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [userLocation, setUserLocation] = useState(null);
@@ -199,6 +201,7 @@ const GigsScreen = ({ navigation }) => {
       afterCreatedAt: isLoadMore ? nextCursor.createdAt : null,
       afterId: isLoadMore ? nextCursor.id : null,
       pageSize: 15,
+      p_exclude_email: user?.email
     };
 
     const result = await getPomyGigs(filters);
@@ -282,12 +285,26 @@ const GigsScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={{ height: 30 }} />
-      <SecondaryNav
-        title="Explore Gigs"
-        rightIcon="add-circle-outline"
-        onRightPress={() => navigation.navigate("PostJobScreen")}
-        onBackPress={() => navigation.goBack()}
-      />
+            {/* Custom Modern Header */}
+      <View style={styles.customHeader}>
+        <TouchableOpacity 
+          style={styles.headerIconButton} 
+          onPress={() => navigation.openDrawer()}
+        >
+          <Icons.Ionicons name="menu-outline" size={28} color="#000" />
+        </TouchableOpacity>
+      
+        <Text style={styles.headerTitleText}>Explore Gigs</Text>
+      
+        <TouchableOpacity 
+          style={styles.headerIconButton} 
+          onPress={() => navigation.navigate("MyPostedGigs")}
+        >
+          <Icons.Ionicons name="briefcase-outline" size={24} color="#000" />
+          {/* Optional: Small notification dot if they have active gigs */}
+          <View style={styles.dot} />
+        </TouchableOpacity>
+      </View>
 
       {/* FIXED TOP SECTION */}
       <View style={styles.headerGroup}>
@@ -548,7 +565,43 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     backgroundColor: "#fafafa",
     // Ensure it doesn't float
-    width: '100%',
+    width: "100%",
+  },
+  customHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    backgroundColor: '#fff',
+    // Subtle shadow for depth
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  headerTitleText: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#000',
+    letterSpacing: -0.5,
+  },
+  headerIconButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 12,
+    backgroundColor: '#f8f9fa', // Light grey background for the buttons
+  },
+  dot: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#10b981', // Green dot for "My Gigs"
+    borderWidth: 1.5,
+    borderColor: '#fff',
   },
 });
 
