@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import {
   View,
   Text,
@@ -11,9 +11,12 @@ import {
   Platform,
   UIManager,
   Linking,
+  LayoutAnimation,
   Alert,
   ActivityIndicator,
   Modal,
+  Image,
+  Animated,
   ScrollView,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -24,8 +27,11 @@ import {
   getGigApplicants,
   updateApplicationStatus,
   approveGigApplication,
+  deleteMyApplication
 } from "../../service/Supabase-Fuctions";
 import { AuthContext } from "../../context/authProvider";
+import { AppContext } from "../../context/appContext";
+import CustomLoader from "../../components/customLoader";
 
 const JobInboxScreen = ({ route, navigation }) => {
   const insets = useSafeAreaInsets();
@@ -33,9 +39,45 @@ const JobInboxScreen = ({ route, navigation }) => {
   const [applicants, setApplicants] = useState([]);
   const [loading, setLoading] = useState(true);
   const { user } = React.useContext(AuthContext);
+  const { theme } = React.useContext(AppContext);
 
   const [selectedApp, setSelectedApp] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [expandedItems, setExpandedItems] = useState({});
+  const rotateAnims = useRef(new Map()); // id → Animated.Value
+
+  const getRotateAnim = (id) => {
+    if (!rotateAnims.current.has(id)) {
+      rotateAnims.current.set(id, new Animated.Value(0));
+    }
+    return rotateAnims.current.get(id);
+  };
+
+  const toggleExpand = (id) => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+
+    setExpandedItems((prev) => {
+      const newState = { ...prev, [id]: !prev[id] };
+      const isNowExpanded = newState[id];
+
+      const anim = getRotateAnim(id);
+      Animated.timing(anim, {
+        toValue: isNowExpanded ? 1 : 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+
+      return newState;
+    });
+  };
+
+  const getSpin = (id) => {
+    const anim = getRotateAnim(id);
+    return anim.interpolate({
+      inputRange: [0, 1],
+      outputRange: ['0deg', '180deg'],
+    });
+  };
 
   useEffect(() => {
     loadApplicants();
@@ -177,132 +219,6 @@ const JobInboxScreen = ({ route, navigation }) => {
     }
   }
 
-  const renderMyApplicationItem = ({ item }) => {
-    const [isExpanded, setIsExpanded] = useState(false);
-
-    // Optional: for smoother animation (you can remove if you prefer LayoutAnimation only)
-    const [rotateAnim] = useState(new Animated.Value(0));
-
-    const toggleExpand = () => {
-      LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-
-      Animated.timing(rotateAnim, {
-        toValue: isExpanded ? 0 : 1,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-
-      setIsExpanded(!isExpanded);
-    };
-
-    const spin = rotateAnim.interpolate({
-      inputRange: [0, 1],
-      outputRange: ['0deg', '180deg'],
-    });
-
-    // You can format these dates/numbers as needed
-    const appliedDate = new Date(item.appliedDate).toLocaleDateString('en-GB', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    });
-
-    return (
-      <View style={styles.listItemcontainer}>
-        {/* Main clickable row */}
-        <TouchableOpacity
-          style={styles.listItemHeaderRow}
-          onPress={toggleExpand}
-          activeOpacity={0.8}
-        >
-          <View style={styles.leftContent}>
-            <Text style={styles.jobTitle} numberOfLines={1}>
-              {item.jobTitle}
-            </Text>
-
-            <View style={styles.metaRow}>
-              <Text style={styles.category}>{item.category}</Text>
-              <Text style={styles.price}>
-                {item.price ? `${item.price} ${item.currency || ''}` : '—'}
-              </Text>
-            </View>
-
-            <View style={styles.statusDateRow}>
-              <View style={[
-                styles.statusBadge,
-                { backgroundColor: getStatusColor(item.status) }
-              ]}>
-                <Text style={styles.listItemstatusText}>{item.status}</Text>
-              </View>
-
-              <Text style={styles.appliedDate}>Applied {appliedDate}</Text>
-            </View>
-          </View>
-
-          <Animated.View style={{ transform: [{ rotate: spin }] }}>
-            <Ionicons
-              name="chevron-down"
-              size={24}
-              color="#666"
-            />
-          </Animated.View>
-        </TouchableOpacity>
-
-        {/* Expanded content */}
-        {isExpanded && (
-          <View style={styles.expandedContent}>
-            {/* Employer Info */}
-            <View style={styles.listItemsection}>
-              <Text style={styles.sectionTitle}>Employer</Text>
-              <Text style={styles.employerName}>{item.employer?.name || 'N/A'}</Text>
-              {item.employer?.company && (
-                <Text style={styles.company}>{item.employer.company}</Text>
-              )}
-              {item.employer?.location && (
-                <Text style={styles.location}>{item.employer.location}</Text>
-              )}
-            </View>
-
-            {/* Requirements */}
-            {item.requirements && item.requirements.length > 0 && (
-              <View style={styles.listItemsection}>
-                <Text style={styles.listItemsectionTitle}>Requirements</Text>
-                {item.requirements.map((req, index) => (
-                  <Text key={index} style={styles.requirementItem}>
-                    • {req}
-                  </Text>
-                ))}
-              </View>
-            )}
-
-            {/* Action Buttons */}
-            <View style={styles.buttonRow}>
-              <TouchableOpacity
-                style={[styles.actionButton, styles.cancelButton]}
-                onPress={() => {
-                  // handleCancelApplication(item.id)
-                  console.log('Cancel application', item.id);
-                }}
-              >
-                <Text style={styles.cancelButtonText}>Cancel Application</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.actionButton, styles.reapplyButton]}
-                onPress={() => {
-                  // handleReapply(item.id)
-                  console.log('Re-apply', item.id);
-                }}
-              >
-                <Text style={styles.reapplyButtonText}>Re-apply</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-      </View>
-    );
-  };
-
   // Helper function for status colors
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
@@ -317,6 +233,176 @@ const JobInboxScreen = ({ route, navigation }) => {
       default:
         return '#3498db'; // blue
     }
+  };
+
+  const renderMyApplicationItem = ({ item }) => {
+    const isExpanded = !!expandedItems[item.application_id];
+    // You can format these dates/numbers as needed
+    const appliedDate = new Date(item.applied_at).toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+    });
+
+    return (
+      <View style={styles.listItemcontainer}>
+        {/* Main clickable row */}
+        <TouchableOpacity
+          style={styles.listItemHeaderRow}
+          onPress={() => toggleExpand(item.application_id)}
+          activeOpacity={0.8}
+        >
+          <View style={styles.leftContent}>
+            <Text style={styles.jobTitle} numberOfLines={1}>
+              {item.job_title}
+            </Text>
+
+            <View style={styles.metaRow}>
+              <Text style={styles.category}>{item.job_category}</Text>
+              <Text style={styles.price}>
+                {item?.job_price ? `E${item?.job_price}.00` : 'Price None'}
+              </Text>
+            </View>
+
+            <View style={styles.statusDateRow}>
+              <View style={[
+                styles.statusBadge,
+                { backgroundColor: getStatusColor(item.application_status) }
+              ]}>
+                <Text style={styles.listItemstatusText}>{item.application_status}</Text>
+              </View>
+
+              <Text style={styles.appliedDate}>Applied {appliedDate}</Text>
+            </View>
+          </View>
+
+          <Animated.View style={{ transform: [{ rotate: getSpin(item.application_id) }] }}>
+            <Icons.Ionicons name="chevron-down" size={24} color="#666" />
+          </Animated.View>
+        </TouchableOpacity>
+
+        {/* Expanded content */}
+        {isExpanded && (
+          <ScrollView contentContainerStyle={styles.expandedContent}>
+            {/* Employer Info */}
+            <View style={[styles.listItemsection, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
+              <View>
+                <Text style={styles.sectionTitle}>Employer</Text>
+                <Text numberOfLines={1} ellipsizeMode="tail" style={styles.employerName}>👤{item.posted_by?.name || 'N/A'}</Text>
+                {item.employer?.company && (
+                  <Text numberOfLines={1} ellipsizeMode="tail" style={styles.company}>{item.employer.company}</Text>
+                )}
+                {item.job_location && (
+                  <Text numberOfLines={1} ellipsizeMode="tail" style={styles.location}>📍{item?.job_location?.address}</Text>
+                )}
+              </View>
+              {/* Call employer */}
+              <TouchableOpacity style={styles.iconCallBtn} onPress={() => Linking.openURL(`tel:${item.posted_by?.phone}`)}>
+                <Icons.Ionicons name="call" size={30} color={theme.colors.indicator} />
+              </TouchableOpacity>
+
+            </View>
+
+            {/* job description */}
+            {item.job_description && (
+              <View style={styles.listItemsection}>
+                <Text style={styles.sectionTitle}>Job Description</Text>
+                <Text style={styles.requirementItem}>{item.job_description}</Text>
+              </View>
+            )}
+
+            {/* Requirements */}
+            {item.job_requirements && item.job_requirements.length > 0 && (
+              <View style={styles.listItemsection}>
+                <Text style={styles.listItemsectionTitle}>Requirements</Text>
+                {item.job_requirements.map((req, index) => (
+                  <Text key={index} style={styles.requirementItem}>
+                    • {req}
+                  </Text>
+                ))}
+              </View>
+            )}
+
+            {/* get directions button */}
+            {item.job_location && (
+              <TouchableOpacity
+                style={[styles.directionBtn, { backgroundColor: theme.colors.primary }]}
+                onPress={() => {
+                  const { latitude, longitude } = item.job_location;
+                  const url = Platform.select({
+                    ios: `maps:0,0?q=${latitude},${longitude}`,
+                    android: `geo:0,0?q=${latitude},${longitude}`,
+                  });
+                  Linking.openURL(url);
+                }}
+              >
+                <Icons.Ionicons name="navigate" size={16} color="#fff" />
+                <Text style={styles.reapplyButtonText}>Get Directions</Text>
+              </TouchableOpacity>
+            )}
+
+            {/* images */}
+            {item.job_images && item.job_images.length > 0 && (
+              <View style={styles.listItemsection}>
+                <Text style={styles.listItemsectionTitle}>Job Snapshots</Text>
+                <ScrollView horizontal contentContainerStyle={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap' }}>
+                  {item.job_images.map((file, index) => (
+                    <TouchableOpacity key={index} style={styles.imageContainer} onPress={() => Linking.openURL(file.url)}>
+                      <Image source={{ uri: file.url }} style={styles.imageAttached} />
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+
+            {/* Action Buttons */}
+            {(item.application_status === 'rejected' || item.application_status === 'pending') &&
+              <View style={styles.buttonRow}>
+                <TouchableOpacity
+                  style={[styles.listItemactionButton, styles.cancelButton]}
+                  onPress={() => cancelMyApplication(item.application_id)}
+                >
+                  <Text style={styles.cancelButtonText}>Cancel Application</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.listItemactionButton, styles.reapplyButton]}
+                  onPress={() => {
+                    // handleReapply(item.id)
+                    console.log('Re-apply', item.id);
+                  }}
+                >
+                  <Text style={styles.reapplyButtonText}>Re-apply</Text>
+                </TouchableOpacity>
+              </View>}
+          </ScrollView>
+        )}
+      </View>
+    );
+  };
+
+  const cancelMyApplication = async (applicationId) => {
+    Alert.alert("Confirm Cancellation", "Are you sure you want to cancel your application for this job?", [
+      { text: "No", style: "cancel" },
+      {
+        text: "Yes, Cancel", style: "destructive", onPress: async () => {
+          try {
+            setLoading(true);
+            const res = await deleteMyApplication(applicationId, user.email);
+            if (res.success) {
+              CustomToast("Application Cancelled❌", "Your application has been cancelled.");
+              loadApplicants(); // Refresh the list to show new status
+            } else {
+              CustomToast("Error", res.error);
+            }
+          } catch (error) {
+            Alert.alert("Error", error.message);
+          } finally {
+            setLoading(false);
+          }
+        }
+      }
+    ]);
   };
 
   return (
@@ -334,17 +420,13 @@ const JobInboxScreen = ({ route, navigation }) => {
       </View>
 
       {loading ? (
-        <ActivityIndicator
-          size="large"
-          color="#10b981"
-          style={{ marginTop: 50 }}
-        />
+        <CustomLoader />
       ) : (
         <FlatList
           data={applicants}
-          renderItem={renderApplicant}
+          renderItem={gigSelection === 'applied' ? renderMyApplicationItem : renderApplicant}
           keyExtractor={(item, index) => `${item.id}-${index}`}
-          contentContainerStyle={{ padding: 16 }}
+          contentContainerStyle={{ paddingBottom: 60 }}
           ListEmptyComponent={
             <Text style={styles.emptyText}>No applications yet.</Text>
           }
@@ -518,12 +600,10 @@ const styles = StyleSheet.create({
   // list view styles of my applied for gigs
   listItemcontainer: {
     backgroundColor: '#fff',
-    marginHorizontal: 12,
     marginVertical: 6,
-    borderRadius: 12,
     overflow: 'hidden',
-    borderWidth: 1,
     borderColor: '#eee',
+    elevation: 4,
   },
   listItemHeaderRow: {
     flexDirection: 'row',
@@ -627,6 +707,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  directionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 12,
+    justifyContent: 'center',
+    borderRadius: 50,
+    marginBottom: 12
+  },
   cancelButton: {
     backgroundColor: '#f8f9fa',
     borderWidth: 1,
@@ -661,6 +750,7 @@ const styles = StyleSheet.create({
 
   // List Cards
   appCard: {
+    marginHorizontal: 12,
     backgroundColor: "#fff",
     borderRadius: 12,
     padding: 15,
@@ -682,7 +772,7 @@ const styles = StyleSheet.create({
   name: { fontSize: 16, fontWeight: "700", color: "#000" },
   skillText: { fontSize: 12, color: "#666", marginTop: 2 },
   contactText: { fontSize: 11, color: "#10b981", marginTop: 2 },
-  iconCallBtn: { padding: 10, backgroundColor: "#f0fdf4", borderRadius: 10 },
+  iconCallBtn: { padding: 10, backgroundColor: "#f0f4ff", borderRadius: 10 },
   actionRow: {
     flexDirection: "row",
     marginTop: 15,
@@ -783,6 +873,18 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#666",
     fontWeight: "600",
+  },
+  imageContainer: {
+    width: 100,
+    height: 100,
+    backgroundColor: "#f0f0f0",
+    borderRadius: 10,
+  },
+  imageAttached: {
+    width: '100%',
+    height: '100%',
+    objectFit: "cover",
+    borderRadius: 10
   },
 
   // Modal Footer

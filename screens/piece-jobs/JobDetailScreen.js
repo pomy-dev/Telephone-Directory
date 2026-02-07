@@ -17,6 +17,8 @@ const JobDetailScreen = ({ route, navigation }) => {
     const { user } = React.useContext(AuthContext)
     const { job } = route.params
 
+    console.log("Job data received in JobDetailScreen:", job) // Debug log to check job data
+
     const [modalVisible, setModalVisible] = useState(false);
     const [phone, setPhone] = useState('');
     const [expertiseInput, setExpertiseInput] = useState('');
@@ -200,34 +202,43 @@ const JobDetailScreen = ({ route, navigation }) => {
                         }
                     </View>
 
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Contact Information</Text>
+                    {user.email === job?.postedBy?.email && <View style={{ height: 30 }} />}
 
-                        <TouchableOpacity onPress={handleCall} style={[styles.contactButton, { backgroundColor: theme.colors.indicator }]}>
-                            <Ionicons name="call-outline" size={20} color="#fff" />
-                            <Text style={styles.contactButtonText}>Call {job.postedBy?.name}</Text>
-                        </TouchableOpacity>
+                    {user.email !== job?.postedBy?.email &&
+                        <>
+                            <View style={styles.section}>
+                                <Text style={styles.sectionTitle}>Connect Via</Text>
 
-                        <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
-                            <TouchableOpacity onPress={handleSMS}
-                                style={[styles.contactButtonSecondary, { borderColor: theme.colors.disabled, flex: 1 }]}>
-                                <Ionicons name="chatbubble-outline" size={20} color="#4381f3ff" />
-                                <Text style={styles.contactButtonTextSecondary}>Send Message</Text>
-                            </TouchableOpacity>
-                            <TouchableOpacity onPress={handleEmail} style={[styles.contactButtonSecondary, { borderColor: theme.colors.disabled, flex: 1 }]}>
-                                <Ionicons name="mail-outline" size={20} color="#fb2121ff" />
-                                <Text style={styles.contactButtonTextSecondary}>Send Email</Text>
-                            </TouchableOpacity>
-                        </View>
-                    </View>
+                                <TouchableOpacity onPress={handleCall} style={[styles.contactButton, { backgroundColor: theme.colors.indicator }]}>
+                                    <Ionicons name="call-outline" size={20} color="#fff" />
+                                    <Text style={styles.contactButtonText}>Call {job.postedBy?.name}</Text>
+                                </TouchableOpacity>
+
+                                <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
+                                    <TouchableOpacity onPress={handleSMS}
+                                        style={[styles.contactButtonSecondary, { borderColor: theme.colors.disabled, flex: 1 }]}>
+                                        <Ionicons name="chatbubble-outline" size={20} color="#4381f3ff" />
+                                        <Text style={styles.contactButtonTextSecondary}>Send Message</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity onPress={handleEmail} style={[styles.contactButtonSecondary, { borderColor: theme.colors.disabled, flex: 1 }]}>
+                                        <Ionicons name="mail-outline" size={20} color="#fb2121ff" />
+                                        <Text style={styles.contactButtonTextSecondary}>Send Email</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </View>
+                        </>
+                    }
                 </View>
             </ScrollView>
 
-            <View style={[styles.footer, { backgroundColor: theme.colors.card, borderTopColor: theme.colors.border }]}>
-                <TouchableOpacity style={[styles.applyButton, { backgroundColor: theme.colors.primary }]} onPress={() => setModalVisible(true)}>
-                    <Text style={styles.applyButtonText}>Apply for this Gig</Text>
-                </TouchableOpacity>
-            </View>
+            {
+                user.email !== job?.postedBy?.email &&
+                <View style={[styles.footer, { backgroundColor: theme.colors.card, borderTopColor: theme.colors.border }]}>
+                    <TouchableOpacity style={[styles.applyButton, { backgroundColor: theme.colors.primary }]} onPress={() => setModalVisible(true)}>
+                        <Text style={styles.applyButtonText}>Apply for this Gig</Text>
+                    </TouchableOpacity>
+                </View>
+            }
 
             <Modal
                 animationType="slide"
@@ -384,7 +395,7 @@ const styles = StyleSheet.create({
         fontWeight: "600",
     },
     section: {
-        marginBottom: 24,
+        marginBottom: 20,
     },
     sectionTitle: {
         fontSize: 18,
@@ -448,7 +459,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingVertical: 10,
         borderTopWidth: 1,
-        marginBottom: 40
+        marginBottom: 50
     },
     applyButton: {
         paddingVertical: 16,

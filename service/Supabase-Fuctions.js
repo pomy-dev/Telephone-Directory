@@ -516,3 +516,25 @@ export async function approveApplication(applicationId) {
     return { success: false, error: error.message };
   }
 }
+
+export async function deleteMyApplication(appId, userEmail) {
+  try {
+    const { error } = await supabase.rpc(
+      "delete_my_gig_application",
+      {
+        p_application_id: appId,
+        p_email: userEmail
+      }
+    )
+
+    if (error) {
+      console.error("Delete failed:", error)
+    } else {
+      console.log("Application deleted")
+    }
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting application:', error);
+    return { success: false, error: error.message };
+  }
+}
