@@ -450,7 +450,7 @@ function AppContent() {
                           {/* Piece Jobs  */}
                           <Stack.Screen
                             name="GigsScreen"
-                            component={GigDrawerNavigator}
+                            component={GigsScreen}
                           />
                           <Stack.Screen
                             name="JobDetailScreen"

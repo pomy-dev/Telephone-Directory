@@ -64,7 +64,6 @@ export const AppProvider = ({ children }) => {
       try {
         if (isOnline && notificationsEnabled) {
           const userNots = await getAppliedGigs('mdzeshh@gmail.com');
-          console.log('User notifications fetched:', userNots.data);
           setNotifications(userNots.data); // overwrite with user-specific ones
         }
       } catch (err) {

@@ -204,6 +204,7 @@ export default function LoginScreen({ navigation }) {
                 value={email}
                 onChangeText={setEmail}
                 autoCapitalize="none"
+                keyboardType='email-address'
                 mode="outlined"
                 error={!!errors.email}
                 style={styles.input}

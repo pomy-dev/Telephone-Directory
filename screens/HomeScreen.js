@@ -7,6 +7,7 @@ import { AppContext } from "../context/appContext"
 import { AuthContext } from "../context/authProvider"
 import { CustomToast } from "../components/customToast"
 import { Images } from '../constants/Images'
+import CustomLoader from "../components/customLoader"
 import PersonalizedAdsSection from "../components/PersonalizedAdsSection"
 
 export default function HomeScreen({ navigation }) {
@@ -14,6 +15,7 @@ export default function HomeScreen({ navigation }) {
   const { logout } = React.useContext(AuthContext)
   const [greetingText, setGreetingText] = useState("");
   const [startingText, setStartingText] = useState("");
+  const [islogingOut, setIsLoggingOut] = useState(false)
 
   const sampleAds = [
     {
@@ -91,7 +93,7 @@ export default function HomeScreen({ navigation }) {
 
   const renderService = ({ item }) => (
     <TouchableOpacity style={[styles.serviceItem]} activeOpacity={0.7} onPress={() => { navigation.navigate(item.screen) }}>
-      <View style={[styles.serviceIconContainer, { backgroundColor: theme.colors.sub_card, borderColor:'#eeececff' }]}>
+      <View style={[styles.serviceIconContainer, { backgroundColor: theme.colors.sub_card, borderColor: '#eeececff' }]}>
         <Image source={item.image} style={styles.serviceIcon} resizeMode="contain" />
       </View>
       <Text style={[styles.serviceText, { color: theme.colors.text }]} numberOfLines={2}>
@@ -102,12 +104,13 @@ export default function HomeScreen({ navigation }) {
 
   const handleLogout = () => {
     try {
+      setIsLoggingOut(true)
       logout()
       CustomToast("Logged out 🚶🏾‍♂️‍➡️", "Sign In to start again")
-      // Reset the navigation stack to the auth screen (root stack route is named 'Login')
-      // navigation.reset({ index: 0, routes: [{ name: 'Login' }] })
     } catch (error) {
       console.log("Logout error:", error.message)
+    } finally {
+      setIsLoggingOut(false)
     }
   }
 
@@ -123,6 +126,8 @@ export default function HomeScreen({ navigation }) {
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
+
+      {islogingOut && <CustomLoader />}
 
       <TopNav
         onCartPress={() => console.log("Cart pressed")}

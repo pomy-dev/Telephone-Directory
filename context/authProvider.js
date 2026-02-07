@@ -32,8 +32,8 @@ export const AuthProvider = ({ children }) => {
         .select('id')
         .eq('user_id', uid)
         .maybeSingle(); // maybeSingle is safer than .single() as it won't throw an error if not found
-      
-      setIsWorker(!!data); 
+
+      setIsWorker(!!data);
     } catch (err) {
       console.error("Worker check failed:", err);
       setIsWorker(false);
@@ -43,15 +43,18 @@ export const AuthProvider = ({ children }) => {
   // Listen to Firebase auth state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(firebaseAuth, async (currentUser) => {
-      setUser(currentUser);
-      
+      if (currentUser.displayName) {
+        console.log("Auth state changed. Current user name:", currentUser.displayName);
+        setUser(currentUser);
+      }
+
       if (currentUser) {
         // App is opening with an existing logged-in user
         await checkWorkerStatus(currentUser.uid);
       } else {
         setIsWorker(false);
       }
-      
+
       setLoading(false);
     });
 

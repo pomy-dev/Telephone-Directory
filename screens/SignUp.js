@@ -7,6 +7,7 @@ import {
   StyleSheet,
   ScrollView,
   StatusBar,
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   Alert,
@@ -14,13 +15,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Images } from '../constants/Images';
 import { AppContext } from '../context/appContext';
+import { CustomToast } from '../components/customToast';
 import { AuthContext } from '../context/authProvider';
-import CustomLoader from '../components/customLoader';
 import { TextInput } from 'react-native-paper';
 
 export default function SignupScreen({ navigation }) {
   const { theme, isDarkMode } = useContext(AppContext);
-  const { emailSignUp, user, loading } = useContext(AuthContext);
+  const { emailSignUp } = useContext(AuthContext);
 
   const [isConnecting, setIsConnecting] = useState(false);
   const [name, setName] = useState('');
@@ -38,7 +39,7 @@ export default function SignupScreen({ navigation }) {
 
     if (!name.trim()) newErrors.name = 'Full name is required';
     if (!email.includes('@') || !email.includes('.')) newErrors.email = 'Valid email required';
-    if (!phone || phone.replace(/\D/g, '').length < 8) newErrors.phone = 'Valid phone number required';
+    // if (!phone || phone.replace(/\D/g, '').length < 8) newErrors.phone = 'Valid phone number required';
     if (!password || password.length < 6) newErrors.password = 'Password must be 6+ characters';
     if (password !== confirmPassword) newErrors.confirmPassword = 'Passwords do not match';
 
@@ -51,18 +52,10 @@ export default function SignupScreen({ navigation }) {
 
     setIsConnecting(true);
     try {
-      await emailSignUp(name.trim(), email.trim(), password, phone.trim());
+      await emailSignUp(name.trim(), email.trim(), password);
 
-      Alert.alert('Success', 'Account created! You can now sign in.', [
-        {
-          text: 'Close', onPress: () => {
-            setConfirmPassword('');
-            setEmail('');
-            setName('');
-            setPassword('');
-          }
-        },
-      ]);
+      CustomToast('Success', 'Account created! Please sign in.');
+      navigation?.navigate('Login');
     } catch (err) {
       let message = err.message;
       if (err.code === 'auth/email-already-in-use') {
@@ -74,6 +67,10 @@ export default function SignupScreen({ navigation }) {
       }
       Alert.alert('Sign Up Failed', message);
     } finally {
+      setConfirmPassword('');
+      setEmail('');
+      setName('');
+      setPassword('');
       setIsConnecting(false);
     }
   };
@@ -122,7 +119,7 @@ export default function SignupScreen({ navigation }) {
             left={<TextInput.Icon icon="email" />}
           />
 
-          <TextInput
+          {/* <TextInput
             label="Phone Number"
             value={phone}
             onChangeText={setPhone}
@@ -132,7 +129,7 @@ export default function SignupScreen({ navigation }) {
             style={styles.input}
             theme={{ roundness: 12 }}
             left={<TextInput.Icon icon="phone" />}
-          />
+          /> */}
 
           <TextInput
             label="Password"
@@ -185,7 +182,7 @@ export default function SignupScreen({ navigation }) {
             disabled={isConnecting}
           >
             {isConnecting ? (
-              <CustomLoader size="small" color="#fff" />
+              <ActivityIndicator size={20} color={'#fff'} />
             ) : (
               <Text style={styles.signUpText}>Create Account</Text>
             )}
@@ -214,8 +211,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 24,
-    paddingTop: 60,
+    paddingHorizontal: 24,
     flexGrow: 1,
   },
   logoContainer: {
@@ -236,24 +232,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: 'center',
     marginBottom: 32,
-  },
-  googleBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1.5,
-    borderRadius: 16,
-    paddingVertical: 14,
-    marginBottom: 20,
-  },
-  googleIcon: {
-    width: 24,
-    height: 24,
-    marginRight: 12,
-  },
-  googleText: {
-    fontSize: 16,
-    fontWeight: '600',
   },
   dividerContainer: {
     flexDirection: 'row',
@@ -295,7 +273,7 @@ const styles = StyleSheet.create({
   signInLink: {
     marginTop: 24,
     alignItems: 'center',
-    marginBottom: 80,
+    marginBottom: 20,
   },
   signInText: {
     fontSize: 15,

@@ -8,6 +8,7 @@ import {
   ScrollView,
   TouchableOpacity,
   FlatList,
+  StatusBar,
   Image,
   SafeAreaView,
   ActivityIndicator,
@@ -102,8 +103,8 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
 
 const mapDatabaseToUI = (dbGigs, userLocation = null) => {
   return dbGigs.map((job) => {
-    const lat = job.job_location?.lat || 0;
-    const lng = job.job_location?.lng || 0;
+    const lat = job.job_location?.latitude || 0;
+    const lng = job.job_location?.longitude || 0;
 
     // Default placeholder
     let displayImages = ["https://via.placeholder.com/400"];
@@ -125,6 +126,7 @@ const mapDatabaseToUI = (dbGigs, userLocation = null) => {
       description: job.job_description,
       category: job.job_category,
       price: job.job_price,
+      requirements: job.job_requirements,
       location: job.job_location?.address || "Location N/A",
       coordinates: { lat, lng },
       applications: job.application_count || 0,
@@ -140,7 +142,7 @@ const mapDatabaseToUI = (dbGigs, userLocation = null) => {
 
 const GigsScreen = ({ navigation }) => {
   const { user, isWorker } = React.useContext(AuthContext);
-  const { theme } = React.useContext(AppContext);
+  const { theme, isDarkMode } = React.useContext(AppContext);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [userLocation, setUserLocation] = useState(null);
   const [jobs, setJobs] = useState([]); // This is our single source of truth
@@ -150,22 +152,22 @@ const GigsScreen = ({ navigation }) => {
 
   const moreItems = [
     {
-      title: "Hire Workers",
+      title: "Find Freelancers",
       icon: "MaterialCommunityIcons",
       iconName: "briefcase-account-outline",
       onPress: () => navigation.navigate("WorkerDirectory"),
     },
     {
-      title: "My Applications",
+      title: "My Applied Gigs",
       icon: "FontAwesome6",
       iconName: "list-check",
-      onPress: () => navigation.navigate("MyPostedGigs"),
+      onPress: () => navigation.navigate("JobInbox", { gigSelection: "applied" }),
     },
     {
       title: "My Posted Gigs",
       icon: "Ionicons",
       iconName: "newspaper-outline",
-      onPress: () => navigation.navigate("JobInbox"),
+      onPress: () => navigation.navigate("MyPostedGigs"),
     },
     {
       title: isWorker ? "My Worker Profile" : "Become a Worker",
@@ -227,8 +229,7 @@ const GigsScreen = ({ navigation }) => {
       status: "open",
       afterCreatedAt: isLoadMore ? nextCursor.createdAt : null,
       afterId: isLoadMore ? nextCursor.id : null,
-      pageSize: 15,
-      p_exclude_email: user?.email
+      pageSize: 15
     };
 
     const result = await getPomyGigs(filters);
@@ -310,25 +311,19 @@ const GigsScreen = ({ navigation }) => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
       <View style={{ height: 30 }} />
       {/* Custom Modern Header */}
       <View style={styles.customHeader}>
         <TouchableOpacity
           style={styles.headerIconButton}
-          onPress={() => navigation.openDrawer()}
+          onPress={() => navigation.goBack()}
         >
-          <Icons.Ionicons name="menu-outline" size={28} color="#000" />
+          <Icons.Ionicons name="arrow-back" size={28} color={theme.colors.text} />
         </TouchableOpacity>
 
-        <Text style={styles.headerTitleText}>Explore Gigs</Text>
-
-        {/* <TouchableOpacity
-          style={styles.headerIconButton}
-          onPress={() => navigation.navigate("MyPostedGigs")}
-        >
-          <Icons.MaterialCommunityIcons name="dots-vertical" size={24} color="#000" />
-        </TouchableOpacity> */}
+        <Text style={[styles.headerTitleText, { color: theme.colors.text }]}>Explore Gigs</Text>
         <MoreDropdown items={moreItems} />
       </View>
 
@@ -362,10 +357,14 @@ const GigsScreen = ({ navigation }) => {
         </ScrollView>
 
         <View style={styles.resultsHeader}>
-          <Text style={styles.resultsText}>
-            {jobs.length} {jobs.length === 1 ? "gig" : "gigs"} near you
+          <Text style={[styles.resultsText, { color: theme.colors.text }]}>
+            {jobs.length} {jobs.length === 1 ? "Gig" : "Gigs"} Available
           </Text>
-          {userLocation && <Text style={styles.sortedText}>Nearest first</Text>}
+          {/* button for adding gig */}
+          <TouchableOpacity style={styles.refreshButton} onPress={() => navigation.navigate("PostJobScreen")}>
+            <Icons.Ionicons name="add-circle-outline" size={24} color={theme.colors.indicator} />
+            <Text>Post Gig</Text>
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -398,7 +397,6 @@ const GigsScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
   },
   categoriesContainer: {
     borderBottomWidth: 1,
@@ -417,7 +415,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     marginBottom: 10,
     borderRadius: 20,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#f0f4ff",
     marginRight: 8,
     minWidth: 100,
     height: 40,
@@ -445,7 +443,6 @@ const styles = StyleSheet.create({
   resultsText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#000",
   },
   sortedText: {
     fontSize: 12,
@@ -545,11 +542,9 @@ const styles = StyleSheet.create({
   },
   postedBy: {
     fontSize: 13,
-    color: "#666",
   },
   postedTime: {
-    fontSize: 12,
-    color: "#999",
+    fontSize: 12
   },
 
   emptyContainer: {
@@ -562,22 +557,22 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#333",
     marginTop: 10,
   },
   emptySubtitle: {
     fontSize: 14,
-    color: "#666",
+    color: "#878787ff",
     textAlign: "center",
     marginTop: 5,
     lineHeight: 20,
   },
   refreshButton: {
-    marginTop: 20,
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: 10,
-    paddingHorizontal: 20,
-    backgroundColor: "#000",
-    borderRadius: 20,
+    paddingHorizontal: 10,
+    backgroundColor: "#f0f4ff",
+    borderRadius: 50,
   },
   refreshButtonText: {
     color: "#fff",
@@ -589,7 +584,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: "#fafafa",
     // Ensure it doesn't float
     width: "100%",
   },
@@ -599,15 +593,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#fff',
-    // Subtle shadow for depth
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
   },
   headerTitleText: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#000',
     letterSpacing: -0.5,
   },
   headerIconButton: {
@@ -615,20 +604,8 @@ const styles = StyleSheet.create({
     height: 40,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 12,
-    backgroundColor: '#f8f9fa', // Light grey background for the buttons
-  },
-  dot: {
-    position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#10b981', // Green dot for "My Gigs"
-    borderWidth: 1.5,
-    borderColor: '#fff',
-  },
+    borderRadius: 12
+  }
 });
 
 export default GigsScreen;

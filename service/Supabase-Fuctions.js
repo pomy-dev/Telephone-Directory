@@ -227,10 +227,8 @@ export async function getPomyGigs(filters = {}) {
     maxPrice = null,
     status = 'open',
     searchTerm = null,
-    locationFilter = null,
-    p_exclude_email=null
+    locationFilter = null
   } = filters;
-
 
   try {
     const { data, error } = await supabase.rpc('fetch_pomy_gigs', {
@@ -242,14 +240,13 @@ export async function getPomyGigs(filters = {}) {
       p_max_price: maxPrice,
       p_job_status: status,
       p_search_term: searchTerm,
-      p_location_filter: locationFilter,
-      p_exclude_email: p_exclude_email, 
+      p_location_filter: locationFilter
     });
 
     if (error) throw error;
 
-    return { 
-      success: true, 
+    return {
+      success: true,
       data: data || [] // Ensure data is at least an empty array, never null
     };
   } catch (error) {
@@ -322,7 +319,7 @@ export async function registerAsWorker(workerData) {
       .select(); // Returns the inserted data
 
     if (error) throw error;
-    
+
     return { success: true, data: data[0] };
   } catch (error) {
     console.error('Registration Error:', error.message);
@@ -343,7 +340,7 @@ export async function getWorkerProfile(userId) {
       .single();
 
     if (error && error.code !== 'PGRST116') throw error; // PGRST116 is "no rows found"
-    
+
     return { success: true, data: data || null };
   } catch (error) {
     console.error('Fetch Worker Error:', error.message);
@@ -397,8 +394,8 @@ export async function approveGigApplication(applicationId) {
 
     if (error) throw error;
 
-    return { 
-      success: true, 
+    return {
+      success: true,
       data: data[0] // Returns the summary of the approved application
     };
   } catch (error) {
@@ -465,11 +462,11 @@ export async function applyForGig(formData) {
 }
 
 /** fetch gigs applied for */
-export async function getAppliedGigs(userEmail) {
-  console.log('Fetching gigs for user:', userEmail);
+export async function getMyAppliedGigs(userEmail) {
+  console.log('Fetching applied gigs for user:', userEmail);
   try {
     const { data, error } = await supabase.rpc(
-      "get_applications_for_my_gigs",
+      "get_gigs_i_applied_for",
       { p_email: userEmail.trim() }
     )
 

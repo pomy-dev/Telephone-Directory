@@ -10,8 +10,10 @@ import SecondaryNav from "../../components/SecondaryNav"
 import { CustomToast } from "../../components/customToast"
 import { AuthContext } from "../../context/authProvider"
 import { applyForGig } from "../../service/Supabase-Fuctions"
+import { AppContext } from "../../context/appContext"
 
 const JobDetailScreen = ({ route, navigation }) => {
+    const { theme, isDarkMode } = React.useContext(AppContext)
     const { user } = React.useContext(AuthContext)
     const { job } = route.params
 
@@ -80,7 +82,7 @@ const JobDetailScreen = ({ route, navigation }) => {
             // map info
             const applicationData = {
                 jobId: job.id,
-                user: { name: user.name, email: user.email, phone: phone?.trim() },
+                user: { name: user.displayName, email: user.email, phone: phone?.trim() },
                 skillSet: expertises,
                 status: 'pending',
                 attachments: attachments,
@@ -121,6 +123,7 @@ const JobDetailScreen = ({ route, navigation }) => {
 
     return (
         <View style={styles.container}>
+            <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
             <SecondaryNav
                 title="Job Details"
                 rightIcon="share-social-outline"
@@ -181,9 +184,9 @@ const JobDetailScreen = ({ route, navigation }) => {
 
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Requirements</Text>
-                        {job.job_requirements?.length > 0
+                        {job.requirements?.length > 0
                             ?
-                            job.job_requirements.map((requirement, index) => (
+                            job.requirements.map((requirement, index) => (
                                 <View key={index} style={styles.requirementItem}>
                                     <Ionicons name="checkmark-circle" size={20} color="#10b981" />
                                     <Text style={styles.requirementText}>{requirement}</Text>
@@ -200,18 +203,18 @@ const JobDetailScreen = ({ route, navigation }) => {
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Contact Information</Text>
 
-                        <TouchableOpacity onPress={handleCall} style={styles.contactButton}>
+                        <TouchableOpacity onPress={handleCall} style={[styles.contactButton, { backgroundColor: theme.colors.indicator }]}>
                             <Ionicons name="call-outline" size={20} color="#fff" />
                             <Text style={styles.contactButtonText}>Call {job.postedBy?.name}</Text>
                         </TouchableOpacity>
 
                         <View style={{ flexDirection: "row", gap: 12, alignItems: "center" }}>
                             <TouchableOpacity onPress={handleSMS}
-                                style={[styles.contactButtonSecondary, { borderColor: "#4381f3ff", flex: 1 }]}>
+                                style={[styles.contactButtonSecondary, { borderColor: theme.colors.disabled, flex: 1 }]}>
                                 <Ionicons name="chatbubble-outline" size={20} color="#4381f3ff" />
                                 <Text style={styles.contactButtonTextSecondary}>Send Message</Text>
                             </TouchableOpacity>
-                            <TouchableOpacity onPress={handleEmail} style={[styles.contactButtonSecondary, { borderColor: "#fb2121ff", flex: 1 }]}>
+                            <TouchableOpacity onPress={handleEmail} style={[styles.contactButtonSecondary, { borderColor: theme.colors.disabled, flex: 1 }]}>
                                 <Ionicons name="mail-outline" size={20} color="#fb2121ff" />
                                 <Text style={styles.contactButtonTextSecondary}>Send Email</Text>
                             </TouchableOpacity>
@@ -220,8 +223,8 @@ const JobDetailScreen = ({ route, navigation }) => {
                 </View>
             </ScrollView>
 
-            <View style={styles.footer}>
-                <TouchableOpacity style={styles.applyButton} onPress={() => setModalVisible(true)}>
+            <View style={[styles.footer, { backgroundColor: theme.colors.card, borderTopColor: theme.colors.border }]}>
+                <TouchableOpacity style={[styles.applyButton, { backgroundColor: theme.colors.primary }]} onPress={() => setModalVisible(true)}>
                     <Text style={styles.applyButtonText}>Apply for this Gig</Text>
                 </TouchableOpacity>
             </View>
@@ -416,7 +419,6 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: "#1f02fbff",
         paddingVertical: 14,
         borderRadius: 12,
         gap: 8,
@@ -446,12 +448,9 @@ const styles = StyleSheet.create({
         paddingHorizontal: 16,
         paddingVertical: 10,
         borderTopWidth: 1,
-        borderTopColor: "#f0f0f0",
-        backgroundColor: "#fff",
         marginBottom: 40
     },
     applyButton: {
-        backgroundColor: "#000",
         paddingVertical: 16,
         borderRadius: 12,
         alignItems: "center",
