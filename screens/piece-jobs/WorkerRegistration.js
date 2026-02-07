@@ -133,13 +133,25 @@ const WorkerRegistration = ({ navigation }) => {
       <StatusBar barStyle="dark-content" />
       
       {/* Header matching other screens */}
+
       <View style={styles.header}>
-        <TouchableOpacity style={styles.headerBtn} onPress={() => navigation.openDrawer()}>
-          <Icons.Ionicons name="menu-outline" size={28} color="#000" />
+        <TouchableOpacity 
+          style={styles.headerBtn} 
+          onPress={() => navigation.goBack()} // Changed to goBack
+        >
+          <Icons.Ionicons name="chevron-back" size={28} color="#000" /> 
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{isEditMode ? "Edit Profile" : "Become a Worker"}</Text>
-        <TouchableOpacity onPress={handleRegister} disabled={loading}>
-            {loading ? <ActivityIndicator size="small" color="#10b981" /> : <Text style={styles.saveText}>Save</Text>}
+        
+        <Text style={styles.headerTitle}>
+          {isEditMode ? "Edit Profile" : "Become a Worker"}
+        </Text>
+
+        <TouchableOpacity onPress={handleRegister} disabled={loading} style={styles.headerBtn}>
+            {loading ? (
+              <ActivityIndicator size="small" color="#10b981" />
+            ) : (
+              <Text style={styles.saveText}>Save</Text>
+            )}
         </TouchableOpacity>
       </View>
 
@@ -289,7 +301,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1, 
     borderBottomColor: '#eee' 
   },
-  headerBtn: { width: 35, height: 35, alignItems: "center", justifyContent: "center" },
+  headerBtn: { width: 40, height: 35, alignItems: "center", justifyContent: "center" },
   headerTitle: { fontSize: 18, fontWeight: "800", color: "#000" },
   saveText: { color: '#10b981', fontWeight: '800', fontSize: 16 },
 

@@ -22,6 +22,8 @@ import { supabase } from "../../service/Supabase-Client";
 import { AuthContext } from "../../context/authProvider";
 import { MoreDropdown } from "../../components/moreDropDown";
 
+const MEDIA_HEIGHT = 180;
+
 const CATEGORIES = [
   {
     id: "all",
@@ -93,31 +95,64 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos((lat1 * Math.PI) / 180) *
-    Math.cos((lat2 * Math.PI) / 180) *
-    Math.sin(dLon / 2) *
-    Math.sin(dLon / 2);
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   const distance = R * c;
   return distance;
 };
+
+// const mapDatabaseToUI = (dbGigs, userLocation = null) => {
+//   return dbGigs.map((job) => {
+//     const lat = job.job_location?.latitude || 0;
+//     const lng = job.job_location?.longitude || 0;
+
+//     // Default placeholder
+//     let displayImages = ["https://via.placeholder.com/400"];
+
+//     // 1. Check if job_images exists and has items
+//     if (job.job_images && job.job_images.length > 0) {
+//       displayImages = [];
+//       job?.job_images?.forEach((img) => {
+//         if (img?.url) {
+//           // push url to displayImages
+//           displayImages.push(img.url);
+//         }
+//       });
+//     }
+
+//     return {
+//       id: job.id.toString(),
+//       title: job.job_title,
+//       description: job.job_description,
+//       category: job.job_category,
+//       price: job.job_price,
+//       requirements: job.job_requirements,
+//       location: job.job_location?.address || "Location N/A",
+//       coordinates: { lat, lng },
+//       applications: job.application_count || 0,
+//       postedBy: { name: job.postedby?.name, email: job.postedby?.email, phone: job.postedby?.phone },
+//       postedTime: job.created_at ? new Date(job.created_at).toLocaleDateString() : "Just now",
+//       images: displayImages, // This now contains the correct .url string
+//       distance: userLocation
+//         ? calculateDistance(userLocation.lat, userLocation.lng, lat, lng)
+//         : null,
+//     };
+//   });
+// };
 
 const mapDatabaseToUI = (dbGigs, userLocation = null) => {
   return dbGigs.map((job) => {
     const lat = job.job_location?.latitude || 0;
     const lng = job.job_location?.longitude || 0;
 
-    // Default placeholder
-    let displayImages = ["https://via.placeholder.com/400"];
-
-    // 1. Check if job_images exists and has items
-    if (job.job_images && job.job_images.length > 0) {
-      displayImages = [];
-      job?.job_images?.forEach((img) => {
-        if (img?.url) {
-          // push url to displayImages
-          displayImages.push(img.url);
-        }
-      });
+    // Extract valid image URLs from the jsonb[] array
+    let displayImages = [];
+    if (job.job_images && Array.isArray(job.job_images)) {
+      displayImages = job.job_images
+        .map((img) => img?.url)
+        .filter((url) => url && typeof url === "string");
     }
 
     return {
@@ -130,9 +165,15 @@ const mapDatabaseToUI = (dbGigs, userLocation = null) => {
       location: job.job_location?.address || "Location N/A",
       coordinates: { lat, lng },
       applications: job.application_count || 0,
-      postedBy: { name: job.postedby?.name, email: job.postedby?.email, phone: job.postedby?.phone },
-      postedTime: job.created_at ? new Date(job.created_at).toLocaleDateString() : "Just now",
-      images: displayImages, // This now contains the correct .url string
+      postedBy: {
+        name: job.postedby?.name || "Anonymous",
+        email: job.postedby?.email,
+        phone: job.postedby?.phone,
+      },
+      postedTime: job.created_at
+        ? new Date(job.created_at).toLocaleDateString()
+        : "Just now",
+      images: displayImages, // Empty array if no images
       distance: userLocation
         ? calculateDistance(userLocation.lat, userLocation.lng, lat, lng)
         : null,
@@ -161,7 +202,8 @@ const GigsScreen = ({ navigation }) => {
       title: "My Applied Gigs",
       icon: "FontAwesome6",
       iconName: "list-check",
-      onPress: () => navigation.navigate("JobInbox", { gigSelection: "applied" }),
+      onPress: () =>
+        navigation.navigate("JobInbox", { gigSelection: "applied" }),
     },
     {
       title: "My Posted Gigs",
@@ -229,7 +271,7 @@ const GigsScreen = ({ navigation }) => {
       status: "open",
       afterCreatedAt: isLoadMore ? nextCursor.createdAt : null,
       afterId: isLoadMore ? nextCursor.id : null,
-      pageSize: 15
+      pageSize: 15,
     };
 
     const result = await getPomyGigs(filters);
@@ -240,7 +282,10 @@ const GigsScreen = ({ navigation }) => {
 
       const lastItem = result.data[result.data.length - 1];
       if (lastItem?.next_created_at) {
-        setNextCursor({ createdAt: lastItem.next_created_at, id: lastItem.next_id });
+        setNextCursor({
+          createdAt: lastItem.next_created_at,
+          id: lastItem.next_id,
+        });
       } else {
         setNextCursor({ createdAt: null, id: null });
       }
@@ -254,65 +299,161 @@ const GigsScreen = ({ navigation }) => {
     fetchLiveGigs(false);
   }, [selectedCategory, userLocation]);
 
-  const renderJobCard = ({ item }) => {
-    // Check if the image is a real URL from your Supabase bucket
-    const hasImage = item?.images && !item?.images?.includes("via.placeholder.com");
+  // const renderJobCard = ({ item }) => {
+  //   // Check if the image is a real URL from your Supabase bucket
+  //   const hasImage = item?.images && !item?.images?.includes("via.placeholder.com");
 
-    return (
-      <TouchableOpacity
-        style={styles.jobCard}
-        onPress={() => navigation.navigate("JobDetailScreen", { job: item })}
-      >
+  //   return (
+  //     <TouchableOpacity
+  //       style={styles.jobCard}
+  //       onPress={() => navigation.navigate("JobDetailScreen", { job: item })}
+  //     >
+  //       {hasImage ? (
+  //         // SMART VIEW: If image exists, show the full image
+  //         <Image source={{ uri: item.images[0] }} style={styles.jobImage} />
+  //       ) : (
+  //         // SMART VIEW: If no image, show a styled box with the full description instead
+  //         <View style={styles.noImageDescriptionContainer}>
+  //           <Text style={styles.noImageDescriptionText} ellipsizeMode="tail" numberOfLines={6}>
+  //             {item.description}
+  //           </Text>
+  //         </View>
+  //       )}
+
+  //       <View style={styles.jobContent}>
+  //         <View style={styles.jobHeader}>
+  //           <Text style={styles.jobTitle}>{item.title}</Text>
+  //           <Text style={styles.jobPrice}>R{item.price}</Text>
+  //         </View>
+
+  //         {/* Only show this small description if the image is present.
+  //                   If no image, we already showed the full description above. */}
+  //         {hasImage && (
+  //           <Text style={styles.jobDescription} numberOfLines={2}>
+  //             {item.description}
+  //           </Text>
+  //         )}
+
+  //         <View style={styles.jobFooter}>
+  //           <View style={styles.locationContainer}>
+  //             <Icons.Ionicons name="location-outline" size={14} color="#666" />
+  //             <Text style={styles.locationText}>{item.location}</Text>
+  //           </View>
+  //           {item.distance && (
+  //             <Text style={styles.distanceText}>
+  //               {item.distance.toFixed(1)} km away
+  //             </Text>
+  //           )}
+  //         </View>
+
+  //         <View style={styles.jobMeta}>
+  //           <Text style={styles.postedBy}>{item.postedBy?.name}</Text>
+  //           <Text style={styles.postedTime}>{item.postedTime}</Text>
+  //         </View>
+  //       </View>
+  //     </TouchableOpacity>
+  //   );
+  // };
+
+  
+
+
+// ... inside GigsScreen component ...
+
+const renderJobCard = ({ item }) => {
+  // REMOVED: const { theme, isDarkMode } = React.useContext(AppContext); 
+  // This was causing the "Invalid hook call" error.
+  
+  // Use the theme and isDarkMode variables already defined at the top of GigsScreen
+  
+  const hasImage = item?.images && item.images.length > 0 && !item.images[0].includes("via.placeholder.com");
+
+  return (
+    <TouchableOpacity
+      style={[
+        styles.jobCard, 
+        { backgroundColor: isDarkMode ? '#1A1A1A' : '#fff' }
+      ]}
+      onPress={() => navigation.navigate("JobDetailScreen", { job: item })}
+    >
+      {/* --- TOP MEDIA SECTION (Fixed Height) --- */}
+      <View style={{ height: MEDIA_HEIGHT, overflow: 'hidden' }}>
         {hasImage ? (
-          // SMART VIEW: If image exists, show the full image
-          <Image source={{ uri: item.images[0] }} style={styles.jobImage} />
+          <Image 
+            source={{ uri: item.images[0] }} 
+            style={styles.jobImage} 
+            resizeMode="cover"
+          />
         ) : (
-          // SMART VIEW: If no image, show a styled box with the full description instead
-          <View style={styles.noImageDescriptionContainer}>
-            <Text style={styles.noImageDescriptionText} ellipsizeMode="tail" numberOfLines={6}>
+          <View style={[
+            styles.noImageDescriptionContainer, 
+            { backgroundColor: isDarkMode ? '#252525' : '#f9f9f9', height: MEDIA_HEIGHT }
+          ]}>
+            <Icons.MaterialCommunityIcons 
+              name="format-quote-open" 
+              size={20} 
+              color={theme.colors.indicator} 
+              style={{ marginBottom: 4 }}
+            />
+            <Text 
+              style={[styles.noImageDescriptionText, { color: theme.colors.text }]} 
+              ellipsizeMode="tail" 
+              numberOfLines={5}
+            >
               {item.description}
             </Text>
           </View>
         )}
+      </View>
 
-        <View style={styles.jobContent}>
-          <View style={styles.jobHeader}>
-            <Text style={styles.jobTitle}>{item.title}</Text>
-            <Text style={styles.jobPrice}>R{item.price}</Text>
+      {/* --- BOTTOM CONTENT SECTION --- */}
+      <View style={styles.jobContent}>
+        <View style={styles.jobHeader}>
+          <Text style={[styles.jobTitle, { color: theme.colors.text }]} numberOfLines={1}>
+            {item.title}
+          </Text>
+          <Text style={styles.jobPrice}>R{item.price}</Text>
+        </View>
+
+        {hasImage ? (
+          <Text style={[styles.jobDescription, { color: isDarkMode ? '#aaa' : '#666' }]} numberOfLines={2}>
+            {item.description}
+          </Text>
+        ) : (
+          <View style={{ height: 40 }} />
+        )}
+
+        <View style={styles.jobFooter}>
+          <View style={styles.locationContainer}>
+            <Icons.Ionicons name="location-outline" size={14} color="#666" />
+            <Text style={styles.locationText} numberOfLines={1}>{item.location}</Text>
           </View>
-
-          {/* Only show this small description if the image is present. 
-                    If no image, we already showed the full description above. */}
-          {hasImage && (
-            <Text style={styles.jobDescription} numberOfLines={2}>
-              {item.description}
+          {item.distance && (
+            <Text style={styles.distanceText}>
+              {item.distance.toFixed(1)} km
             </Text>
           )}
-
-          <View style={styles.jobFooter}>
-            <View style={styles.locationContainer}>
-              <Icons.Ionicons name="location-outline" size={14} color="#666" />
-              <Text style={styles.locationText}>{item.location}</Text>
-            </View>
-            {item.distance && (
-              <Text style={styles.distanceText}>
-                {item.distance.toFixed(1)} km away
-              </Text>
-            )}
-          </View>
-
-          <View style={styles.jobMeta}>
-            <Text style={styles.postedBy}>{item.postedBy?.name}</Text>
-            <Text style={styles.postedTime}>{item.postedTime}</Text>
-          </View>
         </View>
-      </TouchableOpacity>
-    );
-  };
+
+        <View style={[styles.jobMeta, { borderTopColor: isDarkMode ? '#333' : '#f0f0f0' }]}>
+          <Text style={[styles.postedBy, { color: isDarkMode ? '#888' : '#444' }]}>
+            {item.postedBy?.name || 'User'}
+          </Text>
+          <Text style={[styles.postedTime, { color: '#999' }]}>{item.postedTime}</Text>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+};
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+    >
+      <StatusBar
+        barStyle={isDarkMode ? "light-content" : "dark-content"}
+        backgroundColor={theme.colors.background}
+      />
       <View style={{ height: 30 }} />
       {/* Custom Modern Header */}
       <View style={styles.customHeader}>
@@ -320,10 +461,16 @@ const GigsScreen = ({ navigation }) => {
           style={styles.headerIconButton}
           onPress={() => navigation.goBack()}
         >
-          <Icons.Ionicons name="arrow-back" size={28} color={theme.colors.text} />
+          <Icons.Ionicons
+            name="arrow-back"
+            size={28}
+            color={theme.colors.text}
+          />
         </TouchableOpacity>
 
-        <Text style={[styles.headerTitleText, { color: theme.colors.text }]}>Explore Gigs</Text>
+        <Text style={[styles.headerTitleText, { color: theme.colors.text }]}>
+          Explore Gigs
+        </Text>
         <MoreDropdown items={moreItems} />
       </View>
 
@@ -349,7 +496,12 @@ const GigsScreen = ({ navigation }) => {
                 size={18}
                 color={selectedCategory === category.id ? "#fff" : "#666"}
               />
-              <Text style={[styles.categoryText, selectedCategory === category.id && styles.categoryTextActive]}>
+              <Text
+                style={[
+                  styles.categoryText,
+                  selectedCategory === category.id && styles.categoryTextActive,
+                ]}
+              >
                 {category.name}
               </Text>
             </TouchableOpacity>
@@ -361,8 +513,15 @@ const GigsScreen = ({ navigation }) => {
             {jobs.length} {jobs.length === 1 ? "Gig" : "Gigs"} Available
           </Text>
           {/* button for adding gig */}
-          <TouchableOpacity style={styles.refreshButton} onPress={() => navigation.navigate("PostJobScreen")}>
-            <Icons.Ionicons name="add-circle-outline" size={24} color={theme.colors.indicator} />
+          <TouchableOpacity
+            style={styles.refreshButton}
+            onPress={() => navigation.navigate("PostJobScreen")}
+          >
+            <Icons.Ionicons
+              name="add-circle-outline"
+              size={24}
+              color={theme.colors.indicator}
+            />
             <Text>Post Gig</Text>
           </TouchableOpacity>
         </View>
@@ -379,16 +538,25 @@ const GigsScreen = ({ navigation }) => {
         refreshing={refreshing}
         onEndReached={() => fetchLiveGigs(true)}
         onEndReachedThreshold={0.3}
-        ListEmptyComponent={() => !refreshing && (
-          <View style={styles.emptyContainer}>
-            <Icons.Ionicons name="search-outline" size={50} color="#DDD" />
-            <Text style={styles.emptyTitle}>No Gigs Available</Text>
-            <Text style={styles.emptySubtitle}>We couldn't find anything in {selectedCategory}.</Text>
-          </View>
-        )}
-        ListFooterComponent={() => loading && (
-          <ActivityIndicator style={{ margin: 20 }} color={theme.colors.indicator} />
-        )}
+        ListEmptyComponent={() =>
+          !refreshing && (
+            <View style={styles.emptyContainer}>
+              <Icons.Ionicons name="search-outline" size={50} color="#DDD" />
+              <Text style={styles.emptyTitle}>No Gigs Available</Text>
+              <Text style={styles.emptySubtitle}>
+                We couldn't find anything in {selectedCategory}.
+              </Text>
+            </View>
+          )
+        }
+        ListFooterComponent={() =>
+          loading && (
+            <ActivityIndicator
+              style={{ margin: 20 }}
+              color={theme.colors.indicator}
+            />
+          )
+        }
       />
     </SafeAreaView>
   );
@@ -437,7 +605,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingVertical: 6,
     backgroundColor: "#fafafa",
   },
   resultsText: {
@@ -544,7 +712,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   postedTime: {
-    fontSize: 12
+    fontSize: 12,
   },
 
   emptyContainer: {
@@ -588,24 +756,86 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   customHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
   headerTitleText: {
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: "700",
     letterSpacing: -0.5,
   },
   headerIconButton: {
     width: 40,
     height: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 12
-  }
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 12,
+  },
+  categoryBadge: {
+    position: 'absolute',
+    top: 12,
+    right: 12,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  categoryBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '700',
+    textTransform: 'uppercase',
+  },
+  textLayoutCategory: {
+    marginTop: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 20,
+  },
+  noImageDescriptionContainer: {
+    width: "100%",
+    height: 160,
+    padding: 24,
+    justifyContent: "center",
+    alignItems: "center",
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+  noImageDescriptionText: {
+    fontSize: 15,
+    fontStyle: "italic",
+    textAlign: "center",
+    lineHeight: 24,
+    fontWeight: '500',
+  },
+  jobCard: {
+    backgroundColor: "#fff",
+    marginBottom: 16,
+    borderRadius: 12, // Added rounding for a modern look
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    overflow: "hidden",
+  },
+  jobImage: {
+    width: "100%",
+    height: MEDIA_HEIGHT, // Fixed height
+    backgroundColor: "#f0f0f0",
+  },
+  noImageDescriptionContainer: {
+    width: "100%",
+    height: MEDIA_HEIGHT, // Exactly the same as the image height
+    padding: 20,
+    justifyContent: "center",
+    alignItems: "center",
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
 });
 
 export default GigsScreen;

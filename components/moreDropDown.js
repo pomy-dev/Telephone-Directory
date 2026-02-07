@@ -1,4 +1,3 @@
-// src/components/MoreDropdown.js
 import React, { useRef, useState } from 'react';
 import {
   TouchableOpacity,
@@ -14,11 +13,13 @@ import { Icons } from '../constants/Icons';
 import { AppContext } from '../context/appContext';
 
 const { width } = Dimensions.get('window');
-const ITEM_HEIGHT = 48;
-const MENU_WIDTH = 210;
+
+// Increased dimensions for a more "Spacious" feel
+const ITEM_HEIGHT = 60; // Was 48 - higher targets feel more premium
+const MENU_WIDTH = width * 0.65; // Wider menu (around 250-280px)
 
 export const MoreDropdown = ({ items }) => {
-  const { theme } = React.useContext(AppContext);
+  const { theme, isDarkMode } = React.useContext(AppContext);
   const [visible, setVisible] = useState(false);
   const scaleAnim = useRef(new Animated.Value(0)).current;
 
@@ -39,27 +40,34 @@ export const MoreDropdown = ({ items }) => {
     }).start(() => setVisible(false));
   };
 
+  const textColor = isDarkMode ? "#fff" : "#000";
+
   return (
     <>
-      {/* Anchor: three-dot icon */}
-      <TouchableOpacity onPress={open} activeOpacity={0.7}>
-        <Icons.Entypo name="dots-three-vertical" size={24} color={theme.colors.text} />
+      <TouchableOpacity onPress={open} activeOpacity={0.7} style={styles.anchor}>
+        <Icons.Entypo name="dots-three-vertical" size={24} color={textColor} />
       </TouchableOpacity>
 
-      {/* Modal with dropdown */}
       <Modal transparent visible={visible} animationType="none" onRequestClose={close}>
         <Pressable style={styles.overlay} onPress={close}>
           <Animated.View
             style={[
               styles.menu,
               {
-                backgroundColor: theme.colors.card || '#fff',
-                borderColor: theme.colors.border || '#e0e0e0',
+                backgroundColor: isDarkMode ? "#000" : "#fff",
+                borderColor: isDarkMode ? "#222" : "#f0f0f0",
                 transform: [{ scale: scaleAnim }],
                 opacity: scaleAnim,
               },
             ]}
           >
+            {/* Optional Header matching your Drawer feel */}
+            <View style={styles.menuHeader}>
+                <Text style={[styles.headerText, { color: textColor }]}>
+                    OPTIONS<Text style={{color: '#10b981'}}>.</Text>
+                </Text>
+            </View>
+
             {items.map((item, idx) => {
               const Icon = Icons[item.icon];
               const isLast = idx === items.length - 1;
@@ -74,22 +82,15 @@ export const MoreDropdown = ({ items }) => {
                       item.onPress();
                     }}
                   >
-                    <Icon name={item.iconName} size={22} color="#666" />
-                    <Text style={[styles.itemText, { color: theme.colors.text }]}>
+                    <View style={[styles.iconContainer, { backgroundColor: isDarkMode ? '#111' : '#f9f9f9' }]}>
+                        <Icon name={item.iconName} size={22} color={isDarkMode ? "#fff" : "#666"} />
+                    </View>
+                    <Text style={[styles.itemText, { color: textColor }]}>
                       {item.title}
                     </Text>
                   </TouchableOpacity>
 
-                  {/* Separator line after each item except last */}
-                  {!isLast && (
-                    <View
-                      style={{
-                        height: StyleSheet.hairlineWidth,
-                        backgroundColor: theme.colors.border || '#e0e0e0',
-                        marginLeft: 44, // align with icon + text padding
-                      }}
-                    />
-                  )}
+                  {!isLast && <View style={[styles.separator, { backgroundColor: isDarkMode ? '#222' : '#f0f0f0' }]} />}
                 </View>
               );
             })}
@@ -100,36 +101,64 @@ export const MoreDropdown = ({ items }) => {
   );
 };
 
-// Styles
 const styles = StyleSheet.create({
+  anchor: {
+    padding: 8,
+  },
   overlay: {
     flex: 1,
-    backgroundColor: 'transparent',
+    backgroundColor: 'rgba(0,0,0,0.4)', // Dimmed background makes the modal "pop"
     justifyContent: 'flex-start',
     alignItems: 'flex-end',
-    paddingTop: 16, // matches your header height
-    paddingRight: 16,
+    paddingTop: 60, // Adjusted for header height
+    paddingRight: 20,
   },
   menu: {
     width: MENU_WIDTH,
-    borderRadius: 12,
+    borderRadius: 20, // More rounded, modern corners
     borderWidth: 1,
     overflow: 'hidden',
-    elevation: 8,
+    elevation: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    paddingVertical: 10,
+  },
+  menuHeader: {
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f010',
+  },
+  headerText: {
+    fontSize: 12,
+    fontWeight: '900',
+    letterSpacing: 1.5,
+    color: '#999',
   },
   item: {
     flexDirection: 'row',
     alignItems: 'center',
     height: ITEM_HEIGHT,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
+  },
+  iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 15,
   },
   itemText: {
-    marginLeft: 12,
-    fontSize: 15,
-    fontWeight: '500',
+    fontSize: 12,
+    fontWeight: '400',
+    letterSpacing: 0.3,
+  },
+  separator: {
+    height: 1,
+    marginHorizontal: 20,
+    opacity: 0.5,
   },
 });
