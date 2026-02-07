@@ -13,7 +13,8 @@ import {
   ActivityIndicator, 
   TextInput, 
   Modal, 
-  Keyboard 
+  Keyboard ,
+  BackHandler ,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icons } from "../../constants/Icons";
@@ -29,6 +30,23 @@ const WorkerDirectoryScreen = ({ navigation }) => {
   const [isSearchVisible, setIsSearchVisible] = useState(false);
 
   const numColumns = 1;
+
+  useEffect(() => {
+  const backAction = () => {
+    if (isSearchVisible) {
+      setIsSearchVisible(false);
+      return true; // prevent default behavior (exiting screen)
+    }
+    return false; // let navigation handle it (go back)
+  };
+
+  const backHandler = BackHandler.addEventListener(
+    "hardwareBackPress",
+    backAction
+  );
+
+  return () => backHandler.remove();
+}, [isSearchVisible]);
 
   useEffect(() => {
     fetchWorkers();
@@ -155,10 +173,16 @@ const WorkerDirectoryScreen = ({ navigation }) => {
       <StatusBar barStyle="dark-content" />
       
       <View style={styles.topNav}>
-        <TouchableOpacity onPress={() => navigation.openDrawer()} style={styles.navBtn}>
-          <Icons.Ionicons name="menu-outline" size={26} color="#000" />
+        {/* Changed to Back Button */}
+        <TouchableOpacity 
+          onPress={() => navigation.goBack()} 
+          style={styles.navBtn}
+        >
+          <Icons.Ionicons name="chevron-back" size={28} color="#000" />
         </TouchableOpacity>
+
         <Text style={styles.navTitle}>Marketplace</Text>
+
         <TouchableOpacity onPress={fetchWorkers} style={styles.navBtn}>
           <Icons.Ionicons name="refresh" size={20} color="#000" />
         </TouchableOpacity>
@@ -202,6 +226,7 @@ const WorkerDirectoryScreen = ({ navigation }) => {
               <TextInput
                 autoFocus
                 placeholder="Find a specialist..."
+                placeholderTextColor="#999"
                 style={styles.modalInput}
                 value={search}
                 onChangeText={handleSearch}
@@ -236,9 +261,27 @@ const WorkerDirectoryScreen = ({ navigation }) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F8F9FA' }, 
-  topNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, height: 60, backgroundColor: '#fff' },
-  navTitle: { fontSize: 18, fontWeight: '900' },
-  navBtn: { width: 40, height: 40, alignItems: 'center', justifyContent: 'center' },
+  topNav: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'space-between', 
+    paddingHorizontal: 16, 
+    height: 60, 
+    backgroundColor: '#fff',
+    borderBottomWidth: 1, // Added subtle line to match your edit profile screen
+    borderBottomColor: '#f0f0f0'
+  },
+  navBtn: { 
+    width: 45, // Slightly wider touch target for better UX
+    height: 45, 
+    alignItems: 'center', 
+    justifyContent: 'center' 
+  },
+  navTitle: { 
+    fontSize: 18, 
+    fontWeight: '900',
+    letterSpacing: -0.5 // Matches your brand style
+  },
 
   searchWrapper: { padding: 16, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#F0F0F0' },
   searchBoxTrigger: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#F3F4F6', padding: 12, borderRadius: 12 },
