@@ -95,9 +95,9 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
+    Math.cos((lat2 * Math.PI) / 180) *
+    Math.sin(dLon / 2) *
+    Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   const distance = R * c;
   return distance;
@@ -355,105 +355,95 @@ const GigsScreen = ({ navigation }) => {
   //   );
   // };
 
-  
 
 
-// ... inside GigsScreen component ...
 
-const renderJobCard = ({ item }) => {
-  // REMOVED: const { theme, isDarkMode } = React.useContext(AppContext); 
-  // This was causing the "Invalid hook call" error.
-  
-  // Use the theme and isDarkMode variables already defined at the top of GigsScreen
-  
-  const hasImage = item?.images && item.images.length > 0 && !item.images[0].includes("via.placeholder.com");
+  // ... inside GigsScreen component ...
 
-  return (
-    <TouchableOpacity
-      style={[
-        styles.jobCard, 
-        { backgroundColor: isDarkMode ? '#1A1A1A' : '#fff' }
-      ]}
-      onPress={() => navigation.navigate("JobDetailScreen", { job: item })}
-    >
-      {/* --- TOP MEDIA SECTION (Fixed Height) --- */}
-      <View style={{ height: MEDIA_HEIGHT, overflow: 'hidden' }}>
-        {hasImage ? (
-          <Image 
-            source={{ uri: item.images[0] }} 
-            style={styles.jobImage} 
-            resizeMode="cover"
-          />
-        ) : (
-          <View style={[
-            styles.noImageDescriptionContainer, 
-            { backgroundColor: isDarkMode ? '#252525' : '#f9f9f9', height: MEDIA_HEIGHT }
-          ]}>
-            <Icons.MaterialCommunityIcons 
-              name="format-quote-open" 
-              size={20} 
-              color={theme.colors.indicator} 
-              style={{ marginBottom: 4 }}
+  const renderJobCard = ({ item }) => {
+    const hasImage = item?.images && item.images.length > 0 && !item.images[0].includes("via.placeholder.com");
+
+    return (
+      <TouchableOpacity
+        style={[
+          styles.jobCard,
+          { backgroundColor: isDarkMode ? '#1A1A1A' : '#fff' }
+        ]}
+        onPress={() => navigation.navigate("JobDetailScreen", { job: item })}
+      >
+        {/* --- TOP MEDIA SECTION (Fixed Height) --- */}
+        <View style={{ height: MEDIA_HEIGHT, overflow: 'hidden' }}>
+          {hasImage ? (
+            <Image
+              source={{ uri: item.images[0] }}
+              style={styles.jobImage}
+              resizeMode="cover"
             />
-            <Text 
-              style={[styles.noImageDescriptionText, { color: theme.colors.text }]} 
-              ellipsizeMode="tail" 
-              numberOfLines={5}
-            >
-              {item.description}
-            </Text>
-          </View>
-        )}
-      </View>
-
-      {/* --- BOTTOM CONTENT SECTION --- */}
-      <View style={styles.jobContent}>
-        <View style={styles.jobHeader}>
-          <Text style={[styles.jobTitle, { color: theme.colors.text }]} numberOfLines={1}>
-            {item.title}
-          </Text>
-          <Text style={styles.jobPrice}>R{item.price}</Text>
-        </View>
-
-        {hasImage ? (
-          <Text style={[styles.jobDescription, { color: isDarkMode ? '#aaa' : '#666' }]} numberOfLines={2}>
-            {item.description}
-          </Text>
-        ) : (
-          <View style={{ height: 40 }} />
-        )}
-
-        <View style={styles.jobFooter}>
-          <View style={styles.locationContainer}>
-            <Icons.Ionicons name="location-outline" size={14} color="#666" />
-            <Text style={styles.locationText} numberOfLines={1}>{item.location}</Text>
-          </View>
-          {item.distance && (
-            <Text style={styles.distanceText}>
-              {item.distance.toFixed(1)} km
-            </Text>
+          ) : (
+            <View style={[
+              styles.noImageDescriptionContainer,
+              { backgroundColor: isDarkMode ? '#252525' : '#f9f9f9', height: MEDIA_HEIGHT }
+            ]}>
+              <Icons.MaterialCommunityIcons
+                name="format-quote-open"
+                size={20}
+                color={theme.colors.indicator}
+                style={{ marginBottom: 4 }}
+              />
+              <Text
+                style={[styles.noImageDescriptionText, { color: theme.colors.text }]}
+                ellipsizeMode="tail"
+                numberOfLines={5}
+              >
+                {item.description}
+              </Text>
+            </View>
           )}
         </View>
 
-        <View style={[styles.jobMeta, { borderTopColor: isDarkMode ? '#333' : '#f0f0f0' }]}>
-          <Text style={[styles.postedBy, { color: isDarkMode ? '#888' : '#444' }]}>
-            {item.postedBy?.name || 'User'}
-          </Text>
-          <Text style={[styles.postedTime, { color: '#999' }]}>{item.postedTime}</Text>
+        {/* --- BOTTOM CONTENT SECTION --- */}
+        <View style={styles.jobContent}>
+          <View style={styles.jobHeader}>
+            <Text style={[styles.jobTitle, { color: theme.colors.text }]} numberOfLines={1}>
+              {item.title}
+            </Text>
+            <Text style={styles.jobPrice}>R{item.price}</Text>
+          </View>
+
+          {hasImage ? (
+            <Text style={[styles.jobDescription, { color: isDarkMode ? '#aaa' : '#666' }]} numberOfLines={2}>
+              {item.description}
+            </Text>
+          ) : (
+            <View style={{ height: 40 }} />
+          )}
+
+          <View style={styles.jobFooter}>
+            <View style={styles.locationContainer}>
+              <Icons.Ionicons name="location-outline" size={14} color="#666" />
+              <Text style={styles.locationText} numberOfLines={1}>{item.location}</Text>
+            </View>
+            {item.distance && (
+              <Text style={styles.distanceText}>
+                {item.distance.toFixed(1)} km
+              </Text>
+            )}
+          </View>
+
+          <View style={[styles.jobMeta, { borderTopColor: isDarkMode ? '#333' : '#f0f0f0' }]}>
+            <Text style={[styles.postedBy, { color: isDarkMode ? '#888' : '#444' }]}>
+              {item.postedBy?.name || 'User'}
+            </Text>
+            <Text style={[styles.postedTime, { color: '#999' }]}>{item.postedTime}</Text>
+          </View>
         </View>
-      </View>
-    </TouchableOpacity>
-  );
-};
+      </TouchableOpacity>
+    );
+  };
 
   return (
-    <SafeAreaView
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
-    >
-      <StatusBar
-        barStyle={isDarkMode ? "light-content" : "dark-content"}
-        backgroundColor={theme.colors.background}
-      />
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
       <View style={{ height: 30 }} />
       {/* Custom Modern Header */}
       <View style={styles.customHeader}>

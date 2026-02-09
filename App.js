@@ -534,7 +534,7 @@ function AppContent() {
                             name="LoanAssist"
                             component={LoanAssist}
                           />
-                          <Stack.Screen name="Ask-AI" component={AIAgent} />
+                          <Stack.Screen name="Askai" component={AIAgent} />
                           <Stack.Screen
                             name="LoanDetails"
                             component={LoanDetails}

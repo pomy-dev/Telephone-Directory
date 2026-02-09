@@ -128,8 +128,6 @@ export default function FinancialDetailsScreen({ route, navigation }) {
   const companyName = data.bank || data.company || "Financial Provider";
   const productName = data.type || "Financial Product";
 
-  const openAIAgent = () => navigation.navigate("Ask-AI", { context: item, dealType: getDealType() });
-
   const handleCall = (phone) => Linking.openURL(`tel:${phone}`);
 
   const handleEmail = (email) => Linking.openURL(`mailto:${email}`);
@@ -441,7 +439,10 @@ export default function FinancialDetailsScreen({ route, navigation }) {
       </BottomSheet>
 
       {/* Floating AI Agent FAB */}
-      <TouchableOpacity style={styles.fab} onPress={openAIAgent} activeOpacity={0.9}>
+      <TouchableOpacity style={styles.fab} onPress={() =>
+        navigation.navigate("Askai", { context: item, dealType: getDealType() })}
+        activeOpacity={0.9}
+      >
         <Icons.MaterialCommunityIcons name="face-agent" size={30} color="#FFFFFF" />
       </TouchableOpacity>
     </View>
