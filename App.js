@@ -21,7 +21,7 @@ import { BasketProvider } from "./context/basketContext";
 
 // loan assist
 import LoanAssist from "./screens/loans/LoanAssist";
-import AIAgent from "./screens/loans/AIAgent";
+import AIAgent from "./screens/loans/AgentChat";
 import LoanDetails from "./screens/loans/LoanDetails";
 import LoanCompare from "./screens/loans/LoanCompare";
 import LoanCalculator from "./screens/loans/LoanCalculator";
