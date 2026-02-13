@@ -15,12 +15,15 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Icons } from '../../constants/Icons';
+import { AppContext } from '../../context/appContext';
 import SecondaryNav from '../../components/SecondaryNav';
+import App from '../../App';
 
 const { width } = Dimensions.get('window');
 
 export default function TransportationDetailsScreen({ navigation, route }) {
     const { vehicle } = route.params;
+    const { theme, isDarkMode } = React.useContext(AppContext)
     const [currentImageIndex, setCurrentImageIndex] = useState(0);
     const [isBookmarked, setIsBookmarked] = useState(false);
 
@@ -78,8 +81,9 @@ export default function TransportationDetailsScreen({ navigation, route }) {
     }
 
     return (
-        <View style={styles.container}>
-            <StatusBar barStyle="dark-content" />
+        <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+            <View style={{ height: 20 }} />
+            <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
             <SecondaryNav title="Fore-Hire Details" />
 
             <ScrollView showsVerticalScrollIndicator={false}>
@@ -128,7 +132,7 @@ export default function TransportationDetailsScreen({ navigation, route }) {
                     {/* Header Info */}
                     <View style={styles.header}>
                         <View style={styles.headerLeft}>
-                            <Text style={styles.title}>
+                            <Text style={[styles.title, { color: theme.colors.text }]}>
                                 {
                                     vehicle.vehicle_category.replace(/_/g, ' ')
                                         .split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1))
@@ -136,13 +140,12 @@ export default function TransportationDetailsScreen({ navigation, route }) {
                                 }
                             </Text>
                             <View style={styles.vehicleInfoRow}>
-                                <Text style={styles.makeModel}>{vehicle.vehicle_make} {vehicle.model}</Text>
-                                <Text style={styles.year}>• {vehicle.year_made}</Text>
-                                <Text style={styles.registration}>• {vehicle.registration}</Text>
+                                <Text style={[styles.makeModel, { color: theme.colors.text }]}>{vehicle.vehicle_make} {vehicle.model}</Text>
+                                <Text style={[styles.registration, { color: theme.colors.sub_text }]}>• {vehicle.registration}</Text>
                             </View>
                             <View style={styles.locationRow}>
-                                <Ionicons name="location" size={16} color="#64748b" />
-                                <Text style={styles.address}>{vehicle.location.address}</Text>
+                                <Ionicons name="location" size={16} color={theme.colors.sub_text} />
+                                <Text style={[styles.address, { color: theme.colors.sub_text }]}>{vehicle.location.city}</Text>
                             </View>
                         </View>
                     </View>
@@ -150,41 +153,34 @@ export default function TransportationDetailsScreen({ navigation, route }) {
                     {/* Key Details */}
                     <View style={styles.detailsGrid}>
                         {vehicle.vehicle_capacity && (
-                            <View style={styles.detailBox}>
-                                <Ionicons name="people" size={24} color="#2563eb" />
-                                <Text style={styles.detailValue}>{vehicle.vehicle_capacity}</Text>
-                                <Text style={styles.detailLabel}>Seats</Text>
+                            <View style={[styles.detailBox, { backgroundColor: theme.colors.card }]}>
+                                <Ionicons name="people" size={24} color={theme.colors.indicator} />
+                                <Text style={[styles.detailValue, { color: theme.colors.text }]}>{vehicle.vehicle_capacity}</Text>
+                                <Text style={[styles.detailLabel, { color: theme.colors.sub_text }]}>Seats</Text>
                             </View>
                         )}
-                        {vehicle.cargo_capacity && (
-                            <View style={styles.detailBox}>
-                                <Ionicons name="cube" size={24} color="#2563eb" />
-                                <Text style={styles.detailValue}>{vehicle.cargo_capacity}T</Text>
-                                <Text style={styles.detailLabel}>Capacity</Text>
-                            </View>
-                        )}
-                        <View style={styles.detailBox}>
-                            <Ionicons name="time" size={24} color="#2563eb" />
-                            <Text style={styles.detailValue}>{vehicle.operating_start}</Text>
-                            <Text style={styles.detailLabel}>Start Time</Text>
+                        <View style={[styles.detailBox, { backgroundColor: theme.colors.card }]}>
+                            <Ionicons name="time" size={24} color={theme.colors.indicator} />
+                            <Text style={[styles.detailValue, { color: theme.colors.text }]}>{vehicle.operating_start}</Text>
+                            <Text style={[styles.detailLabel, { color: theme.colors.sub_text }]}>Start Time</Text>
                         </View>
-                        <View style={styles.detailBox}>
-                            <Ionicons name="time-outline" size={24} color="#2563eb" />
-                            <Text style={styles.detailValue}>{vehicle.operating_end}</Text>
-                            <Text style={styles.detailLabel}>End Time</Text>
+                        <View style={[styles.detailBox, { backgroundColor: theme.colors.card }]}>
+                            <Ionicons name="time-outline" size={24} color={theme.colors.indicator} />
+                            <Text style={[styles.detailValue, { color: theme.colors.text }]}>{vehicle.operating_end}</Text>
+                            <Text style={[styles.detailLabel, { color: theme.colors.sub_text }]}>End Time</Text>
                         </View>
                     </View>
 
                     {/* Description */}
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Description</Text>
-                        <Text style={styles.description}>{vehicle.description}</Text>
+                    <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
+                        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Description</Text>
+                        <Text style={[styles.description, { color: theme.colors.sub_text }]}>{vehicle.description}</Text>
                     </View>
 
                     {/* Routes (if available) */}
                     {vehicle.routes.length > 0 && (
-                        <View style={styles.section}>
-                            <Text style={styles.sectionTitle}>Available Routes</Text>
+                        <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
+                            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Available Routes</Text>
                             {vehicle.routes.map((route, index) => (
                                 <View key={index} style={styles.routeCard}>
                                     <View style={styles.routeHeader}>
@@ -224,40 +220,40 @@ export default function TransportationDetailsScreen({ navigation, route }) {
                     )}
 
                     {/* Operating Schedule */}
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Operating Schedule</Text>
+                    <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
+                        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Operating Schedule</Text>
                         <View style={styles.scheduleContainer}>
                             <View style={styles.scheduleRow}>
-                                <Text style={styles.scheduleLabel}>Days:</Text>
-                                <Text style={styles.scheduleValue}>{vehicle.operating_days.join(', ')}</Text>
+                                <Text style={[styles.scheduleLabel, { color: theme.colors.text }]}>Days:</Text>
+                                <Text style={[styles.scheduleValue, { color: theme.colors.sub_text }]}>{vehicle.operating_days.join(', ')}</Text>
                             </View>
                             <View style={styles.scheduleRow}>
-                                <Text style={styles.scheduleLabel}>Hours:</Text>
-                                <Text style={styles.scheduleValue}>{vehicle.operating_start} - {vehicle.operating_end}</Text>
+                                <Text style={[styles.scheduleLabel, { color: theme.colors.text }]}>Hours:</Text>
+                                <Text style={[styles.scheduleValue, { color: theme.colors.sub_text }]}>{vehicle.operating_start} - {vehicle.operating_end}</Text>
                             </View>
                         </View>
                     </View>
 
                     {/* Features */}
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Features</Text>
+                    <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
+                        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Features</Text>
                         <View style={styles.featuresGrid}>
                             {vehicle.vehicle_features.map((feature, index) => (
                                 <View key={index} style={styles.featureItem}>
                                     <Ionicons name="checkmark-circle" size={18} color="#10b981" />
-                                    <Text style={styles.featureText}>{feature}</Text>
+                                    <Text style={[styles.featureText, { color: theme.colors.sub_text }]}>{feature}</Text>
                                 </View>
                             ))}
                         </View>
                     </View>
 
                     {/* Owner Info */}
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Owner Information</Text>
-                        <View style={styles.ownerCard}>
+                    <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
+                        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Owner Information</Text>
+                        <View style={[styles.ownerCard, { backgroundColor: theme.colors.sub_card }]}>
                             <View style={styles.ownerHeader}>
                                 <View style={styles.ownerInfo}>
-                                    <Text style={styles.ownerName}>{vehicle.owner_info.name}</Text>
+                                    <Text style={[styles.ownerName, { color: theme.colors.sub_text }]}>{vehicle.owner_info.name}</Text>
                                     {vehicle.vehicle_certifications.license && (
                                         <View style={styles.verifiedBadge}>
                                             <Ionicons name="checkmark-circle" size={16} color="#10b981" />
@@ -267,10 +263,10 @@ export default function TransportationDetailsScreen({ navigation, route }) {
                                 </View>
                                 <View style={styles.ratingContainer}>
                                     <Ionicons name="star" size={16} color="#fbbf24" />
-                                    <Text style={styles.rating}>{vehicle.rating}</Text>
+                                    <Text style={[styles.rating, { color: theme.colors.sub_text }]}>{vehicle.rating}</Text>
                                 </View>
                             </View>
-                            <Text style={styles.responseTime}>Response Time: {vehicle.owner_info.responsetime}</Text>
+                            <Text style={[styles.responseTime, { color: theme.colors.text }]}>Response Time: {vehicle.owner_info.responsetime}</Text>
                             <View style={styles.contactButtons}>
                                 <TouchableOpacity style={styles.contactButton} onPress={handleCall}>
                                     <Ionicons name="call-outline" size={30} color="#2563eb" />
@@ -292,25 +288,25 @@ export default function TransportationDetailsScreen({ navigation, route }) {
                     </View>
 
                     {/* Certifications */}
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Certifications</Text>
+                    <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
+                        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Certifications</Text>
                         <View style={styles.certificationsContainer}>
                             {vehicle.vehicle_certifications?.insurance && (
                                 <View style={styles.certificationItem}>
                                     <Ionicons name="shield-checkmark" size={20} color="#10b981" />
-                                    <Text style={styles.certificationText}>Fully Insured</Text>
+                                    <Text style={[styles.certificationText, { color: theme.colors.text }]}>Fully Insured</Text>
                                 </View>
                             )}
                             {vehicle.vehicle_certifications?.license && (
                                 <View style={styles.certificationItem}>
                                     <Ionicons name="document-text" size={20} color="#10b981" />
-                                    <Text style={styles.certificationText}>Licensed</Text>
+                                    <Text style={[styles.certificationText, { color: theme.colors.text }]}>Licensed</Text>
                                 </View>
                             )}
                             {vehicle.boarder_crossing && (
                                 <View style={styles.certificationItem}>
                                     <Ionicons name="globe" size={20} color="#10b981" />
-                                    <Text style={styles.certificationText}>Border Crossing Approved</Text>
+                                    <Text style={[styles.certificationText, { color: theme.colors.text }]}>Border Crossing Approved</Text>
                                 </View>
                             )}
                         </View>
@@ -319,11 +315,11 @@ export default function TransportationDetailsScreen({ navigation, route }) {
             </ScrollView>
 
             {/* Action Buttons */}
-            <View style={styles.footer}>
-                <TouchableOpacity style={styles.shareButton} onPress={handleShare}>
+            <View style={[styles.footer, { backgroundColor: theme.colors.card }]}>
+                <TouchableOpacity style={[styles.shareButton, { backgroundColor: theme.colors.background }]} onPress={handleShare}>
                     <Icons.Feather name="share-2" size={20} color="#2563eb" />
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.bookButton} onPress={handleBook}>
+                <TouchableOpacity style={[styles.bookButton, { backgroundColor: theme.colors.background }]} onPress={handleBook}>
                     <Text style={styles.bookButtonText}>Request Service</Text>
                     <Ionicons name="arrow-forward" size={20} color="#fff" />
                 </TouchableOpacity>

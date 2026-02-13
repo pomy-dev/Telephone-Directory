@@ -32,7 +32,7 @@ import SecondaryNav from '../../components/SecondaryNav';
 
 // ────── Comment Bottom Sheet ──────
 const CommentBottomSheet = React.forwardRef(
-    ({ vehicleId, commentText, setCommentText, suggestion, setSuggestion, userNumber, setUserNumber, onSubmit, onDismiss, renderBackdrop }, ref) => (
+    ({ vehicleId, theme, commentText, setCommentText, suggestion, setSuggestion, userNumber, setUserNumber, onSubmit, onDismiss, renderBackdrop }, ref) => (
         <BottomSheetModal
             ref={ref}
             index={0}
@@ -43,8 +43,8 @@ const CommentBottomSheet = React.forwardRef(
             keyboardBehavior="extend"
             android_keyboardInputMode="adjustResize"
         >
-            <BottomSheetView style={sheetStyles.container}>
-                <Text style={sheetStyles.title}>Write a Review</Text>
+            <BottomSheetView style={[sheetStyles.container, { backgroundColor: theme.colors.card }]}>
+                <Text style={[sheetStyles.title, { color: theme.colors.text }]}>Write a Review</Text>
                 <TextInput
                     style={[sheetStyles.textArea, { height: 100 }]}
                     placeholder="Share your experience with this vehicle..."
@@ -78,7 +78,7 @@ const CommentBottomSheet = React.forwardRef(
 CommentBottomSheet.displayName = 'CommentBottomSheet';
 
 // ────── Rating Bottom Sheet ──────
-const RatingBottomSheet = React.forwardRef(({ onSubmit, onDismiss, renderBackdrop }, ref) => {
+const RatingBottomSheet = React.forwardRef(({ theme, onSubmit, onDismiss, renderBackdrop }, ref) => {
     const [rating, setRating] = useState(0);
     return (
         <BottomSheetModal
@@ -87,10 +87,12 @@ const RatingBottomSheet = React.forwardRef(({ onSubmit, onDismiss, renderBackdro
             snapPoints={['40%']}
             backdropComponent={renderBackdrop}
             onDismiss={onDismiss}
+            backgroundStyle={theme.colors.card}
+            // backgroundComponent={theme.colors.card}
             enablePanDownToClose
         >
-            <BottomSheetView style={ratingSheetStyles.container}>
-                <Text style={ratingSheetStyles.title}>Rate This Vehicle</Text>
+            <BottomSheetView style={[ratingSheetStyles.container, { backgroundColor: theme.colors.card }]}>
+                <Text style={[ratingSheetStyles.title, { color: theme.colors.text }]}>Rate This Vehicle</Text>
                 <View style={ratingSheetStyles.stars}>
                     {[1, 2, 3, 4, 5].map((star) => (
                         <TouchableOpacity key={star} onPress={() => setRating(star)}>
@@ -120,7 +122,7 @@ RatingBottomSheet.displayName = 'RatingBottomSheet';
 
 // ────── Sort/Filter Bottom Sheet Modal ──────
 const SortFilterBottomSheet = React.forwardRef(
-    ({ sortByCategory, setSortByCategory, sortByBorderCrossing, setSortByBorderCrossing, isVisible, onClose }, ref) => {
+    ({ theme, sortByCategory, setSortByCategory, sortByBorderCrossing, setSortByBorderCrossing, isVisible, onClose }, ref) => {
         const slideAnim = useRef(new Animated.Value(400)).current;
         const categories = ['All', 'Public Transport', 'Cargo', 'Passenger', 'Luxury'];
 
@@ -149,7 +151,7 @@ const SortFilterBottomSheet = React.forwardRef(
             >
                 {/* Backdrop */}
                 <TouchableOpacity
-                    style={sortFilterModalStyles.backdrop}
+                    style={[sortFilterModalStyles.backdrop, { backgroundColor: theme.colors.indicator }]}
                     activeOpacity={1}
                     onPress={onClose}
                 />
@@ -158,7 +160,7 @@ const SortFilterBottomSheet = React.forwardRef(
                 <Animated.View
                     style={[
                         sortFilterModalStyles.container,
-                        { transform: [{ translateY: slideAnim }] }
+                        { transform: [{ translateY: slideAnim }], backgroundColor: theme.colors.card }
                     ]}
                 >
                     {/* Drag Handle */}
@@ -168,9 +170,9 @@ const SortFilterBottomSheet = React.forwardRef(
 
                     {/* Header */}
                     <View style={sortFilterModalStyles.header}>
-                        <Text style={sortFilterModalStyles.title}>Filter & Sort</Text>
+                        <Text style={[sortFilterModalStyles.title, { color: theme.colors.text }]}>Filter & Sort</Text>
                         <TouchableOpacity onPress={onClose}>
-                            <Text style={sortFilterModalStyles.closeButton}>✕</Text>
+                            <Text style={[sortFilterModalStyles.closeButton, { color: theme.colors.text }]}>✕</Text>
                         </TouchableOpacity>
                     </View>
 
@@ -307,7 +309,6 @@ const sortFilterModalStyles = StyleSheet.create({
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.5)',
     },
     container: {
         position: 'absolute',
@@ -472,7 +473,12 @@ export default function TransportationListScreen({ navigation }) {
     const [ratingVehicleId, setRatingVehicleId] = useState(null);
     const [comments, setComments] = useState({});
 
-    const types = ['All', 'Minibus', 'Bus', 'Van', 'Truck', 'Motorcycle', 'Car', 'SUV', 'Sprinter'];
+    const types = ['All', 'Minibus', 'Bus',
+        'Van', 'Truck', 'Motorcycle',
+        'Car', 'SUV', 'Sprinter', 'Tractor',
+        'Tower', 'School-Bus', 'Staff-Bus',
+        'Trailer'
+    ];
 
     // ────── Fetch vehicles onmount ──────
     useEffect(() => {
@@ -737,7 +743,17 @@ export default function TransportationListScreen({ navigation }) {
     };
 
     // ────── Helper Labels ──────
-    const getTypeLabel = (type) => ({ minibus: 'Minibus', bus: 'Bus', van: 'Van', truck: 'Truck', suv: 'SUV', sedan: 'Sedan' })[type] || type;
+    const getTypeLabel = (type) => (
+        {
+            minibus: 'Minibus', bus: 'Bus', van: 'Van',
+            truck: 'Truck', suv: 'SUV', sedan: 'Sedan',
+            motorcycle: 'Motor Cycle', car: 'Car', sprinter: 'Sprinter',
+            tractor: 'Tractor', tower: 'Tower',
+            schoolbus: 'School Bus',
+            staffbus: 'Staff Bus',
+            trailer: 'Trailer'
+        }
+    )[type] || type;
 
     // ────── RENDER VEHICLE CARD – Modern Overlay Style ──────
     const renderVehicleCard = (vehicle) => {
@@ -751,7 +767,7 @@ export default function TransportationListScreen({ navigation }) {
         return (
             <TouchableOpacity
                 key={vehicle.id}
-                style={styles.vehicleCard}
+                style={[styles.vehicleCard, { backgroundColor: theme.colors.card }]}
                 activeOpacity={0.92}
                 onPress={() => navigation.navigate('TransportationDetailsScreen', { vehicle: vehicle })}
             >
@@ -785,7 +801,7 @@ export default function TransportationListScreen({ navigation }) {
                             }
                         </Text>
                         <Text style={styles.vehicleSubtitle} numberOfLines={1}>
-                            {vehicle.vehicle_make} {vehicle.vehicle_model} • {vehicle.year_made}
+                            {vehicle.vehicle_make} {vehicle.vehicle_model}
                         </Text>
 
                         {/* Location + Distance */}
@@ -793,7 +809,6 @@ export default function TransportationListScreen({ navigation }) {
                             <Icons.Ionicons name="location" size={14} color="#fff" />
                             <Text style={styles.locationText}>
                                 {vehicle?.location?.city || vehicle.location.area}
-                                {`• ${vehicle?.location?.address}`}
                             </Text>
                         </View>
 
@@ -832,7 +847,7 @@ export default function TransportationListScreen({ navigation }) {
                 </View>
 
                 {/* Footer Below Image */}
-                <View style={styles.cardFooter}>
+                <View style={[styles.cardFooter, { backgroundColor: theme.colors.card }]}>
                     <View style={styles.contactButtons}>
                         <TouchableOpacity style={styles.contactButton} onPress={() => handleCall(vehicle)}>
                             <Icons.Ionicons name="call-outline" size={20} color="#2563eb" />
@@ -843,6 +858,7 @@ export default function TransportationListScreen({ navigation }) {
                         <TouchableOpacity style={styles.contactButton} onPress={() => handleEmail(vehicle)}>
                             <Icons.Ionicons name="mail-outline" size={20} color="#eb2560ff" />
                         </TouchableOpacity>
+
                         <TouchableOpacity style={styles.contactButton} onPress={() => handleSMS(vehicle)}>
                             <Icons.MaterialIcons name="message" size={20} color="#2563eb" />
                         </TouchableOpacity>
@@ -999,7 +1015,7 @@ export default function TransportationListScreen({ navigation }) {
                             {/* Vehicle Counting */}
                             <View style={styles.section}>
                                 <View style={styles.sectionHeader}>
-                                    <Text style={styles.sectionTitle}>All Vehicles ({filteredVehicles?.length})</Text>
+                                    <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>All Vehicles ({filteredVehicles?.length})</Text>
                                     {/* scroll down */}
                                     <TouchableOpacity onPress={scrollToVehicles}>
                                         <Text style={styles.seeAllText}>See all</Text>
@@ -1014,6 +1030,7 @@ export default function TransportationListScreen({ navigation }) {
                 {/* Bottom Sheets */}
                 <CommentBottomSheet
                     ref={commentSheetRef}
+                    theme={theme}
                     vehicleId={modalVehicleId}
                     commentText={commentText}
                     setCommentText={setCommentText}
@@ -1028,12 +1045,14 @@ export default function TransportationListScreen({ navigation }) {
 
                 <RatingBottomSheet
                     ref={ratingSheetRef}
+                    theme={theme}
                     onSubmit={submitRating}
                     onDismiss={() => setRatingVehicleId(null)}
                     renderBackdrop={renderBackdrop}
                 />
 
                 <SortFilterBottomSheet
+                    theme={theme}
                     sortByCategory={sortByCategory}
                     setSortByCategory={setSortByCategory}
                     sortByBorderCrossing={sortByBorderCrossing}
@@ -1136,7 +1155,6 @@ const styles = StyleSheet.create({
         marginBottom: 20,
         borderRadius: 20,
         overflow: 'hidden',
-        backgroundColor: '#fff',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 8 },
         shadowOpacity: 0.15,

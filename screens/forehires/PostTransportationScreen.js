@@ -54,7 +54,7 @@ export default function PostTransportationScreen({ navigation }) {
     const [isPickingImg, setIsPickingImg] = useState(false);
     const [isSubmiting, setIsSubmiting] = useState(false);
 
-    const types = ['minibus', 'bus', 'van', 'truck', 'suv', 'motorcycle','car','sprinter'];
+    const types = ['minibus', 'bus', 'van', 'truck', 'suv', 'motorcycle', 'car', 'sprinter', 'tractor', 'tower', 'schoolbus', 'staffbus', 'trailer'];
     const categories = [
         'public_transport',
         'cargo',
@@ -128,7 +128,6 @@ export default function PostTransportationScreen({ navigation }) {
         if (currentStep === 2) {
             if (!formData.make.trim()) newErrors.make = 'Make required';
             if (!formData.model.trim()) newErrors.model = 'Model required';
-            if (!formData.year.trim()) newErrors.year = 'Year required';
             if (!formData.registration.trim()) newErrors.registration = 'Registration required';
         }
 
@@ -323,25 +322,13 @@ export default function PostTransportationScreen({ navigation }) {
 
                             <View style={styles.row}>
                                 <View style={styles.half}>
-                                    <Text style={styles.label}>Year *</Text>
-                                    <TextInput style={[styles.input, errors.year && styles.inputError]} placeholder="2022" value={formData.year} keyboardType="numeric" onChangeText={v => updateForm('year', v)} />
-                                    {errors.year && <Text style={styles.error}>{errors.year}</Text>}
-                                </View>
-                                <View style={styles.half}>
                                     <Text style={styles.label}>Registration *</Text>
                                     <TextInput style={[styles.input, errors.registration && styles.inputError]} placeholder="SD 123 AB" value={formData.registration} onChangeText={v => updateForm('registration', v)} />
                                     {errors.registration && <Text style={styles.error}>{errors.registration}</Text>}
                                 </View>
-                            </View>
-
-                            <View style={styles.row}>
                                 <View style={styles.half}>
                                     <Text style={styles.label}>Seats</Text>
                                     <TextInput style={styles.input} placeholder="22" value={formData.capacity} keyboardType="numeric" onChangeText={v => updateForm('capacity', v)} />
-                                </View>
-                                <View style={styles.half}>
-                                    <Text style={styles.label}>Cargo (Tons)</Text>
-                                    <TextInput style={styles.input} placeholder="5" value={formData.cargoCapacity} keyboardType="numeric" onChangeText={v => updateForm('cargoCapacity', v)} />
                                 </View>
                             </View>
                         </View>

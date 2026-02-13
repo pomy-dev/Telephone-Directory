@@ -7,7 +7,6 @@ import { API_BASE_URL } from "../../config/env";
 import { AppContext } from "../../context/appContext";
 import { Icons } from "../../constants/Icons";
 import { AuthContext } from "../../context/authProvider";
-import SecondaryNav from "../../components/SecondaryNav";
 import { Avatar } from 'react-native-paper';
 import * as Speech from 'expo-speech';
 
@@ -99,6 +98,8 @@ export default function AIAgent({ navigation, route }) {
   const { context, dealType } = route.params;
   const [messages, setMessages] = useState([]);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [inputText, setInputText] = useState("");
   const [inputHeight, setInputHeight] = useState(50);
   const [isLoading, setIsLoading] = useState(false);
@@ -145,43 +146,104 @@ export default function AIAgent({ navigation, route }) {
     scrollToBottom();
   }, [messages, isLoading]);
 
-  const introText = `Hello today, I am your AI agent guider for assisting you with the opted ${dealType} of the ${context?.productType}.
+  const introText = dealType !== null ? `Hello again, I am your AI agent guider for assisting you with the opted ${dealType} of the ${context?.productType}.
     You can chat with me in writing about the opted financial product you may want advise on, and I will respond within my scope of data 
-    that has been provided to me. Know that I may ask you questions as well to give you tailored advise for your specific needs, but I do not
+    that has been provided to me. Know that I may ask you questions as well to give you tailored advise for your specific needs I do not
+    keep records of our convesations, or share them else where. Enjoy.
+  `:
+    `Hello again, I am your AI agent guider for assisting you with guidance on loans, investments as well as insurance policies.
+    You can chat with me in writing about the opted financial product you may want advise on, and I will respond within my scope of data 
+    that has been provided to me. Know that I may ask you questions as well to give you tailored advise for your specific needs I do not
     keep records of our convesations, or share them else where. Enjoy.
   `;
 
-  const listAllVoiceOptions = async () => {
-    await Speech.getAvailableVoicesAsync()
-      .then(voices => {
-        console.log("Available voices:", voices);
-        return voices;
+  const speak = async () => {
+    try {
+      if (isSpeaking && !isPaused) {
+        // Currently speaking, pause
+        Speech.stop();
+        setIsPaused(true);
+        return;
+      }
+
+      if (isPaused) {
+        const remainingText = introText.substring(currentIndex);
+
+        Speech.speak(remainingText, {
+          language: "en-US",
+          pitch: 1.0,
+          rate: 0.95,
+          volume: 1.0,
+
+          onStart: () => {
+            setIsSpeaking(true);
+            setIsPaused(false);
+          },
+
+          onBoundary: (event) => {
+            // Track character position
+            setCurrentIndex(currentIndex + event.charIndex);
+          },
+
+          onDone: () => {
+            setIsSpeaking(false);
+            setIsPaused(false);
+            setCurrentIndex(0);
+          },
+
+          onError: (err) => {
+            console.log("Speech error:", err);
+            setIsSpeaking(false);
+            setIsPaused(false);
+          },
+        });
+
+        return;
+      }
+
+      // Not speaking, start
+      Speech.speak(introText, {
+        language: "en-US",
+        voice: "id-id-x-dfz#female_3-local",
+        pitch: 1.0,
+        rate: 0.95,
+        volume: 1.0,
+
+        onStart: () => {
+          setIsSpeaking(true);
+          setCurrentIndex(0);
+        },
+
+        onPause: () => {
+          setIsPaused(true);
+        },
+
+        onResume: () => {
+          setIsPaused(false);
+        },
+
+        onBoundary: (event) => {
+          setCurrentIndex(event.charIndex);
+        },
+
+        onDone: () => {
+          setIsSpeaking(false);
+          setIsPaused(false);
+          setCurrentIndex(0);
+        },
+
+        onError: (err) => {
+          console.log("Speech error:", err);
+          setIsSpeaking(false);
+          setIsPaused(false);
+        },
       });
-  }
 
-  const speak = () => {
-    if (isSpeaking) {
-      Speech.stop();
+    } catch (err) {
+      console.log("speak: exception", err);
       setIsSpeaking(false);
-      return;
+      setIsPaused(false);
     }
-
-    listAllVoiceOptions();
-
-    setIsSpeaking(true);
-    Speech.speak(introText, {
-      language: 'en-US',
-      pitch: 1.0,
-      rate: 0.95,
-      volume: 5.0,
-      onStart: () => setIsSpeaking(true),
-      onDone: () => setIsSpeaking(false),
-      onError: (err) => {
-        console.log("Speech error:", err);
-        setIsSpeaking(false)
-      },
-      onStopped: () => setIsSpeaking(false),
-    });
   };
 
   const sendMessage = async () => {
@@ -267,9 +329,13 @@ export default function AIAgent({ navigation, route }) {
           </View>
           <TouchableOpacity onPress={speak} style={{ paddingHorizontal: 10, paddingVertical: 5, alignItems: 'center', borderRadius: 10, backgroundColor: theme.colors.card }}>
             {isSpeaking ?
-              <Icons.Ionicons name="stop-circle-outline" color={theme.colors.text} size={26} />
-              :
-              <Icons.FontAwesome name="microphone" color={theme.colors.text} size={30} />}
+              isPaused ? (
+                <Icons.Ionicons name="play-circle-outline" size={24} color={theme.colors.text} />
+              ) : (
+                <Icons.Ionicons name="pause-circle-outline" size={24} color={theme.colors.text} />
+              ) : (
+                <Icons.FontAwesome name="microphone" size={24} color={theme.colors.text} />
+              )}
           </TouchableOpacity>
         </View>
 
@@ -402,7 +468,7 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flex: 1,
     backgroundColor: "#FFFFFF",
-    borderRadius: 70,
+    borderRadius: 30,
     borderWidth: 1,
     borderColor: "#E5E7EB",
     paddingHorizontal: 16,

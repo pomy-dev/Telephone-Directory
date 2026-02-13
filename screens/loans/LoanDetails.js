@@ -56,31 +56,31 @@ const BankLogo = ({ source, name, size = isTablet ? 100 : 80 }) => {
   );
 };
 
-const SectionCard = ({ title, children, style }) => (
-  <View style={[styles.sectionCard, style]}>
-    <Text style={styles.sectionTitleFixed}>{title}</Text>
-    <View style={styles.sectionContentFixed}>{children}</View>
+const SectionCard = ({ theme, title, children, style }) => (
+  <View style={[styles.sectionCard, style, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+    <Text style={[styles.sectionTitleFixed, { color: theme.colors.text }]}>{title}</Text>
+    <View style={[styles.sectionContentFixed]}>{children}</View>
   </View>
 );
 
-const CollapsibleSection = ({ title, children, initiallyOpen = false }) => {
+const CollapsibleSection = ({ theme, title, children, initiallyOpen = false }) => {
   const [open, setOpen] = React.useState(initiallyOpen);
 
   return (
-    <View style={styles.sectionCard}>
+    <View style={[styles.sectionCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
       <TouchableOpacity
         style={styles.collapsibleHeader}
         onPress={() => setOpen(!open)}
         activeOpacity={0.7}
       >
-        <Text style={styles.sectionTitleFixed}>{title}</Text>
+        <Text style={[styles.sectionTitleFixed, { color: theme.colors.text }]}>{title}</Text>
         <Icons.Ionicons
           name={open ? "chevron-up" : "chevron-down"}
           size={22}
-          color="#1F2937"
+          color={theme.colors.indicator}
         />
       </TouchableOpacity>
-      {open && <View style={styles.sectionContentFixed}>{children}</View>}
+      {open && <View style={[styles.sectionContentFixed, { color: theme.colors.sub_text }]}>{children}</View>}
     </View>
   );
 };
@@ -193,12 +193,9 @@ export default function FinancialDetailsScreen({ route, navigation }) {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <StatusBar
-        barStyle={isDarkMode ? "light-content" : "dark-content"}
-        backgroundColor={theme.colors.background}
-      />
+      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
 
-      <View style={styles.hero}>
+      <View style={[styles.hero, { backgroundColor: theme.colors.card }]}>
         <TouchableOpacity style={styles.navHeader} onPress={() => navigation.goBack()}>
           <Icons.Ionicons name="arrow-back" size={24} color={theme.colors.text} />
         </TouchableOpacity>
@@ -206,10 +203,10 @@ export default function FinancialDetailsScreen({ route, navigation }) {
         <View style={styles.heroCard}>
           <BankLogo source={data.logo} name={companyName} />
           <View style={styles.heroTextContainer}>
-            <Text style={styles.companyName}>{companyName}</Text>
-            <Text style={styles.productName}>{productName}</Text>
+            <Text style={[styles.companyName, { color: theme.colors.text }]}>{companyName}</Text>
+            <Text style={[styles.productName, { color: theme.colors.text }]}>{productName}</Text>
             <View style={styles.tag}>
-              <Text style={styles.tagText}>
+              <Text style={[styles.tagText]}>
                 {isLoan ? "Loan Product" : isInsurance ? "Insurance Policy" : "Investment"}
               </Text>
             </View>
@@ -222,26 +219,26 @@ export default function FinancialDetailsScreen({ route, navigation }) {
             <Icons.Ionicons
               name={isLiked ? "heart" : "heart-outline"}
               size={24}
-              color={isLiked ? "#DC2626" : "#1F2937"}
+              color={isLiked ? "#DC2626" : theme.colors.indicator}
             />
-            <Text style={styles.actionButtonText}>
+            <Text style={[styles.actionButtonText, { color: theme.colors.text }]}>
               {likes} Like{likes !== 1 ? "s" : ""}
             </Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.actionButton} onPress={handleShare}>
-            <Icons.Ionicons name="share-social-outline" size={24} color="#1F2937" />
-            <Text style={styles.actionButtonText}>Share</Text>
+            <Icons.Ionicons name="share-social-outline" size={24} color={theme.colors.indicator} />
+            <Text style={[styles.actionButtonText, { color: theme.colors.text }]}>Share</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.actionButton} onPress={openCommentSheet}>
-            <Icons.Ionicons name="chatbubble-outline" size={24} color="#1F2937" />
-            <Text style={styles.actionButtonText}>Comment</Text>
+            <Icons.Ionicons name="chatbubble-outline" size={24} color={theme.colors.indicator} />
+            <Text style={[styles.actionButtonText, { color: theme.colors.text }]}>Comment</Text>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.actionButton} onPress={handleGetDirections}>
-            <Icons.Ionicons name="location-outline" size={24} color="#1F2937" />
-            <Text style={styles.actionButtonText}>Directions</Text>
+            <Icons.Ionicons name="location-outline" size={24} color={theme.colors.indicator} />
+            <Text style={[styles.actionButtonText, { color: theme.colors.text }]}>Directions</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -251,35 +248,35 @@ export default function FinancialDetailsScreen({ route, navigation }) {
         contentContainerStyle={styles.scrollContent}
       >
         {/* Key Highlights */}
-        <View style={styles.highlightsCard}>
+        <View style={[styles.highlightsCard, { backgroundColor: theme.colors.sub_card }]}>
           {isLoan && (
             <>
-              <HighlightItem label="Interest Rate" value={data.rate} isRate />
-              <HighlightItem label="Maximum Amount" value={data.max} />
-              <HighlightItem label="Loan Term" value={data.term} />
-              <HighlightItem label="Processing Time" value={data.processingTime} />
+              <HighlightItem theme={theme} label="Interest Rate" value={data.rate} isRate />
+              <HighlightItem theme={theme} label="Maximum Amount" value={data.max} />
+              <HighlightItem theme={theme} label="Loan Term" value={data.term} />
+              <HighlightItem theme={theme} label="Processing Time" value={data.processingTime} />
             </>
           )}
 
           {isInsurance && (
             <>
-              <HighlightItem label="Monthly Premium" value={data.premium} isRate />
-              <HighlightItem label="Coverage Amount" value={data.cover} />
-              <HighlightItem label="Policy Type" value={data.type} />
+              <HighlightItem theme={theme} label="Monthly Premium" value={data.premium} isRate />
+              <HighlightItem theme={theme} label="Coverage Amount" value={data.cover} />
+              <HighlightItem theme={theme} label="Policy Type" value={data.type} />
             </>
           )}
 
           {isInvestment && (
             <>
-              <HighlightItem label="Minimum Investment" value={data.min} isRate />
-              <HighlightItem label="Expected Returns" value={data.returns} />
-              <HighlightItem label="Risk Level" value="Moderate" />
+              <HighlightItem theme={theme} label="Minimum Investment" value={data.min} isRate />
+              <HighlightItem theme={theme} label="Expected Returns" value={data.returns} />
+              <HighlightItem theme={theme} label="Risk Level" value="Moderate" />
             </>
           )}
         </View>
 
-        <SectionCard title="About">
-          <Text style={styles.paragraph}>
+        <SectionCard theme={theme} title="About">
+          <Text style={[styles.paragraph, { color: theme.colors.sub_text }]}>
             {data.description ||
               "A trusted financial product designed with your goals in mind. Backed by strong institutional expertise and regulated by the Financial Services Regulatory Authority (FSRA) of Eswatini."}
           </Text>
@@ -287,53 +284,53 @@ export default function FinancialDetailsScreen({ route, navigation }) {
 
         {isLoan && (
           <>
-            <CollapsibleSection title="Eligibility Requirements" initiallyOpen={true}>
-              <Text style={styles.bullet}>• Eswatini resident aged 21–65</Text>
-              <Text style={styles.bullet}>• Minimum monthly income: E5,000</Text>
-              <Text style={styles.bullet}>• Valid National ID and proof of residence</Text>
-              <Text style={styles.bullet}>• Last 3 months bank statements</Text>
-              <Text style={styles.bullet}>• Good credit history preferred</Text>
+            <CollapsibleSection theme={theme} title="Eligibility Requirements" initiallyOpen={true}>
+              <Text style={[styles.bullet, { color: theme.colors.sub_text }]}>• Eswatini resident aged 21–65</Text>
+              <Text style={[styles.bullet, { color: theme.colors.sub_text }]}>• Minimum monthly income: E5,000</Text>
+              <Text style={[styles.bullet, { color: theme.colors.sub_text }]}>• Valid National ID and proof of residence</Text>
+              <Text style={[styles.bullet, { color: theme.colors.sub_text }]}>• Last 3 months bank statements</Text>
+              <Text style={[styles.bullet, { color: theme.colors.sub_text }]}>• Good credit history preferred</Text>
             </CollapsibleSection>
 
-            <CollapsibleSection title="Required Documents">
-              <Text style={styles.bullet}>• Copy of National ID or Passport</Text>
-              <Text style={styles.bullet}>• Recent payslips (last 3 months)</Text>
-              <Text style={styles.bullet}>• Proof of residence (utility bill)</Text>
-              <Text style={styles.bullet}>• Bank statements (last 3 months)</Text>
+            <CollapsibleSection theme={theme} title="Required Documents">
+              <Text style={[styles.bullet, { color: theme.colors.sub_text }]}>• Copy of National ID or Passport</Text>
+              <Text style={[styles.bullet, { color: theme.colors.sub_text }]}>• Recent payslips (last 3 months)</Text>
+              <Text style={[styles.bullet, { color: theme.colors.sub_text }]}>• Proof of residence (utility bill)</Text>
+              <Text style={[styles.bullet, { color: theme.colors.sub_text }]}>• Bank statements (last 3 months)</Text>
             </CollapsibleSection>
           </>
         )}
 
         {isInsurance && (
-          <CollapsibleSection title="Coverage Details">
-            <Text style={styles.bullet}>• In-patient & out-patient treatment</Text>
-            <Text style={styles.bullet}>• Prescription medication coverage</Text>
-            <Text style={styles.bullet}>• Emergency medical evacuation</Text>
-            <Text style={styles.bullet}>• Dental & optical (limited)</Text>
+          <CollapsibleSection theme={theme} title="Coverage Details">
+            <Text style={[styles.bullet, { color: theme.colors.sub_text }]}>• In-patient & out-patient treatment</Text>
+            <Text style={[styles.bullet, { color: theme.colors.sub_text }]}>• Prescription medication coverage</Text>
+            <Text style={[styles.bullet, { color: theme.colors.sub_text }]}>• Emergency medical evacuation</Text>
+            <Text style={[styles.bullet, { color: theme.colors.sub_text }]}>• Dental & optical (limited)</Text>
           </CollapsibleSection>
         )}
 
         {isInvestment && (
-          <CollapsibleSection title="Investment Strategy">
-            <Text style={styles.paragraph}>
+          <CollapsibleSection theme={theme} title="Investment Strategy">
+            <Text style={[styles.paragraph, { color: theme.colors.sub_text }]}>
               Diversified portfolio combining blue-chip equities, government bonds, and cash equivalents
               for stable long-term growth with controlled risk exposure.
             </Text>
           </CollapsibleSection>
         )}
 
-        <SectionCard title="Terms & Conditions">
-          <Text style={styles.paragraph}>
+        <SectionCard theme={theme} title="Terms & Conditions">
+          <Text style={[styles.paragraph, { color: theme.colors.sub_text }]}>
             All applications are subject to final approval. Rates and terms may vary based on credit
             assessment. By proceeding, you agree to the provider’s terms of service, privacy policy,
             and compliance with FSRA regulations.
           </Text>
         </SectionCard>
 
-        <SectionCard title="Help & Support">
+        <SectionCard theme={theme} title="Help & Support">
           <TouchableOpacity style={styles.contactRow} onPress={() => handleCall("+26824040000")}>
-            <Icons.Ionicons name="call-outline" size={22} color="#1F2937" />
-            <Text style={styles.contactText}>+268 2404 0000</Text>
+            <Icons.Ionicons name="call-outline" size={22} color={theme.colors.indicator} />
+            <Text style={[styles.contactText, { color: theme.colors.sub_text }]}>+268 2404 0000</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -342,15 +339,15 @@ export default function FinancialDetailsScreen({ route, navigation }) {
               handleEmail(`support@${companyName.toLowerCase().replace(/\s+/g, "")}.sz`)
             }
           >
-            <Icons.Ionicons name="mail-outline" size={22} color="#1F2937" />
-            <Text style={styles.contactText}>
+            <Icons.Ionicons name="mail-outline" size={22} color={theme.colors.indicator} />
+            <Text style={[styles.contactText, { color: theme.colors.sub_text }]}>
               support@{companyName.toLowerCase().replace(/\s+/g, "")}.sz
             </Text>
           </TouchableOpacity>
 
           <View style={styles.contactRow}>
-            <Icons.Ionicons name="time-outline" size={22} color="#1F2937" />
-            <Text style={styles.contactText}>Monday – Friday: 8:00 AM – 5:00 PM</Text>
+            <Icons.Ionicons name="time-outline" size={22} color={theme.colors.indicator} />
+            <Text style={[styles.contactText, { color: theme.colors.sub_text }]}>Monday – Friday: 8:00 AM – 5:00 PM</Text>
           </View>
         </SectionCard>
 
@@ -369,14 +366,14 @@ export default function FinancialDetailsScreen({ route, navigation }) {
           setReviewText("");
         }}
         backgroundStyle={{ backgroundColor: theme.colors.card }}
-        handleIndicatorStyle={{ backgroundColor: "#94A3B8" }}
+        handleIndicatorStyle={{ backgroundColor: theme.colors.card }}
       >
         <BottomSheetScrollView style={{}}>
-          <Text style={styles.sheetTitle}>Reviews & Ratings</Text>
+          <Text style={[styles.sheetTitle, { color: theme.colors.text }]}>Reviews & Ratings</Text>
 
           {/* Review Form */}
           <View style={styles.reviewForm}>
-            <Text style={styles.formLabel}>Your Rating</Text>
+            <Text style={[styles.formLabel, { color: theme.colors.text }]}>Your Rating</Text>
             <View style={styles.starContainer}>
               {[1, 2, 3, 4, 5].map((star) => (
                 <TouchableOpacity key={star} onPress={() => setRating(star)} activeOpacity={0.7}>
@@ -389,7 +386,7 @@ export default function FinancialDetailsScreen({ route, navigation }) {
               ))}
             </View>
 
-            <Text style={styles.formLabel}>Write Your Review</Text>
+            <Text style={[styles.formLabel, { color: theme.colors.text }]}>Write Your Review</Text>
             <BottomSheetTextInput
               style={styles.reviewInput}
               placeholder="Share your experience..."
@@ -399,25 +396,25 @@ export default function FinancialDetailsScreen({ route, navigation }) {
             />
 
             <TouchableOpacity style={styles.submitButton} onPress={handleSubmitReview}>
-              <Text style={styles.submitButtonText}>
+              <Text style={[styles.submitButtonText, { color: theme.colors.text }]}>
                 {submitSuccess ? "Submitted!" : "Submit Review"}
               </Text>
             </TouchableOpacity>
 
             {submitSuccess && (
-              <Text style={styles.successText}>Thank you! Your review has been added.</Text>
+              <Text style={[styles.successText, { color: theme.colors.sub_text }]}>Thank you! Your review has been added.</Text>
             )}
           </View>
 
           {/* Reviews List */}
-          <Text style={styles.reviewsListTitle}>All Reviews ({reviews})</Text>
+          <Text style={[styles.reviewsListTitle, { color: theme.colors.text }]}>All Reviews ({reviews})</Text>
           {(reviews === 0 && rating === 0) ? (
-            <Text style={styles.noReviewsText}>No reviews yet. Be the first to review!</Text>
+            <Text style={[styles.noReviewsText, { color: theme.colors.sub_text }]}>No reviews yet. Be the first to review!</Text>
           ) : (
             myComments?.map((review) => (
               <View key={review.id} style={styles.reviewItem}>
                 <View style={styles.reviewHeader}>
-                  <Text style={styles.reviewerName}>{review.name}</Text>
+                  <Text style={[styles.reviewerName, { color: theme.colors.text }]}>{review.name}</Text>
                   <View style={styles.reviewStars}>
                     {[1, 2, 3, 4, 5].map((star) => (
                       <Icons.Ionicons
@@ -429,8 +426,8 @@ export default function FinancialDetailsScreen({ route, navigation }) {
                     ))}
                   </View>
                 </View>
-                <Text style={styles.reviewText}>{review.text}</Text>
-                <Text style={styles.reviewDate}>{review.date}</Text>
+                <Text style={[styles.reviewText, { color: theme.colors.text }]}>{review.text}</Text>
+                <Text style={[styles.reviewDate, { color: theme.colors.sub_text }]}>{review.date}</Text>
               </View>
             ))
           )}
@@ -449,9 +446,9 @@ export default function FinancialDetailsScreen({ route, navigation }) {
   );
 }
 
-const HighlightItem = ({ label, value, isRate = false }) => (
+const HighlightItem = ({ theme, label, value, isRate = false }) => (
   <View style={styles.highlightRow}>
-    <Text style={styles.highlightLabel}>{label}</Text>
+    <Text style={[styles.highlightLabel, { color: theme.colors.sub_text }]}>{label}</Text>
     <Text style={[styles.highlightValue, isRate && styles.highlightValueRate]}>
       {value || "—"}
     </Text>
@@ -460,7 +457,7 @@ const HighlightItem = ({ label, value, isRate = false }) => (
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  scrollContent: { paddingBottom: 120 },
+  scrollContent: { paddingBottom: 120, paddingTop: 20 },
   emptyContainer: {
     flex: 1,
     justifyContent: "center",
@@ -480,16 +477,15 @@ const styles = StyleSheet.create({
 
   // Hero (refined for classic look)
   hero: {
-    marginBottom: 20,
+    marginBottom: 1,
     padding: 24,
-    borderBottomLeftRadius: 24,
-    borderBottomRightRadius: 24,
-    backgroundColor: "#FFFFFF",
+    borderBottomLeftRadius: 40,
+    borderBottomRightRadius: 40,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.08,
     shadowRadius: 20,
-    elevation: 12,
+    elevation: 5,
   },
   heroCard: { flexDirection: "row", alignItems: "center" },
   heroTextContainer: { marginLeft: 5, flex: 1 },
@@ -522,7 +518,7 @@ const styles = StyleSheet.create({
   actionButtonsContainer: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
+    justifyContent: "center",
     marginTop: 5,
     paddingHorizontal: 10,
   },
@@ -534,22 +530,15 @@ const styles = StyleSheet.create({
   },
   actionButtonText: {
     fontSize: 14,
-    color: "#1F2937",
     fontWeight: "500",
   },
 
   highlightsCard: {
-    marginHorizontal: 16,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 20,
     overflow: "hidden",
-    borderWidth: 1,
-    borderColor: "#E2E8F0",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 8,
+    elevation: 2,
     marginBottom: 20,
   },
   highlightRow: {
@@ -558,7 +547,7 @@ const styles = StyleSheet.create({
     paddingVertical: 18,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
-    borderBottomColor: "#F1F5F9",
+    borderBottomColor: "#ccc",
   },
   highlightLabel: {
     fontSize: 15,
@@ -576,23 +565,20 @@ const styles = StyleSheet.create({
   },
 
   sectionCard: {
-    marginHorizontal: 16,
+    marginHorizontal: 8,
     marginBottom: 16,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 20,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
     overflow: "hidden",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.06,
     shadowRadius: 10,
-    elevation: 6,
+    elevation: 0,
   },
   sectionTitleFixed: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#111827",
     paddingHorizontal: 20,
     paddingTop: 20,
     paddingBottom: 12,
@@ -614,7 +600,6 @@ const styles = StyleSheet.create({
   paragraph: {
     fontSize: 15.5,
     lineHeight: 24,
-    color: "#4B5563",
   },
   bullet: {
     fontSize: 15.5,

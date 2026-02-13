@@ -535,14 +535,10 @@ function AppContent() {
                             component={LoanAssist}
                           />
                           <Stack.Screen name="Askai" component={AIAgent} />
-                          <Stack.Screen
-                            name="LoanDetails"
-                            component={LoanDetails}
-                          />
-                          <Stack.Screen
-                            name="LoanCompare"
-                            component={LoanCompare}
-                          />
+
+                          <Stack.Screen name="LoanDetails" component={LoanDetails} />
+
+                          <Stack.Screen name="LoanCompare" component={LoanCompare} />
                           <Stack.Screen
                             name="LoanCalculator"
                             component={LoanCalculator}
