@@ -54,7 +54,6 @@ import VacanciesScreen from "./screens/vacancies/VacanciesScreen";
 
 // gigs
 import GigsScreen from "./screens/piece-jobs/GigsScreen";
-import GigDrawerNavigator from "./screens/piece-jobs/GigDrawerNavigator";
 import PostJobScreen from "./screens/piece-jobs/PostJobScreen";
 
 // jobs

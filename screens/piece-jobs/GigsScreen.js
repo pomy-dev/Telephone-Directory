@@ -68,6 +68,12 @@ const CATEGORIES = [
     iconType: Icons.Ionicons,
   },
   {
+    id: "Media",
+    name: "Media",
+    iconName: "camera-outline",
+    iconType: Icons.Ionicons,
+  },
+  {
     id: "Pet Care",
     name: "Pet Care",
     iconName: "paw-outline",
@@ -102,45 +108,6 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
   const distance = R * c;
   return distance;
 };
-
-// const mapDatabaseToUI = (dbGigs, userLocation = null) => {
-//   return dbGigs.map((job) => {
-//     const lat = job.job_location?.latitude || 0;
-//     const lng = job.job_location?.longitude || 0;
-
-//     // Default placeholder
-//     let displayImages = ["https://via.placeholder.com/400"];
-
-//     // 1. Check if job_images exists and has items
-//     if (job.job_images && job.job_images.length > 0) {
-//       displayImages = [];
-//       job?.job_images?.forEach((img) => {
-//         if (img?.url) {
-//           // push url to displayImages
-//           displayImages.push(img.url);
-//         }
-//       });
-//     }
-
-//     return {
-//       id: job.id.toString(),
-//       title: job.job_title,
-//       description: job.job_description,
-//       category: job.job_category,
-//       price: job.job_price,
-//       requirements: job.job_requirements,
-//       location: job.job_location?.address || "Location N/A",
-//       coordinates: { lat, lng },
-//       applications: job.application_count || 0,
-//       postedBy: { name: job.postedby?.name, email: job.postedby?.email, phone: job.postedby?.phone },
-//       postedTime: job.created_at ? new Date(job.created_at).toLocaleDateString() : "Just now",
-//       images: displayImages, // This now contains the correct .url string
-//       distance: userLocation
-//         ? calculateDistance(userLocation.lat, userLocation.lng, lat, lng)
-//         : null,
-//     };
-//   });
-// };
 
 const mapDatabaseToUI = (dbGigs, userLocation = null) => {
   return dbGigs.map((job) => {
@@ -186,10 +153,13 @@ const GigsScreen = ({ navigation }) => {
   const { theme, isDarkMode } = React.useContext(AppContext);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [userLocation, setUserLocation] = useState(null);
-  const [jobs, setJobs] = useState([]); // This is our single source of truth
+  const [jobs, setJobs] = useState([]);
+  const [workers, setWorkers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [nextCursor, setNextCursor] = useState({ createdAt: null, id: null });
+
+  const [viewMode, setViewMode] = useState("gigs"); // "gigs" | "workers"
 
   const moreItems = [
     {
@@ -237,28 +207,52 @@ const GigsScreen = ({ navigation }) => {
     }
   };
 
-  // 2. Now the useEffect can safely find the function
   useEffect(() => {
     loadUserLocation();
 
     const subscription = subscribeToGigs(() => {
-      fetchLiveGigs(false);
+      if (viewMode === "gigs") fetchLiveGigs(false);
     });
 
     return () => {
       if (subscription) supabase.removeChannel(subscription);
     };
-  }, []);
+  }, [viewMode]);
 
-  // Realtime Subscription
   useEffect(() => {
-    const subscription = subscribeToGigs(() => {
+    if (viewMode === "gigs") {
       fetchLiveGigs(false);
-    });
-    return () => {
-      if (subscription) supabase.removeChannel(subscription);
-    };
-  }, []);
+    } else {
+      // TODO: load workers when viewMode === "workers"
+      // For now — placeholder data
+      setWorkers([
+        {
+          id: "w1",
+          name: "Thandi M.",
+          profilePic: "https://i.pravatar.cc/150?img=68",
+          skills: ["Cleaning", "Gardening", "Pet Care"],
+          rating: 4.8,
+          jobsCompleted: 47,
+          location: "Manzini",
+          distance: 3.2,
+          hourlyRate: 120,
+        },
+        {
+          id: "w2",
+          name: "Sibusiso N.",
+          profilePic: "https://i.pravatar.cc/150?img=45",
+          skills: ["Moving", "Delivery", "Groundsman"],
+          rating: 4.6,
+          jobsCompleted: 31,
+          location: "Mbabane",
+          distance: 8.7,
+          hourlyRate: 140,
+        },
+        // ... more dummy workers
+      ]);
+      setLoading(false);
+    }
+  }, [viewMode, selectedCategory, userLocation]);
 
   // Fetch logic
   const fetchLiveGigs = async (isLoadMore = false) => {
@@ -441,113 +435,202 @@ const GigsScreen = ({ navigation }) => {
     );
   };
 
+  const renderWorkerCard = ({ item }) => {
+    return (
+      <TouchableOpacity
+        style={[
+          styles.workerCard,
+          { backgroundColor: isDarkMode ? "#1A1A1A" : "#fff" },
+        ]}
+        onPress={() =>
+          navigation.navigate("WorkerProfileScreen", { worker: item })
+        } // ← you'll need to create this screen
+      >
+        <View style={styles.workerTopRow}>
+          <Image
+            source={{ uri: item.profilePic }}
+            style={styles.workerAvatar}
+          />
+          <View style={styles.workerInfo}>
+            <Text style={[styles.workerName, { color: theme.colors.text }]}>
+              {item.name}
+            </Text>
+            <View style={styles.ratingRow}>
+              <Icons.MaterialCommunityIcons name="star" size={16} color="#f59e0b" />
+              <Text style={styles.ratingText}>{item.rating}</Text>
+              <Text style={styles.jobsCount}> • {item.jobsCompleted} jobs</Text>
+            </View>
+          </View>
+          <View style={styles.rateContainer}>
+            <Text style={styles.hourlyRate}>R{item.hourlyRate}</Text>
+            <Text style={styles.perHour}>/hr</Text>
+          </View>
+        </View>
+
+        <View style={styles.workerSkills}>
+          {item.skills.slice(0, 3).map((skill, i) => (
+            <View key={i} style={styles.skillBadge}>
+              <Text style={styles.skillText}>{skill}</Text>
+            </View>
+          ))}
+          {item.skills.length > 3 && (
+            <Text style={styles.moreSkills}>+{item.skills.length - 3}</Text>
+          )}
+        </View>
+
+        <View style={styles.workerFooter}>
+          <View style={styles.locationRow}>
+            <Icons.Ionicons name="location-outline" size={14} color="#666" />
+            <Text style={styles.workerLocation} numberOfLines={1}>
+              {item.location}
+              {item.distance && ` • ${item.distance.toFixed(1)} km`}
+            </Text>
+          </View>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
       <View style={{ height: 30 }} />
       {/* Custom Modern Header */}
       <View style={styles.customHeader}>
-        <TouchableOpacity
-          style={styles.headerIconButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Icons.Ionicons
-            name="arrow-back"
-            size={28}
-            color={theme.colors.text}
-          />
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Icons.Ionicons name="arrow-back" size={28} color={theme.colors.text} />
         </TouchableOpacity>
-
-        <Text style={[styles.headerTitleText, { color: theme.colors.text }]}>
-          Explore Gigs
-        </Text>
-        <MoreDropdown items={moreItems} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', alignSelf: 'flex-end' }}>
+          <TouchableOpacity style={{ backgroundColor: theme.colors.sub_card, marginRight: 5, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 8, flexDirection: 'row', alignItems: 'center' }}
+            onPress={() => navigation.navigate('PostJobScreen')}>
+            <Icons.AntDesign name="plus" size={18} color={theme.colors.text} />
+            <Text style={{ color: theme.colors.text, fontSize: 14 }}>Quick Job</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={{ backgroundColor: theme.colors.sub_card, borderRadius: 20, paddingHorizontal: 10, paddingVertical: 8, flexDirection: 'row', alignItems: 'center' }}
+            onPress={() => { navigation.navigate('WorkerRegistration') }}>
+            <Icons.AntDesign name="plus" size={18} color={theme.colors.text} />
+            <Text style={{ color: theme.colors.text, fontSize: 14 }}>Freelancer</Text>
+          </TouchableOpacity>
+          <MoreDropdown items={moreItems} />
+        </View>
       </View>
 
       {/* FIXED TOP SECTION */}
       <View style={styles.headerGroup}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          style={styles.categoriesContainer}
-          contentContainerStyle={styles.categoriesContent}
-        >
-          {CATEGORIES.map((category) => (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriesContainer}>
+          {/* your CATEGORIES buttons – unchanged */}
+          {CATEGORIES.map((cat) => (
             <TouchableOpacity
-              key={category.id}
+              key={cat.id}
               style={[
                 styles.categoryButton,
-                selectedCategory === category.id && styles.categoryButtonActive,
+                selectedCategory === cat.id && styles.categoryButtonActive,
               ]}
-              onPress={() => setSelectedCategory(category.id)}
+              onPress={() => setSelectedCategory(cat.id)}
             >
-              <category.iconType
-                name={category.iconName}
-                size={18}
-                color={selectedCategory === category.id ? "#fff" : "#666"}
-              />
-              <Text
-                style={[
-                  styles.categoryText,
-                  selectedCategory === category.id && styles.categoryTextActive,
-                ]}
-              >
-                {category.name}
+              <cat.iconType name={cat.iconName} size={18} color={selectedCategory === cat.id ? "#fff" : "#666"} />
+              <Text style={[styles.categoryText, selectedCategory === cat.id && styles.categoryTextActive]}>
+                {cat.name}
               </Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
 
-        <View style={styles.resultsHeader}>
-          <Text style={[styles.resultsText, { color: theme.colors.text }]}>
-            {jobs.length} {jobs.length === 1 ? "Gig" : "Gigs"} Available
-          </Text>
-          {/* button for adding gig */}
+        {/* ─── TOGGLE BUTTONS ─── */}
+        <View style={styles.toggleContainer}>
           <TouchableOpacity
-            style={styles.refreshButton}
-            onPress={() => navigation.navigate("PostJobScreen")}
+            style={[
+              styles.toggleButton,
+              viewMode === "gigs" && styles.toggleButtonActive,
+            ]}
+            onPress={() => setViewMode("gigs")}
           >
-            <Icons.Ionicons
-              name="add-circle-outline"
-              size={24}
-              color={theme.colors.indicator}
-            />
-            <Text>Post Gig</Text>
+            <Text
+              style={[
+                styles.toggleButtonText,
+                viewMode === "gigs" && styles.toggleButtonTextActive,
+              ]}
+            >
+              Quick Jobs ({jobs?.length})
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.toggleButton,
+              viewMode === "workers" && styles.toggleButtonActive,
+            ]}
+            onPress={() => setViewMode("workers")}
+          >
+            <Text
+              style={[
+                styles.toggleButtonText,
+                viewMode === "workers" && styles.toggleButtonTextActive,
+              ]}
+            >
+              Freelancers ({workers?.length})
+            </Text>
           </TouchableOpacity>
         </View>
       </View>
 
       {/* SCROLLABLE LIST */}
-      <FlatList
-        data={jobs}
-        renderItem={renderJobCard}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.jobsList}
-        showsVerticalScrollIndicator={false}
-        onRefresh={() => fetchLiveGigs(false)}
-        refreshing={refreshing}
-        onEndReached={() => fetchLiveGigs(true)}
-        onEndReachedThreshold={0.3}
-        ListEmptyComponent={() =>
-          !refreshing && (
+      {viewMode === "gigs" ? (
+        <FlatList
+          data={jobs}
+          renderItem={renderJobCard}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.jobsList}
+          showsVerticalScrollIndicator={false}
+          onRefresh={() => fetchLiveGigs(false)}
+          refreshing={refreshing}
+          onEndReached={() => fetchLiveGigs(true)}
+          onEndReachedThreshold={0.3}
+          ListEmptyComponent={() =>
+            !refreshing && (
+              <View style={styles.emptyContainer}>
+                <Icons.Ionicons name="search-outline" size={50} color="#DDD" />
+                <Text style={styles.emptyTitle}>No Gigs Available</Text>
+                <Text style={styles.emptySubtitle}>
+                  We couldn't find anything in {selectedCategory}.
+                </Text>
+              </View>
+            )
+          }
+          ListFooterComponent={() =>
+            loading && (
+              <ActivityIndicator
+                style={{ margin: 20 }}
+                color={theme.colors.indicator}
+              />
+            )
+          }
+        />
+      ) : (
+        <FlatList
+          data={workers}
+          renderItem={renderWorkerCard}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.jobsList}
+          ListEmptyComponent={
             <View style={styles.emptyContainer}>
-              <Icons.Ionicons name="search-outline" size={50} color="#DDD" />
-              <Text style={styles.emptyTitle}>No Gigs Available</Text>
+              <Icons.Ionicons name="people-outline" size={60} color="#DDD" />
+              <Text style={styles.emptyTitle}>No Workers Found</Text>
               <Text style={styles.emptySubtitle}>
-                We couldn't find anything in {selectedCategory}.
+                Try changing the category or check back later.
               </Text>
             </View>
-          )
-        }
-        ListFooterComponent={() =>
-          loading && (
-            <ActivityIndicator
-              style={{ margin: 20 }}
-              color={theme.colors.indicator}
-            />
-          )
-        }
-      />
+          }
+          ListFooterComponent={() =>
+            loading && (
+              <ActivityIndicator
+                style={{ margin: 20 }}
+                color={theme.colors.indicator}
+              />
+            )
+          }
+        />
+      )}
     </SafeAreaView>
   );
 };
@@ -558,6 +641,7 @@ const styles = StyleSheet.create({
   },
   categoriesContainer: {
     borderBottomWidth: 1,
+    paddingHorizontal: 3,
     borderBottomColor: "#f0f0f0",
   },
   categoriesContent: {
@@ -658,6 +742,132 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginBottom: 8,
   },
+  toggleContainer: {
+    flexDirection: "row",
+    backgroundColor: "#f1f1f1",
+    borderRadius: 50,
+    padding: 4,
+    marginHorizontal: 16,
+    marginVertical: 8,
+    overflow: "hidden",
+  },
+  toggleButton: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: "center",
+    borderRadius: 50,
+  },
+  toggleButtonActive: {
+    backgroundColor: "#000",
+  },
+  toggleButtonText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#555",
+  },
+  toggleButtonTextActive: {
+    color: "#fff",
+  },
+
+  // ─── Worker Card Styles ───
+  workerCard: {
+    marginHorizontal: 16,
+    marginBottom: 16,
+    borderRadius: 12,
+    overflow: "hidden",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  workerTopRow: {
+    flexDirection: "row",
+    padding: 16,
+    alignItems: "center",
+  },
+  workerAvatar: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: "#e2e8f0",
+  },
+  workerInfo: {
+    flex: 1,
+    marginLeft: 12,
+  },
+  workerName: {
+    fontSize: 17,
+    fontWeight: "700",
+  },
+  ratingRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 4,
+  },
+  ratingText: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#444",
+    marginLeft: 4,
+  },
+  jobsCount: {
+    fontSize: 13,
+    color: "#666",
+    marginLeft: 4,
+  },
+  rateContainer: {
+    alignItems: "flex-end",
+  },
+  hourlyRate: {
+    fontSize: 18,
+    fontWeight: "700",
+    color: "#10b981",
+  },
+  perHour: {
+    fontSize: 12,
+    color: "#888",
+  },
+  workerSkills: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    gap: 8,
+  },
+  skillBadge: {
+    backgroundColor: "#e5e7eb",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 16,
+  },
+  skillText: {
+    fontSize: 13,
+    color: "#444",
+    fontWeight: "500",
+  },
+  moreSkills: {
+    fontSize: 13,
+    color: "#666",
+    alignSelf: "center",
+  },
+  workerFooter: {
+    paddingHorizontal: 16,
+    paddingBottom: 14,
+    borderTopWidth: 1,
+    borderTopColor: "#f0f0f0",
+  },
+  locationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 10,
+  },
+  workerLocation: {
+    fontSize: 13,
+    color: "#555",
+    marginLeft: 4,
+    flex: 1,
+  },
   noImageDescriptionContainer: {
     width: "100%",
     height: 180,
@@ -753,8 +963,8 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   headerTitleText: {
-    fontSize: 20,
-    fontWeight: "700",
+    fontSize: 18,
+    fontWeight: "200",
     letterSpacing: -0.5,
   },
   headerIconButton: {

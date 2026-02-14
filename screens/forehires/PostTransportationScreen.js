@@ -9,6 +9,7 @@ import {
     Platform,
     TextInput,
     Image,
+    Dimensions,
     Alert,
     ActivityIndicator,
     KeyboardAvoidingView
@@ -23,6 +24,8 @@ import { mockAreas } from '../../utils/mockData';
 
 const TOTAL_STEPS = 6;
 
+const { height, width } = Dimensions.get('window');
+
 export default function PostTransportationScreen({ navigation }) {
     const { theme, isDarkMode } = React.useContext(AppContext)
     const [currentStep, setCurrentStep] = useState(1);
@@ -32,10 +35,8 @@ export default function PostTransportationScreen({ navigation }) {
         category: '',
         make: '',
         model: '',
-        year: '',
         registration: '',
         capacity: '',
-        cargoCapacity: '',
         description: '',
         crossingBoarder: false,
         operatingStart: '08:00',
@@ -45,7 +46,7 @@ export default function PostTransportationScreen({ navigation }) {
         features: [],
         location: { area: '', city: '', address: '' },
         certifications: { insurance: false, license: false, borderCrossing: false },
-        ownerInfo: { name: '', phone: '', email: '', whatsapp: '', responsetime: '' },
+        ownerInfo: { name: '', driver: '', phone: '', email: '', whatsapp: '', responsetime: '' },
         images: [],
     });
 
@@ -55,12 +56,7 @@ export default function PostTransportationScreen({ navigation }) {
     const [isSubmiting, setIsSubmiting] = useState(false);
 
     const types = ['minibus', 'bus', 'van', 'truck', 'suv', 'motorcycle', 'car', 'sprinter', 'tractor', 'tower', 'schoolbus', 'staffbus', 'trailer'];
-    const categories = [
-        'public_transport',
-        'cargo',
-        'passenger',
-        'luxury'
-    ];
+    const categories = ['public_transport', 'cargo', 'passenger', 'luxury'];
     const cities = [
         'Mbabane', 'Manzini', 'Ezulwini', 'Nhlangano', 'Siteki', 'Big Bend',
         'Malkerns', 'Mhlume', 'Hluti', 'Simunye', 'Piggs Peak', 'Lobamba', 'Lavumisa'
@@ -90,6 +86,7 @@ export default function PostTransportationScreen({ navigation }) {
             const result = await ImagePicker.launchImageLibraryAsync({
                 mediaTypes: ['images', 'videos'],
                 allowsMultipleSelection: true,
+                aspect: [4, 3],
                 quality: 0.8
             });
 
@@ -137,7 +134,7 @@ export default function PostTransportationScreen({ navigation }) {
 
         if (currentStep === 5) {
             if (!formData.location.area) newErrors.locationArea = 'Area required';
-            if (!formData.ownerInfo.name.trim()) newErrors.ownerName = 'Name required';
+            if (!formData.ownerInfo.name.trim()) newErrors.ownerName = 'Company name required';
             if (!formData.ownerInfo.phone.trim()) newErrors.ownerPhone = 'Phone required';
             if (!formData.ownerInfo.email.trim()) newErrors.ownerEmail = 'Email required';
             if (formData.ownerInfo.email && !/\S+@\S+\.\S+/.test(formData.ownerInfo.email))
@@ -176,10 +173,10 @@ export default function PostTransportationScreen({ navigation }) {
         } finally {
             setIsSubmiting(false)
             setFormData({
-                type: '', category: '', make: '', model: '', year: '', registration: '', capacity: '', cargoCapacity: '',
-                description: '', certifications: { insurance: false, license: false, borderCrossing: false }, features: [],
-                location: { address: '', area: '', city: '' }, operatingDays: [], operatingEnd: '18:00', operatingStart: '08:00',
-                routes: [], ownerInfo: {}, images: [],
+                type: '', category: '', make: '', model: '', registration: '', capacity: '', description: '',
+                certifications: { insurance: false, license: false, borderCrossing: false }, features: [],
+                location: { address: '', area: '', city: '' }, operatingDays: [], operatingEnd: '18:00',
+                operatingStart: '08:00', routes: [], ownerInfo: {}, images: [],
             })
             setCurrentStep(1)
         }
@@ -201,7 +198,7 @@ export default function PostTransportationScreen({ navigation }) {
         <KeyboardAvoidingView
             style={{ flex: 1 }}
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : -27} // tweak if needed
+            keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : -80} // tweak if needed
         >
             <View style={styles.container}>
                 <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
@@ -518,6 +515,9 @@ export default function PostTransportationScreen({ navigation }) {
                             <TextInput style={[styles.input, errors.ownerName && styles.inputError]} placeholder="Name or Company *" value={formData.ownerInfo.name} onChangeText={v => updateForm('ownerInfo', { ...formData.ownerInfo, name: v })} />
                             {errors.ownerName && <Text style={styles.error}>{errors.ownerName}</Text>}
 
+                            <TextInput style={[styles.input, errors.ownerDriver && styles.inputError]} placeholder="Driver/Operator Name (optional)" value={formData.ownerInfo.driver} onChangeText={v => updateForm('ownerInfo', { ...formData.ownerInfo, driver: v })} />
+                            {/* {errors.ownerDriver && <Text style={styles.error}>{errors.ownerDriver}</Text>} */}
+
                             <TextInput style={[styles.input, errors.ownerPhone && styles.inputError]} placeholder="Phone Number *" value={formData.ownerInfo.phone} keyboardType="phone-pad" onChangeText={v => updateForm('ownerInfo', { ...formData.ownerInfo, phone: v })} />
                             {errors.ownerPhone && <Text style={styles.error}>{errors.ownerPhone}</Text>}
 
@@ -533,7 +533,6 @@ export default function PostTransportationScreen({ navigation }) {
                     {/* ==================== STEP 5: Review & Post ==================== */}
                     {currentStep === 6 && (
                         <View style={styles.step}>
-                            <Text style={styles.reviewTitle}>Review Your Listing</Text>
                             <View style={styles.reviewCard}>
                                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
                                     {formData.images.map((uri, i) => (
@@ -542,10 +541,11 @@ export default function PostTransportationScreen({ navigation }) {
                                 </ScrollView>
 
                                 <Text style={styles.reviewText}><Text style={styles.bold}>Type:</Text> {formData.type?.toUpperCase()} • {formData.category.replace('_', ' ')}</Text>
-                                <Text style={styles.reviewText}><Text style={styles.bold}>Vehicle:</Text> {formData.make} {formData.model} ({formData.year})</Text>
+                                <Text style={styles.reviewText}><Text style={styles.bold}>Vehicle:</Text> {formData.make} {formData.model}</Text>
                                 <Text style={styles.reviewText}><Text style={styles.bold}>Is Crossing Boarder:</Text>{formData.crossingBoarder ? 'Yes' : 'No'}</Text>
                                 <Text style={styles.reviewText}><Text style={styles.bold}>Location:</Text> {formData.location.area}, {formData.location.city || 'Eswatini'}</Text>
-                                <Text style={styles.reviewText}><Text style={styles.bold}>Contact:</Text> {formData.ownerInfo.name} • {formData.ownerInfo.phone}</Text>
+                                <Text style={styles.reviewText}><Text style={styles.bold}>Company:</Text> {formData.ownerInfo.name} • {formData.ownerInfo.driver}</Text>
+                                <Text style={styles.reviewText}><Text style={styles.bold}>Contact:</Text> 📞{formData.ownerInfo.phone} • 🤳🏾{formData.ownerInfo.whatsapp}</Text>
                             </View>
 
                             <TouchableOpacity style={styles.finalSubmitBtn} onPress={handleSubmit} disabled={isSubmiting}>
@@ -682,7 +682,12 @@ const styles = StyleSheet.create({
         fontSize: 14,
     },
 
-    footer: { flexDirection: 'row', gap: 10, paddingHorizontal: 16, paddingVertical: 10, backgroundColor: '#fff', borderTopWidth: 1, borderColor: '#e2e8f0', marginBottom: 40 },
+    footer: {
+        flexDirection: 'row', gap: 10, paddingHorizontal: 16,
+        paddingVertical: 10, backgroundColor: '#fff',
+        borderTopWidth: 1, borderColor: '#e2e8f0',
+        marginBottom: height * 0.07
+    },
     backBtn: { flex: 1, padding: 16, backgroundColor: '#f1f5f9', borderRadius: 12, alignItems: 'center' },
     backText: { color: '#64748b', fontWeight: '600' },
     nextBtn: { flex: 1, flexDirection: 'row', backgroundColor: '#2563eb', padding: 16, borderRadius: 12, justifyContent: 'center', alignItems: 'center', gap: 8 },

@@ -82,7 +82,6 @@ export default function TransportationDetailsScreen({ navigation, route }) {
 
     return (
         <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-            <View style={{ height: 20 }} />
             <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
             <SecondaryNav title="Fore-Hire Details" />
 
@@ -146,6 +145,8 @@ export default function TransportationDetailsScreen({ navigation, route }) {
                             <View style={styles.locationRow}>
                                 <Ionicons name="location" size={16} color={theme.colors.sub_text} />
                                 <Text style={[styles.address, { color: theme.colors.sub_text }]}>{vehicle.location.city}</Text>
+                                <Icons.FontAwesome name="drivers-license-o" size={16} color={theme.colors.sub_text} />
+                                <Text style={[styles.address, { color: theme.colors.sub_text }]}>{vehicle.owner_info.driver || 'Unknown'}</Text>
                             </View>
                         </View>
                     </View>
@@ -205,7 +206,7 @@ export default function TransportationDetailsScreen({ navigation, route }) {
                                         </View>
                                         <View style={styles.routeDetailItem}>
                                             <Ionicons name="pricetag" size={16} color="#64748b" />
-                                            <Text style={styles.routeDetailText}>E {route.price.toLocaleString()}</Text>
+                                            <Text style={styles.routeDetailText}>E {route.price.toLocaleString() || 'Unknown'}</Text>
                                         </View>
                                     </View>
                                     {route.boarder_crossing && (
@@ -316,10 +317,10 @@ export default function TransportationDetailsScreen({ navigation, route }) {
 
             {/* Action Buttons */}
             <View style={[styles.footer, { backgroundColor: theme.colors.card }]}>
-                <TouchableOpacity style={[styles.shareButton, { backgroundColor: theme.colors.background }]} onPress={handleShare}>
+                <TouchableOpacity style={[styles.shareButton, { backgroundColor: theme.colors.primary }]} onPress={handleShare}>
                     <Icons.Feather name="share-2" size={20} color="#2563eb" />
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.bookButton, { backgroundColor: theme.colors.background }]} onPress={handleBook}>
+                <TouchableOpacity style={[styles.bookButton, { backgroundColor: theme.colors.primary }]} onPress={handleBook}>
                     <Text style={styles.bookButtonText}>Request Service</Text>
                     <Ionicons name="arrow-forward" size={20} color="#fff" />
                 </TouchableOpacity>

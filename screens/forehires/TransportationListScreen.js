@@ -151,7 +151,7 @@ const SortFilterBottomSheet = React.forwardRef(
             >
                 {/* Backdrop */}
                 <TouchableOpacity
-                    style={[sortFilterModalStyles.backdrop, { backgroundColor: theme.colors.indicator }]}
+                    style={[sortFilterModalStyles.backdrop, { backgroundColor: 'rgba(0,0,0,0.5)' }]}
                     activeOpacity={1}
                     onPress={onClose}
                 />
@@ -808,7 +808,7 @@ export default function TransportationListScreen({ navigation }) {
                         <View style={styles.locationRow}>
                             <Icons.Ionicons name="location" size={14} color="#fff" />
                             <Text style={styles.locationText}>
-                                {vehicle?.location?.city || vehicle.location.area}
+                                {vehicle?.location?.city || vehicle.location.area} 🔵 {vehicle?.owner_info?.name || 'Unknown'}
                             </Text>
                         </View>
 
