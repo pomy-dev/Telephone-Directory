@@ -299,7 +299,6 @@ const GigsScreen = ({ navigation }) => {
 
    const handlePressGig = (item) => {
      if (user) {
-          console.log("Logging activity for:", item.id);
           logUserActivity(user.uid, item.id, 'pomy_gigs'); 
         }
         // ----------------------

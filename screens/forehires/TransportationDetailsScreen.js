@@ -15,20 +15,22 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Icons } from "../../constants/Icons";
-import { AppContext } from '../../context/appContext';
+import { AppContext } from "../../context/appContext";
 import SecondaryNav from "../../components/SecondaryNav";
 import { getTransportById } from "../../service/Supabase-Fuctions";
-import App from '../../App';
+import App from "../../App";
+import { AuthContext } from "../../context/authProvider";
 
 const { width } = Dimensions.get("window");
 
 const mapTransportData = (raw) => {
-    if (!raw) return {
-        vehicle_images: [],
-        routes: [],
-        vehicle_features: [],
-        owner_info: {},
-        location: { address: "" }
+  if (!raw)
+    return {
+      vehicle_images: [],
+      routes: [],
+      vehicle_features: [],
+      owner_info: {},
+      location: { address: "" },
     };
 
   // 1. Handle JSONB owner_info (Safe Parsing)
@@ -64,8 +66,8 @@ const mapTransportData = (raw) => {
     routes: raw.routes,
     operating_days: raw.operating_days || [],
     vehicle_images: images || [],
-    vehicle_features : raw.vehicle_features || [],
-    vehicle_certifications : raw.vehicle_certifications || {},
+    vehicle_features: raw.vehicle_features || [],
+    vehicle_certifications: raw.vehicle_certifications || {},
     // Safe access for location
     location:
       typeof raw.location === "string"
@@ -87,7 +89,8 @@ export default function TransportationDetailsScreen({ navigation, route }) {
     mapTransportData(route.params?.vehicle),
   );
   const from = route.params?.from || "direct";
-    const { theme, isDarkMode } = React.useContext(AppContext)
+  const { theme, isDarkMode } = React.useContext(AppContext);
+  const { user} = React.useContext(AuthContext);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isBookmarked, setIsBookmarked] = useState(false);
 
@@ -101,10 +104,6 @@ export default function TransportationDetailsScreen({ navigation, route }) {
           if (response.success && response.data) {
             // Map the fresh database results to UI keys
             setVehicle(mapTransportData(response.data));
-            console.log("-------------------------");
-            console.log("-------------------------");
-            console.log("-------------------------");
-            console.log(response.data);
           }
         } catch (err) {
           console.error("Error fetching transport details:", err);
@@ -181,10 +180,15 @@ export default function TransportationDetailsScreen({ navigation, route }) {
     ]);
   };
 
-    return (
-        <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-            <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
-            <SecondaryNav title="Fore-Hire Details" />
+  return (
+    <View
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+    >
+      <StatusBar
+        barStyle={isDarkMode ? "light-content" : "dark-content"}
+        backgroundColor={theme.colors.background}
+      />
+      <SecondaryNav title="Fore-Hire Details" />
 
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Image Carousel */}
@@ -263,37 +267,86 @@ export default function TransportationDetailsScreen({ navigation, route }) {
             </View>
           </View>
 
-                    {/* Key Details */}
-                    <View style={styles.detailsGrid}>
-                        {vehicle.vehicle_capacity && (
-                            <View style={[styles.detailBox, { backgroundColor: theme.colors.card }]}>
-                                <Ionicons name="people" size={24} color={theme.colors.indicator} />
-                                <Text style={[styles.detailValue, { color: theme.colors.text }]}>{vehicle.vehicle_capacity}</Text>
-                                <Text style={[styles.detailLabel, { color: theme.colors.sub_text }]}>Seats</Text>
-                            </View>
-                        )}
-                        <View style={[styles.detailBox, { backgroundColor: theme.colors.card }]}>
-                            <Ionicons name="time" size={24} color={theme.colors.indicator} />
-                            <Text style={[styles.detailValue, { color: theme.colors.text }]}>{vehicle.operating_start}</Text>
-                            <Text style={[styles.detailLabel, { color: theme.colors.sub_text }]}>Start Time</Text>
-                        </View>
-                        <View style={[styles.detailBox, { backgroundColor: theme.colors.card }]}>
-                            <Ionicons name="time-outline" size={24} color={theme.colors.indicator} />
-                            <Text style={[styles.detailValue, { color: theme.colors.text }]}>{vehicle.operating_end}</Text>
-                            <Text style={[styles.detailLabel, { color: theme.colors.sub_text }]}>End Time</Text>
-                        </View>
-                    </View>
+          {/* Key Details */}
+          <View style={styles.detailsGrid}>
+            {vehicle.vehicle_capacity && (
+              <View
+                style={[
+                  styles.detailBox,
+                  { backgroundColor: theme.colors.card },
+                ]}
+              >
+                <Ionicons
+                  name="people"
+                  size={24}
+                  color={theme.colors.indicator}
+                />
+                <Text
+                  style={[styles.detailValue, { color: theme.colors.text }]}
+                >
+                  {vehicle.vehicle_capacity}
+                </Text>
+                <Text
+                  style={[styles.detailLabel, { color: theme.colors.sub_text }]}
+                >
+                  Seats
+                </Text>
+              </View>
+            )}
+            <View
+              style={[styles.detailBox, { backgroundColor: theme.colors.card }]}
+            >
+              <Ionicons name="time" size={24} color={theme.colors.indicator} />
+              <Text style={[styles.detailValue, { color: theme.colors.text }]}>
+                {vehicle.operating_start}
+              </Text>
+              <Text
+                style={[styles.detailLabel, { color: theme.colors.sub_text }]}
+              >
+                Start Time
+              </Text>
+            </View>
+            <View
+              style={[styles.detailBox, { backgroundColor: theme.colors.card }]}
+            >
+              <Ionicons
+                name="time-outline"
+                size={24}
+                color={theme.colors.indicator}
+              />
+              <Text style={[styles.detailValue, { color: theme.colors.text }]}>
+                {vehicle.operating_end}
+              </Text>
+              <Text
+                style={[styles.detailLabel, { color: theme.colors.sub_text }]}
+              >
+                End Time
+              </Text>
+            </View>
+          </View>
 
-                    {/* Description */}
-                    <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
-                        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Description</Text>
-                        <Text style={[styles.description, { color: theme.colors.sub_text }]}>{vehicle.description}</Text>
-                    </View>
+          {/* Description */}
+          <View
+            style={[styles.section, { backgroundColor: theme.colors.card }]}
+          >
+            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+              Description
+            </Text>
+            <Text
+              style={[styles.description, { color: theme.colors.sub_text }]}
+            >
+              {vehicle.description}
+            </Text>
+          </View>
 
           {/* Routes (if available) */}
           {vehicle?.routes && vehicle.routes.length > 0 && (
-            <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
-              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Available Routes</Text>
+            <View
+              style={[styles.section, { backgroundColor: theme.colors.card }]}
+            >
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+                Available Routes
+              </Text>
               {vehicle?.routes?.map((route, index) => (
                 <View key={index} style={styles.routeCard}>
                   <View style={styles.routeHeader}>
@@ -325,7 +378,7 @@ export default function TransportationDetailsScreen({ navigation, route }) {
                     <View style={styles.routeDetailItem}>
                       <Ionicons name="pricetag" size={16} color="#64748b" />
                       <Text style={styles.routeDetailText}>
-                        E {route.price.toLocaleString() || 'Unknown'}
+                        E {route.price.toLocaleString() || "Unknown"}
                       </Text>
                     </View>
                   </View>
@@ -342,58 +395,121 @@ export default function TransportationDetailsScreen({ navigation, route }) {
             </View>
           )}
 
-                    {/* Operating Schedule */}
-                    <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
-                        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Operating Schedule</Text>
-                        <View style={styles.scheduleContainer}>
-                            <View style={styles.scheduleRow}>
-                                <Text style={[styles.scheduleLabel, { color: theme.colors.text }]}>Days:</Text>
-                                <Text style={[styles.scheduleValue, { color: theme.colors.sub_text }]}>{vehicle.operating_days.join(', ')}</Text>
-                            </View>
-                            <View style={styles.scheduleRow}>
-                                <Text style={[styles.scheduleLabel, { color: theme.colors.text }]}>Hours:</Text>
-                                <Text style={[styles.scheduleValue, { color: theme.colors.sub_text }]}>{vehicle.operating_start} - {vehicle.operating_end}</Text>
-                            </View>
-                        </View>
-                    </View>
+          {/* Operating Schedule */}
+          <View
+            style={[styles.section, { backgroundColor: theme.colors.card }]}
+          >
+            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+              Operating Schedule
+            </Text>
+            <View style={styles.scheduleContainer}>
+              <View style={styles.scheduleRow}>
+                <Text
+                  style={[styles.scheduleLabel, { color: theme.colors.text }]}
+                >
+                  Days:
+                </Text>
+                <Text
+                  style={[
+                    styles.scheduleValue,
+                    { color: theme.colors.sub_text },
+                  ]}
+                >
+                  {vehicle.operating_days.join(", ")}
+                </Text>
+              </View>
+              <View style={styles.scheduleRow}>
+                <Text
+                  style={[styles.scheduleLabel, { color: theme.colors.text }]}
+                >
+                  Hours:
+                </Text>
+                <Text
+                  style={[
+                    styles.scheduleValue,
+                    { color: theme.colors.sub_text },
+                  ]}
+                >
+                  {vehicle.operating_start} - {vehicle.operating_end}
+                </Text>
+              </View>
+            </View>
+          </View>
 
           {/* Features */}
-          <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
-            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Features</Text>
+          <View
+            style={[styles.section, { backgroundColor: theme.colors.card }]}
+          >
+            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+              Features
+            </Text>
             <View style={styles.featuresGrid}>
               {vehicle?.vehicle_features?.map((feature, index) => (
                 <View key={index} style={styles.featureItem}>
                   <Ionicons name="checkmark-circle" size={18} color="#10b981" />
-                  <Text style={[styles.featureText, { color: theme.colors.sub_text }]}>{feature}</Text>
+                  <Text
+                    style={[
+                      styles.featureText,
+                      { color: theme.colors.sub_text },
+                    ]}
+                  >
+                    {feature}
+                  </Text>
                 </View>
               ))}
             </View>
           </View>
 
-                    {/* Owner Info */}
-                    <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
-                        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Owner Information</Text>
-                        <View style={[styles.ownerCard, { backgroundColor: theme.colors.sub_card }]}>
-                            <View style={styles.ownerHeader}>
-                                <View style={styles.ownerInfo}>
-                                    <Text style={[styles.ownerName, { color: theme.colors.sub_text }]}>{vehicle.owner_info.name}</Text>
-                                    {vehicle.vehicle_certifications.license && (
-                                        <View style={styles.verifiedBadge}>
-                                            <Ionicons name="checkmark-circle" size={16} color="#10b981" />
-                                            <Text style={styles.verifiedText}>Verified</Text>
-                                        </View>
-                                    )}
-                                </View>
-                                <View style={styles.ratingContainer}>
-                                    <Ionicons name="star" size={16} color="#fbbf24" />
-                                    <Text style={[styles.rating, { color: theme.colors.sub_text }]}>{vehicle.rating}</Text>
-                                </View>
-                            </View>
-                            <Text style={[styles.responseTime, { color: theme.colors.text }]}>Response Time: {vehicle.owner_info.responsetime}</Text>
-                            <View style={styles.contactButtons}>
-                                <TouchableOpacity style={styles.contactButton} onPress={handleCall}>
-                                    <Ionicons name="call-outline" size={30} color="#2563eb" />
-                                </TouchableOpacity>
+          {/* Owner Info */}
+          <View
+            style={[styles.section, { backgroundColor: theme.colors.card }]}
+          >
+            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+              Owner Information
+            </Text>
+            <View
+              style={[
+                styles.ownerCard,
+                { backgroundColor: theme.colors.sub_card },
+              ]}
+            >
+              <View style={styles.ownerHeader}>
+                <View style={styles.ownerInfo}>
+                  <Text
+                    style={[styles.ownerName, { color: theme.colors.sub_text }]}
+                  >
+                    {vehicle.owner_info.name}
+                  </Text>
+                  {vehicle.vehicle_certifications.license && (
+                    <View style={styles.verifiedBadge}>
+                      <Ionicons
+                        name="checkmark-circle"
+                        size={16}
+                        color="#10b981"
+                      />
+                      <Text style={styles.verifiedText}>Verified</Text>
+                    </View>
+                  )}
+                </View>
+                <View style={styles.ratingContainer}>
+                  <Ionicons name="star" size={16} color="#fbbf24" />
+                  <Text
+                    style={[styles.rating, { color: theme.colors.sub_text }]}
+                  >
+                    {vehicle.rating}
+                  </Text>
+                </View>
+              </View>
+              <Text style={[styles.responseTime, { color: theme.colors.text }]}>
+                Response Time: {vehicle.owner_info.responsetime}
+              </Text>
+              <View style={styles.contactButtons}>
+                <TouchableOpacity
+                  style={styles.contactButton}
+                  onPress={handleCall}
+                >
+                  <Ionicons name="call-outline" size={30} color="#2563eb" />
+                </TouchableOpacity>
 
                 <TouchableOpacity
                   style={styles.contactButton}
@@ -423,45 +539,79 @@ export default function TransportationDetailsScreen({ navigation, route }) {
             </View>
           </View>
 
-                    {/* Certifications */}
-                    <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
-                        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Certifications</Text>
-                        <View style={styles.certificationsContainer}>
-                            {vehicle.vehicle_certifications?.insurance && (
-                                <View style={styles.certificationItem}>
-                                    <Ionicons name="shield-checkmark" size={20} color="#10b981" />
-                                    <Text style={[styles.certificationText, { color: theme.colors.text }]}>Fully Insured</Text>
-                                </View>
-                            )}
-                            {vehicle.vehicle_certifications?.license && (
-                                <View style={styles.certificationItem}>
-                                    <Ionicons name="document-text" size={20} color="#10b981" />
-                                    <Text style={[styles.certificationText, { color: theme.colors.text }]}>Licensed</Text>
-                                </View>
-                            )}
-                            {vehicle.boarder_crossing && (
-                                <View style={styles.certificationItem}>
-                                    <Ionicons name="globe" size={20} color="#10b981" />
-                                    <Text style={[styles.certificationText, { color: theme.colors.text }]}>Border Crossing Approved</Text>
-                                </View>
-                            )}
-                        </View>
-                    </View>
+          {/* Certifications */}
+          <View
+            style={[styles.section, { backgroundColor: theme.colors.card }]}
+          >
+            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+              Certifications
+            </Text>
+            <View style={styles.certificationsContainer}>
+              {vehicle.vehicle_certifications?.insurance && (
+                <View style={styles.certificationItem}>
+                  <Ionicons name="shield-checkmark" size={20} color="#10b981" />
+                  <Text
+                    style={[
+                      styles.certificationText,
+                      { color: theme.colors.text },
+                    ]}
+                  >
+                    Fully Insured
+                  </Text>
                 </View>
-            </ScrollView>
-
-            {/* Action Buttons */}
-            <View style={[styles.footer, { backgroundColor: theme.colors.card }]}>
-                <TouchableOpacity style={[styles.shareButton, { backgroundColor: theme.colors.primary }]} onPress={handleShare}>
-                    <Icons.Feather name="share-2" size={20} color="#2563eb" />
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.bookButton, { backgroundColor: theme.colors.primary }]} onPress={handleBook}>
-                    <Text style={styles.bookButtonText}>Request Service</Text>
-                    <Ionicons name="arrow-forward" size={20} color="#fff" />
-                </TouchableOpacity>
+              )}
+              {vehicle.vehicle_certifications?.license && (
+                <View style={styles.certificationItem}>
+                  <Ionicons name="document-text" size={20} color="#10b981" />
+                  <Text
+                    style={[
+                      styles.certificationText,
+                      { color: theme.colors.text },
+                    ]}
+                  >
+                    Licensed
+                  </Text>
+                </View>
+              )}
+              {vehicle.boarder_crossing && (
+                <View style={styles.certificationItem}>
+                  <Ionicons name="globe" size={20} color="#10b981" />
+                  <Text
+                    style={[
+                      styles.certificationText,
+                      { color: theme.colors.text },
+                    ]}
+                  >
+                    Border Crossing Approved
+                  </Text>
+                </View>
+              )}
             </View>
+          </View>
         </View>
-    );
+      </ScrollView>
+
+      {/* Action Buttons */}
+      <View style={[styles.footer, { backgroundColor: theme.colors.card }]}>
+        <TouchableOpacity
+          style={[
+            styles.shareButton,
+            { backgroundColor: theme.colors.primary },
+          ]}
+          onPress={handleShare}
+        >
+          <Icons.Feather name="share-2" size={20} color="#2563eb" />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.bookButton, { backgroundColor: theme.colors.primary }]}
+          onPress={handleBook}
+        >
+          <Text style={styles.bookButtonText}>Request Service</Text>
+          <Ionicons name="arrow-forward" size={20} color="#fff" />
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({

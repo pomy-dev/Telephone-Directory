@@ -108,12 +108,7 @@ const JobDetailScreen = ({ route, navigation }) => {
       }
     };
 
-    fetchFreshData();
-
-
-    if (user && job?.id) {
-      logUserActivity(user.uid, job.id, 'pomy_gigs');
-    }
+    fetchFreshData(); 
   }, [job?.id, from]);
 
   const handleCall = () => {

@@ -25,10 +25,11 @@ import {
 } from '@gorhom/bottom-sheet';
 import { CustomToast } from '../../components/customToast';
 import { AppContext } from "../../context/appContext"
-import { getForHireTransport, updateVehicleLike, submitVehicleRating, submitVehicleComment } from '../../service/Supabase-Fuctions';
+import { getForHireTransport, updateVehicleLike, submitVehicleRating, submitVehicleComment, logUserActivity } from '../../service/Supabase-Fuctions';
 import { checkNetworkConnectivity } from '../../service/checkNetwork';
 import CustomLoader from '../../components/customLoader';
 import SecondaryNav from '../../components/SecondaryNav';
+import { AuthContext } from "../../context/authProvider";
 
 // ────── Comment Bottom Sheet ──────
 const CommentBottomSheet = React.forwardRef(
@@ -446,6 +447,7 @@ const sortFilterModalStyles = StyleSheet.create({
 // ──────────────────────────────────────────────────────────────
 export default function TransportationListScreen({ navigation }) {
     const { theme, isDarkMode } = React.useContext(AppContext)
+    const { user} = React.useContext(AuthContext);
     // ────── State ──────
     const [selectedType, setSelectedType] = useState('All');
     const [sortByCategory, setSortByCategory] = useState('All');
@@ -757,6 +759,7 @@ export default function TransportationListScreen({ navigation }) {
 
     // ────── RENDER VEHICLE CARD – Modern Overlay Style ──────
     const renderVehicleCard = (vehicle) => {
+         
         const isLiked = likedVehicles.has(vehicle.id);
         const userRating = vehicleRatings[vehicle.id];
         const rating = userRating || vehicle.rating_average || 0;
@@ -769,7 +772,14 @@ export default function TransportationListScreen({ navigation }) {
                 key={vehicle.id}
                 style={[styles.vehicleCard, { backgroundColor: theme.colors.card }]}
                 activeOpacity={0.92}
-                onPress={() => navigation.navigate('TransportationDetailsScreen', { vehicle: vehicle })}
+                onPress={() =>{
+                     if (user) {
+                              logUserActivity(user.uid, vehicle.id, 'pomy_forhire_transport'); 
+                            }
+
+                     navigation.navigate('TransportationDetailsScreen', { vehicle: vehicle })
+                    
+                }}
             >
                 {/* Background Image */}
                 <Image source={{ uri: vehicle?.vehicle_images[0]?.url }} style={styles.vehicleImage} />
