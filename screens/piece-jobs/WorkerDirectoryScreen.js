@@ -1,20 +1,20 @@
 "use client";
 
-import React, { useEffect, useState, useContext } from 'react'; 
+import React, { useEffect, useState, useContext } from 'react';
 import { AuthContext } from '../../context/authProvider';
-import { 
-  View, 
-  Text, 
-  FlatList, 
-  TouchableOpacity, 
-  StyleSheet, 
-  StatusBar, 
-  Linking, 
-  ActivityIndicator, 
-  TextInput, 
-  Modal, 
-  Keyboard ,
-  BackHandler ,
+import {
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  StyleSheet,
+  StatusBar,
+  Linking,
+  ActivityIndicator,
+  TextInput,
+  Modal,
+  Keyboard,
+  BackHandler,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Icons } from "../../constants/Icons";
@@ -32,62 +32,62 @@ const WorkerDirectoryScreen = ({ navigation }) => {
   const numColumns = 1;
 
   useEffect(() => {
-  const backAction = () => {
-    if (isSearchVisible) {
-      setIsSearchVisible(false);
-      return true;
-    }
-    return false;
-  };
+    const backAction = () => {
+      if (isSearchVisible) {
+        setIsSearchVisible(false);
+        return true;
+      }
+      return false;
+    };
 
-  const backHandler = BackHandler.addEventListener(
-    "hardwareBackPress",
-    backAction
-  );
+    const backHandler = BackHandler.addEventListener(
+      "hardwareBackPress",
+      backAction
+    );
 
-  return () => backHandler.remove();
-}, [isSearchVisible]);
+    return () => backHandler.remove();
+  }, [isSearchVisible]);
 
   useEffect(() => {
     fetchWorkers();
   }, []);
 
   const fetchWorkers = async () => {
-  setLoading(true);
-  const { data, error } = await supabase
-    .from('pomy_workers')
-    .select('*')
-    .order('created_at', { ascending: false });
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('pomy_workers')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-  if (!error) {
-    // Filter out the current user's own profile
-    const otherWorkers = user?.uid 
-      ? data.filter(worker => worker.user_id !== user.uid) 
-      : data;
+    if (!error) {
+      // Filter out the current user's own profile
+      const otherWorkers = user?.uid
+        ? data.filter(worker => worker.user_id !== user.uid)
+        : data;
 
-    setWorkers(otherWorkers);
-    setFilteredWorkers(otherWorkers);
-  }
-  setLoading(false);
-};
+      setWorkers(otherWorkers);
+      setFilteredWorkers(otherWorkers);
+    }
+    setLoading(false);
+  };
 
   const handleSearch = (text) => {
     setSearch(text);
     const query = text.toLowerCase();
-    
+
     const filtered = workers.filter(w => {
       const nameMatch = w.name.toLowerCase().includes(query);
-      
+
       // Smart Skill Search: Check if any skill in the array matches the query
-      const skillsMatch = Array.isArray(w.skills) && w.skills.some(skill => 
+      const skillsMatch = Array.isArray(w.skills) && w.skills.some(skill =>
         skill.toLowerCase().includes(query)
       );
-      
+
       const locationMatch = w.location?.address?.toLowerCase().includes(query);
-      
+
       return nameMatch || skillsMatch || locationMatch;
     });
-    
+
     setFilteredWorkers(filtered);
   };
 
@@ -116,7 +116,7 @@ const WorkerDirectoryScreen = ({ navigation }) => {
         </View>
         <View style={styles.headerInfo}>
           <Text style={styles.workerName} numberOfLines={1}>{item.name}</Text>
-          
+
           {/* SMART SKILLS DISPLAY */}
           <View style={styles.skillCloud}>
             {Array.isArray(item.skills) && item.skills.length > 0 ? (
@@ -132,15 +132,15 @@ const WorkerDirectoryScreen = ({ navigation }) => {
             )}
           </View>
         </View>
-        
-        <TouchableOpacity 
-          style={styles.callIconButton} 
+
+        <TouchableOpacity
+          style={styles.callIconButton}
           onPress={() => Linking.openURL(`tel:${item.phone}`)}
         >
           <Icons.Ionicons name="call" size={20} color="#FFF" />
         </TouchableOpacity>
       </View>
-      
+
       <View style={styles.boxBody}>
         <Text style={styles.sectionLabel}>Professional Profile</Text>
         <Text style={styles.workerBio} numberOfLines={3}>
@@ -156,13 +156,13 @@ const WorkerDirectoryScreen = ({ navigation }) => {
             <Text style={styles.locationText}>{item.location?.address || "Eswatini"}</Text>
           </View>
         </View>
-        
-        <TouchableOpacity 
+
+        <TouchableOpacity
           style={styles.viewProfileBtn}
           onPress={() => Linking.openURL(`tel:${item.phone}`)}
         >
-           <Text style={styles.viewProfileText}>Hire Now</Text>
-           <Icons.Ionicons name="chevron-forward" size={14} color="#FFF" />
+          <Text style={styles.viewProfileText}>Hire Now</Text>
+          <Icons.Ionicons name="chevron-forward" size={14} color="#FFF" />
         </TouchableOpacity>
       </View>
     </View>
@@ -171,11 +171,11 @@ const WorkerDirectoryScreen = ({ navigation }) => {
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       <StatusBar barStyle="dark-content" />
-      
+
       <View style={styles.topNav}>
         {/* Changed to Back Button */}
-        <TouchableOpacity 
-          onPress={() => navigation.goBack()} 
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
           style={styles.navBtn}
         >
           <Icons.Ionicons name="chevron-back" size={28} color="#000" />
@@ -189,14 +189,14 @@ const WorkerDirectoryScreen = ({ navigation }) => {
       </View>
 
       <View style={styles.searchWrapper}>
-          <TouchableOpacity 
-            style={styles.searchBoxTrigger} 
-            activeOpacity={0.8} 
-            onPress={() => setIsSearchVisible(true)}
-          >
-            <Icons.Ionicons name="search-outline" size={20} color="#666" />
-            <Text style={styles.searchPlaceholder}>Search skills (e.g. Plumbing, IT...)</Text>
-          </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.searchBoxTrigger}
+          activeOpacity={0.8}
+          onPress={() => setIsSearchVisible(true)}
+        >
+          <Icons.Ionicons name="search-outline" size={20} color="#666" />
+          <Text style={styles.searchPlaceholder}>Search skills (e.g. Plumbing, IT...)</Text>
+        </TouchableOpacity>
       </View>
 
       {loading ? (
@@ -230,7 +230,7 @@ const WorkerDirectoryScreen = ({ navigation }) => {
                 style={styles.modalInput}
                 value={search}
                 onChangeText={handleSearch}
-                returnKeyType="done" 
+                returnKeyType="done"
                 onSubmitEditing={() => setIsSearchVisible(false)}
               />
             </View>
@@ -243,9 +243,9 @@ const WorkerDirectoryScreen = ({ navigation }) => {
             <Text style={styles.suggestTitle}>Common Searches</Text>
             <View style={styles.tagCloud}>
               {['Plumbing', 'Electrical', 'Cleaning', 'Repairs', 'Transport'].map(tag => (
-                <TouchableOpacity 
-                  key={tag} 
-                  style={styles.tag} 
+                <TouchableOpacity
+                  key={tag}
+                  style={styles.tag}
                   onPress={() => { handleSearch(tag); setIsSearchVisible(false); }}
                 >
                   <Text style={styles.tagText}>{tag}</Text>
@@ -260,25 +260,25 @@ const WorkerDirectoryScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#F8F9FA' }, 
-  topNav: { 
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    justifyContent: 'space-between', 
-    paddingHorizontal: 16, 
-    height: 60, 
+  container: { flex: 1, backgroundColor: '#F8F9FA' },
+  topNav: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    height: 60,
     backgroundColor: '#fff',
     borderBottomWidth: 1, // Added subtle line to match your edit profile screen
     borderBottomColor: '#f0f0f0'
   },
-  navBtn: { 
+  navBtn: {
     width: 45, // Slightly wider touch target for better UX
-    height: 45, 
-    alignItems: 'center', 
-    justifyContent: 'center' 
+    height: 45,
+    alignItems: 'center',
+    justifyContent: 'center'
   },
-  navTitle: { 
-    fontSize: 18, 
+  navTitle: {
+    fontSize: 18,
     fontWeight: '900',
     letterSpacing: -0.5 // Matches your brand style
   },
@@ -288,7 +288,7 @@ const styles = StyleSheet.create({
   searchPlaceholder: { marginLeft: 10, color: '#666', fontSize: 14 },
 
   listContent: { padding: 12 },
-  
+
   workerBox: {
     backgroundColor: '#fff',
     borderRadius: 24,
@@ -312,23 +312,23 @@ const styles = StyleSheet.create({
   avatarText: { color: '#fff', fontSize: 22, fontWeight: 'bold' },
   headerInfo: { flex: 1, marginLeft: 14 },
   workerName: { fontSize: 17, fontWeight: '800', color: '#000' },
-  
+
   skillCloud: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 6, gap: 6 },
   skillTagMini: { backgroundColor: '#F0FDF4', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
   skillTagTextMini: { fontSize: 10, color: '#10b981', fontWeight: '800', textTransform: 'uppercase' },
 
   callIconButton: { width: 44, height: 44, borderRadius: 15, backgroundColor: '#10b981', alignItems: 'center', justifyContent: 'center' },
-  
+
   boxBody: { marginVertical: 15, paddingVertical: 15, borderTopWidth: 1, borderBottomWidth: 1, borderColor: '#F9F9F9' },
   sectionLabel: { fontSize: 11, fontWeight: '800', color: '#999', textTransform: 'uppercase', marginBottom: 6 },
   workerBio: { fontSize: 14, color: '#444', lineHeight: 20 },
-  
+
   boxFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   locationContainer: { flexDirection: 'row', alignItems: 'flex-start', flex: 1 },
   locationTextGroup: { marginLeft: 8 },
   locationLabel: { fontSize: 9, fontWeight: '800', color: '#BBB', textTransform: 'uppercase' },
   locationText: { fontSize: 13, color: '#1A1A1A', fontWeight: '700' },
-  
+
   viewProfileBtn: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, backgroundColor: '#000' },
   viewProfileText: { color: '#fff', fontSize: 13, fontWeight: '700', marginRight: 5 },
 

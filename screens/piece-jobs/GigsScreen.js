@@ -157,6 +157,8 @@ const GigsScreen = ({ navigation }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [fabOpen, setFabOpen] = useState(false);
   const fabRotation = React.useRef(new Animated.Value(0)).current;
+  const [sheetVisible, setSheetVisible] = useState(false);
+  const sheetAnim = React.useRef(new Animated.Value(0)).current;
 
   const moreItems = [
     {
@@ -219,6 +221,27 @@ const GigsScreen = ({ navigation }) => {
       if (subscription) supabase.removeChannel(subscription);
     };
   }, [viewMode]);
+
+  const toggleFAB = () => {
+    const toValue = fabOpen ? 0 : 1;
+    Animated.spring(fabRotation, {
+      toValue,
+      useNativeDriver: true,
+    }).start();
+    setFabOpen(!fabOpen);
+  };
+
+  const toggleSheet = (open) => {
+    const toValue = open ? 1 : 0;
+    if (open) setSheetVisible(true);
+    Animated.timing(sheetAnim, {
+      toValue,
+      duration: 240,
+      useNativeDriver: true,
+    }).start(() => {
+      if (!open) setSheetVisible(false);
+    });
+  };
 
   useEffect(() => {
     // Handle search filtering
@@ -468,9 +491,11 @@ const GigsScreen = ({ navigation }) => {
 
       {/* Custom Modern Header */}
       <View style={styles.customHeader}>
+        {/* Back Btn */}
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icons.Ionicons name="arrow-back" size={28} color={theme.colors.text} />
         </TouchableOpacity>
+
         {/* SEARCH BAR */}
         <View style={{ backgroundColor: theme.colors.background }}>
           <View style={[styles.searchBar, { backgroundColor: theme.colors.sub_card }]}>
@@ -490,34 +515,76 @@ const GigsScreen = ({ navigation }) => {
             )}
           </View>
         </View>
-        <Pressable style={{ borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5, backgroundColor: '#f0f4ff' }}
-          onPress={() => { }}
-        >
-          <Icons.Ionicons name="options" size={30} color={theme.colors.sub_text} />
+
+        {/* Options Handle */}
+        <Pressable onPress={() => toggleSheet(true)} >
+          <Icons.Ionicons name="options" size={30} color={theme.colors.text} />
         </Pressable>
+
+        {/* More Handle */}
         <MoreDropdown items={moreItems} />
       </View>
 
+      {/* BOTTOM SHEET FOR CATEGORIES / WORKER FILTER */}
+      {sheetVisible && (
+        <Animated.View style={[styles.sheetOverlay, { opacity: sheetAnim }]}>
+          <Pressable style={styles.sheetBackdrop} onPress={() => toggleSheet(false)} />
+          <Animated.View style={[styles.sheetContainer, { transform: [{ translateY: sheetAnim.interpolate({ inputRange: [0, 1], outputRange: [600, 0] }) }] }]}>
+            <View style={styles.sheetHandle} />
+            <View style={styles.sheetHeader}>
+              <Text style={{ fontSize: 16, fontWeight: '700', color: theme.colors.text }}>Filter Workers</Text>
+              <TouchableOpacity onPress={() => { setSelectedCategory('all'); setSearchQuery(''); }}>
+                <Text style={{ color: theme.colors.indicator, fontWeight: '700' }}>Clear</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={{ paddingHorizontal: 14, paddingTop: 8 }}>
+              <TextInput
+                style={[styles.sheetInput, { color: theme.colors.text, backgroundColor: theme.colors.sub_card }]}
+                placeholder="Filter workers by name or skill"
+                placeholderTextColor={theme.colors.sub_text}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+              />
+
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 12 }}>
+                {CATEGORIES.map((cat) => (
+                  <TouchableOpacity
+                    key={cat.id}
+                    style={[
+                      styles.categoryButton,
+                      selectedCategory === cat.id && styles.categoryButtonActive,
+                    ]}
+                    onPress={() => { setSelectedCategory(cat.id); toggleSheet(false); }}
+                  >
+                    <cat.iconType name={cat.iconName} size={18} color={selectedCategory === cat.id ? "#fff" : "#666"} />
+                    <Text style={[styles.categoryText, selectedCategory === cat.id && styles.categoryTextActive]}>
+                      {cat.name}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+          </Animated.View>
+        </Animated.View>
+      )}
+
       {/* FIXED TOP SECTION */}
       <View style={styles.headerGroup}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriesContainer}>
-          {/* your CATEGORIES buttons – unchanged */}
-          {CATEGORIES.map((cat) => (
-            <TouchableOpacity
-              key={cat.id}
-              style={[
-                styles.categoryButton,
-                selectedCategory === cat.id && styles.categoryButtonActive,
-              ]}
-              onPress={() => setSelectedCategory(cat.id)}
-            >
-              <cat.iconType name={cat.iconName} size={18} color={selectedCategory === cat.id ? "#fff" : "#666"} />
-              <Text style={[styles.categoryText, selectedCategory === cat.id && styles.categoryTextActive]}>
-                {cat.name}
+        <View style={styles.selectedCategoryRow}>
+          {selectedCategory !== 'all' && (
+            <View style={[styles.selectedCategoryPill, { backgroundColor: theme.colors.sub_card }]}>
+              <Text style={[styles.selectedCategoryText, { color: theme.colors.text }]} numberOfLines={1}>
+                {selectedCategory}
               </Text>
+            </View>
+          )}
+          {selectedCategory !== 'all' && (
+            <TouchableOpacity onPress={() => setSelectedCategory('all')} style={styles.clearButton}>
+              <Icons.Ionicons name="close-circle" size={20} color={theme.colors.sub_text} />
             </TouchableOpacity>
-          ))}
-        </ScrollView>
+          )}
+        </View>
 
         {/* ─── TOGGLE BUTTONS ─── */}
         <View style={styles.toggleContainer}>
@@ -636,8 +703,8 @@ const GigsScreen = ({ navigation }) => {
                   navigation.navigate('PostJobScreen');
                 }}
               >
-                <Icons.AntDesign name="plus" size={20} color="#fff" />
-                <Text style={styles.secondaryFabLabel}>Post Job</Text>
+                {/* <Icons.AntDesign name="plus" size={20} color="#fff" /> */}
+                <Text style={styles.secondaryFabLabel}>Post Quick Job</Text>
               </TouchableOpacity>
             </Animated.View>
 
@@ -657,8 +724,8 @@ const GigsScreen = ({ navigation }) => {
                   navigation.navigate('WorkerRegistration');
                 }}
               >
-                <Icons.AntDesign name="plus" size={20} color="#fff" />
-                <Text style={styles.secondaryFabLabel}>Freelancer</Text>
+                {/* <Icons.AntDesign name="plus" size={20} color="#fff" /> */}
+                <Text style={styles.secondaryFabLabel}>Post Freelancer</Text>
               </TouchableOpacity>
             </Animated.View>
           </>
@@ -693,7 +760,7 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     paddingHorizontal: 12,
     height: 44,
-    width: width * 0.70,
+    width: width * 0.60,
     gap: 8,
     overflow: 'hidden'
   },
@@ -1035,7 +1102,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   secondaryFab: {
-    width: 50,
+    width: 100,
     height: 50,
     borderRadius: 25,
     justifyContent: 'center',
@@ -1051,6 +1118,70 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     marginRight: 8,
+  },
+  /* Bottom sheet / selected category styles */
+  sheetOverlay: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    top: 0,
+    zIndex: 2000,
+    justifyContent: 'flex-end',
+  },
+  sheetBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.25)'
+  },
+  sheetContainer: {
+    width: '100%',
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    paddingBottom: 28,
+    backgroundColor: '#fff',
+    minHeight: height * 0.35,
+  },
+  sheetHandle: {
+    width: 40,
+    height: 6,
+    backgroundColor: '#E6E7EA',
+    borderRadius: 6,
+    alignSelf: 'center',
+    marginTop: 8,
+  },
+  sheetHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    paddingBottom: 6,
+  },
+  sheetInput: {
+    height: 44,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    fontSize: 14,
+  },
+  selectedCategoryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+  },
+  selectedCategoryPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 18,
+    minWidth: 80,
+    justifyContent: 'center',
+  },
+  selectedCategoryText: {
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  clearButton: {
+    marginLeft: 8,
   },
 });
 

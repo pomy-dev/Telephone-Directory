@@ -63,9 +63,9 @@ export const MoreDropdown = ({ items }) => {
           >
             {/* Optional Header matching your Drawer feel */}
             <View style={styles.menuHeader}>
-                <Text style={[styles.headerText, { color: textColor }]}>
-                    OPTIONS<Text style={{color: '#10b981'}}>.</Text>
-                </Text>
+              <Text style={[styles.headerText, { color: textColor }]}>
+                OPTIONS<Text style={{ color: '#10b981' }}>.</Text>
+              </Text>
             </View>
 
             {items.map((item, idx) => {
@@ -83,7 +83,7 @@ export const MoreDropdown = ({ items }) => {
                     }}
                   >
                     <View style={[styles.iconContainer, { backgroundColor: isDarkMode ? '#111' : '#f9f9f9' }]}>
-                        <Icon name={item.iconName} size={22} color={isDarkMode ? "#fff" : "#666"} />
+                      <Icon name={item.iconName} size={22} color={isDarkMode ? "#fff" : "#666"} />
                     </View>
                     <Text style={[styles.itemText, { color: textColor }]}>
                       {item.title}
@@ -103,7 +103,7 @@ export const MoreDropdown = ({ items }) => {
 
 const styles = StyleSheet.create({
   anchor: {
-    padding: 8,
+    padding: 4,
   },
   overlay: {
     flex: 1,
