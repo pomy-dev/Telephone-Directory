@@ -359,53 +359,53 @@ const GigsScreen = ({ navigation }) => {
   const renderJobCard = ({ item }) => {
     const hasImage = item?.images && item.images.length > 0 && !item.images[0].includes("via.placeholder.com");
 
-   const handlePressGig = (item) => {
-     if (user) {
-          logUserActivity(user.uid, item.id, 'pomy_gigs'); 
-        }
-        // ----------------------
-        navigation.navigate("JobDetailScreen", { job: item });
-      
+    const handlePressGig = (item) => {
+      if (user) {
+        logUserActivity(user.uid, item.id, 'pomy_gigs');
+      }
+      // ----------------------
+      navigation.navigate("JobDetailScreen", { job: item });
+
     };
 
-  return (
-    <TouchableOpacity
-      style={[
-        styles.jobCard, 
-        { backgroundColor: isDarkMode ? '#1A1A1A' : '#fff' }
-      ]}
-      // onPress={() => navigation.navigate("JobDetailScreen", { job: item })}
-      onPress={() => handlePressGig(item)}
-    >
-      {/* --- TOP MEDIA SECTION (Fixed Height) --- */}
-      <View style={{ height: MEDIA_HEIGHT, overflow: 'hidden' }}>
-        {hasImage ? (
-          <Image 
-            source={{ uri: item.images[0] }} 
-            style={styles.jobImage} 
-            resizeMode="cover"
-          />
-        ) : (
-          <View style={[
-            styles.noImageDescriptionContainer, 
-            { backgroundColor: isDarkMode ? '#252525' : '#f9f9f9', height: MEDIA_HEIGHT }
-          ]}>
-            <Icons.MaterialCommunityIcons 
-              name="format-quote-open" 
-              size={20} 
-              color={theme.colors.indicator} 
-              style={{ marginBottom: 4 }}
+    return (
+      <TouchableOpacity
+        style={[
+          styles.jobCard,
+          { backgroundColor: isDarkMode ? '#1A1A1A' : '#fff' }
+        ]}
+        // onPress={() => navigation.navigate("JobDetailScreen", { job: item })}
+        onPress={() => handlePressGig(item)}
+      >
+        {/* --- TOP MEDIA SECTION (Fixed Height) --- */}
+        <View style={{ height: MEDIA_HEIGHT, overflow: 'hidden' }}>
+          {hasImage ? (
+            <Image
+              source={{ uri: item.images[0] }}
+              style={styles.jobImage}
+              resizeMode="cover"
             />
-            <Text 
-              style={[styles.noImageDescriptionText, { color: theme.colors.text }]} 
-              ellipsizeMode="tail" 
-              numberOfLines={5}
-            >
-              {item.description}
-            </Text>
-          </View>
-        )}
-      </View>
+          ) : (
+            <View style={[
+              styles.noImageDescriptionContainer,
+              { backgroundColor: isDarkMode ? '#252525' : '#f9f9f9', height: MEDIA_HEIGHT }
+            ]}>
+              <Icons.MaterialCommunityIcons
+                name="format-quote-open"
+                size={20}
+                color={theme.colors.indicator}
+                style={{ marginBottom: 4 }}
+              />
+              <Text
+                style={[styles.noImageDescriptionText, { color: theme.colors.text }]}
+                ellipsizeMode="tail"
+                numberOfLines={5}
+              >
+                {item.description}
+              </Text>
+            </View>
+          )}
+        </View>
 
         {/* --- BOTTOM CONTENT SECTION --- */}
         <View style={styles.jobContent}>
@@ -550,6 +550,12 @@ const GigsScreen = ({ navigation }) => {
             )}
           </View>
         </View>
+
+        <Pressable style={{ borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5, backgroundColor: '#f0f4ff' }}
+          onPress={() => { }}
+        >
+          <Icons.Ionicons name="options" size={30} color={theme.colors.sub_text} />
+        </Pressable>
         <MoreDropdown items={moreItems} />
       </View>
 
