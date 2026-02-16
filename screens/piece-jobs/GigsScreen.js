@@ -7,6 +7,7 @@ import {
 } from "react-native";
 import { Icons } from "../../constants/Icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import SecondaryNav from "../../components/SecondaryNav";
 import { getPomyGigs, subscribeToGigs } from "../../service/Supabase-Fuctions";
 import { AppContext } from "../../context/appContext";
 import { supabase } from "../../service/Supabase-Client";
@@ -294,57 +295,117 @@ const GigsScreen = ({ navigation }) => {
     fetchLiveGigs(false);
   }, [selectedCategory, userLocation]);
 
-  const toggleFAB = () => {
-    const toValue = fabOpen ? 0 : 1;
-    Animated.spring(fabRotation, {
-      toValue,
-      useNativeDriver: true,
-      tension: 200,
-      friction: 10,
-    }).start();
-    setFabOpen(!fabOpen);
-  };
+  // const renderJobCard = ({ item }) => {
+  //   // Check if the image is a real URL from your Supabase bucket
+  //   const hasImage = item?.images && !item?.images?.includes("via.placeholder.com");
+
+  //   return (
+  //     <TouchableOpacity
+  //       style={styles.jobCard}
+  //       onPress={() => navigation.navigate("JobDetailScreen", { job: item })}
+  //     >
+  //       {hasImage ? (
+  //         // SMART VIEW: If image exists, show the full image
+  //         <Image source={{ uri: item.images[0] }} style={styles.jobImage} />
+  //       ) : (
+  //         // SMART VIEW: If no image, show a styled box with the full description instead
+  //         <View style={styles.noImageDescriptionContainer}>
+  //           <Text style={styles.noImageDescriptionText} ellipsizeMode="tail" numberOfLines={6}>
+  //             {item.description}
+  //           </Text>
+  //         </View>
+  //       )}
+
+  //       <View style={styles.jobContent}>
+  //         <View style={styles.jobHeader}>
+  //           <Text style={styles.jobTitle}>{item.title}</Text>
+  //           <Text style={styles.jobPrice}>R{item.price}</Text>
+  //         </View>
+
+  //         {/* Only show this small description if the image is present.
+  //                   If no image, we already showed the full description above. */}
+  //         {hasImage && (
+  //           <Text style={styles.jobDescription} numberOfLines={2}>
+  //             {item.description}
+  //           </Text>
+  //         )}
+
+  //         <View style={styles.jobFooter}>
+  //           <View style={styles.locationContainer}>
+  //             <Icons.Ionicons name="location-outline" size={14} color="#666" />
+  //             <Text style={styles.locationText}>{item.location}</Text>
+  //           </View>
+  //           {item.distance && (
+  //             <Text style={styles.distanceText}>
+  //               {item.distance.toFixed(1)} km away
+  //             </Text>
+  //           )}
+  //         </View>
+
+  //         <View style={styles.jobMeta}>
+  //           <Text style={styles.postedBy}>{item.postedBy?.name}</Text>
+  //           <Text style={styles.postedTime}>{item.postedTime}</Text>
+  //         </View>
+  //       </View>
+  //     </TouchableOpacity>
+  //   );
+  // };
+
+
+
+
+  // ... inside GigsScreen component ...
 
   const renderJobCard = ({ item }) => {
     const hasImage = item?.images && item.images.length > 0 && !item.images[0].includes("via.placeholder.com");
 
-    return (
-      <TouchableOpacity
-        style={[
-          styles.jobCard,
-          { backgroundColor: isDarkMode ? '#1A1A1A' : '#fff' }
-        ]}
-        onPress={() => navigation.navigate("JobDetailScreen", { job: item })}
-      >
-        {/* --- TOP MEDIA SECTION (Fixed Height) --- */}
-        <View style={{ height: MEDIA_HEIGHT, overflow: 'hidden' }}>
-          {hasImage ? (
-            <Image
-              source={{ uri: item.images[0] }}
-              style={styles.jobImage}
-              resizeMode="cover"
+   const handlePressGig = (item) => {
+     if (user) {
+          logUserActivity(user.uid, item.id, 'pomy_gigs'); 
+        }
+        // ----------------------
+        navigation.navigate("JobDetailScreen", { job: item });
+      
+    };
+
+  return (
+    <TouchableOpacity
+      style={[
+        styles.jobCard, 
+        { backgroundColor: isDarkMode ? '#1A1A1A' : '#fff' }
+      ]}
+      // onPress={() => navigation.navigate("JobDetailScreen", { job: item })}
+      onPress={() => handlePressGig(item)}
+    >
+      {/* --- TOP MEDIA SECTION (Fixed Height) --- */}
+      <View style={{ height: MEDIA_HEIGHT, overflow: 'hidden' }}>
+        {hasImage ? (
+          <Image 
+            source={{ uri: item.images[0] }} 
+            style={styles.jobImage} 
+            resizeMode="cover"
+          />
+        ) : (
+          <View style={[
+            styles.noImageDescriptionContainer, 
+            { backgroundColor: isDarkMode ? '#252525' : '#f9f9f9', height: MEDIA_HEIGHT }
+          ]}>
+            <Icons.MaterialCommunityIcons 
+              name="format-quote-open" 
+              size={20} 
+              color={theme.colors.indicator} 
+              style={{ marginBottom: 4 }}
             />
-          ) : (
-            <View style={[
-              styles.noImageDescriptionContainer,
-              { backgroundColor: isDarkMode ? '#252525' : '#f9f9f9', height: MEDIA_HEIGHT }
-            ]}>
-              <Icons.MaterialCommunityIcons
-                name="format-quote-open"
-                size={20}
-                color={theme.colors.indicator}
-                style={{ marginBottom: 4 }}
-              />
-              <Text
-                style={[styles.noImageDescriptionText, { color: theme.colors.text }]}
-                ellipsizeMode="tail"
-                numberOfLines={5}
-              >
-                {item.description}
-              </Text>
-            </View>
-          )}
-        </View>
+            <Text 
+              style={[styles.noImageDescriptionText, { color: theme.colors.text }]} 
+              ellipsizeMode="tail" 
+              numberOfLines={5}
+            >
+              {item.description}
+            </Text>
+          </View>
+        )}
+      </View>
 
         {/* --- BOTTOM CONTENT SECTION --- */}
         <View style={styles.jobContent}>

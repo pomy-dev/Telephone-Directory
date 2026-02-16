@@ -22,13 +22,59 @@ import * as DocumentPicker from "expo-document-picker";
 import SecondaryNav from "../../components/SecondaryNav";
 import { CustomToast } from "../../components/customToast";
 import { AuthContext } from "../../context/authProvider";
-import { applyForGig } from "../../service/Supabase-Fuctions";
+import { applyForGig, logUserActivity, getGigById } from "../../service/Supabase-Fuctions";
 import { AppContext } from "../../context/appContext";
+
+const mapJobData = (rawJob) => {
+  if (!rawJob) return {};
+  
+  // Handle the 'postedby' JSON field from Supabase
+  let postedByData = rawJob.postedby;
+  if (typeof postedByData === 'string') {
+    try { postedByData = JSON.parse(postedByData); } catch (e) { postedByData = {}; }
+  }
+
+  // Handle the 'job_location' JSON field
+  let locationData = rawJob.job_location;
+  if (typeof locationData === 'string') {
+    try { locationData = JSON.parse(locationData); } catch (e) { locationData = {}; }
+  }
+
+  // DATE FORMATTING LOGIC
+  const rawDate = rawJob.created_at;
+  const formattedDate = rawDate ? rawDate.split('T')[0] : ""; // Result: "2026-02-03"
+
+  return {
+    ...rawJob,
+    id: rawJob.id,
+    title: rawJob.job_title || rawJob.title,
+    description: rawJob.job_description || rawJob.description,
+    price: rawJob.job_price || rawJob.price,
+    category: rawJob.job_category || rawJob.category,
+    // Map job_requirements to requirements
+    requirements: rawJob.job_requirements || rawJob.requirements || [],
+    // Map job_images to images (extracting URLs if they are objects)
+    images: (rawJob.job_images || rawJob.images || []).map(img => 
+      typeof img === 'string' ? img : img.url
+    ),
+    location: locationData?.address || rawJob.location || "Location not specified",
+    postedBy: postedByData || rawJob.postedBy || { name: 'Poster', email: '', phone: '' },
+    postedTime: formattedDate,
+    applications: rawJob.application_count || 0
+  };
+};
 
 const JobDetailScreen = ({ route, navigation }) => {
   const { theme, isDarkMode } = React.useContext(AppContext);
   const { user } = React.useContext(AuthContext);
-  const { job } = route.params;
+  // const { job } = route.params;
+  // 1. Wrap the initial job from params with the helper
+  const [job, setJob] = useState(mapJobData(route.params?.job || {}));
+  const from = route.params?.from || "direct";
+
+
+  // 4. Update the user check to be safe (postedBy will now always exist)
+  const isOwner = user?.email === job?.postedBy?.email;
 
   // Check if there are valid images (not placeholders)
   const hasImages =
@@ -44,6 +90,26 @@ const JobDetailScreen = ({ route, navigation }) => {
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { width } = Dimensions.get("window");
+
+
+  React.useEffect(() => {
+    const fetchFreshData = async () => {
+      // Check if we need to fetch full details (e.g., from recommendation)
+      if (from === "recommendation" && job?.id) {
+        try {
+          const { data, error } = await getGigById(job.id);
+          if (data) {
+            // Update state with the fully mapped database record
+            setJob(mapJobData(data));
+          }
+        } catch (err) {
+          console.error("Error fetching full job details:", err);
+        }
+      }
+    };
+
+    fetchFreshData(); 
+  }, [job?.id, from]);
 
   const handleCall = () => {
     Linking.openURL(`tel:${job?.postedBy?.phone}`);
@@ -112,11 +178,13 @@ const JobDetailScreen = ({ route, navigation }) => {
       };
       const response = await applyForGig(applicationData);
 
-      if (response.success)
+      if (response.success){
+        logUserActivity(user.uid, job.id, 'pomy_gigs_application');
         CustomToast(
           "Success!👍",
           "Your application has been successfully submitted.",
         );
+      }
       else throw new Error("Application submission failed");
     } catch (err) {
       console.log(err);
@@ -206,7 +274,7 @@ const JobDetailScreen = ({ route, navigation }) => {
 
             {user.email === job.postedBy.email && (
               <Text style={styles.metaText}>
-                Candidates Applied:{" "}
+                Candidates Applied:{job.applications}
                 <Text style={styles.locationText}>{job?.applications}</Text>
               </Text>
             )}
