@@ -35,9 +35,9 @@ const WorkerDirectoryScreen = ({ navigation }) => {
   const backAction = () => {
     if (isSearchVisible) {
       setIsSearchVisible(false);
-      return true; // prevent default behavior (exiting screen)
+      return true;
     }
-    return false; // let navigation handle it (go back)
+    return false;
   };
 
   const backHandler = BackHandler.addEventListener(
