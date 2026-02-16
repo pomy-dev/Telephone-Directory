@@ -21,7 +21,7 @@ import { BasketProvider } from "./context/basketContext";
 
 // loan assist
 import LoanAssist from "./screens/loans/LoanAssist";
-import AIAgent from "./screens/loans/AIAgent";
+import AIAgent from "./screens/loans/AgentChat";
 import LoanDetails from "./screens/loans/LoanDetails";
 import LoanCompare from "./screens/loans/LoanCompare";
 import LoanCalculator from "./screens/loans/LoanCalculator";
@@ -54,7 +54,6 @@ import VacanciesScreen from "./screens/vacancies/VacanciesScreen";
 
 // gigs
 import GigsScreen from "./screens/piece-jobs/GigsScreen";
-import GigDrawerNavigator from "./screens/piece-jobs/GigDrawerNavigator";
 import PostJobScreen from "./screens/piece-jobs/PostJobScreen";
 
 // jobs
@@ -534,15 +533,11 @@ function AppContent() {
                             name="LoanAssist"
                             component={LoanAssist}
                           />
-                          <Stack.Screen name="Ask-AI" component={AIAgent} />
-                          <Stack.Screen
-                            name="LoanDetails"
-                            component={LoanDetails}
-                          />
-                          <Stack.Screen
-                            name="LoanCompare"
-                            component={LoanCompare}
-                          />
+                          <Stack.Screen name="Askai" component={AIAgent} />
+
+                          <Stack.Screen name="LoanDetails" component={LoanDetails} />
+
+                          <Stack.Screen name="LoanCompare" component={LoanCompare} />
                           <Stack.Screen
                             name="LoanCalculator"
                             component={LoanCalculator}

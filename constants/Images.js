@@ -80,6 +80,11 @@ import single from '../assets/special-deals/single.png'
 // price tag
 import priceTag from '../assets/special-deals/price_tag.png'
 
+// financial promos
+import bank1 from '../assets/banks/bank1.jpeg';
+import bank2 from '../assets/banks/bank2.png';
+import bank3 from '../assets/banks/bank3.jpeg';
+
 // export the images
 export const Images = {
   // specials deal
@@ -94,6 +99,9 @@ export const Images = {
 
   // state flags
   bs_eswatini,
+
+  // banks
+  bank1, bank2, bank3,
 
   //loans screen : 
   Loans,

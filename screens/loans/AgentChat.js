@@ -1,12 +1,14 @@
 import React, { useState, useRef, useEffect, useContext } from "react";
 import {
   View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, KeyboardAvoidingView,
-  Platform, ActivityIndicator, SafeAreaView, Dimensions, Keyboard
+  Platform, ActivityIndicator, SafeAreaView, Dimensions, Keyboard, StatusBar
 } from "react-native";
 import { API_BASE_URL } from "../../config/env";
 import { AppContext } from "../../context/appContext";
 import { Icons } from "../../constants/Icons";
-import SecondaryNav from "../../components/SecondaryNav";
+import { AuthContext } from "../../context/authProvider";
+import { Avatar } from 'react-native-paper';
+import * as Speech from 'expo-speech';
 
 const { width } = Dimensions.get("window");
 const isTablet = width >= 768;
@@ -90,10 +92,14 @@ const LoadingBubble = () => (
   </View>
 );
 
-export default function AIAgent({ route }) {
-  const { theme } = useContext(AppContext);
+export default function AIAgent({ navigation, route }) {
+  const { theme, isDarkMode } = useContext(AppContext);
+  const { user } = useContext(AuthContext);
   const { context, dealType } = route.params;
   const [messages, setMessages] = useState([]);
+  const [isSpeaking, setIsSpeaking] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [inputText, setInputText] = useState("");
   const [inputHeight, setInputHeight] = useState(50);
   const [isLoading, setIsLoading] = useState(false);
@@ -106,7 +112,7 @@ export default function AIAgent({ route }) {
     if (context) {
       const intro = {
         id: "intro",
-        text: `Hello! I'm your AI Financial Agent. How can I help with your ${context.type || "financial needs"} today?`,
+        text: `Hello ${user.displayName}, I'm your AI Financial Agent. How can I help with your ${context.type || "financial needs"} today?`,
         isUser: false,
         timestamp: Date.now(),
       };
@@ -139,6 +145,106 @@ export default function AIAgent({ route }) {
   useEffect(() => {
     scrollToBottom();
   }, [messages, isLoading]);
+
+  const introText = dealType !== null ? `Hello again, I am your AI agent guider for assisting you with the opted ${dealType} of the ${context?.productType}.
+    You can chat with me in writing about the opted financial product you may want advise on, and I will respond within my scope of data 
+    that has been provided to me. Know that I may ask you questions as well to give you tailored advise for your specific needs I do not
+    keep records of our convesations, or share them else where. Enjoy.
+  `:
+    `Hello again, I am your AI agent guider for assisting you with guidance on loans, investments as well as insurance policies.
+    You can chat with me in writing about the opted financial product you may want advise on, and I will respond within my scope of data 
+    that has been provided to me. Know that I may ask you questions as well to give you tailored advise for your specific needs I do not
+    keep records of our convesations, or share them else where. Enjoy.
+  `;
+
+  const speak = async () => {
+    try {
+      if (isSpeaking && !isPaused) {
+        // Currently speaking, pause
+        Speech.stop();
+        setIsPaused(true);
+        return;
+      }
+
+      if (isPaused) {
+        const remainingText = introText.substring(currentIndex);
+
+        Speech.speak(remainingText, {
+          language: "en-US",
+          pitch: 1.0,
+          rate: 0.95,
+          volume: 1.0,
+
+          onStart: () => {
+            setIsSpeaking(true);
+            setIsPaused(false);
+          },
+
+          onBoundary: (event) => {
+            // Track character position
+            setCurrentIndex(currentIndex + event.charIndex);
+          },
+
+          onDone: () => {
+            setIsSpeaking(false);
+            setIsPaused(false);
+            setCurrentIndex(0);
+          },
+
+          onError: (err) => {
+            console.log("Speech error:", err);
+            setIsSpeaking(false);
+            setIsPaused(false);
+          },
+        });
+
+        return;
+      }
+
+      // Not speaking, start
+      Speech.speak(introText, {
+        language: "en-US",
+        voice: "id-id-x-dfz#female_3-local",
+        pitch: 1.0,
+        rate: 0.95,
+        volume: 1.0,
+
+        onStart: () => {
+          setIsSpeaking(true);
+          setCurrentIndex(0);
+        },
+
+        onPause: () => {
+          setIsPaused(true);
+        },
+
+        onResume: () => {
+          setIsPaused(false);
+        },
+
+        onBoundary: (event) => {
+          setCurrentIndex(event.charIndex);
+        },
+
+        onDone: () => {
+          setIsSpeaking(false);
+          setIsPaused(false);
+          setCurrentIndex(0);
+        },
+
+        onError: (err) => {
+          console.log("Speech error:", err);
+          setIsSpeaking(false);
+          setIsPaused(false);
+        },
+      });
+
+    } catch (err) {
+      console.log("speak: exception", err);
+      setIsSpeaking(false);
+      setIsPaused(false);
+    }
+  };
 
   const sendMessage = async () => {
     if (!inputText.trim() || isLoading) return;
@@ -203,6 +309,7 @@ export default function AIAgent({ route }) {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
       <WhatsAppPatternFallback />
 
       <KeyboardAvoidingView
@@ -211,7 +318,26 @@ export default function AIAgent({ route }) {
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : isKeyboardOpen ? -50 : -80}
       >
         <View style={{ height: 25 }} />
-        <SecondaryNav title="AI Agent" rightIcon={(dealType !== null) ? 'bookmark' : null} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16 }}>
+          <View style={{ justifyContent: 'space-around', gap: 10, flexDirection: 'row', alignItems: 'center' }}>
+            <TouchableOpacity onPress={() => navigation.goBack()}>
+              <Icons.Ionicons name="arrow-back" color={theme.colors.text} size={24} />
+            </TouchableOpacity>
+
+            <Avatar.Icon size={30} icon="account" color={'#fff'} />
+            <Text style={{ color: theme.colors.text, fontSize: 16, fontWeight: 200 }}>{user.displayName}</Text>
+          </View>
+          <TouchableOpacity onPress={speak} style={{ paddingHorizontal: 10, paddingVertical: 5, alignItems: 'center', borderRadius: 10, backgroundColor: theme.colors.card }}>
+            {isSpeaking ?
+              isPaused ? (
+                <Icons.Ionicons name="play-circle-outline" size={24} color={theme.colors.text} />
+              ) : (
+                <Icons.Ionicons name="pause-circle-outline" size={24} color={theme.colors.text} />
+              ) : (
+                <Icons.FontAwesome name="microphone" size={24} color={theme.colors.text} />
+              )}
+          </TouchableOpacity>
+        </View>
 
         <FlatList
           ref={flatListRef}
@@ -239,7 +365,7 @@ export default function AIAgent({ route }) {
                 styles.textInput,
                 { height: Math.max(50, Math.min(inputHeight, 120)) },
               ]}
-              placeholder="Message AI Agent..."
+              placeholder="Type message / query..."
               placeholderTextColor="#999"
               value={inputText}
               onChangeText={setInputText}
@@ -335,14 +461,14 @@ const styles = StyleSheet.create({
 
   inputContainer: {
     flexDirection: "row",
-    alignItems: "flex-end",
+    alignItems: "center",
     paddingHorizontal: 12,
     marginBottom: 50,
   },
   inputWrapper: {
     flex: 1,
     backgroundColor: "#FFFFFF",
-    borderRadius: 25,
+    borderRadius: 30,
     borderWidth: 1,
     borderColor: "#E5E7EB",
     paddingHorizontal: 16,
@@ -358,8 +484,9 @@ const styles = StyleSheet.create({
   },
   sendButton: {
     backgroundColor: "#00A884",
-    width: 50,
-    height: 50,
+    width: 60,
+    height: 60,
+    padding: 0,
     borderRadius: 25,
     justifyContent: "center",
     alignItems: "center",

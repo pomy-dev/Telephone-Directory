@@ -55,9 +55,9 @@ export default function HomeScreen({ navigation }) {
   const services = [
     { id: "1", screen: "GigsScreen", name: "Quick Jobs", image: Images.piecejob },
     { id: "2", screen: "TransportationListScreen", name: "For-Hires", image: Images.forhire },
-    { id: "3", screen: "LoanAssist", name: "Loan Assist", image: Images.Loans },
+    { id: "3", screen: "LoanAssist", name: "Smart Financing", image: Images.Loans },
     { id: "4", screen: "PropertyScreen", name: "Property Rental", image: Images.houses },
-    { id: "5", screen: "SpecialDeals", name: "Special Deals", image: Images.deals },
+    { id: "5", screen: "SpecialDeals", name: "Smart Shopping", image: Images.deals },
     { id: "6", screen: "VacanciesScreen", name: "Vacancies", image: Images.vacancies },
     { id: "7", screen: "PublishedTendersScreen", name: "Tenders", image: Images.tender },
     { id: "8", screen: "DirectoryScreen", name: "B.E Directory", image: Images.bs_eswatini },
