@@ -1,286 +1,331 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from "react";
 import {
-    View,
-    Text,
-    Image,
-    ScrollView,
-    TouchableOpacity,
-    StyleSheet,
-    Dimensions,
-} from 'react-native';
-import { AppContext } from '../context/appContext';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+  View,
+  Text,
+  Image,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  Dimensions,
+  ActivityIndicator,
+} from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import { AppContext } from "../context/appContext";
+import { AuthContext } from "../context/authProvider";
+import {
+  getPersonalizedRecommendations,
+  logUserActivity,
+} from "../service/Supabase-Fuctions";
+import { Ionicons } from "@expo/vector-icons";
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
+const CARD_WIDTH = width * 0.72;
 
-// Individual Ad Card Component
 const AdCard = ({ ad, onPress, onView, theme }) => {
-    const viewedRef = useRef(false);
+  const viewedRef = useRef(false);
 
-    useEffect(() => {
-        // Track view when component mounts and is visible
-        if (!viewedRef.current) {
-            viewedRef.current = true;
-            onView(ad.id);
-        }
-    }, []);
+  useEffect(() => {
+    if (!viewedRef.current) {
+      viewedRef.current = true;
+      onView(ad.item_id);
+    }
+  }, []);
 
-    return (
-        <TouchableOpacity
-            style={[styles.adCard, { backgroundColor: theme.colors.background, borderColor: theme.colors.highlight }]}
-            onPress={() => onPress(ad)}
-            activeOpacity={0.8}
+  return (
+    <TouchableOpacity
+      style={[
+        styles.adCard,
+        {
+          backgroundColor: theme.colors.background,
+          borderColor: theme.dark ? "#334155" : "#e2e8f0",
+        },
+      ]}
+      onPress={() => onPress(ad)}
+      activeOpacity={0.9}
+    >
+      <View style={styles.imageContainer}>
+        {/* SMART IMAGE/TEXT LOGIC */}
+        {ad.imageUrl ? (
+          <Image source={{ uri: ad.imageUrl }} style={styles.adImage} />
+        ) : (
+          <View
+            style={[
+              styles.noImageContainer,
+              { backgroundColor: theme.colors.highlight },
+            ]}
+          >
+            <Text
+              style={[styles.noImageText, { color: theme.colors.text }]}
+              numberOfLines={6}
+            >
+              {ad.description}
+            </Text>
+          </View>
+        )}
+
+        <View style={styles.typeTag}>
+          <Text style={styles.typeText}>
+            {ad.item_type.replace("pomy_", "").replace("_", " ").toUpperCase()}
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.adContent}>
+        <Text
+          style={[styles.adTitle, { color: theme.colors.text }]}
+          numberOfLines={1}
         >
-            <Image source={{ uri: ad.imageUrl }} style={styles.adImage} />
-            <View style={styles.adContent}>
-                <View style={styles.brandHeader}>
-                    {ad.brandLogo && (
-                        <Image source={{ uri: ad.brandLogo }} style={styles.brandLogo} />
-                    )}
-                    <Text style={[styles.brandName, { color: theme.colors.text }]}>{ad.brandName}</Text>
-                </View>
-                <Text style={[styles.adTitle, { color: theme.colors.sub_text }]} numberOfLines={2}>
-                    {ad.title}
-                </Text>
-            </View>
-        </TouchableOpacity>
-    );
+          {ad.title}
+        </Text>
+
+        <Text
+          style={[styles.adDescription, { color: theme.colors.sub_text }]}
+          numberOfLines={2}
+        >
+          {ad.description}
+        </Text>
+
+        <View style={styles.cardFooter}>
+          <View>
+            <Text style={[styles.priceLabel, { color: theme.colors.sub_text }]}>
+              Starting from
+            </Text>
+            <Text style={[styles.priceText, { color: theme.colors.text }]}>
+              {ad.price ? `E${ad.price}` : "Quote"}
+            </Text>
+          </View>
+          <View
+            style={[
+              styles.actionIcon,
+              { backgroundColor: theme.colors.primary },
+            ]}
+          >
+            <Ionicons name="chevron-forward" size={18} color="#fff" />
+          </View>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
 };
 
-// Main Personalized Ads Component
-const PersonalizedAdsSection = ({ ads = [], maxAdsToShow = 10 }) => {
-    const { theme } = React.useContext(AppContext);
-    const [personalizedAds, setPersonalizedAds] = useState([]);
-    const [userBehavior, setUserBehavior] = useState({});
-    const [loading, setLoading] = useState(true);
+const PersonalizedAdsSection = () => {
+  const navigation = useNavigation();
+  const { theme } = useContext(AppContext);
+  const { user } = useContext(AuthContext);
+  const [personalizedAds, setPersonalizedAds] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-    // Load user behavior data from storage
-    useEffect(() => {
-        loadUserBehavior();
-    }, []);
-
-    // Calculate personalized ads when behavior or ads change
-    useEffect(() => {
-        if (Object.keys(userBehavior).length > 0) {
-            const sortedAds = calculatePersonalizedAds(ads, userBehavior);
-            setPersonalizedAds(sortedAds.slice(0, maxAdsToShow));
-            setLoading(false);
-        } else {
-            // Show random ads if no behavior data
-            const shuffled = [...ads].sort(() => Math.random() - 0.5);
-            setPersonalizedAds(shuffled.slice(0, maxAdsToShow));
-            setLoading(false);
-        }
-    }, [ads, userBehavior, maxAdsToShow]);
-
-    const loadUserBehavior = async () => {
-        try {
-            const stored = await AsyncStorage.getItem('adUserBehavior');
-            if (stored) {
-                setUserBehavior(JSON.parse(stored));
-            }
-        } catch (error) {
-            console.error('Error loading user behavior:', error);
-        }
-    };
-
-    const saveUserBehavior = async (newBehavior) => {
-        try {
-            await AsyncStorage.setItem('adUserBehavior', JSON.stringify(newBehavior));
-        } catch (error) {
-            console.error('Error saving user behavior:', error);
-        }
-    };
-
-    // Track when user views an ad
-    const handleAdView = (adId) => {
-        setUserBehavior((prev) => {
-            const updated = { ...prev };
-            if (!updated[adId]) {
-                updated[adId] = { views: 0, clicks: 0, lastViewed: null };
-            }
-            updated[adId].views += 1;
-            updated[adId].lastViewed = Date.now();
-            saveUserBehavior(updated);
-            return updated;
-        });
-    };
-
-    // Track when user clicks an ad
-    const handleAdClick = (ad) => {
-        setUserBehavior((prev) => {
-            const updated = { ...prev };
-            if (!updated[ad.id]) {
-                updated[ad.id] = { views: 0, clicks: 0, lastViewed: null };
-            }
-            updated[ad.id].clicks += 1;
-            saveUserBehavior(updated);
-            return updated;
-        });
-
-        // Handle ad click action (open link, navigate, etc.)
-        console.log('Ad clicked:', ad.title);
-        // You can add navigation or linking logic here
-    };
-
-    // Calculate personalized ad ranking
-    const calculatePersonalizedAds = (allAds, behavior) => {
-        return allAds
-            .map((ad) => {
-                const adBehavior = behavior[ad.id] || { views: 0, clicks: 0, lastViewed: null };
-
-                // Calculate engagement score
-                const clickRate = adBehavior.views > 0 ? adBehavior.clicks / adBehavior.views : 0;
-                const totalEngagement = adBehavior.views + adBehavior.clicks * 3;
-
-                // Calculate recency score (more recent = higher score)
-                const recencyScore = adBehavior.lastViewed
-                    ? 1 / (1 + (Date.now() - adBehavior.lastViewed) / (1000 * 60 * 60 * 24))
-                    : 0;
-
-                // Calculate category affinity
-                const categoryScore = calculateCategoryAffinity(ad.category, behavior, allAds);
-
-                // Combined score with weights
-                const score =
-                    totalEngagement * 0.3 +
-                    clickRate * 100 * 0.3 +
-                    recencyScore * 10 * 0.2 +
-                    categoryScore * 0.2;
-
-                return { ...ad, score };
-            })
-            .sort((a, b) => b.score - a.score);
-    };
-
-    // Calculate user's affinity for ad categories
-    const calculateCategoryAffinity = (category, behavior, allAds) => {
-        const categoryEngagement = {};
-
-        Object.keys(behavior).forEach((adId) => {
-            const ad = allAds.find((a) => a.id === adId);
-            if (ad && ad.category) {
-                if (!categoryEngagement[ad.category]) {
-                    categoryEngagement[ad.category] = 0;
-                }
-                categoryEngagement[ad.category] += behavior[adId].views + behavior[adId].clicks * 2;
-            }
-        });
-
-        return categoryEngagement[category] || 0;
-    };
-
-    if (loading) {
-        return (
-            <View style={styles.container}>
-                <Text style={styles.loadingText}>Loading ads...</Text>
-            </View>
-        );
+  useEffect(() => {
+    if (user?.uid) {
+      getRag();
     }
+  }, [user]);
 
+  const getRag = async () => {
+    setLoading(true);
+    try {
+      const result = await getPersonalizedRecommendations(user.uid);
+      if (result.success) {
+        const formatted = result.data.map((item) => ({
+          item_id: item.item_id,
+          item_type: item.item_type,
+          title: item.real_title,
+          imageUrl: item.real_image,
+          description: item.real_description,
+          price: item.price,
+        }));
+        setPersonalizedAds(formatted);
+      }
+    } catch (error) {
+      console.error("Error loading recommendations:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAdClick = (ad) => {
+    logUserActivity(user.uid, ad.item_id, ad.item_type);
+
+    if (ad.item_type === "pomy_gigs") {
+      const jobPayload = {
+        id: ad.item_id,
+        job_title: ad.title,
+        job_description: ad.description,
+        job_price: ad.price,
+        images: ad.imageUrl ? [ad.imageUrl] : [],
+        category: "Recommended",
+      };
+      navigation.navigate("JobDetailScreen", {
+        job: jobPayload,
+        from: "recommendation",
+      });
+    } else if (ad.item_type === "pomy_workers") {
+      navigation.navigate("WorkerDirectory", { workerId: ad.item_id });
+    } else if (ad.item_type === "pomy_forhire_transport") {
+      const vehiclePayload = {
+        id: ad.item_id,
+        vehicle_make: ad.title?.split(" ")[0] || "Vehicle", // Basic parsing
+        vehicle_model: ad.title || "Details",
+        description: ad.description,
+        price: ad.price,
+        vehicle_images: ad.imageUrl ? [{ url: ad.imageUrl }] : [],
+        // Fallback owner info to prevent email/phone crashes
+        owner_info: {
+          name: "Loading...",
+          email: "",
+          phone: "",
+        },
+      };
+      navigation.navigate("TransportationDetailsScreen", {
+        vehicle: vehiclePayload,
+        from: "recommendation",
+      });
+    }
+  };
+
+  if (loading)
     return (
-        <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-            <View style={styles.header}>
-                <Text style={[styles.headerTitle, { color: theme.colors.text }]}>Suggested for you</Text>
-                {/* <Text style={styles.headerSubtitle}>Sponsored</Text> */}
-            </View>
-
-            <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.scrollContent}
-            >
-                {personalizedAds.map((ad) => (
-                    <AdCard
-                        key={ad.id}
-                        ad={ad}
-                        theme={theme}
-                        onPress={handleAdClick}
-                        onView={handleAdView}
-                    />
-                ))}
-            </ScrollView>
-
-            <TouchableOpacity style={styles.seeMoreButton}>
-                <Text style={[styles.seeMoreText, { color: theme.colors.sub_text }]}>See more</Text>
-            </TouchableOpacity>
-        </View>
+      <ActivityIndicator style={{ margin: 20 }} color={theme.colors.primary} />
     );
+  if (personalizedAds.length === 0) return null;
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={[styles.headerTitle, { color: theme.colors.text }]}>
+          Recommended For You
+        </Text>
+        <TouchableOpacity onPress={getRag}>
+          <Text style={{ color: theme.colors.primary, fontWeight: "600" }}>
+            See All
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        snapToInterval={CARD_WIDTH + 16}
+        decelerationRate="fast"
+      >
+        {personalizedAds.map((ad, index) => (
+          <AdCard
+            key={`${ad.item_id}-${index}`}
+            ad={ad}
+            theme={theme}
+            onPress={handleAdClick}
+            onView={(id) => console.log("Viewed Item:", id)}
+          />
+        ))}
+      </ScrollView>
+    </View>
+  );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        paddingTop: 16,
-        paddingBottom: 80,
-    },
-    header: {
-        paddingHorizontal: 10,
-        marginBottom: 12,
-    },
-    headerTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        marginBottom: 2,
-    },
-    headerSubtitle: {
-        fontSize: 13,
-    },
-    scrollContent: {
-        paddingHorizontal: 16,
-    },
-    adCard: {
-        width: width * 0.45,
-        marginHorizontal: 4,
-        borderRadius: 8,
-        overflow: 'hidden',
-        elevation: 2,
-        shadowColor: '#0f172a',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-    },
-    adImage: {
-        width: '100%',
-        height: 160,
-        backgroundColor: '#f0f0f0',
-    },
-    adContent: {
-        paddingVertical: 10,
-    },
-    brandHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: 8,
-    },
-    brandLogo: {
-        width: 24,
-        height: 24,
-        borderRadius: 12,
-        marginRight: 8,
-    },
-    brandName: {
-        fontSize: 14,
-        fontWeight: '600',
-    },
-    adTitle: {
-        fontSize: 13,
-        // lineHeight: 18,
-    },
-    seeMoreButton: {
-        marginHorizontal: 24,
-        marginTop: 12,
-        paddingVertical: 12,
-        borderRadius: 8,
-        alignItems: 'center',
-    },
-    seeMoreText: {
-        fontSize: 15,
-        fontWeight: '500',
-    },
-    loadingText: {
-        textAlign: 'center',
-        padding: 20,
-    },
+  container: {
+    marginTop: 10,
+    paddingBottom: 20,
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    marginBottom: 12,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+  },
+  scrollContent: {
+    paddingHorizontal: 12,
+  },
+  adCard: {
+    width: CARD_WIDTH,
+    marginHorizontal: 8,
+    borderRadius: 16,
+    overflow: "hidden",
+    borderWidth: 1,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+  },
+  imageContainer: {
+    width: "100%",
+    height: 140,
+    position: "relative",
+  },
+  adImage: {
+    width: "100%",
+    height: "100%",
+  },
+  // New styles for the text-only card variant
+  noImageContainer: {
+    width: "100%",
+    height: "100%",
+    padding: 16,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  noImageText: {
+    fontSize: 13,
+    lineHeight: 18,
+    textAlign: "center",
+    fontStyle: "italic",
+    fontWeight: "500",
+  },
+  typeTag: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    backgroundColor: "rgba(255,255,255,0.92)",
+  },
+  typeText: {
+    color: "#1e293b",
+    fontSize: 9,
+    fontWeight: "800",
+  },
+  adContent: {
+    padding: 12,
+  },
+  adTitle: {
+    fontSize: 15,
+    fontWeight: "700",
+    marginBottom: 4,
+  },
+  adDescription: {
+    fontSize: 12,
+    lineHeight: 16,
+    marginBottom: 12,
+    height: 32,
+  },
+  cardFooter: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "flex-end",
+  },
+  priceLabel: {
+    fontSize: 10,
+    marginBottom: 2,
+  },
+  priceText: {
+    fontSize: 16,
+    fontWeight: "800",
+  },
+  actionIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
+  },
 });
 
 export default PersonalizedAdsSection;

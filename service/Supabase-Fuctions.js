@@ -154,6 +154,33 @@ export async function updateVehicleLike(vehicleId, increment = true) {
   }
 }
 
+
+/**
+ * Fetches full details for a specific transportation vehicle by ID
+ */
+export async function getTransportById(transportId) {
+  try {
+    const { data, error } = await supabase
+      .from('pomy_forhire_transport')
+      .select('*')
+      .eq('id', transportId)
+      .single();
+
+    if (error) throw error;
+
+    return {
+      success: true,
+      data: data
+    };
+  } catch (error) {
+    console.error('Error fetching transport by ID:', error.message);
+    return {
+      success: false,
+      error: error.message
+    };
+  }
+}
+
 export async function submitVehicleRating(vehicleId, rating) {
   try {
     const { error } = await supabase.rpc('update_pomyvehicle_rating', {
@@ -383,6 +410,26 @@ export async function updateWorkerAvailability(workerId, isAvailable) {
   }
 }
 
+/** * get the gig by their id from, 
+ * the db
+ */
+export async function getGigById(Id) {
+    try {
+    const { data, error } = await supabase
+      .from('pomy_gigs')
+      .select('*')
+      .eq('id', Id)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error; // PGRST116 is "no rows found"
+
+    return { success: true, data: data || null };
+  } catch (error) {
+    console.error('Fetch gig Error:', error.message);
+    return { success: false, error: error.message };
+  }
+}
+
 /** * Approves a specific application, marks the gig as 'taken', 
  * and rejects all other applicants via Database RPC.
  */
@@ -535,6 +582,90 @@ export async function deleteMyApplication(appId, userEmail) {
     return { success: true };
   } catch (error) {
     console.error('Error deleting application:', error);
+    return { success: false, error: error.message };
+  }
+}
+
+
+/**
+ * Fetches personalized recommendations using the Supabase RPC
+ */
+/**
+ * Fetches personalized recommendations using the Supabase RPC
+ */
+export async function getPersonalizedRecommendations(userId, excludeIds = []) {
+  try {
+    const { data, error } = await supabase.rpc('get_recommendations_for_user', {
+      p_user_id: userId,
+      // p_exclude_ids: excludeIds, 
+      p_limit: 10
+    });
+
+    if (error) throw error;
+
+    // ADD THIS LOG HERE to see the raw table structure returned by SQL
+    console.log('RAW RPC DATA:', JSON.stringify(data, null, 2));
+
+    return { success: true, data };
+  } catch (error) {
+    console.error('Recommendation Error:', error.message);
+    return { success: false, data: [] };
+  }
+}
+
+
+/**
+ * Logs user activity to the explicit user_activities table.
+ * Matches schema: id (uuid), user_id (text), item_id (text), item_type (text)
+ */
+export async function logUserActivity(userId, itemId, itemType) {
+  if (!userId || !itemId) return;
+
+  try {
+    const { error } = await supabase
+      .from('user_activities')
+      .insert([
+        {
+          user_id: userId,
+          item_id: itemId.toString(),
+          item_type: itemType,
+          created_at: new Date().toISOString(),
+        },
+      ]);
+
+    if (error) throw error;
+    console.log(`Activity Logged: User ${userId} interacted with ${itemType} ${itemId}`);
+  } catch (error) {
+    console.error('Error logging user activity:', error.message);
+  }
+}
+
+/**
+ * Synchronizes Firebase Auth user data into the Supabase 'user_profiles' table.
+ * Matches your schema: user_id, email, display_name, phone_number, photo_url, last_login
+ */
+export async function syncUserProfile(firebaseUser) {
+  if (!firebaseUser) return null;
+
+  try {
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .upsert({
+        user_id: firebaseUser.uid,
+        email: firebaseUser.email,
+        display_name: firebaseUser.displayName || 'Anonymous',
+        phone_number: firebaseUser.phoneNumber || null,
+        photo_url: firebaseUser.photoURL || null,
+        last_login: new Date().toISOString(),
+        // Note: We DO NOT include interest_embedding here. 
+        // This prevents us from overwriting their AI profile with NULL.
+      }, { onConflict: 'user_id' }) 
+      .select();
+
+    if (error) throw error;
+    return { success: true, data: data[0] };
+  } catch (error) {
+    console.error('Error syncing profile:', error.message);
     return { success: false, error: error.message };
   }
 }

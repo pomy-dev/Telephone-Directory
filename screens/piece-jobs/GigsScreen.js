@@ -16,7 +16,7 @@ import {
 import { Icons } from "../../constants/Icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import SecondaryNav from "../../components/SecondaryNav";
-import { getPomyGigs, subscribeToGigs } from "../../service/Supabase-Fuctions";
+import { getPomyGigs, subscribeToGigs, logUserActivity } from "../../service/Supabase-Fuctions";
 import { AppContext } from "../../context/appContext";
 import { supabase } from "../../service/Supabase-Client";
 import { AuthContext } from "../../context/authProvider";
@@ -368,13 +368,24 @@ const renderJobCard = ({ item }) => {
   
   const hasImage = item?.images && item.images.length > 0 && !item.images[0].includes("via.placeholder.com");
 
+   const handlePressGig = (item) => {
+     if (user) {
+          console.log("Logging activity for:", item.id);
+          logUserActivity(user.uid, item.id, 'pomy_gigs'); 
+        }
+        // ----------------------
+        navigation.navigate("JobDetailScreen", { job: item });
+      
+    };
+
   return (
     <TouchableOpacity
       style={[
         styles.jobCard, 
         { backgroundColor: isDarkMode ? '#1A1A1A' : '#fff' }
       ]}
-      onPress={() => navigation.navigate("JobDetailScreen", { job: item })}
+      // onPress={() => navigation.navigate("JobDetailScreen", { job: item })}
+      onPress={() => handlePressGig(item)}
     >
       {/* --- TOP MEDIA SECTION (Fixed Height) --- */}
       <View style={{ height: MEDIA_HEIGHT, overflow: 'hidden' }}>
