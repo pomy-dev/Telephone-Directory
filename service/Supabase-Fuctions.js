@@ -601,8 +601,6 @@ export async function getPersonalizedRecommendations(userId, excludeIds = []) {
 
     if (error) throw error;
 
-    // ADD THIS LOG HERE to see the raw table structure returned by SQL
-    console.log('RAW RPC DATA:', JSON.stringify(data, null, 2));
 
     return { success: true, data };
   } catch (error) {
