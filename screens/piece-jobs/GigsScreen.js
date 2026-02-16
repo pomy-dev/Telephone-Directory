@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, FlatList, StatusBar,
+  View, Text, StyleSheet, ScrollView, TouchableOpacity, FlatList, StatusBar, Pressable,
   Image, SafeAreaView, ActivityIndicator, Animated, TextInput, Linking, Dimensions
 } from "react-native";
 import { Icons } from "../../constants/Icons";
@@ -295,67 +295,6 @@ const GigsScreen = ({ navigation }) => {
     fetchLiveGigs(false);
   }, [selectedCategory, userLocation]);
 
-  // const renderJobCard = ({ item }) => {
-  //   // Check if the image is a real URL from your Supabase bucket
-  //   const hasImage = item?.images && !item?.images?.includes("via.placeholder.com");
-
-  //   return (
-  //     <TouchableOpacity
-  //       style={styles.jobCard}
-  //       onPress={() => navigation.navigate("JobDetailScreen", { job: item })}
-  //     >
-  //       {hasImage ? (
-  //         // SMART VIEW: If image exists, show the full image
-  //         <Image source={{ uri: item.images[0] }} style={styles.jobImage} />
-  //       ) : (
-  //         // SMART VIEW: If no image, show a styled box with the full description instead
-  //         <View style={styles.noImageDescriptionContainer}>
-  //           <Text style={styles.noImageDescriptionText} ellipsizeMode="tail" numberOfLines={6}>
-  //             {item.description}
-  //           </Text>
-  //         </View>
-  //       )}
-
-  //       <View style={styles.jobContent}>
-  //         <View style={styles.jobHeader}>
-  //           <Text style={styles.jobTitle}>{item.title}</Text>
-  //           <Text style={styles.jobPrice}>R{item.price}</Text>
-  //         </View>
-
-  //         {/* Only show this small description if the image is present.
-  //                   If no image, we already showed the full description above. */}
-  //         {hasImage && (
-  //           <Text style={styles.jobDescription} numberOfLines={2}>
-  //             {item.description}
-  //           </Text>
-  //         )}
-
-  //         <View style={styles.jobFooter}>
-  //           <View style={styles.locationContainer}>
-  //             <Icons.Ionicons name="location-outline" size={14} color="#666" />
-  //             <Text style={styles.locationText}>{item.location}</Text>
-  //           </View>
-  //           {item.distance && (
-  //             <Text style={styles.distanceText}>
-  //               {item.distance.toFixed(1)} km away
-  //             </Text>
-  //           )}
-  //         </View>
-
-  //         <View style={styles.jobMeta}>
-  //           <Text style={styles.postedBy}>{item.postedBy?.name}</Text>
-  //           <Text style={styles.postedTime}>{item.postedTime}</Text>
-  //         </View>
-  //       </View>
-  //     </TouchableOpacity>
-  //   );
-  // };
-
-
-
-
-  // ... inside GigsScreen component ...
-
   const renderJobCard = ({ item }) => {
     const hasImage = item?.images && item.images.length > 0 && !item.images[0].includes("via.placeholder.com");
 
@@ -541,6 +480,7 @@ const GigsScreen = ({ navigation }) => {
               placeholder={viewMode === "gigs" ? "Search jobs..." : "Search workers..."}
               placeholderTextColor={theme.colors.sub_text}
               value={searchQuery}
+              numberOfLines={1}
               onChangeText={setSearchQuery}
             />
             {searchQuery.length > 0 && (
@@ -550,7 +490,6 @@ const GigsScreen = ({ navigation }) => {
             )}
           </View>
         </View>
-
         <Pressable style={{ borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5, backgroundColor: '#f0f4ff' }}
           onPress={() => { }}
         >
@@ -872,7 +811,7 @@ const styles = StyleSheet.create({
     padding: 4,
     marginHorizontal: 16,
     marginVertical: 8,
-    overflow: "hidden",
+    // overflow: "hidden",
   },
   toggleButton: {
     flex: 1,
@@ -1071,7 +1010,7 @@ const styles = StyleSheet.create({
   // FAB Styles
   fabContainer: {
     position: 'absolute',
-    bottom: 30,
+    bottom: height * 0.1,
     right: 20,
     alignItems: 'center',
     justifyContent: 'center',
