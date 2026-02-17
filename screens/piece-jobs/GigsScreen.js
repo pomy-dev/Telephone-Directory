@@ -3,11 +3,10 @@
 import React, { useState, useEffect } from "react";
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, FlatList, StatusBar, Pressable,
-  Image, SafeAreaView, ActivityIndicator, Animated, TextInput, Linking, Dimensions
+  Image, SafeAreaView, ActivityIndicator, Animated, TextInput, Linking, Dimensions, KeyboardAvoidingView, PanResponder, Platform
 } from "react-native";
 import { Icons } from "../../constants/Icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import SecondaryNav from "../../components/SecondaryNav";
 import { getPomyGigs, subscribeToGigs } from "../../service/Supabase-Fuctions";
 import { AppContext } from "../../context/appContext";
 import { supabase } from "../../service/Supabase-Client";
@@ -159,6 +158,31 @@ const GigsScreen = ({ navigation }) => {
   const fabRotation = React.useRef(new Animated.Value(0)).current;
   const [sheetVisible, setSheetVisible] = useState(false);
   const sheetAnim = React.useRef(new Animated.Value(0)).current;
+  const pan = React.useRef(new Animated.Value(0)).current;
+
+  const panResponder = React.useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: (evt, gestureState) => {
+        return Math.abs(gestureState.dy) > 5 && gestureState.dy > 0;
+      },
+      onPanResponderMove: (evt, gestureState) => {
+        if (gestureState.dy > 0) {
+          pan.setValue(gestureState.dy);
+        }
+      },
+      onPanResponderRelease: (evt, gestureState) => {
+        const { dy, vy } = gestureState;
+        if (dy > 120 || vy > 1.2) {
+          Animated.timing(pan, { toValue: Dimensions.get('window').height, duration: 180, useNativeDriver: true }).start(() => {
+            pan.setValue(0);
+            toggleSheet(false);
+          });
+        } else {
+          Animated.spring(pan, { toValue: 0, bounciness: 0, useNativeDriver: true }).start();
+        }
+      },
+    })
+  ).current;
 
   const moreItems = [
     {
@@ -233,14 +257,16 @@ const GigsScreen = ({ navigation }) => {
 
   const toggleSheet = (open) => {
     const toValue = open ? 1 : 0;
-    if (open) setSheetVisible(true);
-    Animated.timing(sheetAnim, {
-      toValue,
-      duration: 240,
-      useNativeDriver: true,
-    }).start(() => {
-      if (!open) setSheetVisible(false);
-    });
+    if (open) {
+      pan.setValue(0);
+      setSheetVisible(true);
+      Animated.timing(sheetAnim, { toValue, duration: 240, useNativeDriver: true }).start();
+    } else {
+      Animated.timing(sheetAnim, { toValue, duration: 200, useNativeDriver: true }).start(() => {
+        setSheetVisible(false);
+        pan.setValue(0);
+      });
+    }
   };
 
   useEffect(() => {
@@ -505,11 +531,13 @@ const GigsScreen = ({ navigation }) => {
               placeholder={viewMode === "gigs" ? "Search jobs..." : "Search workers..."}
               placeholderTextColor={theme.colors.sub_text}
               value={searchQuery}
+              keyboardType="web-search"
               numberOfLines={1}
               onChangeText={setSearchQuery}
             />
             {searchQuery.length > 0 && (
-              <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <TouchableOpacity style={{ position: 'absolute', right: 20, paddingHorizontal: 5, paddingVertical: 3, backgroundColor: '#f0f4ff', borderRadius: 10 }}
+                onPress={() => setSearchQuery('')}>
                 <Icons.Ionicons name="close" size={18} color={theme.colors.sub_text} />
               </TouchableOpacity>
             )}
@@ -529,42 +557,63 @@ const GigsScreen = ({ navigation }) => {
       {sheetVisible && (
         <Animated.View style={[styles.sheetOverlay, { opacity: sheetAnim }]}>
           <Pressable style={styles.sheetBackdrop} onPress={() => toggleSheet(false)} />
-          <Animated.View style={[styles.sheetContainer, { transform: [{ translateY: sheetAnim.interpolate({ inputRange: [0, 1], outputRange: [600, 0] }) }] }]}>
-            <View style={styles.sheetHandle} />
-            <View style={styles.sheetHeader}>
-              <Text style={{ fontSize: 16, fontWeight: '700', color: theme.colors.text }}>Filter Workers</Text>
-              <TouchableOpacity onPress={() => { setSelectedCategory('all'); setSearchQuery(''); }}>
-                <Text style={{ color: theme.colors.indicator, fontWeight: '700' }}>Clear</Text>
-              </TouchableOpacity>
-            </View>
 
-            <View style={{ paddingHorizontal: 14, paddingTop: 8 }}>
-              <TextInput
-                style={[styles.sheetInput, { color: theme.colors.text, backgroundColor: theme.colors.sub_card }]}
-                placeholder="Filter workers by name or skill"
-                placeholderTextColor={theme.colors.sub_text}
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-              />
+          <Animated.View
+            style={[
+              styles.sheetContainer,
+              {
+                transform: [
+                  {
+                    translateY: Animated.add(
+                      sheetAnim.interpolate({ inputRange: [0, 1], outputRange: [600, 0] }),
+                      pan
+                    ),
+                  },
+                ],
+              },
+            ]}
+            {...panResponder.panHandlers}
+          >
+            <KeyboardAvoidingView
+              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+              keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 80}
+            >
+              <View style={styles.sheetHandle} />
+              <View style={styles.sheetHeader}>
+                <Text style={{ fontSize: 16, fontWeight: '700', color: theme.colors.text }}>Filter</Text>
+                <TouchableOpacity onPress={() => { setSelectedCategory('all'); setSearchQuery(''); }}>
+                  <Text style={{ color: theme.colors.indicator, fontWeight: '700' }}>Clear</Text>
+                </TouchableOpacity>
+              </View>
 
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginTop: 12 }}>
-                {CATEGORIES.map((cat) => (
-                  <TouchableOpacity
-                    key={cat.id}
-                    style={[
-                      styles.categoryButton,
-                      selectedCategory === cat.id && styles.categoryButtonActive,
-                    ]}
-                    onPress={() => { setSelectedCategory(cat.id); toggleSheet(false); }}
-                  >
-                    <cat.iconType name={cat.iconName} size={18} color={selectedCategory === cat.id ? "#fff" : "#666"} />
-                    <Text style={[styles.categoryText, selectedCategory === cat.id && styles.categoryTextActive]}>
-                      {cat.name}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
+              <View style={{ paddingHorizontal: 14, paddingTop: 8 }}>
+                <TextInput
+                  style={[styles.sheetInput, { color: theme.colors.text, backgroundColor: theme.colors.sub_card }]}
+                  placeholder="Filter by name, profession, expertise or skill"
+                  placeholderTextColor={theme.colors.sub_text}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                />
+
+                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.categorySet}>
+                  {CATEGORIES.map((cat) => (
+                    <TouchableOpacity
+                      key={cat.id}
+                      style={[
+                        styles.categoryButton,
+                        selectedCategory === cat.id && styles.categoryButtonActive,
+                      ]}
+                      onPress={() => { setSelectedCategory(cat.id); toggleSheet(false); }}
+                    >
+                      <cat.iconType name={cat.iconName} size={18} color={selectedCategory === cat.id ? "#fff" : "#666"} />
+                      <Text style={[styles.categoryText, selectedCategory === cat.id && styles.categoryTextActive]}>
+                        {cat.name}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </KeyboardAvoidingView>
           </Animated.View>
         </Animated.View>
       )}
@@ -687,24 +736,12 @@ const GigsScreen = ({ navigation }) => {
         {/* Secondary Buttons */}
         {fabOpen && (
           <>
-            <Animated.View style={[
-              styles.secondaryFabButton,
-              {
-                opacity: new Animated.Value(1),
-                transform: [{
-                  translateY: new Animated.Value(0)
-                }]
-              }
-            ]}>
+            <Animated.View style={[styles.secondaryFabButton, { opacity: new Animated.Value(1), transform: [{ translateY: new Animated.Value(0) }] }]}>
               <TouchableOpacity
                 style={[styles.secondaryFab, { backgroundColor: '#10b981' }]}
-                onPress={() => {
-                  toggleFAB();
-                  navigation.navigate('PostJobScreen');
-                }}
+                onPress={() => { toggleFAB(); navigation.navigate('PostJobScreen') }}
               >
-                {/* <Icons.AntDesign name="plus" size={20} color="#fff" /> */}
-                <Text style={styles.secondaryFabLabel}>Post Quick Job</Text>
+                <Icons.Ionicons name="construct-outline" size={20} color="#fff" />
               </TouchableOpacity>
             </Animated.View>
 
@@ -724,8 +761,7 @@ const GigsScreen = ({ navigation }) => {
                   navigation.navigate('WorkerRegistration');
                 }}
               >
-                {/* <Icons.AntDesign name="plus" size={20} color="#fff" /> */}
-                <Text style={styles.secondaryFabLabel}>Post Freelancer</Text>
+                <Icons.MaterialCommunityIcons name="briefcase-account-outline" size={20} color="#fff" />
               </TouchableOpacity>
             </Animated.View>
           </>
@@ -778,6 +814,9 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingRight: 16,
   },
+  categorySet: {
+    flexDirection: 'row', flexWrap: 'wrap', marginTop: 12, paddingBottom: 30
+  },
   categoryButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -788,7 +827,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: "#f0f4ff",
     marginRight: 8,
-    minWidth: 100,
     height: 40,
   },
   categoryButtonActive: {
@@ -1097,12 +1135,11 @@ const styles = StyleSheet.create({
   },
   secondaryFabButton: {
     marginBottom: 16,
-    flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
   },
   secondaryFab: {
-    width: 100,
+    width: 50,
     height: 50,
     borderRadius: 25,
     justifyContent: 'center',
@@ -1139,7 +1176,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 16,
     paddingBottom: 28,
     backgroundColor: '#fff',
-    minHeight: height * 0.35,
+    minHeight: height * 0.5
   },
   sheetHandle: {
     width: 40,
