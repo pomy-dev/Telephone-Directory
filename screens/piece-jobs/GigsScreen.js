@@ -632,7 +632,7 @@ const GigsScreen = ({ navigation }) => {
               <TouchableOpacity
                 style={[styles.secondaryFab, { backgroundColor: '#10b981' }]}
                 onPress={() => {
-                  toggleFAB();
+                  // toggleFAB();
                   navigation.navigate('PostJobScreen');
                 }}
               >
@@ -653,7 +653,7 @@ const GigsScreen = ({ navigation }) => {
               <TouchableOpacity
                 style={[styles.secondaryFab, { backgroundColor: '#3b82f6' }]}
                 onPress={() => {
-                  toggleFAB();
+                  // toggleFAB();
                   navigation.navigate('WorkerRegistration');
                 }}
               >
@@ -675,7 +675,7 @@ const GigsScreen = ({ navigation }) => {
         }}>
           <TouchableOpacity
             style={[styles.mainFab, { backgroundColor: theme.colors.indicator }]}
-            onPress={toggleFAB}
+            // onPress={toggleFAB}
           >
             <Icons.AntDesign name="plus" size={24} color="#fff" />
           </TouchableOpacity>
