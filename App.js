@@ -59,6 +59,7 @@ import PostJobScreen from "./screens/piece-jobs/PostJobScreen";
 // jobs
 import JobDetailScreen from "./screens/piece-jobs/JobDetailScreen";
 import WorkerRegistrationScreen from "./screens/piece-jobs/WorkerRegistration";
+import WorkerProfileScreen from "./screens/piece-jobs/WorkerProfileScreen";
 import WorkerDirectoryScreen from "./screens/piece-jobs/WorkerDirectoryScreen";
 import MyPostedGigsScreen from "./screens/piece-jobs/MyPostedGigsScreen";
 import JobInboxScreen from "./screens/piece-jobs/JobInboxScreen";
@@ -464,6 +465,10 @@ function AppContent() {
                           <Stack.Screen
                             name="WorkerRegistration"
                             component={WorkerRegistrationScreen}
+                          />
+                          <Stack.Screen
+                            name="WorkerProfileScreen"
+                            component={WorkerProfileScreen}
                           />
                           <Stack.Screen
                             name="WorkerDirectory"
