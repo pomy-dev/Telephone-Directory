@@ -17,7 +17,6 @@ import {
   TextInput,
   Linking,
   Dimensions, KeyboardAvoidingView, PanResponder, Platform,
-  Platform,
 } from "react-native";
 import { Icons } from "../../constants/Icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
