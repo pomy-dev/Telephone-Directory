@@ -5,11 +5,9 @@ import {
   SafeAreaView, Modal, FlatList, KeyboardAvoidingView, Linking 
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import * as DocumentPicker from 'expo-document-picker';
 import { Icons } from "../../constants/Icons";
 import { registerAsWorker, updateWorkerProfile, getWorkerProfile } from '../../service/Supabase-Fuctions';
 import { AuthContext } from '../../context/authProvider';
-import { uploadImages, uploadAttachments } from '../../service/uploadFiles'; // Adjust path if necessary
 
 const { width } = Dimensions.get('window');
 const MODAL_COLUMN_WIDTH = (width - 60) / 2;
@@ -101,22 +99,29 @@ const ProfilePreview = ({ form, setGalleryVisible, handleWhatsApp, handleCall, h
 );
 
 // ==========================================
-// COMPONENT 2: PROFILE FORM (Design Match)
+// COMPONENT 2: PROFILE FORM (Editing Mode)
 // ==========================================
-const ProfileForm = ({
-  form,
-  setForm,
-  currentSkill,
-  setCurrentSkill,
-  addSkill,
-  removeSkill,
-  pickDocument,
-  removeDocument,
-  setGalleryVisible
-}) => {
+const ProfileForm = ({ form, setForm, currentSkill, setCurrentSkill, addSkill, removeSkill, setGalleryVisible, isWorker }) => {
+  const [activePlatform, setActivePlatform] = useState('phone');
+
+  const getPlatformInfo = () => {
+    if (activePlatform === 'phone') return { icon: 'call', label: '+268', color: '#64748b' };
+    if (activePlatform === 'whatsapp') return { icon: 'logo-whatsapp', label: 'WA', color: '#25D366' };
+    return { icon: 'mail', label: 'Mail', color: '#f43f5e' };
+  };
+
+  const showPlatformPicker = () => {
+    Alert.alert("Contact Method", "Choose which detail to update:", [
+      { text: "Phone (+268)", onPress: () => setActivePlatform('phone') },
+      { text: "WhatsApp", onPress: () => setActivePlatform('whatsapp') },
+      { text: "Email", onPress: () => setActivePlatform('email') },
+      { text: "Cancel", style: "cancel" }
+    ]);
+  };
+
   return (
-    <ScrollView
-      showsVerticalScrollIndicator={false}
+    <ScrollView 
+      showsVerticalScrollIndicator={false} 
       contentContainerStyle={styles.scrollContent}
       keyboardShouldPersistTaps="handled"
     >
@@ -128,76 +133,56 @@ const ProfileForm = ({
       </View>
 
       <View style={styles.mainContent}>
-        {/* 1. BUSINESS IDENTITY */}
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Business Identity</Text>
-          <TextInput
-            style={styles.nameInput}
-            value={form.name}
+          <TextInput 
+            style={styles.nameInput} 
+            value={form.name} 
             placeholder="Your Business Name"
-            placeholderTextColor="#94a3b8"
-            onChangeText={(t) => setForm({ ...form, name: t })}
+            onChangeText={(t) => setForm({...form, name: t})} 
           />
-        </View>
-
-        {/* 2. CONTACT DETAILS */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Contact Number</Text>
-          <View style={styles.simpleInputWrapper}>
-            <Icons.Ionicons name="call" size={20} color="#64748b" style={styles.inputIcon} />
-            <TextInput
-              style={styles.simpleTextInput}
-              value={form.phone}
-              placeholder="7600 0000"
-              placeholderTextColor="#94a3b8"
-              keyboardType="phone-pad"
-              onChangeText={(t) => setForm({ ...form, phone: t })}
-            />
-          </View>
-        </View>
-
-        {/* 3. LOCATION */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Location</Text>
-          <View style={styles.simpleInputWrapper}>
-            <Icons.Ionicons name="location" size={20} color="#10b981" style={styles.inputIcon} />
-            <TextInput
-              style={styles.simpleTextInput}
-              value={form.location?.address}
+          <View style={styles.locRow}>
+            <Icons.Ionicons name="location" size={16} color="#10b981" />
+            <TextInput 
+              style={styles.locationInput} 
+              value={form.location?.address} 
               placeholder="Primary Location (e.g. Mbabane)"
-              placeholderTextColor="#94a3b8"
-              onChangeText={(t) => setForm({ ...form, location: { address: t } })}
+              onChangeText={(t) => setForm({...form, location: {address: t}})} 
             />
           </View>
         </View>
 
-        <View style={styles.divider} />
-
-        {/* 4. DOCUMENT UPLOAD */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Qualifications & Clearances</Text>
-          <Text style={styles.helperText}>Add certificates, licenses, or police clearance</Text>
-          <TouchableOpacity style={styles.uploadDocBtn} onPress={pickDocument}>
-            <Icons.Ionicons name="cloud-upload" size={20} color="#3b82f6" />
-            <Text style={styles.uploadDocBtnText}>Upload Document</Text>
-          </TouchableOpacity>
-
-          <View style={styles.docList}>
-            {form.documents?.map((doc, index) => (
-              <View key={index} style={styles.docItem}>
-                <Icons.Ionicons name="document-text" size={20} color="#64748b" />
-                <Text style={styles.docName} numberOfLines={1}>{doc.name}</Text>
-                <TouchableOpacity onPress={() => removeDocument(index)}>
-                  <Icons.Ionicons name="trash-outline" size={18} color="#ef4444" />
-                </TouchableOpacity>
-              </View>
-            ))}
+        {isWorker ? (
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>Contact Channels</Text>
+            <View style={styles.pickerWrapper}>
+              <TouchableOpacity style={styles.pickerLeft} onPress={showPlatformPicker}>
+                <Icons.Ionicons name={getPlatformInfo().icon} size={18} color={getPlatformInfo().color} />
+                <Text style={styles.pickerLabel}>{getPlatformInfo().label}</Text>
+                <Icons.Ionicons name="chevron-down" size={12} color="#94a3b8" />
+              </TouchableOpacity>
+              <TextInput 
+                style={styles.pickerInput}
+                value={activePlatform === 'email' ? form.email : form.phone}
+                placeholder={activePlatform === 'email' ? "email@provider.com" : "7600 0000"}
+                keyboardType={activePlatform === 'email' ? "email-address" : "phone-pad"}
+                onChangeText={(t) => {
+                  if(activePlatform === 'email') setForm({...form, email: t});
+                  else setForm({...form, phone: t});
+                }}
+              />
+            </View>
+            <Text style={styles.helperText}>Clients will see these icons on your profile.</Text>
           </View>
-        </View>
+        ) : (
+          <View style={styles.infoBox}>
+            <Icons.Ionicons name="information-circle" size={20} color="#3b82f6" />
+            <Text style={styles.infoBoxText}>You can add Phone, WhatsApp, and Email details after your first sync.</Text>
+          </View>
+        )}
 
         <View style={styles.divider} />
-
-        {/* 5. BIO */}
+        
         <View style={styles.section}>
           <Text style={styles.sectionLabel}>Professional Bio</Text>
           <TextInput 
@@ -206,18 +191,15 @@ const ProfileForm = ({
             value={form.bio} 
             onChangeText={(t) => setForm({...form, bio: t})} 
             placeholder="What makes your service great?"
-            placeholderTextColor="#94a3b8"
           />
         </View>
 
-        {/* 6. SERVICES */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Services You Provide</Text>
+          <Text style={styles.sectionLabel}>Services Provided</Text>
           <View style={styles.skillInputWrapper}>
-            <TextInput
+            <TextInput 
               style={styles.growingSkillInput}
-              placeholder="e.g. Plumbing, Teaching..."
-              placeholderTextColor="#94a3b8"
+              placeholder="Add service..."
               value={currentSkill}
               onChangeText={setCurrentSkill}
             />
@@ -225,14 +207,13 @@ const ProfileForm = ({
               <Icons.Ionicons name="add" size={24} color="#fff" />
             </TouchableOpacity>
           </View>
-
           <View style={styles.skillsList}>
             {form.skills.map((skill, index) => (
-              <View key={index} style={styles.skillItemEdit}>
-                <Text style={styles.skillText}>• {skill}</Text>
+              <View key={index} style={styles.skillItem}>
                 <TouchableOpacity onPress={() => removeSkill(index)}>
-                  <Icons.Ionicons name="close-circle" size={20} color="#ef4444" />
+                  <Icons.Ionicons name="remove-circle" size={22} color="#ef4444" />
                 </TouchableOpacity>
+                <Text style={styles.skillText}>{skill}</Text>
               </View>
             ))}
           </View>
@@ -242,9 +223,6 @@ const ProfileForm = ({
   );
 };
 
-// ==========================================
-// MAIN COMPONENT
-// ==========================================
 const WorkerRegistration = ({ navigation }) => {
   const { user } = useContext(AuthContext);
   const [isWorker, setIsWorker] = useState(false);
@@ -253,9 +231,8 @@ const WorkerRegistration = ({ navigation }) => {
   const [isEditing, setIsEditing] = useState(false); 
   const [galleryVisible, setGalleryVisible] = useState(false);
   const [currentSkill, setCurrentSkill] = useState('');
-  
   const [form, setForm] = useState({ 
-    name: '', phone: '', email: '', skills: [], bio: '', experience_images: [], documents: [],
+    name: '', phone: '', email: '', skills: [], bio: '', experience_images: [],
     likes: 0, dislikes: 0, location: { address: '' } 
   });
   const [originalData, setOriginalData] = useState(null);
@@ -278,7 +255,7 @@ const WorkerRegistration = ({ navigation }) => {
 
   const toggleEdit = () => {
     if (isEditing) {
-      setForm(originalData || { name: '', phone: '', email: '', skills: [], bio: '', experience_images: [], documents: [], likes: 0, dislikes: 0, location: { address: '' } });
+      setForm(originalData);
       setIsEditing(false);
     } else {
       setIsEditing(true);
@@ -293,26 +270,13 @@ const WorkerRegistration = ({ navigation }) => {
   };
 
   const removeSkill = (index) => {
-    const updated = [...form.skills];
-    updated.splice(index, 1);
-    setForm({ ...form, skills: updated });
-  };
-
-  const pickDocument = async () => {
-    const result = await DocumentPicker.getDocumentAsync({ type: "*/*" });
-    if (!result.canceled) {
-      setForm(prev => ({ ...prev, documents: [...(prev.documents || []), result.assets[0]] }));
-    }
-  };
-
-  const removeDocument = (index) => {
-    const updated = [...(form.documents || [])];
-    updated.splice(index, 1);
-    setForm({ ...form, documents: updated });
+    const updatedSkills = [...form.skills];
+    updatedSkills.splice(index, 1);
+    setForm({ ...form, skills: updatedSkills });
   };
 
   const handleSave = async () => {
-    if (!form.name) { Alert.alert("Required", "Please enter business name."); return; }
+    if (!form.name) { Alert.alert("Required", "Please enter your business name."); return; }
     setLoading(true);
     const result = isWorker 
       ? await updateWorkerProfile(user.uid, form) 
@@ -339,8 +303,9 @@ const WorkerRegistration = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
       
+      {/* SAFE AREA HEADER */}
       <SafeAreaView style={styles.headerSafe}>
         <View style={styles.headerNav}>
           <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -360,14 +325,16 @@ const WorkerRegistration = ({ navigation }) => {
         </View>
       </SafeAreaView>
 
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === "ios" ? "padding" : "height"} 
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
         {isEditing ? (
           <ProfileForm 
-            form={form} setForm={setForm} 
+            form={form} setForm={setForm} isWorker={isWorker}
             currentSkill={currentSkill} setCurrentSkill={setCurrentSkill}
-            addSkill={addSkill} removeSkill={removeSkill}
-            pickDocument={pickDocument} removeDocument={removeDocument}
-            setGalleryVisible={setGalleryVisible}
+            addSkill={addSkill} removeSkill={removeSkill} setGalleryVisible={setGalleryVisible}
           />
         ) : (
           <ProfilePreview 
@@ -389,6 +356,7 @@ const WorkerRegistration = ({ navigation }) => {
            <FlatList 
               data={form.experience_images}
               numColumns={2}
+              contentContainerStyle={{ paddingBottom: 40 }}
               renderItem={({item, index}) => (
                 <View style={styles.modalItem}>
                   <Image source={{ uri: item }} style={styles.modalImage} />
@@ -405,25 +373,47 @@ const WorkerRegistration = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  headerSafe: { backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
-  headerNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, height: 60 },
+  headerSafe: { 
+    backgroundColor: '#fff', 
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+    borderBottomWidth: 1, 
+    borderBottomColor: '#f1f5f9' 
+  },
+  headerNav: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    justifyContent: 'space-between', 
+    paddingHorizontal: 20, 
+    height: 60 
+  },
   headerTitle: { fontSize: 11, fontWeight: '900', color: '#64748b' },
   editBtnText: { color: '#3b82f6', fontWeight: '900' },
   saveBtnText: { color: '#10b981', fontWeight: '900' },
-  scrollContent: { paddingBottom: 100 },
+  scrollContent: { paddingBottom: 100 }, // Extra padding so nothing gets hidden behind keyboard or home indicator
   heroContainer: { height: 260, backgroundColor: '#f8fafc' },
   heroImage: { width: '100%', height: '100%' },
   heroPlaceholder: { height: 200, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f8fafc' },
-  galleryTrigger: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', marginHorizontal: 20, padding: 18, borderRadius: 15, elevation: 8, shadowOpacity: 0.1, marginTop: -30, gap: 12 },
+  galleryTrigger: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    backgroundColor: '#fff', 
+    marginHorizontal: 20, 
+    padding: 18, 
+    borderRadius: 15, 
+    elevation: 8, 
+    shadowColor: '#000',
+    shadowOpacity: 0.1, 
+    shadowRadius: 10,
+    marginTop: -30,
+    gap: 12 
+  },
   galleryTriggerText: { flex: 1, fontWeight: '800' },
   mainContent: { padding: 25 },
-  nameLabelText: { fontSize: 26, fontWeight: '900' },
+  nameLabelText: { fontSize: 26, fontWeight: '900', color: '#000' },
   nameInput: { fontSize: 20, fontWeight: '900', backgroundColor: '#f8fafc', padding: 15, borderRadius: 12, marginBottom: 10, borderWidth: 1, borderColor: '#e2e8f0' },
   locRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   locationLabelText: { fontSize: 16, color: '#64748b', fontWeight: '600' },
-  simpleInputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f8fafc', padding: 15, borderRadius: 12, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 15 },
-  simpleTextInput: { flex: 1, fontSize: 16, fontWeight: '600', color: '#000' },
-  inputIcon: { marginRight: 10 },
+  locationInput: { flex: 1, fontSize: 16, color: '#10b981', fontWeight: '600' },
   contactIconRow: { flexDirection: 'row', gap: 12, marginTop: 15 },
   miniSocialBtn: { width: 44, height: 44, borderRadius: 22, justifyContent: 'center', alignItems: 'center' },
   statsRow: { flexDirection: 'row', backgroundColor: '#f8fafc', borderRadius: 12, paddingVertical: 12, marginTop: 20 },
@@ -435,18 +425,18 @@ const styles = StyleSheet.create({
   sectionLabel: { fontSize: 11, fontWeight: '800', color: '#94a3b8', marginBottom: 10 },
   bioPreviewText: { fontSize: 15, lineHeight: 22, color: '#475569' },
   bioInputEdit: { backgroundColor: '#f8fafc', padding: 15, borderRadius: 12, minHeight: 120, textAlignVertical: 'top', borderWidth: 1, borderColor: '#e2e8f0' },
-  helperText: { fontSize: 12, color: '#94a3b8', marginBottom: 10, marginTop: -5 },
-  uploadDocBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#eff6ff', padding: 15, borderRadius: 12, borderWidth: 1, borderStyle: 'dashed', borderColor: '#3b82f6', gap: 10 },
-  uploadDocBtnText: { color: '#3b82f6', fontWeight: '800' },
-  docList: { marginTop: 15, gap: 10 },
-  docItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f8fafc', padding: 12, borderRadius: 10, gap: 10 },
-  docName: { flex: 1, fontSize: 14, fontWeight: '600' },
+  pickerWrapper: { flexDirection: 'row', height: 55, backgroundColor: '#f8fafc', borderRadius: 12, borderWidth: 1, borderColor: '#e2e8f0', overflow: 'hidden' },
+  pickerLeft: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f1f5f9', paddingHorizontal: 12, borderRightWidth: 1, borderRightColor: '#e2e8f0', gap: 6 },
+  pickerLabel: { fontSize: 14, fontWeight: '700', color: '#475569' },
+  pickerInput: { flex: 1, paddingHorizontal: 15, fontWeight: '600', color: '#000' },
+  helperText: { fontSize: 12, color: '#94a3b8', marginTop: 8 },
+  infoBox: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: '#eff6ff', padding: 15, borderRadius: 12 },
+  infoBoxText: { flex: 1, fontSize: 13, color: '#1e40af', fontWeight: '500' },
   skillInputWrapper: { flexDirection: 'row', gap: 10, marginBottom: 15 },
   growingSkillInput: { flex: 1, backgroundColor: '#f8fafc', borderRadius: 12, padding: 12, borderWidth: 1, borderColor: '#e2e8f0' },
   addSkillFab: { backgroundColor: '#10b981', width: 48, height: 48, borderRadius: 24, justifyContent: 'center', alignItems: 'center' },
   skillsList: { gap: 12 },
   skillItem: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  skillItemEdit: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: '#f1f5f9', padding: 12, borderRadius: 10 },
   skillText: { fontWeight: '600', color: '#334155' },
   modalContainer: { flex: 1, backgroundColor: '#fff' },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', padding: 20, alignItems: 'center' },
