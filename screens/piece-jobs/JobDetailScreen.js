@@ -27,7 +27,7 @@ import { AppContext } from "../../context/appContext";
 
 const mapJobData = (rawJob) => {
   if (!rawJob) return {};
-  
+
   // Handle the 'postedby' JSON field from Supabase
   let postedByData = rawJob.postedby;
   if (typeof postedByData === 'string') {
@@ -54,7 +54,7 @@ const mapJobData = (rawJob) => {
     // Map job_requirements to requirements
     requirements: rawJob.job_requirements || rawJob.requirements || [],
     // Map job_images to images (extracting URLs if they are objects)
-    images: (rawJob.job_images || rawJob.images || []).map(img => 
+    images: (rawJob.job_images || rawJob.images || []).map(img =>
       typeof img === 'string' ? img : img.url
     ),
     location: locationData?.address || rawJob.location || "Location not specified",
@@ -108,7 +108,7 @@ const JobDetailScreen = ({ route, navigation }) => {
       }
     };
 
-    fetchFreshData(); 
+    fetchFreshData();
   }, [job?.id, from]);
 
   const handleCall = () => {
@@ -178,7 +178,7 @@ const JobDetailScreen = ({ route, navigation }) => {
       };
       const response = await applyForGig(applicationData);
 
-      if (response.success){
+      if (response.success) {
         logUserActivity(user.uid, job.id, 'pomy_gigs_application');
         CustomToast(
           "Success!👍",
@@ -215,10 +215,7 @@ const JobDetailScreen = ({ route, navigation }) => {
 
   return (
     <View style={styles.container}>
-      <StatusBar
-        barStyle={isDarkMode ? "light-content" : "dark-content"}
-        backgroundColor={theme.colors.background}
-      />
+      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
       <SecondaryNav
         title="Job Details"
         rightIcon="share-social-outline"
@@ -231,12 +228,8 @@ const JobDetailScreen = ({ route, navigation }) => {
           /* SHOW CAROUSEL IF IMAGES EXIST */
           <View style={{ height: 300 }}>
             <Carousel
-              loop
-              width={width}
-              height={300}
-              autoPlay={true}
-              data={job.images}
-              scrollAnimationDuration={1000}
+              loop width={width} height={300} autoPlay={true}
+              data={job.images} scrollAnimationDuration={1000}
               renderItem={({ item }) => (
                 <Image source={{ uri: item }} style={styles.image} />
               )}
@@ -249,11 +242,7 @@ const JobDetailScreen = ({ route, navigation }) => {
               <Ionicons name="arrow-back" size={24} color="white" />
             </TouchableOpacity>
           </View>
-        ) : (
-          /* SHOW ONLY A SMALL HEADER IF NO IMAGES */
-          <View
-          ></View>
-        )}
+        ) : (<View></View>)}
 
         <View style={styles.detailsContainer}>
           <View style={styles.header}>
@@ -428,7 +417,7 @@ const JobDetailScreen = ({ route, navigation }) => {
             <Text style={styles.modalTitle}>Apply for this Gig</Text>
             <TextInput
               placeholder="Phone Number"
-               placeholderTextColor="#999"
+              placeholderTextColor="#999"
               value={phone}
               onChangeText={setPhone}
               style={styles.input}
@@ -440,7 +429,7 @@ const JobDetailScreen = ({ route, navigation }) => {
             >
               <TextInput
                 placeholder="Add Expertise"
-                 placeholderTextColor="#999"
+                placeholderTextColor="#999"
                 value={expertiseInput}
                 onChangeText={setExpertiseInput}
                 style={[styles.input, { flex: 2 }]}
