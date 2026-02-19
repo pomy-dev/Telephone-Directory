@@ -2,19 +2,36 @@
 
 import React, { useState, useEffect } from "react";
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, FlatList, StatusBar, Pressable,
-  Image, SafeAreaView, ActivityIndicator, Animated, TextInput, Linking, Dimensions, KeyboardAvoidingView, PanResponder, Platform
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  FlatList,
+  StatusBar,
+  Pressable,
+  Image,
+  SafeAreaView,
+  ActivityIndicator,
+  Animated,
+  TextInput,
+  Linking,
+  Dimensions, KeyboardAvoidingView, PanResponder, Platform,
 } from "react-native";
 import { Icons } from "../../constants/Icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { getPomyGigs, subscribeToGigs } from "../../service/Supabase-Fuctions";
+import {
+  getPomyGigs,
+  subscribeToGigs,
+  logUserActivity,
+} from "../../service/Supabase-Fuctions";
 import { AppContext } from "../../context/appContext";
 import { supabase } from "../../service/Supabase-Client";
 import { AuthContext } from "../../context/authProvider";
 import { MoreDropdown } from "../../components/moreDropDown";
 
 const MEDIA_HEIGHT = 180;
-const { height, width } = Dimensions.get('window')
+const { height, width } = Dimensions.get("window");
 
 const CATEGORIES = [
   {
@@ -93,9 +110,9 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos((lat1 * Math.PI) / 180) *
-    Math.cos((lat2 * Math.PI) / 180) *
-    Math.sin(dLon / 2) *
-    Math.sin(dLon / 2);
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   const distance = R * c;
   return distance;
@@ -272,9 +289,13 @@ const GigsScreen = ({ navigation }) => {
   useEffect(() => {
     // Handle search filtering
     if (viewMode === "workers") {
-      const filtered = workers.filter(worker =>
-        worker.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (worker.skills && worker.skills.some(skill => skill.toLowerCase().includes(searchQuery.toLowerCase())))
+      const filtered = workers.filter(
+        (worker) =>
+          worker.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (worker.skills &&
+            worker.skills.some((skill) =>
+              skill.toLowerCase().includes(searchQuery.toLowerCase()),
+            )),
       );
       setFilteredWorkers(filtered);
     }
@@ -283,14 +304,14 @@ const GigsScreen = ({ navigation }) => {
   const fetchWorkers = async () => {
     setLoadingWorkers(true);
     const { data, error } = await supabase
-      .from('pomy_workers')
-      .select('*')
-      .order('created_at', { ascending: false });
+      .from("pomy_workers")
+      .select("*")
+      .order("created_at", { ascending: false });
 
     if (!error) {
       // Filter out the current user's own profile
       const otherWorkers = user?.uid
-        ? data.filter(worker => worker.user_id !== user.uid)
+        ? data.filter((worker) => worker.user_id !== user.uid)
         : data;
 
       setWorkers(otherWorkers);
@@ -302,7 +323,10 @@ const GigsScreen = ({ navigation }) => {
   const formatDate = (dateString) => {
     if (!dateString) return "";
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-GB', { month: 'short', year: 'numeric' });
+    return date.toLocaleDateString("en-GB", {
+      month: "short",
+      year: "numeric",
+    });
   };
 
   // Fetch logic
@@ -345,28 +369,30 @@ const GigsScreen = ({ navigation }) => {
   }, [selectedCategory, userLocation]);
 
   const renderJobCard = ({ item }) => {
-    const hasImage = item?.images && item.images.length > 0 && !item.images[0].includes("via.placeholder.com");
+    const hasImage =
+      item?.images &&
+      item.images.length > 0 &&
+      !item.images[0].includes("via.placeholder.com");
 
     const handlePressGig = (item) => {
       if (user) {
-        logUserActivity(user.uid, item.id, 'pomy_gigs');
+        logUserActivity(user.uid, item.id, "pomy_gigs");
       }
       // ----------------------
       navigation.navigate("JobDetailScreen", { job: item });
-
     };
 
     return (
       <TouchableOpacity
         style={[
           styles.jobCard,
-          { backgroundColor: isDarkMode ? '#1A1A1A' : '#fff' }
+          { backgroundColor: isDarkMode ? "#1A1A1A" : "#fff" },
         ]}
         // onPress={() => navigation.navigate("JobDetailScreen", { job: item })}
         onPress={() => handlePressGig(item)}
       >
         {/* --- TOP MEDIA SECTION (Fixed Height) --- */}
-        <View style={{ height: MEDIA_HEIGHT, overflow: 'hidden' }}>
+        <View style={{ height: MEDIA_HEIGHT, overflow: "hidden" }}>
           {hasImage ? (
             <Image
               source={{ uri: item.images[0] }}
@@ -374,10 +400,15 @@ const GigsScreen = ({ navigation }) => {
               resizeMode="cover"
             />
           ) : (
-            <View style={[
-              styles.noImageDescriptionContainer,
-              { backgroundColor: isDarkMode ? '#252525' : '#f9f9f9', height: MEDIA_HEIGHT }
-            ]}>
+            <View
+              style={[
+                styles.noImageDescriptionContainer,
+                {
+                  backgroundColor: isDarkMode ? "#252525" : "#f9f9f9",
+                  height: MEDIA_HEIGHT,
+                },
+              ]}
+            >
               <Icons.MaterialCommunityIcons
                 name="format-quote-open"
                 size={20}
@@ -385,7 +416,10 @@ const GigsScreen = ({ navigation }) => {
                 style={{ marginBottom: 4 }}
               />
               <Text
-                style={[styles.noImageDescriptionText, { color: theme.colors.text }]}
+                style={[
+                  styles.noImageDescriptionText,
+                  { color: theme.colors.text },
+                ]}
                 ellipsizeMode="tail"
                 numberOfLines={5}
               >
@@ -398,14 +432,23 @@ const GigsScreen = ({ navigation }) => {
         {/* --- BOTTOM CONTENT SECTION --- */}
         <View style={styles.jobContent}>
           <View style={styles.jobHeader}>
-            <Text style={[styles.jobTitle, { color: theme.colors.text }]} numberOfLines={1}>
+            <Text
+              style={[styles.jobTitle, { color: theme.colors.text }]}
+              numberOfLines={1}
+            >
               {item.title}
             </Text>
             <Text style={styles.jobPrice}>R{item.price}</Text>
           </View>
 
           {hasImage ? (
-            <Text style={[styles.jobDescription, { color: isDarkMode ? '#aaa' : '#666' }]} numberOfLines={2}>
+            <Text
+              style={[
+                styles.jobDescription,
+                { color: isDarkMode ? "#aaa" : "#666" },
+              ]}
+              numberOfLines={2}
+            >
               {item.description}
             </Text>
           ) : (
@@ -415,7 +458,9 @@ const GigsScreen = ({ navigation }) => {
           <View style={styles.jobFooter}>
             <View style={styles.locationContainer}>
               <Icons.Ionicons name="location-outline" size={14} color="#666" />
-              <Text style={styles.locationText} numberOfLines={1}>{item.location}</Text>
+              <Text style={styles.locationText} numberOfLines={1}>
+                {item.location}
+              </Text>
             </View>
             {item.distance && (
               <Text style={styles.distanceText}>
@@ -424,111 +469,167 @@ const GigsScreen = ({ navigation }) => {
             )}
           </View>
 
-          <View style={[styles.jobMeta, { borderTopColor: isDarkMode ? '#333' : '#f0f0f0' }]}>
-            <Text style={[styles.postedBy, { color: isDarkMode ? '#888' : '#444' }]}>
-              {item.postedBy?.name || 'User'}
+          <View
+            style={[
+              styles.jobMeta,
+              { borderTopColor: isDarkMode ? "#333" : "#f0f0f0" },
+            ]}
+          >
+            <Text
+              style={[styles.postedBy, { color: isDarkMode ? "#888" : "#444" }]}
+            >
+              {item.postedBy?.name || "User"}
             </Text>
-            <Text style={[styles.postedTime, { color: '#999' }]}>{item.postedTime}</Text>
+            <Text style={[styles.postedTime, { color: "#999" }]}>
+              {item.postedTime}
+            </Text>
           </View>
         </View>
       </TouchableOpacity>
     );
   };
+
 
   const renderWorkerCard = ({ item }) => {
-    return (
-      <TouchableOpacity style={styles.workerBox}
-        onPress={() => navigation.navigate("WorkerProfileScreen", { worker: item })}
-      >
-        {/* Availability Header */}
-        <View style={styles.statusRow}>
-          <View style={[styles.statusBadge, { backgroundColor: item.is_available ? '#E8F5E9' : '#F5F5F5' }]}>
-            <View style={[styles.statusDot, { backgroundColor: item.is_available ? '#10b981' : '#999' }]} />
-            <Text style={[styles.statusText, { color: item.is_available ? '#10b981' : '#666' }]}>
-              {item.is_available ? 'Ready for Hire' : 'Currently Busy'}
-            </Text>
-          </View>
-          <Text style={styles.memberSince}>Since {formatDate(item.created_at)}</Text>
-        </View>
+  // 1. Logic for Images: If no images, we won't render the block at all
+  const hasImages = item.experience_images && item.experience_images.length > 0;
+  const displayImages = hasImages ? item.experience_images : [];
 
-        <View style={styles.boxHeader}>
-          <View style={styles.avatarSquare}>
-            <Text style={styles.avatarText}>{item.name.charAt(0)}</Text>
-          </View>
-          <View style={styles.headerInfo}>
-            <Text style={styles.workerName} numberOfLines={1}>{item.name}</Text>
+  const locationString =
+    typeof item.location === "object"
+      ? item.location?.address
+      : item.location || "Eswatini";
 
-            {/* SMART SKILLS DISPLAY */}
-            <View style={styles.skillCloud}>
-              {Array.isArray(item.skills) && item.skills.length > 0 ? (
-                item.skills.map((skill, index) => (
-                  <View key={index} style={styles.skillTagMini}>
-                    <Text style={styles.skillTagTextMini}>{skill}</Text>
-                  </View>
-                ))
-              ) : (
-                <View style={[styles.skillTagMini, { backgroundColor: '#F3F4F6' }]}>
-                  <Text style={[styles.skillTagTextMini, { color: '#999' }]}>General Labor</Text>
-                </View>
-              )}
-            </View>
-          </View>
-
-          <TouchableOpacity
-            style={styles.callIconButton}
-            onPress={() => Linking.openURL(`tel:${item.phone}`)}
-          >
-            <Icons.Ionicons name="call" size={20} color="#FFF" />
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.boxBody}>
-          <Text style={styles.sectionLabel}>Professional Profile</Text>
-          <Text style={styles.workerBio} numberOfLines={3}>
-            {item.bio || "Experience provider specializing in the skills listed above. Contact for quotes and availability."}
-          </Text>
-        </View>
-
-        <View style={styles.boxFooter}>
-          <View style={styles.locationContainer}>
-            <Icons.Ionicons name="location-sharp" size={16} color="#666" />
-            <View style={styles.locationTextGroup}>
-              <Text style={styles.locationLabel}>Service Area</Text>
-              <Text style={styles.locationText}>{item.location?.address || "Eswatini"}</Text>
-            </View>
-          </View>
-
-          <TouchableOpacity
-            style={styles.viewProfileBtn}
-            onPress={() => Linking.openURL(`tel:${item.phone}`)}
-          >
-            <Text style={styles.viewProfileText}>Hire Now</Text>
-            <Icons.Ionicons name="chevron-forward" size={14} color="#FFF" />
-          </TouchableOpacity>
-        </View>
-      </TouchableOpacity>
-    );
-  };
+  // 2. Logic for Skills: Check if the worker actually has skills provided
+  const hasSkills = item.skills && item.skills.length > 0;
+  const skills = hasSkills ? item.skills : [];
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
+    <TouchableOpacity
+      activeOpacity={0.9}
+      style={styles.workerCard}
+      onPress={() => navigation.navigate("WorkerProfileScreen", { worker: item })}
+    >
+      {/* HEADER AREA */}
+      <View style={styles.cardHeader}>
+        <View style={styles.avatarSquare}>
+          <Text style={styles.avatarText}>{item.name?.charAt(0)}</Text>
+        </View>
+        <View style={styles.headerInfo}>
+          <Text style={styles.workerName}>{item.name}</Text>
+          <View style={styles.locationRow}>
+            <Icons.Ionicons name="location-sharp" size={12} color="#10b981" />
+            <Text style={styles.locationText}>{locationString}</Text>
+          </View>
+        </View>
+      </View>
+
+      {/* CONDITION: Show Bio only if NO skills are provided */}
+      {!hasSkills && (
+        <View style={styles.bodyContent}>
+          <Text numberOfLines={2} style={styles.bioText}>
+            {item.bio || "Top-rated professional. Tap to view full portfolio and contact details."}
+          </Text>
+        </View>
+      )}
+
+      {/* CONDITION: Show Skills only if they exist */}
+      {hasSkills && (
+        <View style={styles.skillsContainer}>
+          <Text style={styles.sectionHeader}>Services Provided</Text>
+          <Text style={styles.skillsRowText} numberOfLines={1} ellipsizeMode="tail">
+            {skills.map((skill, index) => (
+              <React.Fragment key={index}>
+                {skill}
+                {index < skills.length - 1 && "  |  "}
+              </React.Fragment>
+            ))}
+          </Text>
+        </View>
+      )}
+
+      {/* CONDITION: Show Portfolio only if images exist */}
+      {hasImages && (
+        <View style={styles.portfolioWrapper}>
+          <ScrollView
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+          >
+            {displayImages.map((img, idx) => (
+              <Image
+                key={idx}
+                source={{ uri: img }}
+                style={styles.portfolioImage}
+              />
+            ))}
+          </ScrollView>
+        </View>
+      )}
+
+      {/* FOOTER AREA */}
+      <View style={styles.cardFooter}>
+        <View style={styles.interactionGroup}>
+          <TouchableOpacity style={styles.voteBtn}>
+            <Icons.Ionicons name="thumbs-up" size={18} color="#10b981" />
+            <Text style={styles.voteCount}>{item.likes || "24"}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.voteBtn}>
+            <Icons.Ionicons name="thumbs-down-outline" size={18} color="#64748b" />
+          </TouchableOpacity>
+        </View>
+
+        <TouchableOpacity
+          style={styles.blackActionBtn}
+          onPress={() => Linking.openURL(`tel:${item.phone}`)}
+        >
+          <Text style={styles.actionBtnText}>VIEW PROFILE</Text>
+          <Icons.Ionicons name="arrow-forward" size={14} color="#10b981" />
+        </TouchableOpacity>
+      </View>
+    </TouchableOpacity>
+  );
+};
+
+return (
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+    >
+      <StatusBar
+        barStyle={isDarkMode ? "light-content" : "dark-content"}
+        backgroundColor={theme.colors.background}
+      />
       <View style={{ height: 20 }} />
 
       {/* Custom Modern Header */}
       <View style={styles.customHeader}>
         {/* Back Btn */}
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Icons.Ionicons name="arrow-back" size={28} color={theme.colors.text} />
+          <Icons.Ionicons
+            name="arrow-back"
+            size={28}
+            color={theme.colors.text}
+          />
         </TouchableOpacity>
 
         {/* SEARCH BAR */}
         <View style={{ backgroundColor: theme.colors.background }}>
-          <View style={[styles.searchBar, { backgroundColor: theme.colors.sub_card }]}>
-            <Icons.Ionicons name="search" size={18} color={theme.colors.sub_text} />
+          <View
+            style={[
+              styles.searchBar,
+              { backgroundColor: theme.colors.sub_card },
+            ]}
+          >
+            <Icons.Ionicons
+              name="search"
+              size={18}
+              color={theme.colors.sub_text}
+            />
             <TextInput
               style={[styles.searchInput, { color: theme.colors.text }]}
-              placeholder={viewMode === "gigs" ? "Search jobs..." : "Search workers..."}
+              placeholder={
+                viewMode === "gigs" ? "Search jobs..." : "Search workers..."
+              }
               placeholderTextColor={theme.colors.sub_text}
               value={searchQuery}
               keyboardType="web-search"
@@ -545,7 +646,7 @@ const GigsScreen = ({ navigation }) => {
         </View>
 
         {/* Options Handle */}
-        <Pressable onPress={() => toggleSheet(true)} >
+        <Pressable onPress={() => toggleSheet(true)}>
           <Icons.Ionicons name="options" size={30} color={theme.colors.text} />
         </Pressable>
 
@@ -621,16 +722,34 @@ const GigsScreen = ({ navigation }) => {
       {/* FIXED TOP SECTION */}
       <View style={styles.headerGroup}>
         <View style={styles.selectedCategoryRow}>
-          {selectedCategory !== 'all' && (
-            <View style={[styles.selectedCategoryPill, { backgroundColor: theme.colors.sub_card }]}>
-              <Text style={[styles.selectedCategoryText, { color: theme.colors.text }]} numberOfLines={1}>
+          {selectedCategory !== "all" && (
+            <View
+              style={[
+                styles.selectedCategoryPill,
+                { backgroundColor: theme.colors.sub_card },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.selectedCategoryText,
+                  { color: theme.colors.text },
+                ]}
+                numberOfLines={1}
+              >
                 {selectedCategory}
               </Text>
             </View>
           )}
-          {selectedCategory !== 'all' && (
-            <TouchableOpacity onPress={() => setSelectedCategory('all')} style={styles.clearButton}>
-              <Icons.Ionicons name="close-circle" size={20} color={theme.colors.sub_text} />
+          {selectedCategory !== "all" && (
+            <TouchableOpacity
+              onPress={() => setSelectedCategory("all")}
+              style={styles.clearButton}
+            >
+              <Icons.Ionicons
+                name="close-circle"
+                size={20}
+                color={theme.colors.sub_text}
+              />
             </TouchableOpacity>
           )}
         </View>
@@ -745,20 +864,24 @@ const GigsScreen = ({ navigation }) => {
               </TouchableOpacity>
             </Animated.View>
 
-            <Animated.View style={[
-              styles.secondaryFabButton,
-              {
-                opacity: new Animated.Value(1),
-                transform: [{
-                  translateY: new Animated.Value(0)
-                }]
-              }
-            ]}>
+            <Animated.View
+              style={[
+                styles.secondaryFabButton,
+                {
+                  opacity: new Animated.Value(1),
+                  transform: [
+                    {
+                      translateY: new Animated.Value(0),
+                    },
+                  ],
+                },
+              ]}
+            >
               <TouchableOpacity
-                style={[styles.secondaryFab, { backgroundColor: '#3b82f6' }]}
+                style={[styles.secondaryFab, { backgroundColor: "#3b82f6" }]}
                 onPress={() => {
-                  toggleFAB();
-                  navigation.navigate('WorkerRegistration');
+                  // toggleFAB();
+                  navigation.navigate("WorkerRegistration");
                 }}
               >
                 <Icons.MaterialCommunityIcons name="briefcase-account-outline" size={20} color="#fff" />
@@ -768,17 +891,24 @@ const GigsScreen = ({ navigation }) => {
         )}
 
         {/* Main FAB */}
-        <Animated.View style={{
-          transform: [{
-            rotate: fabRotation.interpolate({
-              inputRange: [0, 1],
-              outputRange: ['0deg', '45deg']
-            })
-          }]
-        }}>
+        <Animated.View
+          style={{
+            transform: [
+              {
+                rotate: fabRotation.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ["0deg", "45deg"],
+                }),
+              },
+            ],
+          }}
+        >
           <TouchableOpacity
-            style={[styles.mainFab, { backgroundColor: theme.colors.indicator }]}
-            onPress={toggleFAB}
+            style={[
+              styles.mainFab,
+              { backgroundColor: theme.colors.indicator },
+            ]}
+            // onPress={toggleFAB}
           >
             <Icons.AntDesign name="plus" size={24} color="#fff" />
           </TouchableOpacity>
@@ -791,14 +921,14 @@ const GigsScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     borderRadius: 30,
     paddingHorizontal: 12,
     height: 44,
-    width: width * 0.60,
+    width: width * 0.6,
     gap: 8,
-    overflow: 'hidden'
+    overflow: "hidden",
   },
   searchInput: {
     // flex: 1,
@@ -938,44 +1068,116 @@ const styles = StyleSheet.create({
 
   // ─── Worker Card Styles ───
   workerBox: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderRadius: 24,
     padding: 16,
     marginBottom: 16,
     elevation: 2,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOpacity: 0.05,
     shadowRadius: 10,
     borderWidth: 1,
-    borderColor: '#F1F1F1'
+    borderColor: "#F1F1F1",
   },
-  statusRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 15 },
-  statusBadge: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
+  statusRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 15,
+  },
+  statusBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
   statusDot: { width: 6, height: 6, borderRadius: 3, marginRight: 6 },
-  statusText: { fontSize: 10, fontWeight: '800', textTransform: 'uppercase' },
-  memberSince: { fontSize: 10, color: '#999', fontWeight: '600' },
-  boxHeader: { flexDirection: 'row', alignItems: 'flex-start' },
-  avatarSquare: { width: 52, height: 52, borderRadius: 16, backgroundColor: '#000', alignItems: 'center', justifyContent: 'center' },
-  avatarText: { color: '#fff', fontSize: 22, fontWeight: 'bold' },
+  statusText: { fontSize: 10, fontWeight: "800", textTransform: "uppercase" },
+  memberSince: { fontSize: 10, color: "#999", fontWeight: "600" },
+  boxHeader: { flexDirection: "row", alignItems: "flex-start" },
+  avatarSquare: {
+    width: 52,
+    height: 52,
+    borderRadius: 16,
+    backgroundColor: "#000",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarText: { color: "#fff", fontSize: 22, fontWeight: "bold" },
   headerInfo: { flex: 1, marginLeft: 14 },
-  workerName: { fontSize: 17, fontWeight: '800', color: '#000' },
-  skillCloud: { flexDirection: 'row', flexWrap: 'wrap', marginTop: 6, gap: 6 },
-  skillTagMini: { backgroundColor: '#F0FDF4', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
-  skillTagTextMini: { fontSize: 10, color: '#10b981', fontWeight: '800', textTransform: 'uppercase' },
-  callIconButton: { width: 44, height: 44, borderRadius: 15, backgroundColor: '#10b981', alignItems: 'center', justifyContent: 'center' },
+  workerName: { fontSize: 17, fontWeight: "800", color: "#000" },
+  skillCloud: { flexDirection: "row", flexWrap: "wrap", marginTop: 6, gap: 6 },
+  skillTagMini: {
+    backgroundColor: "#F0FDF4",
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+  },
+  skillTagTextMini: {
+    fontSize: 10,
+    color: "#10b981",
+    fontWeight: "800",
+    textTransform: "uppercase",
+  },
+  callIconButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 15,
+    backgroundColor: "#10b981",
+    alignItems: "center",
+    justifyContent: "center",
+  },
 
-  boxBody: { marginVertical: 15, paddingVertical: 15, borderTopWidth: 1, borderBottomWidth: 1, borderColor: '#F9F9F9' },
-  sectionLabel: { fontSize: 11, fontWeight: '800', color: '#999', textTransform: 'uppercase', marginBottom: 6 },
-  workerBio: { fontSize: 14, color: '#444', lineHeight: 20 },
+  boxBody: {
+    marginVertical: 15,
+    paddingVertical: 15,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: "#F9F9F9",
+  },
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: "800",
+    color: "#999",
+    textTransform: "uppercase",
+    marginBottom: 6,
+  },
+  workerBio: { fontSize: 14, color: "#444", lineHeight: 20 },
 
-  boxFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  locationContainer: { flexDirection: 'row', alignItems: 'flex-start', flex: 1 },
+  boxFooter: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  locationContainer: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    flex: 1,
+  },
   locationTextGroup: { marginLeft: 8 },
-  locationLabel: { fontSize: 9, fontWeight: '800', color: '#BBB', textTransform: 'uppercase' },
-  locationText: { fontSize: 13, color: '#1A1A1A', fontWeight: '700' },
+  locationLabel: {
+    fontSize: 9,
+    fontWeight: "800",
+    color: "#BBB",
+    textTransform: "uppercase",
+  },
+  locationText: { fontSize: 13, color: "#1A1A1A", fontWeight: "700" },
 
-  viewProfileBtn: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 12, backgroundColor: '#000' },
-  viewProfileText: { color: '#fff', fontSize: 13, fontWeight: '700', marginRight: 5 },
+  viewProfileBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: "#000",
+  },
+  viewProfileText: {
+    color: "#fff",
+    fontSize: 13,
+    fontWeight: "700",
+    marginRight: 5,
+  },
   jobMeta: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -1051,19 +1253,19 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   categoryBadge: {
-    position: 'absolute',
+    position: "absolute",
     top: 12,
     right: 12,
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    backgroundColor: "rgba(0,0,0,0.6)",
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
   },
   categoryBadgeText: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 10,
-    fontWeight: '700',
-    textTransform: 'uppercase',
+    fontWeight: "700",
+    textTransform: "uppercase",
   },
   textLayoutCategory: {
     marginTop: 12,
@@ -1085,7 +1287,7 @@ const styles = StyleSheet.create({
     fontStyle: "italic",
     textAlign: "center",
     lineHeight: 24,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   jobCard: {
     backgroundColor: "#fff",
@@ -1114,20 +1316,20 @@ const styles = StyleSheet.create({
   },
   // FAB Styles
   fabContainer: {
-    position: 'absolute',
+    position: "absolute",
     bottom: height * 0.1,
     right: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     zIndex: 1000,
   },
   mainFab: {
     width: 60,
     height: 60,
     borderRadius: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -1135,43 +1337,44 @@ const styles = StyleSheet.create({
   },
   secondaryFabButton: {
     marginBottom: 16,
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 12,
   },
   secondaryFab: {
     width: 50,
     height: 50,
     borderRadius: 25,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: '#000',
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 5,
   },
   secondaryFabLabel: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 12,
-    fontWeight: '600',
+    fontWeight: "600",
     marginRight: 8,
   },
   /* Bottom sheet / selected category styles */
   sheetOverlay: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     right: 0,
     bottom: 0,
     top: 0,
     zIndex: 2000,
-    justifyContent: 'flex-end',
+    justifyContent: "flex-end",
   },
   sheetBackdrop: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.25)'
+    backgroundColor: "rgba(0,0,0,0.25)",
   },
   sheetContainer: {
-    width: '100%',
+    width: "100%",
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     paddingBottom: 28,
@@ -1181,15 +1384,15 @@ const styles = StyleSheet.create({
   sheetHandle: {
     width: 40,
     height: 6,
-    backgroundColor: '#E6E7EA',
+    backgroundColor: "#E6E7EA",
     borderRadius: 6,
-    alignSelf: 'center',
+    alignSelf: "center",
     marginTop: 8,
   },
   sheetHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 6,
@@ -1201,8 +1404,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   selectedCategoryRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 8,
     paddingHorizontal: 12,
   },
@@ -1211,15 +1414,167 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 18,
     minWidth: 80,
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   selectedCategoryText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: "700",
   },
   clearButton: {
     marginLeft: 8,
   },
+
+  workerCard: {
+    backgroundColor: "#fff",
+    marginHorizontal: 2, // Almost edge-to-edge
+    marginBottom: 10,
+    borderRadius: 14, // Sharp edges
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    overflow: "hidden",
+    padding: 3,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+  },
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  avatarSquare: {
+    width: 46,
+    height: 46,
+    backgroundColor: "#000",
+    borderRadius: 6, // Sharp edges for avatar
+    marginHorizontal: 14,
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 12,
+  },
+  avatarText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 22,
+  },
+  headerInfo: {
+    flex: 1,
+  },
+  workerName: {
+    fontSize: 19,
+    fontWeight: "900",
+    color: "#000",
+    letterSpacing: -0.5,
+  },
+  locationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 2,
+  },
+  locationText: {
+    fontSize: 12,
+    color: "#64748b",
+    fontWeight: "600",
+    marginLeft: 3,
+  },
+  portfolioImage: {
+    // This width should match the card's internal width
+    width: width - 12,
+    height: 400,
+    borderRadius: 2, // Sharp edges
+    backgroundColor: "#f1f5f9",
+    resizeMode: "cover",
+    marginRight: 10,
+  },
+  portfolioWrapper: {
+    width: "100%",
+    marginBottom: 12,
+    paddingLeft: 0,
+  },
+  bodyContent: {
+    marginBottom: 15,
+  },
+  bioText: {
+    fontSize: 13,
+    color: "#475569",
+    lineHeight: 18,
+    marginHorizontal: 14,
+  },
+  cardFooter: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    borderTopWidth: 1,
+    borderTopColor: "#f1f5f9",
+    paddingTop: 12,
+    paddingBottom: 12,
+    marginHorizontal: 14,
+  },
+  interactionGroup: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  voteBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f8fafc",
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+  },
+  voteCount: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: "#1A1A1A",
+    marginLeft: 6,
+  },
+  blackActionBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#000",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 6,
+  },
+  actionBtnText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "900",
+    marginRight: 6,
+  },
+  // Adjusted Portfolio Wrapper to ensure it fits perfectly with the new list
+  portfolioWrapper: {
+    width: '100%',
+    marginBottom: 12,
+    marginTop: 4,
+  },
+
+  skillsContainer: {
+    paddingHorizontal: 12,
+    marginBottom: 2,
+  },
+  sectionHeader: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#64748b',
+    textTransform: 'uppercase',
+    letterSpacing: 1,
+    marginBottom: 2,
+  },
+  skillsRowText: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: '#1e293b',
+    lineHeight: 20,
+    // This color makes the pipe separators pop slightly less than the text for better focus
+    includeFontPadding: false,
+  },
+  
 });
 
 export default GigsScreen;
