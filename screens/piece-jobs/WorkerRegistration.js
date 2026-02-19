@@ -9,7 +9,8 @@ import * as DocumentPicker from 'expo-document-picker';
 import { Icons } from "../../constants/Icons";
 import { registerAsWorker, updateWorkerProfile, getWorkerProfile } from '../../service/Supabase-Fuctions';
 import { AuthContext } from '../../context/authProvider';
-import { uploadImages, uploadAttachments } from '../../service/uploadFiles'; // Adjust path if necessary
+import { AppContext } from "../../context/appContext";
+import CustomLoader from '../../components/customLoader';
 
 const { width } = Dimensions.get('window');
 const MODAL_COLUMN_WIDTH = (width - 60) / 2;
@@ -18,13 +19,10 @@ const MODAL_COLUMN_WIDTH = (width - 60) / 2;
 // COMPONENT 1: PROFILE PREVIEW (Read-Only)
 // ==========================================
 const ProfilePreview = ({ form, setGalleryVisible, handleWhatsApp, handleCall, handleEmail }) => (
-  <ScrollView
-    showsVerticalScrollIndicator={false}
-    contentContainerStyle={styles.scrollContent}
-  >
+  <>
     <View style={styles.heroContainer}>
-      {form.experience_images?.length > 0 ? (
-        <Image source={{ uri: form.experience_images[0] }} style={styles.heroImage} />
+      {form.worker_pp ? (
+        <Image source={{ uri: form.worker_pp[0].url || form.worker_pp }} style={styles.heroImage} />
       ) : (
         <View style={styles.heroPlaceholder}>
           <Icons.Ionicons name="person-circle-outline" size={80} color="#e2e8f0" />
@@ -38,93 +36,143 @@ const ProfilePreview = ({ form, setGalleryVisible, handleWhatsApp, handleCall, h
       <Icons.Ionicons name="chevron-forward" size={16} color="#94a3b8" />
     </TouchableOpacity>
 
-    <View style={styles.mainContent}>
-      <View style={styles.identityContainer}>
-        <Text style={styles.nameLabelText}>{form.name || "Unnamed Professional"}</Text>
-        <View style={styles.locRow}>
-          <Icons.Ionicons name="location" size={14} color="#10b981" />
-          <Text style={styles.locationLabelText}>{form.location?.address || "Location not set"}</Text>
-        </View>
-
-        <View style={styles.contactIconRow}>
-          {form.phone && (
-            <TouchableOpacity style={[styles.miniSocialBtn, { backgroundColor: '#25D366' }]} onPress={handleWhatsApp}>
-              <Icons.Ionicons name="logo-whatsapp" size={20} color="#fff" />
-            </TouchableOpacity>
-          )}
-          {form.phone && (
-            <TouchableOpacity style={[styles.miniSocialBtn, { backgroundColor: '#3b82f6' }]} onPress={handleCall}>
-              <Icons.Ionicons name="call" size={18} color="#fff" />
-            </TouchableOpacity>
-          )}
-          {form.email && (
-            <TouchableOpacity style={[styles.miniSocialBtn, { backgroundColor: '#f43f5e' }]} onPress={handleEmail}>
-              <Icons.Ionicons name="mail" size={18} color="#fff" />
-            </TouchableOpacity>
-          )}
-        </View>
-
-        <View style={styles.statsRow}>
-          <View style={styles.statBox}>
-            <Icons.Ionicons name="thumbs-up" size={16} color="#10b981" />
-            <Text style={styles.statCount}>{form.likes || 0}</Text>
-            <Text style={styles.statLabel}>Likes</Text>
+    <ScrollView
+      showsVerticalScrollIndicator={false}
+      contentContainerStyle={styles.scrollContent}
+    >
+      <View style={styles.mainContent}>
+        <View style={styles.identityContainer}>
+          <Text style={styles.nameLabelText}>{form.name || "Unnamed Professional"}</Text>
+          <View style={styles.locRow}>
+            <Icons.Ionicons name="location" size={14} color="#10b981" />
+            <Text style={styles.locationLabelText}>{form.location?.address || "Location not set"}</Text>
           </View>
-          <View style={[styles.statBox, { borderLeftWidth: 1, borderColor: '#f1f5f9' }]}>
-            <Icons.Ionicons name="thumbs-down" size={16} color="#ef4444" />
-            <Text style={styles.statCount}>{form.dislikes || 0}</Text>
-            <Text style={styles.statLabel}>Dislikes</Text>
+
+          <View style={styles.contactIconRow}>
+            {form.contact_options?.whatsapp && (
+              <TouchableOpacity style={[styles.miniSocialBtn, { backgroundColor: '#25D366' }]} onPress={handleWhatsApp}>
+                <Icons.Ionicons name="logo-whatsapp" size={20} color="#fff" />
+              </TouchableOpacity>
+            )}
+            {form.phone && (
+              <TouchableOpacity style={[styles.miniSocialBtn, { backgroundColor: '#3b82f6' }]} onPress={handleCall}>
+                <Icons.Ionicons name="call" size={18} color="#fff" />
+              </TouchableOpacity>
+            )}
+            {form.email && (
+              <TouchableOpacity style={[styles.miniSocialBtn, { backgroundColor: '#f43f5e' }]} onPress={handleEmail}>
+                <Icons.Ionicons name="mail" size={18} color="#fff" />
+              </TouchableOpacity>
+            )}
           </View>
-        </View>
-      </View>
 
-      <View style={styles.divider} />
-
-      <View style={styles.section}>
-        <Text style={styles.sectionLabel}>Professional Bio</Text>
-        <Text style={styles.bioPreviewText}>{form.bio || "No bio provided yet."}</Text>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.sectionLabel}>Services</Text>
-        <View style={styles.skillsList}>
-          {form.skills.map((skill, index) => (
-            <View key={index} style={styles.skillItem}>
-              <Icons.Ionicons name="checkmark-circle" size={18} color="#10b981" />
-              <Text style={styles.skillText}>{skill}</Text>
+          <View style={styles.statsRow}>
+            <View style={styles.statBox}>
+              <Icons.Ionicons name="thumbs-up" size={16} color="#10b981" />
+              <Text style={styles.statCount}>{form.likes || 0}</Text>
+              <Text style={styles.statLabel}>Likes</Text>
             </View>
-          ))}
+            <View style={[styles.statBox, { borderLeftWidth: 1, borderColor: '#f1f5f9' }]}>
+              <Icons.Ionicons name="thumbs-down" size={16} color="#ef4444" />
+              <Text style={styles.statCount}>{form.dislikes || 0}</Text>
+              <Text style={styles.statLabel}>Dislikes</Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.divider} />
+
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>Professional Bio</Text>
+          <Text style={styles.bioPreviewText}>{form.bio || "No bio provided yet."}</Text>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionLabel}>Services</Text>
+          <View style={styles.skillsList}>
+            {form.skills.map((skill, index) => (
+              <View key={index} style={styles.skillItem}>
+                <Icons.Ionicons name="checkmark-circle" size={18} color="#10b981" />
+                <Text style={styles.skillText}>{skill}</Text>
+              </View>
+            ))}
+          </View>
         </View>
       </View>
-    </View>
-  </ScrollView>
+    </ScrollView>
+  </>
 );
 
 // ==========================================
 // COMPONENT 2: PROFILE FORM (Design Match)
 // ==========================================
 const ProfileForm = ({
-  form,
-  setForm,
-  currentSkill,
-  setCurrentSkill,
-  addSkill,
-  removeSkill,
-  pickDocument,
-  removeDocument,
-  setGalleryVisible
+  form, setForm, currentSkill, setCurrentSkill, addSkill, isGalleryPicking, isProfilePicking,
+  removeSkill, pickDocument, removeDocument, setGalleryVisible, pickImage
 }) => {
+  // console.log('Is picking: ', isPicking)
   return (
     <ScrollView
       showsVerticalScrollIndicator={false}
       contentContainerStyle={styles.scrollContent}
       keyboardShouldPersistTaps="handled"
     >
-      <View style={styles.heroPlaceholder}>
-        <Icons.Ionicons name="images-outline" size={40} color="#cbd5e1" />
-        <TouchableOpacity onPress={() => setGalleryVisible(true)}>
-          <Text style={styles.galleryTriggerText}>Manage Portfolio ({form.experience_images?.length || 0})</Text>
-        </TouchableOpacity>
+      <View style={styles.heroSectionContainer}>
+        {/* Left Column: Profile Picture + Gallery */}
+        <View style={styles.heroLeftColumn}>
+          {/* Profile Picture Section (2/3) */}
+          <View style={styles.profilePictureSection}>
+            {form.worker_pp ? (
+              <Image source={{ uri: form.worker_pp[0].url || form.worker_pp }} style={styles.profilePictureImage} />
+            ) : (
+              <View style={styles.profilePicturePlaceholder}>
+                <Icons.Ionicons name="person-circle-outline" size={60} color="#cbd5e1" />
+              </View>
+            )}
+          </View>
+
+          {/* Gallery Section (1/3) */}
+          <View style={styles.galleryPreviewSection}>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.galleryScrollContent}
+            >
+              {form.experience_images && form.experience_images.length > 0 ? (
+                form.experience_images.map((img, index) => (
+                  <Image key={index} source={{ uri: img }} style={styles.galleryThumbnail} />
+                ))
+              ) : (
+                <View style={styles.galleryEmptyPlaceholder}>
+                  <Icons.Ionicons name="images-outline" size={30} color="#cbd5e1" />
+                </View>
+              )}
+            </ScrollView>
+          </View>
+        </View>
+
+        {/* Right Column: Action Buttons */}
+        <View style={styles.heroRightColumn}>
+          {/* Add Profile Picture Button (2/3) */}
+          <TouchableOpacity
+            style={styles.actionButtonLarge}
+            onPress={() => pickImage(false)}
+            activeOpacity={0.7}
+          >
+            <Icons.MaterialIcons name="flip-camera-ios" size={28} color="#3b82f6" />
+            <Text style={styles.actionButtonText}>{isProfilePicking ? 'Picking...' : 'Profile\nPicture'}</Text>
+          </TouchableOpacity>
+
+          {/* Add Gallery Button (1/3) */}
+          <TouchableOpacity
+            style={styles.actionButtonSmall}
+            onPress={() => pickImage(true)}
+            activeOpacity={0.7}
+          >
+            <Icons.MaterialCommunityIcons name="camera-plus-outline" size={20} color="#10b981" />
+            <Text style={styles.actionButtonSmallText}>{isGalleryPicking ? 'Picking...' : 'Gallery'}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.mainContent}>
@@ -247,6 +295,7 @@ const ProfileForm = ({
 // ==========================================
 const WorkerRegistration = ({ navigation }) => {
   const { user } = useContext(AuthContext);
+  const { theme, isDarkMode } = useContext(AppContext);
   const [isWorker, setIsWorker] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -255,17 +304,21 @@ const WorkerRegistration = ({ navigation }) => {
   const [currentSkill, setCurrentSkill] = useState('');
 
   const [form, setForm] = useState({
-    name: '', phone: '', email: '', skills: [], bio: '', experience_images: [], documents: [],
-    likes: 0, dislikes: 0, location: { address: '' }
+    name: '', phone: '', email: user.email, skills: [], bio: '', worker_pp: null, experience_images: [],
+    documents: [], likes: 0, dislikes: 0, location: { address: '' }, contact_options: {}
   });
+  const [isGalleryPicking, setIsGalleryPicking] = useState(false);
+  const [isProfilePicking, setIsProfilePicking] = useState(false);
   const [originalData, setOriginalData] = useState(null);
 
   useEffect(() => { checkStatus(); }, [user]);
 
   const checkStatus = async () => {
     if (!user?.uid) { setFetching(false); return; }
+
     const result = await getWorkerProfile(user.uid);
     if (result.success && result.data) {
+      console.log('Worker Details: ', result.data)
       setForm(result.data);
       setOriginalData(result.data);
       setIsWorker(true);
@@ -313,60 +366,80 @@ const WorkerRegistration = ({ navigation }) => {
 
   const handleSave = async () => {
     if (!form.name) { Alert.alert("Required", "Please enter business name."); return; }
-    setLoading(true);
-    const result = isWorker
-      ? await updateWorkerProfile(user.uid, form)
-      : await registerAsWorker({ ...form, user_id: user.uid });
+    try {
+      setLoading(true);
+      const result = isWorker
+        ? await updateWorkerProfile(user.uid, form)
+        : await registerAsWorker({ ...form, user_id: user.uid });
 
-    setLoading(false);
-    if (result.success) {
-      Alert.alert("Success", "Profile updated.");
-      setOriginalData(form);
-      setIsEditing(false);
-      setIsWorker(true);
+      if (result.success) {
+        Alert.alert("Success", "Profile updated.");
+        setOriginalData(form);
+        setIsEditing(false);
+        setIsWorker(true);
+      }
+    } catch (err) {
+      console.error(err)
+    } finally {
+      setLoading(false);
+      setForm({
+        name: '', phone: '', email: '', skills: [], bio: '', worker_pp: null, experience_images: [],
+        documents: [], likes: 0, dislikes: 0, location: {}
+      })
     }
   };
 
-  const pickImage = async () => {
-    let result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsMultipleSelection: true, quality: 0.7 });
-    if (!result.canceled) {
-      const newImages = result.assets.map(asset => asset.uri);
-      setForm(prev => ({ ...prev, experience_images: [...(prev.experience_images || []), ...newImages] }));
+  const pickImage = async (isGallery) => {
+    try {
+      isGallery ? setIsGalleryPicking(true) : setIsProfilePicking(true)
+      let result = await ImagePicker.launchImageLibraryAsync(
+        {
+          mediaTypes: ['images', 'videos'],
+          allowsMultipleSelection: isGallery ? true : false,
+          aspect: [1, 1],
+          quality: 0.7
+        }
+      );
+      if (!result.canceled) {
+        const newImages = result.assets.map(asset => asset.uri);
+        isGallery ?
+          setForm(prev => ({ ...prev, experience_images: [...(prev.experience_images || []), ...newImages] }))
+          : setForm(prev => ({ ...prev, worker_pp: newImages[0] }));
+
+        console.log('Is Profile P. : ', isGallery, '\nUri(s): ', newImages)
+      }
+    } catch (err) {
+      console.error(err.message);
+    } finally {
+      isGallery ? setIsGalleryPicking(false) : setIsProfilePicking(false)
     }
   };
 
-  if (fetching) return <View style={styles.center}><ActivityIndicator color="#10b981" /></View>;
-
-  // if (fetching) {
-  //   return (
-  //     <View style={[styles.container, { justifyContent: 'center' }]}>
-  //       <ActivityIndicator size="large" color={theme.colors.indicator} />
-  //     </View>
-  //   );
-  // }
+  if (fetching) return <CustomLoader />;
 
   return (
-    <View style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+    <SafeAreaView style={styles.container}>
+      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
+      <View style={{ height: 20 }} />
 
-      <SafeAreaView style={styles.headerSafe}>
-        <View style={styles.headerNav}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Icons.Ionicons name="arrow-back" size={24} color="#000" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>{isEditing ? "EDIT PROFILE" : "PROFILE"}</Text>
-          <View style={{ flexDirection: 'row', gap: 15 }}>
-            {isWorker && (
-              <TouchableOpacity onPress={toggleEdit}>
-                <Text style={[styles.editBtnText, isEditing && { color: '#ef4444' }]}>{isEditing ? "CANCEL" : "EDIT"}</Text>
-              </TouchableOpacity>
-            )}
-            <TouchableOpacity onPress={handleSave} disabled={loading}>
-              {loading ? <ActivityIndicator size="small" color="#10b981" /> : <Text style={styles.saveBtnText}>SYNC</Text>}
+      <View style={[styles.headerSafe, styles.headerNav, { backgroundColor: theme.colors.card }]}>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Icons.Ionicons name="arrow-back" size={24} color="#000" />
+        </TouchableOpacity>
+
+        <Text style={styles.headerTitle}>{isEditing ? "EDIT PROFILE" : "PROFILE"}</Text>
+
+        <View style={{ flexDirection: 'row', gap: 15 }}>
+          {isWorker && (
+            <TouchableOpacity onPress={toggleEdit}>
+              <Text style={[styles.editBtnText, isEditing && { color: '#ef4444' }]}>{isEditing ? "CANCEL" : "EDIT"}</Text>
             </TouchableOpacity>
-          </View>
+          )}
+          <TouchableOpacity onPress={handleSave} disabled={loading}>
+            {loading ? <ActivityIndicator size="small" color="#10b981" /> : <Text style={styles.saveBtnText}>SYNC</Text>}
+          </TouchableOpacity>
         </View>
-      </SafeAreaView>
+      </View>
 
       <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
         {isEditing ? (
@@ -375,7 +448,8 @@ const WorkerRegistration = ({ navigation }) => {
             currentSkill={currentSkill} setCurrentSkill={setCurrentSkill}
             addSkill={addSkill} removeSkill={removeSkill}
             pickDocument={pickDocument} removeDocument={removeDocument}
-            setGalleryVisible={setGalleryVisible}
+            setGalleryVisible={setGalleryVisible} pickImage={(isGallery) => pickImage(isGallery)}
+            isGalleryPicking={isGalleryPicking} isProfilePicking={isProfilePicking}
           />
         ) : (
           <ProfilePreview
@@ -394,6 +468,7 @@ const WorkerRegistration = ({ navigation }) => {
             <Text style={styles.modalTitle}>Portfolio</Text>
             {isEditing ? <TouchableOpacity onPress={pickImage}><Icons.Ionicons name="add-circle" size={28} color="#10b981" /></TouchableOpacity> : <View style={{ width: 28 }} />}
           </View>
+
           <FlatList
             data={form.experience_images}
             numColumns={2}
@@ -403,23 +478,102 @@ const WorkerRegistration = ({ navigation }) => {
                 {index === 0 && <View style={styles.mainBadge}><Text style={styles.mainBadgeText}>MAIN</Text></View>}
               </View>
             )}
+            ListHeaderComponent={
+              <View style={{ paddingHorizontal: 10 }}>
+                <Text style={{ fontSize: 16, fontWeight: 600, color: theme.colors.sub_text }}>Jobs Accomplished</Text>
+              </View>
+            }
           />
+
+          {/* {form.experience_images.length > 0 ?
+            form.experience_images?.map((img, i) => {
+              <View style={styles.modalItem}>
+                <Image source={{ uri: img }} style={styles.modalImage} />
+                {i === 0 &&
+                  <View style={styles.mainBadge}>
+                    <Text style={styles.mainBadgeText}>MAIN</Text>
+                  </View>
+                }
+              </View>
+            })
+            : (
+              <View>
+
+              </View>
+            )} */}
+
+          {form.documents.length > 0 &&
+            (
+              <>
+                <View style={{ borderColor: theme.colors.border, borderWidth: 1, height: 1 }} />
+                <View style={{ gap: 10, alignItems: 'center', justifyContent: 'center' }}>
+                  {form.documents?.map((doc, i) => {
+                    <TouchableOpacity
+                      key={i}
+                      style={styles.attachmentCard}
+                      onPress={() => Linking.openURL(doc.url)}
+                    >
+                      <Icons.Ionicons
+                        name="document-attach"
+                        size={20}
+                        color={theme.colors.indicator}
+                      />
+                      <Text style={[styles.attachmentText, { color: theme.colors.sub_text }]}>
+                        {doc?.name || `View Document ${i + 1}`}
+                      </Text>
+                    </TouchableOpacity>
+                  })}
+                </View>
+              </>
+            )}
         </SafeAreaView>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  headerSafe: { backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
+  headerSafe: { borderBottomWidth: 1, borderBottomColor: '#f1f5f9' },
   headerNav: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, height: 60 },
   headerTitle: { fontSize: 11, fontWeight: '900', color: '#64748b' },
   editBtnText: { color: '#3b82f6', fontWeight: '900' },
   saveBtnText: { color: '#10b981', fontWeight: '900' },
-  scrollContent: { paddingBottom: 100 },
-  heroContainer: { height: 260, backgroundColor: '#f8fafc' },
+  scrollContent: { paddingBottom: 50 },
+  heroSectionContainer: { flexDirection: 'row', height: 280, backgroundColor: '#f8fafc', paddingHorizontal: 5, paddingVertical: 4, gap: 6 },
+  heroLeftColumn: { flex: 3, gap: 6 },
+  heroRightColumn: { flex: 1, gap: 6 },
+
+  // Profile Picture Section
+  profilePictureSection: { flex: 2, backgroundColor: '#fff', borderRadius: 15, overflow: 'hidden', elevation: 3, shadowOpacity: 0.1 },
+  profilePictureImage: { width: '100%', height: '100%' },
+  profilePicturePlaceholder: { width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center', backgroundColor: '#f1f5f9' },
+
+  // Gallery Preview Section
+  galleryPreviewSection: { flex: 1, backgroundColor: '#fff', borderRadius: 15, overflow: 'hidden', elevation: 3, shadowOpacity: 0.1 },
+  galleryScrollContent: { paddingHorizontal: 8, paddingVertical: 8, gap: 8 },
+  galleryThumbnail: { width: 100, height: '100%', borderRadius: 10, marginRight: 4 },
+  galleryEmptyPlaceholder: { width: 100, height: '100%', justifyContent: 'center', alignItems: 'center', backgroundColor: '#f1f5f9' },
+
+  attachmentCard: {
+    flexDirection: "row", alignItems: "center",
+    backgroundColor: "#fafafa", paddingHorizontal: 15, paddingVertical: 8, borderRadius: 12,
+    borderWidth: 1, borderColor: "#eee"
+  },
+  attachmentText: {
+    marginLeft: 10,
+    fontSize: 14,
+    fontWeight: "600",
+  },
+
+  // Action Buttons
+  actionButtonLarge: { flex: 2, backgroundColor: '#eff6ff', borderRadius: 15, justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderColor: '#3b82f6', gap: 8 },
+  actionButtonText: { fontSize: 12, fontWeight: '800', color: '#3b82f6', textAlign: 'center' },
+  actionButtonSmall: { flex: 1, backgroundColor: '#f0fdf4', borderRadius: 15, justifyContent: 'center', alignItems: 'center', borderWidth: 1.5, borderColor: '#10b981', gap: 6 },
+  actionButtonSmallText: { fontSize: 11, fontWeight: '700', color: '#10b981', textAlign: 'center' },
+  scrollContent: { paddingBottom: 50 },
+  heroContainer: { height: 200, backgroundColor: '#f8fafc' },
   heroImage: { width: '100%', height: '100%' },
   heroPlaceholder: { height: 200, justifyContent: 'center', alignItems: 'center', backgroundColor: '#f8fafc' },
   galleryTrigger: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#fff', marginHorizontal: 20, padding: 18, borderRadius: 15, elevation: 8, shadowOpacity: 0.1, marginTop: -30, gap: 12 },

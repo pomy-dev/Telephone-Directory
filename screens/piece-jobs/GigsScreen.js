@@ -110,9 +110,9 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
+    Math.cos((lat2 * Math.PI) / 180) *
+    Math.sin(dLon / 2) *
+    Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   const distance = R * c;
   return distance;
@@ -491,114 +491,109 @@ const GigsScreen = ({ navigation }) => {
 
 
   const renderWorkerCard = ({ item }) => {
-  // 1. Logic for Images: If no images, we won't render the block at all
-  const hasImages = item.experience_images && item.experience_images.length > 0;
-  const displayImages = hasImages ? item.experience_images : [];
+    // 1. Logic for Images: If no images, we won't render the block at all
+    const hasImages = item.experience_images && item.experience_images.length > 0;
+    const displayImages = hasImages ? item.experience_images : [];
 
-  const locationString =
-    typeof item.location === "object"
-      ? item.location?.address
-      : item.location || "Eswatini";
+    const locationString =
+      typeof item.location === "object"
+        ? item.location?.address
+        : item.location || "Eswatini";
 
-  // 2. Logic for Skills: Check if the worker actually has skills provided
-  const hasSkills = item.skills && item.skills.length > 0;
-  const skills = hasSkills ? item.skills : [];
+    // 2. Logic for Skills: Check if the worker actually has skills provided
+    const hasSkills = item.skills && item.skills.length > 0;
+    const skills = hasSkills ? item.skills : [];
 
-  return (
-    <TouchableOpacity
-      activeOpacity={0.9}
-      style={styles.workerCard}
-      onPress={() => navigation.navigate("WorkerProfileScreen", { worker: item })}
-    >
-      {/* HEADER AREA */}
-      <View style={styles.cardHeader}>
-        <View style={styles.avatarSquare}>
-          <Text style={styles.avatarText}>{item.name?.charAt(0)}</Text>
-        </View>
-        <View style={styles.headerInfo}>
-          <Text style={styles.workerName}>{item.name}</Text>
-          <View style={styles.locationRow}>
-            <Icons.Ionicons name="location-sharp" size={12} color="#10b981" />
-            <Text style={styles.locationText}>{locationString}</Text>
+    return (
+      <TouchableOpacity
+        activeOpacity={0.9}
+        style={styles.workerCard}
+        onPress={() => navigation.navigate("WorkerProfileScreen", { worker: item })}
+      >
+        {/* HEADER AREA */}
+        <View style={styles.cardHeader}>
+          <View style={styles.avatarSquare}>
+            <Text style={styles.avatarText}>{item.name?.charAt(0)}</Text>
+          </View>
+          <View style={styles.headerInfo}>
+            <Text style={styles.workerName}>{item.name}</Text>
+            <View style={styles.locationRow}>
+              <Icons.Ionicons name="location-sharp" size={12} color="#10b981" />
+              <Text style={styles.locationText}>{locationString}</Text>
+            </View>
           </View>
         </View>
-      </View>
 
-      {/* CONDITION: Show Bio only if NO skills are provided */}
-      {!hasSkills && (
-        <View style={styles.bodyContent}>
-          <Text numberOfLines={2} style={styles.bioText}>
-            {item.bio || "Top-rated professional. Tap to view full portfolio and contact details."}
-          </Text>
-        </View>
-      )}
+        {/* CONDITION: Show Bio only if NO skills are provided */}
+        {!hasSkills && (
+          <View style={styles.bodyContent}>
+            <Text numberOfLines={2} style={styles.bioText}>
+              {item.bio || "Top-rated professional. Tap to view full portfolio and contact details."}
+            </Text>
+          </View>
+        )}
 
-      {/* CONDITION: Show Skills only if they exist */}
-      {hasSkills && (
-        <View style={styles.skillsContainer}>
-          <Text style={styles.sectionHeader}>Services Provided</Text>
-          <Text style={styles.skillsRowText} numberOfLines={1} ellipsizeMode="tail">
-            {skills.map((skill, index) => (
-              <React.Fragment key={index}>
-                {skill}
-                {index < skills.length - 1 && "  |  "}
-              </React.Fragment>
-            ))}
-          </Text>
-        </View>
-      )}
+        {/* CONDITION: Show Skills only if they exist */}
+        {hasSkills && (
+          <View style={styles.skillsContainer}>
+            <Text style={styles.sectionHeader}>Services Provided</Text>
+            <Text style={styles.skillsRowText} numberOfLines={1} ellipsizeMode="tail">
+              {skills.map((skill, index) => (
+                <React.Fragment key={index}>
+                  {skill}
+                  {index < skills.length - 1 && "  |  "}
+                </React.Fragment>
+              ))}
+            </Text>
+          </View>
+        )}
 
-      {/* CONDITION: Show Portfolio only if images exist */}
-      {hasImages && (
-        <View style={styles.portfolioWrapper}>
-          <ScrollView
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
+        {/* CONDITION: Show Portfolio only if images exist */}
+        {hasImages && (
+          <View style={styles.portfolioWrapper}>
+            <ScrollView
+              horizontal
+              pagingEnabled
+              showsHorizontalScrollIndicator={false}
+            >
+              {displayImages.map((img, idx) => (
+                <Image
+                  key={idx}
+                  source={{ uri: img }}
+                  style={styles.portfolioImage}
+                />
+              ))}
+            </ScrollView>
+          </View>
+        )}
+
+        {/* FOOTER AREA */}
+        <View style={styles.cardFooter}>
+          <View style={styles.interactionGroup}>
+            <TouchableOpacity style={styles.voteBtn}>
+              <Icons.Ionicons name="thumbs-up" size={18} color="#10b981" />
+              <Text style={styles.voteCount}>{item.likes || "24"}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.voteBtn}>
+              <Icons.Ionicons name="thumbs-down-outline" size={18} color="#64748b" />
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity
+            style={styles.blackActionBtn}
+            onPress={() => Linking.openURL(`tel:${item.phone}`)}
           >
-            {displayImages.map((img, idx) => (
-              <Image
-                key={idx}
-                source={{ uri: img }}
-                style={styles.portfolioImage}
-              />
-            ))}
-          </ScrollView>
-        </View>
-      )}
-
-      {/* FOOTER AREA */}
-      <View style={styles.cardFooter}>
-        <View style={styles.interactionGroup}>
-          <TouchableOpacity style={styles.voteBtn}>
-            <Icons.Ionicons name="thumbs-up" size={18} color="#10b981" />
-            <Text style={styles.voteCount}>{item.likes || "24"}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.voteBtn}>
-            <Icons.Ionicons name="thumbs-down-outline" size={18} color="#64748b" />
+            <Text style={styles.actionBtnText}>VIEW PROFILE</Text>
+            <Icons.Ionicons name="arrow-forward" size={14} color="#10b981" />
           </TouchableOpacity>
         </View>
+      </TouchableOpacity>
+    );
+  };
 
-        <TouchableOpacity
-          style={styles.blackActionBtn}
-          onPress={() => Linking.openURL(`tel:${item.phone}`)}
-        >
-          <Text style={styles.actionBtnText}>VIEW PROFILE</Text>
-          <Icons.Ionicons name="arrow-forward" size={14} color="#10b981" />
-        </TouchableOpacity>
-      </View>
-    </TouchableOpacity>
-  );
-};
-
-return (
-    <SafeAreaView
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
-    >
-      <StatusBar
-        barStyle={isDarkMode ? "light-content" : "dark-content"}
-        backgroundColor={theme.colors.background}
-      />
+  return (
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
       <View style={{ height: 20 }} />
 
       {/* Custom Modern Header */}
@@ -908,7 +903,7 @@ return (
               styles.mainFab,
               { backgroundColor: theme.colors.indicator },
             ]}
-            // onPress={toggleFAB}
+            onPress={toggleFAB}
           >
             <Icons.AntDesign name="plus" size={24} color="#fff" />
           </TouchableOpacity>
@@ -1574,7 +1569,7 @@ const styles = StyleSheet.create({
     // This color makes the pipe separators pop slightly less than the text for better focus
     includeFontPadding: false,
   },
-  
+
 });
 
 export default GigsScreen;

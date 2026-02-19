@@ -13,12 +13,14 @@ import {
   Platform,
   StatusBar,
 } from "react-native";
+import { AppContext } from "../../context/appContext";
 import { Icons } from "../../constants/Icons";
 
 const { width } = Dimensions.get("window");
 
 const WorkerProfileScreen = ({ route, navigation }) => {
   const { worker } = route.params;
+  const { theme, isDarkMode } = React.useContext(AppContext);
 
   // --- DATA FIXES ---
   const locationString =
@@ -27,41 +29,41 @@ const WorkerProfileScreen = ({ route, navigation }) => {
       : worker.location || "Eswatini";
 
   // --- CONTACT HANDLERS ---
-  const handleEmail = () =>
-    Linking.openURL(`mailto:${worker.email || "contact@pomy.com"}`);
-  const handleWhatsApp = () =>
-    Linking.openURL(`whatsapp://send?phone=${worker.phone}`);
+  const handleEmail = () => Linking.openURL(`mailto:${worker.email || "contact@pomy.com"}`);
+
+  const handleWhatsApp = () => Linking.openURL(`whatsapp://send?phone=${worker.phone}`);
+
   const handleSocial = (platform) => {
     // Logic to open social media links if they exist in your worker object
     const url = worker[platform] || "https://facebook.com";
     Linking.openURL(url);
   };
 
-  // SMART LOGIC: Only true if images array exists and has content
-  const hasImages =
-    worker.experience_images && worker.experience_images.length > 0;
-  const hasSkills = worker.skills && worker.skills.length > 0;
-
   const handleCall = () => Linking.openURL(`tel:${worker.phone}`);
+
+  // SMART LOGIC: Only true if images array exists and has content
+  const hasImages = worker.experience_images && worker.experience_images.length > 0;
+  const hasSkills = worker.skills && worker.skills.length > 0;
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
+      {/* <View style={{ height: 30 }} /> */}
 
       {/* CENTERED HEADER */}
       <View style={styles.headerNav}>
         {/* Left Side: Back Button */}
-        <TouchableOpacity
+        {/* <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={styles.backBtn}
         >
           <Icons.Ionicons name="arrow-back" size={24} color="#000" />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
 
         {/* Center: Title (Absolutly positioned to stay dead-center) */}
-        <View style={styles.headerTitleContainer}>
+        {/* <View style={styles.headerTitleContainer}>
           <Text style={styles.headerTitle}>Professional Profile</Text>
-        </View>
+        </View> */}
 
         {/* Right Side: Empty view to balance flexbox if not using absolute positioning, 
       but with absolute positioning below, this isn't strictly necessary. */}
@@ -250,7 +252,7 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     justifyContent: "center",
     alignItems: "center",
-    borderRadius:6,
+    borderRadius: 6,
   },
   avatarText: {
     color: "#fff",

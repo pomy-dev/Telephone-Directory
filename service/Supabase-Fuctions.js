@@ -323,16 +323,16 @@ export async function getGigApplicants(gigId) {
  * @param {string} workerData.bio - Professional summary
  * @param {Array} workerData.skills - Array of strings e.g., ["Plumbing", "Leaks"]
  */
-  export async function registerAsWorker(workerData) {
+export async function registerAsWorker(workerData) {
   try {
     // 1. Upload Portfolio Images first
-    const uploadedImages = workerData.experience_images?.length > 0 
-      ? await uploadImages('worker_portfolios', 'images', workerData.experience_images) 
+    const uploadedImages = workerData.experience_images?.length > 0
+      ? await uploadImages('worker_portfolios', 'images', workerData.experience_images)
       : [];
 
     // 2. Upload Documents (Qualifications)
-    const uploadedDocs = workerData.documents?.length > 0 
-      ? await uploadAttachments('worker_docs', 'attachments', workerData.documents) 
+    const uploadedDocs = workerData.documents?.length > 0
+      ? await uploadAttachments('worker_docs', 'attachments', workerData.documents)
       : [];
 
     const { data, error } = await supabase
@@ -384,29 +384,40 @@ export async function getWorkerProfile(userId) {
 /**
  * Updates an existing worker profile
  */
-  // Supabase-Fuctions.js updates
+// Supabase-Fuctions.js updates
 
 export async function updateWorkerProfile(uid, updateData) {
   try {
-    let finalImages = updateData.experience_images || [];
-    let finalDocs = updateData.documents || [];
+    let workerProfile = updateData.worker_pp || []
+    let portfolioImgs = updateData.experience_images || [];
+    let documents = updateData.documents || [];
 
-    // 1. Process Portfolio Images: Upload only new ones
-    const newImages = finalImages.filter(img => img.startsWith('file://'));
-    const existingImages = finalImages.filter(img => !img.startsWith('file://'));
+    console.log(workerProfile)
 
-    if (newImages.length > 0) {
-      const uploaded = await uploadImages('worker_portfolios', 'images', newImages);
-      finalImages = [...existingImages, ...uploaded.map(img => img.url)];
+    const newProfile = workerProfile.filter(img => img.startsWith('file://'))
+    // const existingProfile = workerProfile.filter(img => !img.startsWith('file://'))
+
+    if (newProfile.length > 0) {
+      const uploadedPP = await uploadImages('workers', 'profile_pictures', newProfile);
+      workerProfile = uploadedPP;
+    }
+
+    // Process Portfolio Images: Upload only new ones
+    const newPortfolio = portfolioImgs.filter(img => img.startsWith('file://'));
+    const existingImages = portfolioImgs.filter(img => !img.startsWith('file://'));
+
+    if (newPortfolio.length > 0) {
+      const uploadedPortfolio = await uploadImages('workers', 'portfolio', newPortfolio);
+      portfolioImgs = [...existingImages, ...uploadedPortfolio.map(img => img.url)];
     }
 
     // 2. Process Documents: Upload only new ones
-    const newDocs = finalDocs.filter(doc => doc.uri?.startsWith('file://'));
-    const existingDocs = finalDocs.filter(doc => !doc.uri?.startsWith('file://'));
+    const newDocs = documents.filter(doc => doc.uri?.startsWith('file://'));
+    const existingDocs = documents.filter(doc => !doc.uri?.startsWith('file://'));
 
     if (newDocs.length > 0) {
-      const uploaded = await uploadAttachments('worker_docs', 'attachments', newDocs);
-      finalDocs = [...existingDocs, ...uploaded];
+      const uploadedDocs = await uploadAttachments('workers', 'documents', newDocs);
+      documents = [...existingDocs, ...uploadedDocs];
     }
 
     // 3. Update the Database
@@ -414,8 +425,9 @@ export async function updateWorkerProfile(uid, updateData) {
       .from('pomy_workers')
       .update({
         ...updateData,
-        experience_images: finalImages,
-        documents: finalDocs,
+        worker_pp: workerProfile,
+        experience_images: portfolioImgs,
+        documents: documents,
         contact_options: updateData.contact_options || {} // Save flexible contact modes
       })
       .eq('user_id', uid)
@@ -450,7 +462,7 @@ export async function updateWorkerAvailability(workerId, isAvailable) {
  * the db
  */
 export async function getGigById(Id) {
-    try {
+  try {
     const { data, error } = await supabase
       .from('pomy_gigs')
       .select('*')
@@ -693,7 +705,7 @@ export async function syncUserProfile(firebaseUser) {
         last_login: new Date().toISOString(),
         // Note: We DO NOT include interest_embedding here. 
         // This prevents us from overwriting their AI profile with NULL.
-      }, { onConflict: 'user_id' }) 
+      }, { onConflict: 'user_id' })
       .select();
 
     if (error) throw error;
