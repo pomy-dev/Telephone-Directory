@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState, useContext, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, StyleSheet, Alert, ScrollView, StatusBar,
@@ -9,11 +7,7 @@ import { TextInput } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
 import { Icons } from "../../constants/Icons";
-import {
-  registerAsWorker,
-  updateWorkerProfile,
-  getWorkerProfile
-} from '../../service/Supabase-Fuctions';
+import { registerAsWorker, updateWorkerProfile, getWorkerProfile } from '../../service/Supabase-Fuctions';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import SecondaryNav from '../../components/SecondaryNav';
@@ -23,8 +17,17 @@ import { AppContext } from '../../context/appContext';
 
 const WorkerRegistration = ({ navigation }) => {
   const insets = useSafeAreaInsets();
-  const { user } = useContext(AuthContext);
-  const { theme, isDarkMode } = useContext(AppContext);
+  const authContext = useContext(AuthContext);
+  const appContext = useContext(AppContext);
+
+  const user = authContext?.user;
+  const theme = appContext?.theme;
+  const isDarkMode = appContext?.isDarkMode;
+
+  // Prevent rendering if contexts are not available
+  if (!theme || !appContext) {
+    return <View style={{ flex: 1, backgroundColor: '#f4f7f6' }} />;
+  }
 
   const [loading, setLoading] = useState(false);
   // const [fetching, setFetching] = useState(true);
@@ -147,7 +150,7 @@ const WorkerRegistration = ({ navigation }) => {
 
     try {
       const res = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'],
+        mediaTypes: ['images', 'videos'],
         allowsEditing: true,
         aspect: [4, 3],
         quality: 0.8
@@ -356,9 +359,7 @@ const WorkerRegistration = ({ navigation }) => {
 
       <SecondaryNav title={'Register As Freelancer'} rightIcon={'save'} onRightPress={handleRegister} />
 
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={{ flex: 1 }}
-      >
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={{ flex: 1 }}>
         <ScrollView showsVerticalScrollIndicator={false} style={styles.mainScroll}>
 
           <View style={styles.sectionHeader}>
@@ -370,19 +371,23 @@ const WorkerRegistration = ({ navigation }) => {
               // {/* Profile Avatar */ }
               <View style={{ paddingTop: 10, alignItems: 'center', flex: 1 }}>
                 {avatarUri ? (
-                  <Image source={{ uri: avatarUri }} style={styles.avatarImage} />
-                ) : (
-                  <TouchableOpacity style={styles.avatarContainer} onPress={handleAddProfileImg}>
-                    <View style={styles.avatarPlaceholder}>
-                      <Icons.Ionicons name="camera" size={22} color="#888" />
-                      <Text style={styles.avatarPlaceholderText}>Add PP</Text>
-                    </View>
-                  </TouchableOpacity>
-                )}
+                  <>
+                    <Image source={{ uri: avatarUri }} style={styles.avatarImage} />
 
-                <TouchableOpacity onPress={handleAddProfileImg} style={{ position: 'absolute', bottom: 5, right: 130, marginLeft: 8 }}>
-                  <Icons.Ionicons name="camera-reverse" size={26} color={theme.colors.indicator} />
-                </TouchableOpacity>
+                    <TouchableOpacity onPress={handleAddProfileImg} style={{ position: 'absolute', bottom: 5, right: 130, marginLeft: 8 }}>
+                      <Icons.Ionicons name="camera-reverse" size={26} color={theme.colors.indicator} />
+                    </TouchableOpacity>
+                  </>
+                ) : (
+                  <>
+                    <TouchableOpacity style={styles.avatarContainer} onPress={handleAddProfileImg}>
+                      <View style={styles.avatarPlaceholder}>
+                        <Icons.Ionicons name="camera" size={22} color="#888" />
+                        <Text style={styles.avatarPlaceholderText}>Add PP</Text>
+                      </View>
+                    </TouchableOpacity>
+                  </>
+                )}
               </View>
             )}
 
@@ -405,8 +410,7 @@ const WorkerRegistration = ({ navigation }) => {
 
           <View style={[styles.settingsGroup, { backgroundColor: theme.colors.card }]}>
             {/* Skills */}
-            {/* {!isEditMode */}
-            <>
+            {!isEditMode &&
               <View style={[styles.settingItem, { alignItems: 'center', paddingVertical: 6, borderWidth: 0, borderColor: theme.colors.card }]}>
                 <View style={[styles.iconBox, { backgroundColor: '#f0f4ff' }]}>
                   <Icons.Ionicons name="flash" size={20} color={theme.colors.indicator} />
@@ -423,29 +427,30 @@ const WorkerRegistration = ({ navigation }) => {
                   />
                 </View>
               </View>
+            }
 
-              {/* Tags - always visible if there are skills */}
-              {form.skills.value?.length > 0 && (
-                <View style={[styles.tagWrapper, { paddingLeft: 0 }]}>
-                  {form.skills.value.map((skill, i) => (
-                    <TouchableOpacity
-                      key={i}
-                      style={styles.skillTag}
-                      onPress={() => removeSkill(i)}
-                    >
-                      <Text style={styles.skillTagText}>{skill}</Text>
-                      <Icons.Ionicons name="close-circle" size={16} color="#10b981" />
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
-            </>
-            {/* } */}
+            {/* Tags - always visible if there are skills */}
+            {form.skills.value?.length > 0 && (
+              <View style={[styles.tagWrapper, { paddingLeft: 0 }]}>
+                {form.skills.value.map((skill, i) => (
+                  <TouchableOpacity
+                    key={i}
+                    style={styles.skillTag}
+                    onPress={() => removeSkill(i)}
+                  >
+                    <Text style={styles.skillTagText}>{skill}</Text>
+                    <Icons.Ionicons name="close-circle" size={16} color="#10b981" />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
 
             {isEditMode && (
               <>
                 <View style={[styles.settingItem, { borderBottomWidth: 0 }]}>
-                  <View style={[styles.iconBox, { backgroundColor: '#f0f4ff' }]} />
+                  <View style={[styles.iconBox, { backgroundColor: '#f0f4ff' }]} >
+                    <Icons.Ionicons name="flash" size={20} color={theme.colors.indicator} />
+                  </View>
                   <View style={styles.settingContent}>
                     <View style={styles.skillInputRow}>
                       <TextInput
@@ -588,11 +593,11 @@ const WorkerRegistration = ({ navigation }) => {
 
               <View style={[styles.settingsGroup, { backgroundColor: theme.colors.card }]}>
                 <View style={styles.checkboxItem}>
-                  <Checkbox
+                  {/* <Checkbox
                     status={form.isBusinessEntity.value ? 'checked' : 'unchecked'}
                     onPress={() => setForm(prev => ({ ...prev, isBusinessEntity: { ...prev.isBusinessEntity, value: !prev.isBusinessEntity.value } }))}
                     color={theme.colors.indicator}
-                  />
+                  /> */}
                   <View style={{ flex: 1, marginLeft: 12 }}>
                     <Text style={[styles.checkboxLabel, { color: theme.colors.text }]}>
                       I operate as a small business / startup
