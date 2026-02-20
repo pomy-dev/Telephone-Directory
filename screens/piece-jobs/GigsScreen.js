@@ -875,7 +875,7 @@ const GigsScreen = ({ navigation }) => {
               <TouchableOpacity
                 style={[styles.secondaryFab, { backgroundColor: "#3b82f6" }]}
                 onPress={() => {
-                  // toggleFAB();
+                  toggleFAB();
                   navigation.navigate("WorkerRegistration");
                 }}
               >

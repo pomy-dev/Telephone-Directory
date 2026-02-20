@@ -2,7 +2,7 @@ import React, { useState, useContext, useEffect } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, StyleSheet, Alert,
   ScrollView, Image, Dimensions, Platform, StatusBar, ActivityIndicator,
-  SafeAreaView, Modal, FlatList, KeyboardAvoidingView, Linking
+  SafeAreaView, Modal, FlatList, KeyboardAvoidingView, Linking, Pressable
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
@@ -11,97 +11,177 @@ import { registerAsWorker, updateWorkerProfile, getWorkerProfile } from '../../s
 import { AuthContext } from '../../context/authProvider';
 import { AppContext } from "../../context/appContext";
 import CustomLoader from '../../components/customLoader';
+import { handleCall } from '../../utils/callFunctions';
 
 const { width } = Dimensions.get('window');
 const MODAL_COLUMN_WIDTH = (width - 60) / 2;
+// --- Helper for Dynamic Contact Icons ---
+const getContactIcon = (platform) => {
+  switch (platform) {
+    case "whatsapp":
+      return { name: "logo-whatsapp", color: "#25D366" };
+    case "instagram":
+      return { name: "logo-instagram", color: "#E4405F" };
+    case "facebook":
+      return { name: "logo-facebook", color: "#1877F2" };
+    case "email":
+      return { name: "mail", color: "#f43f5e" };
+    default:
+      return { name: "link", color: "#64748b" };
+  }
+};
 
 // ==========================================
 // COMPONENT 1: PROFILE PREVIEW (Read-Only)
 // ==========================================
-const ProfilePreview = ({ form, setGalleryVisible, handleWhatsApp, handleCall, handleEmail }) => (
-  <>
-    <View style={styles.heroContainer}>
-      {form.worker_pp ? (
-        <Image source={{ uri: form.worker_pp[0].url || form.worker_pp }} style={styles.heroImage} />
-      ) : (
-        <View style={styles.heroPlaceholder}>
-          <Icons.Ionicons name="person-circle-outline" size={80} color="#e2e8f0" />
-        </View>
-      )}
-    </View>
+const ProfilePreview = ({ form, setGalleryVisible, handleCall, theme }) => {
+  const handleContact = (platform, value) => {
+    if (!value) return;
+    let url = "";
+    if (platform === "whatsapp") url = `whatsapp://send?phone=${value}`;
+    else if (platform === "email") url = `mailto:${value}`;
+    else if (platform === "instagram")
+      url = `https://instagram.com/${value.replace("@", "")}`;
+    else if (platform === "facebook") url = `https://facebook.com/${value}`;
 
-    <TouchableOpacity style={styles.galleryTrigger} onPress={() => setGalleryVisible(true)}>
-      <Icons.Ionicons name="images" size={20} color="#000" />
-      <Text style={styles.galleryTriggerText}>View Portfolio ({form.experience_images?.length || 0})</Text>
-      <Icons.Ionicons name="chevron-forward" size={16} color="#94a3b8" />
-    </TouchableOpacity>
+    if (url)
+      Linking.openURL(url).catch(() =>
+        Alert.alert("Error", "Could not open link"),
+      );
+  };
 
-    <ScrollView
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={styles.scrollContent}
-    >
-      <View style={styles.mainContent}>
-        <View style={styles.identityContainer}>
-          <Text style={styles.nameLabelText}>{form.name || "Unnamed Professional"}</Text>
-          <View style={styles.locRow}>
-            <Icons.Ionicons name="location" size={14} color="#10b981" />
-            <Text style={styles.locationLabelText}>{form.location?.address || "Location not set"}</Text>
+  return (
+    <>
+      <View style={styles.heroContainer}>
+        {form.worker_pp ? (
+          <Image source={{ uri: form.worker_pp[0].url || form.worker_pp }} style={styles.heroImage} />
+        ) : (
+          <View style={styles.heroPlaceholder}>
+            <Icons.Ionicons name="person-circle-outline" size={80} color="#e2e8f0" />
           </View>
-
-          <View style={styles.contactIconRow}>
-            {form.contact_options?.whatsapp && (
-              <TouchableOpacity style={[styles.miniSocialBtn, { backgroundColor: '#25D366' }]} onPress={handleWhatsApp}>
-                <Icons.Ionicons name="logo-whatsapp" size={20} color="#fff" />
-              </TouchableOpacity>
-            )}
-            {form.phone && (
-              <TouchableOpacity style={[styles.miniSocialBtn, { backgroundColor: '#3b82f6' }]} onPress={handleCall}>
-                <Icons.Ionicons name="call" size={18} color="#fff" />
-              </TouchableOpacity>
-            )}
-            {form.email && (
-              <TouchableOpacity style={[styles.miniSocialBtn, { backgroundColor: '#f43f5e' }]} onPress={handleEmail}>
-                <Icons.Ionicons name="mail" size={18} color="#fff" />
-              </TouchableOpacity>
-            )}
-          </View>
-
-          <View style={styles.statsRow}>
-            <View style={styles.statBox}>
-              <Icons.Ionicons name="thumbs-up" size={16} color="#10b981" />
-              <Text style={styles.statCount}>{form.likes || 0}</Text>
-              <Text style={styles.statLabel}>Likes</Text>
-            </View>
-            <View style={[styles.statBox, { borderLeftWidth: 1, borderColor: '#f1f5f9' }]}>
-              <Icons.Ionicons name="thumbs-down" size={16} color="#ef4444" />
-              <Text style={styles.statCount}>{form.dislikes || 0}</Text>
-              <Text style={styles.statLabel}>Dislikes</Text>
-            </View>
-          </View>
-        </View>
-
-        <View style={styles.divider} />
-
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Professional Bio</Text>
-          <Text style={styles.bioPreviewText}>{form.bio || "No bio provided yet."}</Text>
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Services</Text>
-          <View style={styles.skillsList}>
-            {form.skills.map((skill, index) => (
-              <View key={index} style={styles.skillItem}>
-                <Icons.Ionicons name="checkmark-circle" size={18} color="#10b981" />
-                <Text style={styles.skillText}>{skill}</Text>
-              </View>
-            ))}
-          </View>
-        </View>
+        )}
       </View>
-    </ScrollView>
-  </>
-);
+
+      <TouchableOpacity style={styles.galleryTrigger} onPress={() => setGalleryVisible(true)}>
+        <Icons.Ionicons name="images" size={20} color="#000" />
+        <Text style={styles.galleryTriggerText}>View Portfolio ({form.experience_images?.length || 0})</Text>
+        <Icons.Ionicons name="chevron-forward" size={16} color="#94a3b8" />
+      </TouchableOpacity>
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        <View style={styles.mainContent}>
+          <View style={styles.identityContainer}>
+            <Text style={styles.nameLabelText}>{form.name || "Unnamed Professional"}</Text>
+            <View style={styles.locRow}>
+              <Icons.Ionicons name="location" size={14} color="#10b981" />
+              <Text style={styles.locationLabelText}>{form.location?.address || "Location not set"}</Text>
+            </View>
+
+            <View style={styles.contactIconRow}>
+              {form.phone && (
+                <TouchableOpacity style={[styles.miniSocialBtn, { backgroundColor: '#3b82f6' }]} onPress={handleCall}>
+                  <Icons.Ionicons name="call" size={20} color="#fff" />
+                </TouchableOpacity>
+              )}
+              {Object.entries(form.contact_options || {}).map(
+                ([platform, value]) => {
+                  if (!value) return null;
+                  const icon = getContactIcon(platform);
+                  return (
+                    <TouchableOpacity
+                      key={platform}
+                      style={[
+                        styles.miniSocialBtn,
+                        { backgroundColor: icon.color },
+                      ]}
+                      onPress={() => handleContact(platform, value)}
+                    >
+                      <Icons.Ionicons name={icon.name} size={20} color="#fff" />
+                    </TouchableOpacity>
+                  );
+                },
+              )}
+            </View>
+
+            <View style={styles.statsRow}>
+              <View style={styles.statBox}>
+                <Icons.Ionicons name="thumbs-up" size={16} color="#10b981" />
+                <Text style={styles.statCount}>{form.likes || 0}</Text>
+                <Text style={styles.statLabel}>Likes</Text>
+              </View>
+              <View style={[styles.statBox, { borderLeftWidth: 1, borderColor: '#f1f5f9' }]}>
+                <Icons.Ionicons name="thumbs-down" size={16} color="#ef4444" />
+                <Text style={styles.statCount}>{form.dislikes || 0}</Text>
+                <Text style={styles.statLabel}>Dislikes</Text>
+              </View>
+            </View>
+          </View>
+
+          <View style={styles.divider} />
+
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>Professional Bio</Text>
+            <Text style={styles.bioPreviewText}>{form.bio || "No bio provided yet."}</Text>
+          </View>
+
+          <View style={styles.section}>
+            {form.documents && form.documents.length > 0 ? (
+              <>
+                <Text style={styles.sectionLabel}>Qualifications / Certification</Text>
+                <View style={{ gap: 10 }}>
+                  {form.documents.map((doc, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      style={styles.docPreviewItem}
+                      onPress={() => {
+                        if (doc.url) {
+                          Linking.openURL(doc.url);
+                        }
+                      }}
+                    >
+                      <Icons.Ionicons
+                        name="document-text"
+                        size={18}
+                        color={theme.colors.sub_text}
+                      />
+                      <Text style={styles.docPreviewText} numberOfLines={1}>
+                        {doc.name || "Document"}
+                      </Text>
+                      <Icons.Ionicons
+                        name="open-outline"
+                        size={16}
+                        color="#94a3b8"
+                      />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </>
+            ) : (
+              <Text style={styles.bioPreviewText}>
+
+              </Text>
+            )}
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>Services</Text>
+            <View style={styles.skillsList}>
+              {form.skills.map((skill, index) => (
+                <View key={index} style={styles.skillItem}>
+                  <Icons.Ionicons name="checkmark-circle" size={18} color="#10b981" />
+                  <Text style={styles.skillText}>{skill}</Text>
+                </View>
+              ))}
+            </View>
+          </View>
+        </View>
+      </ScrollView>
+    </>
+  );
+}
 
 // ==========================================
 // COMPONENT 2: PROFILE FORM (Design Match)
@@ -110,183 +190,300 @@ const ProfileForm = ({
   form, setForm, currentSkill, setCurrentSkill, addSkill, isGalleryPicking, isProfilePicking,
   removeSkill, pickDocument, removeDocument, setGalleryVisible, pickImage
 }) => {
-  // console.log('Is picking: ', isPicking)
-  return (
-    <ScrollView
-      showsVerticalScrollIndicator={false}
-      contentContainerStyle={styles.scrollContent}
-      keyboardShouldPersistTaps="handled"
-    >
-      <View style={styles.heroSectionContainer}>
-        {/* Left Column: Profile Picture + Gallery */}
-        <View style={styles.heroLeftColumn}>
-          {/* Profile Picture Section (2/3) */}
-          <View style={styles.profilePictureSection}>
-            {form.worker_pp ? (
-              <Image source={{ uri: form.worker_pp[0].url || form.worker_pp }} style={styles.profilePictureImage} />
-            ) : (
-              <View style={styles.profilePicturePlaceholder}>
-                <Icons.Ionicons name="person-circle-outline" size={60} color="#cbd5e1" />
-              </View>
-            )}
-          </View>
+  const [showScrollTop, setShowScrollTop] = useState(false);
+  const scrollRef = React.useRef(null);
 
-          {/* Gallery Section (1/3) */}
-          <View style={styles.galleryPreviewSection}>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.galleryScrollContent}
-            >
-              {form.experience_images && form.experience_images.length > 0 ? (
-                form.experience_images.map((img, index) => (
-                  <Image key={index} source={{ uri: img.url || img }} style={styles.galleryThumbnail} />
-                ))
+  const [selectedPlatform, setSelectedPlatform] = useState("whatsapp");
+  const [contactModalVisible, setContactModalVisible] = useState(false);
+
+  const CONTACT_PLATFORMS = [
+    {
+      id: "whatsapp",
+      label: "WhatsApp",
+      icon: "logo-whatsapp",
+      color: "#25D366",
+      keyboard: "phone-pad",
+      placeholder: "Enter phone number",
+    },
+    {
+      id: "email",
+      label: "Email",
+      icon: "mail",
+      color: "#f43f5e",
+      keyboard: "email-address",
+      placeholder: "Enter email address",
+    },
+    {
+      id: "instagram",
+      label: "Instagram",
+      icon: "logo-instagram",
+      color: "#E4405F",
+      keyboard: "default",
+      placeholder: "Enter username",
+    },
+    {
+      id: "facebook",
+      label: "Facebook",
+      icon: "logo-facebook",
+      color: "#1877F2",
+      keyboard: "default",
+      placeholder: "Enter page name",
+    },
+  ];
+
+  const activePlatform = CONTACT_PLATFORMS.find(
+    (p) => p.id === selectedPlatform,
+  );
+  return (
+    <>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
+        ref={scrollRef}
+        onScroll={(e) => {
+          const offset = e.nativeEvent.contentOffset.y;
+          setShowScrollTop(offset > 200);
+        }}
+        scrollEventThrottle={16}
+      >
+        <View style={styles.heroSectionContainer}>
+          {/* Left Column: Profile Picture + Gallery */}
+          <View style={styles.heroLeftColumn}>
+            {/* Profile Picture Section (2/3) */}
+            <View style={styles.profilePictureSection}>
+              {form.worker_pp ? (
+                <Image source={{ uri: form.worker_pp[0].url || form.worker_pp }} style={styles.profilePictureImage} />
               ) : (
-                <View style={styles.galleryEmptyPlaceholder}>
-                  <Icons.Ionicons name="images-outline" size={30} color="#cbd5e1" />
+                <View style={styles.profilePicturePlaceholder}>
+                  <Icons.Ionicons name="person-circle-outline" size={60} color="#cbd5e1" />
                 </View>
               )}
-            </ScrollView>
+            </View>
+
+            {/* Gallery Section (1/3) */}
+            <View style={styles.galleryPreviewSection}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.galleryScrollContent}
+              >
+                {form.experience_images && form.experience_images.length > 0 ? (
+                  form.experience_images.map((img, index) => (
+                    <Image key={index} source={{ uri: img.url || img }} style={styles.galleryThumbnail} />
+                  ))
+                ) : (
+                  <View style={styles.galleryEmptyPlaceholder}>
+                    <Icons.Ionicons name="images-outline" size={30} color="#cbd5e1" />
+                  </View>
+                )}
+              </ScrollView>
+            </View>
           </View>
-        </View>
 
-        {/* Right Column: Action Buttons */}
-        <View style={styles.heroRightColumn}>
-          {/* Add Profile Picture Button (2/3) */}
-          <TouchableOpacity
-            style={styles.actionButtonLarge}
-            onPress={() => pickImage(false)}
-            activeOpacity={0.7}
-          >
-            <Icons.MaterialIcons name="flip-camera-ios" size={28} color="#3b82f6" />
-            <Text style={styles.actionButtonText}>{isProfilePicking ? 'Picking...' : 'Profile\nPicture'}</Text>
-          </TouchableOpacity>
+          {/* Right Column: Action Buttons */}
+          <View style={styles.heroRightColumn}>
+            {/* Add Profile Picture Button (2/3) */}
+            <TouchableOpacity
+              style={styles.actionButtonLarge}
+              onPress={() => pickImage(false)}
+              activeOpacity={0.7}
+            >
+              <Icons.MaterialIcons name="flip-camera-ios" size={28} color="#3b82f6" />
+              <Text style={styles.actionButtonText}>{isProfilePicking ? 'Picking...' : 'Profile\nPicture'}</Text>
+            </TouchableOpacity>
 
-          {/* Add Gallery Button (1/3) */}
-          <TouchableOpacity
-            style={styles.actionButtonSmall}
-            onPress={() => pickImage(true)}
-            activeOpacity={0.7}
-          >
-            <Icons.MaterialCommunityIcons name="camera-plus-outline" size={20} color="#10b981" />
-            <Text style={styles.actionButtonSmallText}>{isGalleryPicking ? 'Picking...' : 'Gallery'}</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <View style={styles.mainContent}>
-        {/* 1. BUSINESS IDENTITY */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Business Identity</Text>
-          <TextInput
-            style={styles.nameInput}
-            value={form.name}
-            placeholder="Your Business Name"
-            placeholderTextColor="#94a3b8"
-            onChangeText={(t) => setForm({ ...form, name: t })}
-          />
-        </View>
-
-        {/* 2. CONTACT DETAILS */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Contact Number</Text>
-          <View style={styles.simpleInputWrapper}>
-            <Icons.Ionicons name="call" size={20} color="#64748b" style={styles.inputIcon} />
-            <TextInput
-              style={styles.simpleTextInput}
-              value={form.phone}
-              placeholder="7600 0000"
-              placeholderTextColor="#94a3b8"
-              keyboardType="phone-pad"
-              onChangeText={(t) => setForm({ ...form, phone: t })}
-            />
-          </View>
-        </View>
-
-        {/* 3. LOCATION */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Location</Text>
-          <View style={styles.simpleInputWrapper}>
-            <Icons.Ionicons name="location" size={20} color="#10b981" style={styles.inputIcon} />
-            <TextInput
-              style={styles.simpleTextInput}
-              value={form.location?.address}
-              placeholder="Primary Location (e.g. Mbabane)"
-              placeholderTextColor="#94a3b8"
-              onChangeText={(t) => setForm({ ...form, location: { address: t } })}
-            />
-          </View>
-        </View>
-
-        <View style={styles.divider} />
-
-        {/* 4. DOCUMENT UPLOAD */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Qualifications & Clearances</Text>
-          <Text style={styles.helperText}>Add certificates, licenses, or police clearance</Text>
-          <TouchableOpacity style={styles.uploadDocBtn} onPress={pickDocument}>
-            <Icons.Ionicons name="cloud-upload" size={20} color="#3b82f6" />
-            <Text style={styles.uploadDocBtnText}>Upload Document</Text>
-          </TouchableOpacity>
-
-          <View style={styles.docList}>
-            {form.documents?.map((doc, index) => (
-              <View key={index} style={styles.docItem}>
-                <Icons.Ionicons name="document-text" size={20} color="#64748b" />
-                <Text style={styles.docName} numberOfLines={1}>{doc.name}</Text>
-                <TouchableOpacity onPress={() => removeDocument(index)}>
-                  <Icons.Ionicons name="trash-outline" size={18} color="#ef4444" />
-                </TouchableOpacity>
-              </View>
-            ))}
-          </View>
-        </View>
-
-        <View style={styles.divider} />
-
-        {/* 5. BIO */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Professional Bio</Text>
-          <TextInput
-            multiline
-            style={styles.bioInputEdit}
-            value={form.bio}
-            onChangeText={(t) => setForm({ ...form, bio: t })}
-            placeholder="What makes your service great?"
-            placeholderTextColor="#94a3b8"
-          />
-        </View>
-
-        {/* 6. SERVICES */}
-        <View style={styles.section}>
-          <Text style={styles.sectionLabel}>Services You Provide</Text>
-          <View style={styles.skillInputWrapper}>
-            <TextInput
-              style={styles.growingSkillInput}
-              placeholder="e.g. Plumbing, Teaching..."
-              placeholderTextColor="#94a3b8"
-              value={currentSkill}
-              onChangeText={setCurrentSkill}
-            />
-            <TouchableOpacity onPress={addSkill} style={styles.addSkillFab}>
-              <Icons.Ionicons name="add" size={24} color="#fff" />
+            {/* Add Gallery Button (1/3) */}
+            <TouchableOpacity
+              style={styles.actionButtonSmall}
+              onPress={() => pickImage(true)}
+              activeOpacity={0.7}
+            >
+              <Icons.MaterialCommunityIcons name="camera-plus-outline" size={20} color="#10b981" />
+              <Text style={styles.actionButtonSmallText}>{isGalleryPicking ? 'Picking...' : 'Gallery'}</Text>
             </TouchableOpacity>
           </View>
+        </View>
 
-          <View style={styles.skillsList}>
-            {form.skills.map((skill, index) => (
-              <View key={index} style={styles.skillItemEdit}>
-                <Text style={styles.skillText}>• {skill}</Text>
-                <TouchableOpacity onPress={() => removeSkill(index)}>
-                  <Icons.Ionicons name="close-circle" size={20} color="#ef4444" />
-                </TouchableOpacity>
-              </View>
-            ))}
+        <View style={styles.mainContent}>
+          {/* 1. BUSINESS IDENTITY */}
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>Business Identity</Text>
+            <TextInput
+              style={styles.nameInput}
+              value={form.name}
+              placeholder="Your Business Name"
+              placeholderTextColor="#94a3b8"
+              onChangeText={(t) => setForm({ ...form, name: t })}
+            />
+          </View>
+
+          {/* 2. CONTACT DETAILS */}
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>Contact Number</Text>
+            <View style={styles.simpleInputWrapper}>
+              <Icons.Ionicons name="call" size={20} color="#64748b" style={styles.inputIcon} />
+              <TextInput
+                style={styles.simpleTextInput}
+                value={form.phone}
+                placeholder="7600 0000"
+                placeholderTextColor="#94a3b8"
+                keyboardType="phone-pad"
+                onChangeText={(t) => setForm({ ...form, phone: t })}
+              />
+            </View>
+          </View>
+
+          {/* 3. CONTACT OPTIONS */}
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>Communication Channel</Text>
+
+            <View style={styles.dynamicContactRow}>
+              {/* PLATFORM PICKER */}
+              <TouchableOpacity
+                style={[
+                  styles.platformSelector,
+                  { backgroundColor: activePlatform.color },
+                ]}
+                onPress={() => setContactModalVisible(true)}
+              >
+                <Icons.Ionicons
+                  name={activePlatform.icon}
+                  size={18}
+                  color="#fff"
+                />
+                <Text style={styles.platformText}>{activePlatform.label}</Text>
+                <Icons.Ionicons name="chevron-down" size={14} color="#fff" />
+              </TouchableOpacity>
+
+              {/* SINGLE INPUT */}
+              <TextInput
+                style={styles.dynamicContactInput}
+                placeholder={activePlatform.placeholder}
+                keyboardType={activePlatform.keyboard}
+                value={form.contact_options?.[selectedPlatform] || ""}
+                onChangeText={(text) =>
+                  setForm({
+                    ...form,
+                    contact_options: {
+                      ...form.contact_options,
+                      [selectedPlatform]: text,
+                    },
+                  })
+                }
+                autoCapitalize="none"
+              />
+            </View>
+          </View>
+
+          {/* 4. LOCATION */}
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>Location</Text>
+            <View style={styles.simpleInputWrapper}>
+              <Icons.Ionicons name="location" size={20} color="#10b981" style={styles.inputIcon} />
+              <TextInput
+                style={styles.simpleTextInput}
+                value={form.location?.address}
+                placeholder="Primary Location (e.g. Mbabane)"
+                placeholderTextColor="#94a3b8"
+                onChangeText={(t) => setForm({ ...form, location: { address: t } })}
+              />
+            </View>
+          </View>
+
+          <View style={styles.divider} />
+
+          {/* 5. DOCUMENT UPLOAD */}
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>Qualifications & Clearances</Text>
+            <Text style={styles.helperText}>Add certificates, licenses, or police clearance</Text>
+            <TouchableOpacity style={styles.uploadDocBtn} onPress={pickDocument}>
+              <Icons.Ionicons name="cloud-upload" size={20} color="#3b82f6" />
+              <Text style={styles.uploadDocBtnText}>Upload Document</Text>
+            </TouchableOpacity>
+
+            <View style={styles.docList}>
+              {form.documents?.map((doc, index) => (
+                <View key={index} style={styles.docItem}>
+                  <Icons.Ionicons name="document-text" size={20} color="#64748b" />
+                  <Text style={styles.docName} numberOfLines={1}>{doc.name}</Text>
+                  <TouchableOpacity onPress={() => removeDocument(index)}>
+                    <Icons.Ionicons name="trash-outline" size={18} color="#ef4444" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          <View style={styles.divider} />
+
+          {/* 6. BIO */}
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>Professional Bio</Text>
+            <TextInput
+              multiline
+              style={styles.bioInputEdit}
+              value={form.bio}
+              onChangeText={(t) => setForm({ ...form, bio: t })}
+              placeholder="What makes your service great?"
+              placeholderTextColor="#94a3b8"
+            />
+          </View>
+
+          {/* 7. SERVICES */}
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>Services You Provide</Text>
+            <View style={styles.skillInputWrapper}>
+              <TextInput
+                style={styles.growingSkillInput}
+                placeholder="e.g. Plumbing, Teaching..."
+                placeholderTextColor="#94a3b8"
+                value={currentSkill}
+                onChangeText={setCurrentSkill}
+              />
+              <TouchableOpacity onPress={addSkill} style={styles.addSkillFab}>
+                <Icons.Ionicons name="add" size={24} color="#fff" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.skillsList}>
+              {form.skills.map((skill, index) => (
+                <View key={index} style={styles.skillItemEdit}>
+                  <Text style={styles.skillText}>• {skill}</Text>
+                  <TouchableOpacity onPress={() => removeSkill(index)}>
+                    <Icons.Ionicons name="close-circle" size={20} color="#ef4444" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </View>
           </View>
         </View>
-      </View>
-    </ScrollView>
+      </ScrollView>
+
+      <Modal visible={contactModalVisible} transparent animationType="fade">
+        <Pressable style={styles.modalOverlay} onPress={() => setContactModalVisible(false)}>
+          <View style={styles.platformModal}>
+            {CONTACT_PLATFORMS.map((item) => (
+              <TouchableOpacity
+                key={item.id}
+                style={styles.platformOption}
+                onPress={() => {
+                  setSelectedPlatform(item.id);
+                  setContactModalVisible(false);
+                }}
+              >
+                <View
+                  style={[styles.optionIcon, { backgroundColor: item.color }]}
+                >
+                  <Icons.Ionicons name={item.icon} size={18} color="#fff" />
+                </View>
+                <Text style={styles.optionText}>{item.label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </Pressable>
+      </Modal>
+    </>
   );
 };
 
@@ -453,9 +650,7 @@ const WorkerRegistration = ({ navigation }) => {
         ) : (
           <ProfilePreview
             form={form} setGalleryVisible={setGalleryVisible}
-            handleWhatsApp={() => Linking.openURL(`whatsapp://send?phone=${form.phone}`)}
-            handleCall={() => Linking.openURL(`tel:${form.phone}`)}
-            handleEmail={() => Linking.openURL(`mailto:${form.email}`)}
+            theme={theme} handleCall={handleCall}
           />
         )}
       </KeyboardAvoidingView>
@@ -547,6 +742,88 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     fontSize: 14,
     fontWeight: "600",
+  },
+
+  // From Lethu
+  dynamicContactRow: {
+    flexDirection: "row",
+    gap: 10,
+    alignItems: "center",
+  },
+
+  platformSelector: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+    gap: 6,
+  },
+
+  platformText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 13,
+  },
+
+  dynamicContactInput: {
+    flex: 1,
+    backgroundColor: "#f8fafc",
+    paddingHorizontal: 15,
+    paddingVertical: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#e2e8f0",
+    fontWeight: "600",
+  },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.4)",
+    justifyContent: "center",
+    padding: 30,
+  },
+
+  platformModal: {
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    padding: 20,
+  },
+
+  platformOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    gap: 15,
+  },
+
+  optionIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  optionText: {
+    fontWeight: "700",
+    fontSize: 15,
+  },
+  docPreviewItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f8fafc",
+    padding: 12,
+    borderRadius: 10,
+    gap: 10,
+    borderWidth: 1,
+    borderColor: "#f1f5f9",
+  },
+  docPreviewText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#334155",
   },
 
   // Action Buttons
