@@ -140,7 +140,7 @@ const ProfileForm = ({
             >
               {form.experience_images && form.experience_images.length > 0 ? (
                 form.experience_images.map((img, index) => (
-                  <Image key={index} source={{ uri: img }} style={styles.galleryThumbnail} />
+                  <Image key={index} source={{ uri: img.url || img }} style={styles.galleryThumbnail} />
                 ))
               ) : (
                 <View style={styles.galleryEmptyPlaceholder}>
@@ -318,7 +318,6 @@ const WorkerRegistration = ({ navigation }) => {
 
     const result = await getWorkerProfile(user.uid);
     if (result.success && result.data) {
-      console.log('Worker Details: ', result.data)
       setForm(result.data);
       setOriginalData(result.data);
       setIsWorker(true);
@@ -382,9 +381,9 @@ const WorkerRegistration = ({ navigation }) => {
       console.error(err)
     } finally {
       setLoading(false);
-      setForm({
-        name: '', phone: '', email: '', skills: [], bio: '', worker_pp: null, experience_images: [],
-        documents: [], likes: 0, dislikes: 0, location: {}
+      !isWorker && setForm({
+        name: '', phone: '', email: '', skills: [], bio: '', worker_pp: null,
+        experience_images: [], documents: [], likes: 0, dislikes: 0, location: {}
       })
     }
   };
@@ -474,7 +473,7 @@ const WorkerRegistration = ({ navigation }) => {
             numColumns={2}
             renderItem={({ item, index }) => (
               <View style={styles.modalItem}>
-                <Image source={{ uri: item }} style={styles.modalImage} />
+                <Image source={{ uri: item.url || item }} style={styles.modalImage} />
                 {index === 0 && <View style={styles.mainBadge}><Text style={styles.mainBadgeText}>MAIN</Text></View>}
               </View>
             )}
@@ -484,23 +483,6 @@ const WorkerRegistration = ({ navigation }) => {
               </View>
             }
           />
-
-          {/* {form.experience_images.length > 0 ?
-            form.experience_images?.map((img, i) => {
-              <View style={styles.modalItem}>
-                <Image source={{ uri: img }} style={styles.modalImage} />
-                {i === 0 &&
-                  <View style={styles.mainBadge}>
-                    <Text style={styles.mainBadgeText}>MAIN</Text>
-                  </View>
-                }
-              </View>
-            })
-            : (
-              <View>
-
-              </View>
-            )} */}
 
           {form.documents.length > 0 &&
             (

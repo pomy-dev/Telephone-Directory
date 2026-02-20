@@ -392,46 +392,66 @@ export async function updateWorkerProfile(uid, updateData) {
     let portfolioImgs = updateData.experience_images || [];
     let documents = updateData.documents || [];
 
-    console.log(workerProfile)
-
-    const newProfile = workerProfile.filter(img => img.startsWith('file://'))
-    // const existingProfile = workerProfile.filter(img => !img.startsWith('file://'))
-
-    if (newProfile.length > 0) {
-      const uploadedPP = await uploadImages('workers', 'profile_pictures', newProfile);
-      workerProfile = uploadedPP;
+    const isLocalFile = (item) => {
+      if (!item) return false
+      if (typeof item === 'string') return item.startsWith('file://')
+      if (typeof item === 'object') return !!(item.uri && String(item.uri).startsWith('file://'))
+      return false
     }
 
-    // Process Portfolio Images: Upload only new ones
-    const newPortfolio = portfolioImgs.filter(img => img.startsWith('file://'));
-    const existingImages = portfolioImgs.filter(img => !img.startsWith('file://'));
-
-    if (newPortfolio.length > 0) {
-      const uploadedPortfolio = await uploadImages('workers', 'portfolio', newPortfolio);
-      portfolioImgs = [...existingImages, ...uploadedPortfolio.map(img => img.url)];
+    const isRemoteUrl = (item) => {
+      if (!item) return false
+      if (typeof item === 'string') return item.startsWith('https')
+      if (typeof item === 'object') return !!(item.url && String(item.url).startsWith('https'))
+      return false
     }
 
-    // 2. Process Documents: Upload only new ones
-    const newDocs = documents.filter(doc => doc.uri?.startsWith('file://'));
-    const existingDocs = documents.filter(doc => !doc.uri?.startsWith('file://'));
+    // Profile picture(s)
+    const existingPP = workerProfile.filter(item => !isLocalFile(item))
+    const toUploadPP = workerProfile.filter(isLocalFile).map(i => (typeof i === 'string' ? { uri: i } : i))
 
-    if (newDocs.length > 0) {
-      const uploadedDocs = await uploadAttachments('workers', 'documents', newDocs);
-      documents = [...existingDocs, ...uploadedDocs];
+    if (toUploadPP.length > 0) {
+      const uploadedPP = await uploadImages('workers', 'profile_pictures', toUploadPP)
+      workerProfile = [...existingPP, ...(uploadedPP || [])]
+    } else {
+      workerProfile = existingPP
     }
 
-    // 3. Update the Database
+    // Portfolio images: want array of URL strings
+    const existingPortfolioUrls = portfolioImgs.filter(isRemoteUrl).map(i => (typeof i === 'string' ? i : i.url))
+    const toUploadPortfolio = portfolioImgs.filter(isLocalFile).map(i => (typeof i === 'string' ? i : i.uri))
+
+    if (toUploadPortfolio.length > 0) {
+      const uploadedPortfolio = await uploadImages('workers', 'portfolio', toUploadPortfolio)
+      portfolioImgs = [...uploadedPortfolio]
+    } else {
+      portfolioImgs = existingPortfolioUrls
+    }
+
+    // Documents: keep array of objects {url,name,type,...}
+    const existingDocs = documents.filter(isRemoteUrl).map(i => (typeof i === 'string' ? { url: i } : i))
+    const toUploadDocs = documents.filter(isLocalFile).map(i => (typeof i === 'string' ? { uri: i } : i))
+
+    if (toUploadDocs.length > 0) {
+      const uploadedDocs = await uploadAttachments('workers', 'certificates', toUploadDocs)
+      documents = [...existingDocs, ...(uploadedDocs || [])]
+    } else {
+      documents = existingDocs
+    }
+
+    const payload = {
+      ...updateData,
+      worker_pp: workerProfile,
+      experience_images: portfolioImgs,
+      documents: documents,
+      contact_options: updateData.contact_options || {}
+    }
+
     const { data, error } = await supabase
       .from('pomy_workers')
-      .update({
-        ...updateData,
-        worker_pp: workerProfile,
-        experience_images: portfolioImgs,
-        documents: documents,
-        contact_options: updateData.contact_options || {} // Save flexible contact modes
-      })
+      .update(payload)
       .eq('user_id', uid)
-      .select();
+      .select()
 
     if (error) throw error;
     return { success: true, data: data[0] };
