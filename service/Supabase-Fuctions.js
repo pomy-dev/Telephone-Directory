@@ -325,15 +325,7 @@ export async function getGigApplicants(gigId) {
  */
   export async function registerAsWorker(workerData) {
   try {
-    // 1. Upload Portfolio Images first
-    const uploadedImages = workerData.experience_images?.length > 0 
-      ? await uploadImages('worker_portfolios', 'images', workerData.experience_images) 
-      : [];
 
-    // 2. Upload Documents (Qualifications)
-    const uploadedDocs = workerData.documents?.length > 0 
-      ? await uploadAttachments('worker_docs', 'attachments', workerData.documents) 
-      : [];
 
     const { data, error } = await supabase
       .from('pomy_workers')
@@ -345,8 +337,8 @@ export async function getGigApplicants(gigId) {
           location: workerData.location,
           bio: workerData.bio,
           skills: workerData.skills || [],
-          documents: uploadedDocs, // Now stores array of {url, name, type}
-          experience_images: uploadedImages.map(img => img.url), // Array of URLs
+          documents: workerData.documents || [], 
+          experience_images: workerData.experience_images || [], 
           contact_options: workerData.contact_options || {},
           is_available: true,
         }
@@ -386,48 +378,29 @@ export async function getWorkerProfile(userId) {
  */
   // Supabase-Fuctions.js updates
 
-export async function updateWorkerProfile(uid, updateData) {
-  try {
-    let finalImages = updateData.experience_images || [];
-    let finalDocs = updateData.documents || [];
+  export async function updateWorkerProfile(uid, updateData) {
+    try {
+      let finalImages = updateData.experience_images || [];
+      let finalDocs = updateData.documents || [];
+      // 3. Update the Database
+      const { data, error } = await supabase
+        .from('pomy_workers')
+        .update({
+          ...updateData,
+          experience_images: finalImages,
+          documents: finalDocs,
+          contact_options: updateData.contact_options || {} // Save flexible contact modes
+        })
+        .eq('user_id', uid)
+        .select();
 
-    // 1. Process Portfolio Images: Upload only new ones
-    const newImages = finalImages.filter(img => img.startsWith('file://'));
-    const existingImages = finalImages.filter(img => !img.startsWith('file://'));
-
-    if (newImages.length > 0) {
-      const uploaded = await uploadImages('worker_portfolios', 'images', newImages);
-      finalImages = [...existingImages, ...uploaded.map(img => img.url)];
+      if (error) throw error;
+      return { success: true, data: data[0] };
+    } catch (error) {
+      console.error('Update Error:', error.message);
+      return { success: false, error: error.message };
     }
-
-    // 2. Process Documents: Upload only new ones
-    const newDocs = finalDocs.filter(doc => doc.uri?.startsWith('file://'));
-    const existingDocs = finalDocs.filter(doc => !doc.uri?.startsWith('file://'));
-
-    if (newDocs.length > 0) {
-      const uploaded = await uploadAttachments('worker_docs', 'attachments', newDocs);
-      finalDocs = [...existingDocs, ...uploaded];
-    }
-
-    // 3. Update the Database
-    const { data, error } = await supabase
-      .from('pomy_workers')
-      .update({
-        ...updateData,
-        experience_images: finalImages,
-        documents: finalDocs,
-        contact_options: updateData.contact_options || {} // Save flexible contact modes
-      })
-      .eq('user_id', uid)
-      .select();
-
-    if (error) throw error;
-    return { success: true, data: data[0] };
-  } catch (error) {
-    console.error('Update Error:', error.message);
-    return { success: false, error: error.message };
   }
-}
 
 /**
  * Update availability status for an existing worker
