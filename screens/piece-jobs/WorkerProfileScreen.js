@@ -13,6 +13,7 @@ import {
   Platform,
   StatusBar,
 } from "react-native";
+import SecondaryNav from "../../components/SecondaryNav";
 import { AppContext } from "../../context/appContext";
 import { Icons } from "../../constants/Icons";
 
@@ -48,26 +49,8 @@ const WorkerProfileScreen = ({ route, navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
-      {/* <View style={{ height: 30 }} /> */}
-
-      {/* CENTERED HEADER */}
-      <View style={styles.headerNav}>
-        {/* Left Side: Back Button */}
-        {/* <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backBtn}
-        >
-          <Icons.Ionicons name="arrow-back" size={24} color="#000" />
-        </TouchableOpacity> */}
-
-        {/* Center: Title (Absolutly positioned to stay dead-center) */}
-        {/* <View style={styles.headerTitleContainer}>
-          <Text style={styles.headerTitle}>Professional Profile</Text>
-        </View> */}
-
-        {/* Right Side: Empty view to balance flexbox if not using absolute positioning, 
-      but with absolute positioning below, this isn't strictly necessary. */}
-      </View>
+      <View style={{ height: 20 }} />
+      <SecondaryNav title={'Freelancer Profile'} />
 
       {/* BODY CONTENT */}
       <ScrollView
@@ -82,7 +65,7 @@ const WorkerProfileScreen = ({ route, navigation }) => {
             showsHorizontalScrollIndicator={false}
           >
             {worker.experience_images.map((img, idx) => (
-              <Image key={idx} source={{ uri: img }} style={styles.heroImage} />
+              <Image key={idx} source={{ uri: img.url || img }} style={styles.heroImage} />
             ))}
           </ScrollView>
         )}
@@ -234,7 +217,7 @@ const styles = StyleSheet.create({
   },
   heroImage: {
     width: width,
-    height: 380,
+    height: 200,
     backgroundColor: "#f8fafc",
     resizeMode: "cover",
   },

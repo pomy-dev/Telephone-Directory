@@ -392,6 +392,8 @@ export async function updateWorkerProfile(uid, updateData) {
     let portfolioImgs = updateData.experience_images || [];
     let documents = updateData.documents || [];
 
+    console.log('Worker P.: ', workerProfile, '\nGallery Imgs: ', portfolioImgs, '\nDocuments: ', documents)
+
     const isLocalFile = (item) => {
       if (!item) return false
       if (typeof item === 'string') return item.startsWith('file://')
@@ -407,8 +409,8 @@ export async function updateWorkerProfile(uid, updateData) {
     }
 
     // Profile picture(s)
-    const existingPP = workerProfile.filter(item => !isLocalFile(item))
-    const toUploadPP = workerProfile.filter(isLocalFile).map(i => (typeof i === 'string' ? { uri: i } : i))
+    const existingPP = workerProfile?.filter(item => !isLocalFile(item))
+    const toUploadPP = workerProfile?.filter(isLocalFile).map(i => (typeof i === 'string' ? i : { uri: i }))
 
     if (toUploadPP.length > 0) {
       const uploadedPP = await uploadImages('workers', 'profile_pictures', toUploadPP)
@@ -418,26 +420,44 @@ export async function updateWorkerProfile(uid, updateData) {
     }
 
     // Portfolio images: want array of URL strings
-    const existingPortfolioUrls = portfolioImgs.filter(isRemoteUrl).map(i => (typeof i === 'string' ? i : i.url))
-    const toUploadPortfolio = portfolioImgs.filter(isLocalFile).map(i => (typeof i === 'string' ? i : i.uri))
+    // Keep existing remote URLs and append newly uploaded ones
+    const existingPortfolioUrls = portfolioImgs
+      ?.filter(isRemoteUrl)
+      .map(i => (typeof i === 'string' ? i : i.url))
+
+    const toUploadPortfolio = portfolioImgs
+      ?.filter(isLocalFile)
+      .map(i => (typeof i === 'string' ? i : i.uri))
 
     if (toUploadPortfolio.length > 0) {
       const uploadedPortfolio = await uploadImages('workers', 'portfolio', toUploadPortfolio)
-      portfolioImgs = [...uploadedPortfolio]
-    } else {
-      portfolioImgs = existingPortfolioUrls
+      // Append newly uploaded images to existing remote URLs
+      const uploadedUrls = uploadedPortfolio.map(img => (typeof img === 'object' ? img : img.url))
+      portfolioImgs = [...(existingPortfolioUrls || []), ...uploadedUrls]
+    }
+    else {
+      portfolioImgs = existingPortfolioUrls || []
     }
 
     // Documents: keep array of objects {url,name,type,...}
-    const existingDocs = documents.filter(isRemoteUrl).map(i => (typeof i === 'string' ? { url: i } : i))
-    const toUploadDocs = documents.filter(isLocalFile).map(i => (typeof i === 'string' ? { uri: i } : i))
+    // Keep existing remote documents and append newly uploaded ones
+    const existingDocs = documents
+      ?.filter(isRemoteUrl)
+      .map(i => (typeof i === 'string' ? { url: i } : i))
+
+    const toUploadDocs = documents
+      ?.filter(isLocalFile)
+      .map(i => (typeof i === 'string' ? { uri: i } : i))
 
     if (toUploadDocs.length > 0) {
       const uploadedDocs = await uploadAttachments('workers', 'certificates', toUploadDocs)
-      documents = [...existingDocs, ...(uploadedDocs || [])]
+      // Append newly uploaded documents to existing remote documents
+      documents = [...(existingDocs || []), ...(uploadedDocs || [])]
     } else {
-      documents = existingDocs
+      documents = existingDocs || []
     }
+
+    console.log('Portfolio Img: ', portfolioImgs)
 
     const payload = {
       ...updateData,

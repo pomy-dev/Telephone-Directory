@@ -53,8 +53,8 @@ const ProfilePreview = ({ form, setGalleryVisible, handleCall, theme }) => {
   return (
     <>
       <View style={styles.heroContainer}>
-        {form.worker_pp ? (
-          <Image source={{ uri: form.worker_pp[0].url || form.worker_pp }} style={styles.heroImage} />
+        {(form.worker_pp && form.worker_pp.length > 0) ? (
+          <Image source={{ uri: form.worker_pp[0]?.url || form.worker_pp[0] }} style={styles.heroImage} />
         ) : (
           <View style={styles.heroPlaceholder}>
             <Icons.Ionicons name="person-circle-outline" size={80} color="#e2e8f0" />
@@ -137,8 +137,8 @@ const ProfilePreview = ({ form, setGalleryVisible, handleCall, theme }) => {
                       key={index}
                       style={styles.docPreviewItem}
                       onPress={() => {
-                        if (doc.url) {
-                          Linking.openURL(doc.url);
+                        if (doc?.url) {
+                          Linking.openURL(doc?.url);
                         }
                       }}
                     >
@@ -188,7 +188,7 @@ const ProfilePreview = ({ form, setGalleryVisible, handleCall, theme }) => {
 // ==========================================
 const ProfileForm = ({
   form, setForm, currentSkill, setCurrentSkill, addSkill, isGalleryPicking, isProfilePicking,
-  removeSkill, pickDocument, removeDocument, setGalleryVisible, pickImage
+  removeSkill, pickDocument, removeDocument, setGalleryVisible, pickImage, isWorker
 }) => {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const scrollRef = React.useRef(null);
@@ -247,63 +247,64 @@ const ProfileForm = ({
         }}
         scrollEventThrottle={16}
       >
-        <View style={styles.heroSectionContainer}>
-          {/* Left Column: Profile Picture + Gallery */}
-          <View style={styles.heroLeftColumn}>
-            {/* Profile Picture Section (2/3) */}
-            <View style={styles.profilePictureSection}>
-              {form.worker_pp ? (
-                <Image source={{ uri: form.worker_pp[0].url || form.worker_pp }} style={styles.profilePictureImage} />
-              ) : (
-                <View style={styles.profilePicturePlaceholder}>
-                  <Icons.Ionicons name="person-circle-outline" size={60} color="#cbd5e1" />
-                </View>
-              )}
-            </View>
-
-            {/* Gallery Section (1/3) */}
-            <View style={styles.galleryPreviewSection}>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.galleryScrollContent}
-              >
-                {form.experience_images && form.experience_images.length > 0 ? (
-                  form.experience_images.map((img, index) => (
-                    <Image key={index} source={{ uri: img.url || img }} style={styles.galleryThumbnail} />
-                  ))
+        {isWorker && (
+          <View style={styles.heroSectionContainer}>
+            {/* Left Column: Profile Picture + Gallery */}
+            <View style={styles.heroLeftColumn}>
+              {/* Profile Picture Section (2/3) */}
+              <View style={styles.profilePictureSection}>
+                {(form.worker_pp && form.worker_pp.length > 0) ? (
+                  <Image source={{ uri: form.worker_pp[0]?.url || form.worker_pp[0] }} style={styles.profilePictureImage} />
                 ) : (
-                  <View style={styles.galleryEmptyPlaceholder}>
-                    <Icons.Ionicons name="images-outline" size={30} color="#cbd5e1" />
+                  <View style={styles.profilePicturePlaceholder}>
+                    <Icons.Ionicons name="person-circle-outline" size={60} color="#cbd5e1" />
                   </View>
                 )}
-              </ScrollView>
+              </View>
+
+              {/* Gallery Section (1/3) */}
+              <View style={styles.galleryPreviewSection}>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.galleryScrollContent}
+                >
+                  {form.experience_images && form.experience_images.length > 0 ? (
+                    form.experience_images.map((img, index) => (
+                      <Image key={index} source={{ uri: img?.url || img }} style={styles.galleryThumbnail} />
+                    ))
+                  ) : (
+                    <View style={styles.galleryEmptyPlaceholder}>
+                      <Icons.Ionicons name="images-outline" size={30} color="#cbd5e1" />
+                    </View>
+                  )}
+                </ScrollView>
+              </View>
             </View>
-          </View>
 
-          {/* Right Column: Action Buttons */}
-          <View style={styles.heroRightColumn}>
-            {/* Add Profile Picture Button (2/3) */}
-            <TouchableOpacity
-              style={styles.actionButtonLarge}
-              onPress={() => pickImage(false)}
-              activeOpacity={0.7}
-            >
-              <Icons.MaterialIcons name="flip-camera-ios" size={28} color="#3b82f6" />
-              <Text style={styles.actionButtonText}>{isProfilePicking ? 'Picking...' : 'Profile\nPicture'}</Text>
-            </TouchableOpacity>
+            {/* Right Column: Action Buttons */}
+            <View style={styles.heroRightColumn}>
+              {/* Add Profile Picture Button (2/3) */}
+              <TouchableOpacity
+                style={styles.actionButtonLarge}
+                onPress={() => pickImage(false)}
+                activeOpacity={0.7}
+              >
+                <Icons.MaterialIcons name="flip-camera-ios" size={28} color="#3b82f6" />
+                <Text style={styles.actionButtonText}>{isProfilePicking ? 'Picking...' : 'Profile\nPicture'}</Text>
+              </TouchableOpacity>
 
-            {/* Add Gallery Button (1/3) */}
-            <TouchableOpacity
-              style={styles.actionButtonSmall}
-              onPress={() => pickImage(true)}
-              activeOpacity={0.7}
-            >
-              <Icons.MaterialCommunityIcons name="camera-plus-outline" size={20} color="#10b981" />
-              <Text style={styles.actionButtonSmallText}>{isGalleryPicking ? 'Picking...' : 'Gallery'}</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+              {/* Add Gallery Button (1/3) */}
+              <TouchableOpacity
+                style={styles.actionButtonSmall}
+                onPress={() => pickImage(true)}
+                activeOpacity={0.7}
+              >
+                <Icons.MaterialCommunityIcons name="camera-plus-outline" size={20} color="#10b981" />
+                <Text style={styles.actionButtonSmallText}>{isGalleryPicking ? 'Picking...' : 'Gallery'}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>)}
 
         <View style={styles.mainContent}>
           {/* 1. BUSINESS IDENTITY */}
@@ -335,46 +336,47 @@ const ProfileForm = ({
           </View>
 
           {/* 3. CONTACT OPTIONS */}
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Communication Channel</Text>
+          {isWorker && (
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>Communication Channel</Text>
 
-            <View style={styles.dynamicContactRow}>
-              {/* PLATFORM PICKER */}
-              <TouchableOpacity
-                style={[
-                  styles.platformSelector,
-                  { backgroundColor: activePlatform.color },
-                ]}
-                onPress={() => setContactModalVisible(true)}
-              >
-                <Icons.Ionicons
-                  name={activePlatform.icon}
-                  size={18}
-                  color="#fff"
+              <View style={styles.dynamicContactRow}>
+                {/* PLATFORM PICKER */}
+                <TouchableOpacity
+                  style={[
+                    styles.platformSelector,
+                    { backgroundColor: activePlatform.color },
+                  ]}
+                  onPress={() => setContactModalVisible(true)}
+                >
+                  <Icons.Ionicons
+                    name={activePlatform.icon}
+                    size={18}
+                    color="#fff"
+                  />
+                  <Text style={styles.platformText}>{activePlatform.label}</Text>
+                  <Icons.Ionicons name="chevron-down" size={14} color="#fff" />
+                </TouchableOpacity>
+
+                {/* SINGLE INPUT */}
+                <TextInput
+                  style={styles.dynamicContactInput}
+                  placeholder={activePlatform.placeholder}
+                  keyboardType={activePlatform.keyboard}
+                  value={form.contact_options?.[selectedPlatform] || ""}
+                  onChangeText={(text) =>
+                    setForm({
+                      ...form,
+                      contact_options: {
+                        ...form.contact_options,
+                        [selectedPlatform]: text,
+                      },
+                    })
+                  }
+                  autoCapitalize="none"
                 />
-                <Text style={styles.platformText}>{activePlatform.label}</Text>
-                <Icons.Ionicons name="chevron-down" size={14} color="#fff" />
-              </TouchableOpacity>
-
-              {/* SINGLE INPUT */}
-              <TextInput
-                style={styles.dynamicContactInput}
-                placeholder={activePlatform.placeholder}
-                keyboardType={activePlatform.keyboard}
-                value={form.contact_options?.[selectedPlatform] || ""}
-                onChangeText={(text) =>
-                  setForm({
-                    ...form,
-                    contact_options: {
-                      ...form.contact_options,
-                      [selectedPlatform]: text,
-                    },
-                  })
-                }
-                autoCapitalize="none"
-              />
-            </View>
-          </View>
+              </View>
+            </View>)}
 
           {/* 4. LOCATION */}
           <View style={styles.section}>
@@ -394,26 +396,27 @@ const ProfileForm = ({
           <View style={styles.divider} />
 
           {/* 5. DOCUMENT UPLOAD */}
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Qualifications & Clearances</Text>
-            <Text style={styles.helperText}>Add certificates, licenses, or police clearance</Text>
-            <TouchableOpacity style={styles.uploadDocBtn} onPress={pickDocument}>
-              <Icons.Ionicons name="cloud-upload" size={20} color="#3b82f6" />
-              <Text style={styles.uploadDocBtnText}>Upload Document</Text>
-            </TouchableOpacity>
+          {isWorker && (
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>Qualifications & Clearances</Text>
+              <Text style={styles.helperText}>Add certificates, licenses, or police clearance</Text>
+              <TouchableOpacity style={styles.uploadDocBtn} onPress={pickDocument}>
+                <Icons.Ionicons name="cloud-upload" size={20} color="#3b82f6" />
+                <Text style={styles.uploadDocBtnText}>Upload Document</Text>
+              </TouchableOpacity>
 
-            <View style={styles.docList}>
-              {form.documents?.map((doc, index) => (
-                <View key={index} style={styles.docItem}>
-                  <Icons.Ionicons name="document-text" size={20} color="#64748b" />
-                  <Text style={styles.docName} numberOfLines={1}>{doc.name}</Text>
-                  <TouchableOpacity onPress={() => removeDocument(index)}>
-                    <Icons.Ionicons name="trash-outline" size={18} color="#ef4444" />
-                  </TouchableOpacity>
-                </View>
-              ))}
-            </View>
-          </View>
+              <View style={styles.docList}>
+                {form.documents?.map((doc, index) => (
+                  <View key={index} style={styles.docItem}>
+                    <Icons.Ionicons name="document-text" size={20} color="#64748b" />
+                    <Text style={styles.docName} numberOfLines={1}>{doc.name}</Text>
+                    <TouchableOpacity onPress={() => removeDocument(index)}>
+                      <Icons.Ionicons name="trash-outline" size={18} color="#ef4444" />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            </View>)}
 
           <View style={styles.divider} />
 
@@ -501,7 +504,7 @@ const WorkerRegistration = ({ navigation }) => {
   const [currentSkill, setCurrentSkill] = useState('');
 
   const [form, setForm] = useState({
-    name: '', phone: '', email: user.email, skills: [], bio: '', worker_pp: null, experience_images: [],
+    name: '', phone: '', email: user.email, skills: [], bio: '', worker_pp: [], experience_images: [],
     documents: [], likes: 0, dislikes: 0, location: { address: '' }, contact_options: {}
   });
   const [isGalleryPicking, setIsGalleryPicking] = useState(false);
@@ -515,6 +518,7 @@ const WorkerRegistration = ({ navigation }) => {
 
     const result = await getWorkerProfile(user.uid);
     if (result.success && result.data) {
+      console.log("Worker: ", result.data)
       setForm(result.data);
       setOriginalData(result.data);
       setIsWorker(true);
@@ -578,10 +582,6 @@ const WorkerRegistration = ({ navigation }) => {
       console.error(err)
     } finally {
       setLoading(false);
-      !isWorker && setForm({
-        name: '', phone: '', email: '', skills: [], bio: '', worker_pp: null,
-        experience_images: [], documents: [], likes: 0, dislikes: 0, location: {}
-      })
     }
   };
 
@@ -600,9 +600,9 @@ const WorkerRegistration = ({ navigation }) => {
         const newImages = result.assets.map(asset => asset.uri);
         isGallery ?
           setForm(prev => ({ ...prev, experience_images: [...(prev.experience_images || []), ...newImages] }))
-          : setForm(prev => ({ ...prev, worker_pp: newImages[0] }));
+          : setForm(prev => ({ ...prev, worker_pp: [...newImages] }));
 
-        console.log('Is Profile P. : ', isGallery, '\nUri(s): ', newImages)
+        console.log('Is Gallery. : ', isGallery, '\nUri(s): ', newImages)
       }
     } catch (err) {
       console.error(err.message);
@@ -641,6 +641,7 @@ const WorkerRegistration = ({ navigation }) => {
         {isEditing ? (
           <ProfileForm
             form={form} setForm={setForm}
+            isWorker={isWorker}
             currentSkill={currentSkill} setCurrentSkill={setCurrentSkill}
             addSkill={addSkill} removeSkill={removeSkill}
             pickDocument={pickDocument} removeDocument={removeDocument}
@@ -668,7 +669,7 @@ const WorkerRegistration = ({ navigation }) => {
             numColumns={2}
             renderItem={({ item, index }) => (
               <View style={styles.modalItem}>
-                <Image source={{ uri: item.url || item }} style={styles.modalImage} />
+                <Image source={{ uri: item?.url || item }} style={styles.modalImage} />
                 {index === 0 && <View style={styles.mainBadge}><Text style={styles.mainBadgeText}>MAIN</Text></View>}
               </View>
             )}
@@ -678,31 +679,6 @@ const WorkerRegistration = ({ navigation }) => {
               </View>
             }
           />
-
-          {form.documents.length > 0 &&
-            (
-              <>
-                <View style={{ borderColor: theme.colors.border, borderWidth: 1, height: 1 }} />
-                <View style={{ gap: 10, alignItems: 'center', justifyContent: 'center' }}>
-                  {form.documents?.map((doc, i) => {
-                    <TouchableOpacity
-                      key={i}
-                      style={styles.attachmentCard}
-                      onPress={() => Linking.openURL(doc.url)}
-                    >
-                      <Icons.Ionicons
-                        name="document-attach"
-                        size={20}
-                        color={theme.colors.indicator}
-                      />
-                      <Text style={[styles.attachmentText, { color: theme.colors.sub_text }]}>
-                        {doc?.name || `View Document ${i + 1}`}
-                      </Text>
-                    </TouchableOpacity>
-                  })}
-                </View>
-              </>
-            )}
         </SafeAreaView>
       </Modal>
     </SafeAreaView>
@@ -842,7 +818,7 @@ const styles = StyleSheet.create({
   nameInput: { fontSize: 20, fontWeight: '900', backgroundColor: '#f8fafc', padding: 15, borderRadius: 12, marginBottom: 10, borderWidth: 1, borderColor: '#e2e8f0' },
   locRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   locationLabelText: { fontSize: 16, color: '#64748b', fontWeight: '600' },
-  simpleInputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f8fafc', padding: 15, borderRadius: 12, borderWidth: 1, borderColor: '#e2e8f0', marginBottom: 15 },
+  simpleInputWrapper: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f8fafc', paddingHorizontal: 15, paddingVertical: 5, borderRadius: 12, borderWidth: 1, borderColor: '#e2e8f0' },
   simpleTextInput: { flex: 1, fontSize: 16, fontWeight: '600', color: '#000' },
   inputIcon: { marginRight: 10 },
   contactIconRow: { flexDirection: 'row', gap: 12, marginTop: 15 },
@@ -851,7 +827,7 @@ const styles = StyleSheet.create({
   statBox: { flex: 1, alignItems: 'center' },
   statCount: { fontWeight: '900' },
   statLabel: { fontSize: 10, color: '#94a3b8' },
-  divider: { height: 1, backgroundColor: '#f1f5f9', marginVertical: 25 },
+  divider: { height: 1, backgroundColor: '#f1f5f9', marginVertical: 15 },
   section: { marginBottom: 25 },
   sectionLabel: { fontSize: 11, fontWeight: '800', color: '#94a3b8', marginBottom: 10 },
   bioPreviewText: { fontSize: 15, lineHeight: 22, color: '#475569' },
@@ -859,7 +835,7 @@ const styles = StyleSheet.create({
   helperText: { fontSize: 12, color: '#94a3b8', marginBottom: 10, marginTop: -5 },
   uploadDocBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#eff6ff', padding: 15, borderRadius: 12, borderWidth: 1, borderStyle: 'dashed', borderColor: '#3b82f6', gap: 10 },
   uploadDocBtnText: { color: '#3b82f6', fontWeight: '800' },
-  docList: { marginTop: 15, gap: 10 },
+  docList: { gap: 10 },
   docItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f8fafc', padding: 12, borderRadius: 10, gap: 10 },
   docName: { flex: 1, fontSize: 14, fontWeight: '600' },
   skillInputWrapper: { flexDirection: 'row', gap: 10, marginBottom: 15 },
