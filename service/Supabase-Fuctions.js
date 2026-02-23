@@ -380,6 +380,22 @@ export async function getWorkerProfile(userId) {
     return { success: false, error: error.message };
   }
 }
+export async function getWorkerProfileClient(id) {
+  try {
+    const { data, error } = await supabase
+      .from('pomy_workers')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error && error.code !== 'PGRST116') throw error; // PGRST116 is "no rows found"
+
+    return { success: true, data: data || null };
+  } catch (error) {
+    console.error('Fetch Worker Error:', error.message);
+    return { success: false, error: error.message };
+  }
+}
 
 /**
  * Updates an existing worker profile
