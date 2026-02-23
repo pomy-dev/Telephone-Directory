@@ -342,7 +342,7 @@ const ProfileForm = ({
                   contentContainerStyle={styles.galleryScrollContent}
                 >
                   {form.experience_images &&
-                  form.experience_images.length > 0 ? (
+                    form.experience_images.length > 0 ? (
                     form.experience_images.map((img, index) => (
                       // <TouchableOpacity
                       //   key={`gallery-image-${index}`}
@@ -745,7 +745,6 @@ const WorkerRegistration = ({ navigation }) => {
 
     const result = await getWorkerProfile(user.uid);
     if (result.success && result.data) {
-      console.log("Worker: ", result.data);
       setForm(result.data);
       setOriginalData(result.data);
       setIsWorker(true);
@@ -844,12 +843,12 @@ const WorkerRegistration = ({ navigation }) => {
         const newImages = result.assets.map((asset) => asset.uri);
         isGallery
           ? setForm((prev) => ({
-              ...prev,
-              experience_images: [
-                ...(prev.experience_images || []),
-                ...newImages,
-              ],
-            }))
+            ...prev,
+            experience_images: [
+              ...(prev.experience_images || []),
+              ...newImages,
+            ],
+          }))
           : setForm((prev) => ({ ...prev, worker_pp: [...newImages] }));
 
         console.log("Is Gallery. : ", isGallery, "\nUri(s): ", newImages);
