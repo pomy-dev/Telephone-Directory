@@ -19,7 +19,7 @@ import { Icons } from "../../constants/Icons";
 
 const { width } = Dimensions.get("window");
 
-const WorkerProfileScreen = ({ route, navigation }) => {
+const WorkerProfileScreen = ({ route }) => {
   const { worker } = route.params;
   const { theme, isDarkMode } = React.useContext(AppContext);
 
@@ -30,9 +30,9 @@ const WorkerProfileScreen = ({ route, navigation }) => {
       : worker.location || "Eswatini";
 
   // --- CONTACT HANDLERS ---
-  const handleEmail = () => Linking.openURL(`mailto:${worker.email || "contact@pomy.com"}`);
+  const handleEmail = () => Linking.openURL(`mailto:${worker.contact_options?.email}`);
 
-  const handleWhatsApp = () => Linking.openURL(`whatsapp://send?phone=${worker.phone}`);
+  const handleWhatsApp = () => Linking.openURL(`whatsapp://send?phone=${worker.contact_options?.whatsapp}`);
 
   const handleSocial = (platform) => {
     // Logic to open social media links if they exist in your worker object
@@ -44,7 +44,10 @@ const WorkerProfileScreen = ({ route, navigation }) => {
 
   // SMART LOGIC: Only true if images array exists and has content
   const hasImages = worker.experience_images && worker.experience_images.length > 0;
+  const hasProfile = worker.worker_pp && worker.worker_pp.length > 0;
   const hasSkills = worker.skills && worker.skills.length > 0;
+
+  // console.log('Worker: ', worker)
 
   return (
     <SafeAreaView style={styles.container}>
@@ -74,7 +77,12 @@ const WorkerProfileScreen = ({ route, navigation }) => {
           {/* NAME & REPUTATION */}
           <View style={styles.mainRow}>
             <View style={styles.avatarSquare}>
-              <Text style={styles.avatarText}>{worker.name?.charAt(0)}</Text>
+              {hasProfile
+                ? <Image source={{ uri: worker.worker_pp[0].url || worker.worker_pp[0] }}
+                  style={{ objectFit: 'cover', borderRaduis: 6, height: '100%', width: '100%' }}
+                />
+                : <Text style={styles.avatarText}>{worker.name?.charAt(0)}</Text>
+              }
             </View>
             <View style={styles.nameGroup}>
               <Text style={styles.workerName}>{worker.name}</Text>
@@ -89,39 +97,47 @@ const WorkerProfileScreen = ({ route, navigation }) => {
             </View>
             <View style={styles.statsBadge}>
               <Icons.Ionicons name="thumbs-up" size={16} color="#10b981" />
-              <Text style={styles.statsText}>{worker.likes || "24"}</Text>
+              <Text style={styles.statsText}>{worker.likes}</Text>
             </View>
           </View>
 
           {/* NEW: SOCIAL & CONTACT BUTTONS SECTION */}
           <View style={styles.socialContainer}>
-            <TouchableOpacity
-              style={styles.socialIconBtn}
-              onPress={handleWhatsApp}
-            >
-              <Icons.Ionicons name="logo-whatsapp" size={22} color="#25D366" />
-            </TouchableOpacity>
+            {worker.contact_options?.whatsapp && (
+              <TouchableOpacity
+                style={styles.socialIconBtn}
+                onPress={handleWhatsApp}
+              >
+                <Icons.Ionicons name="logo-whatsapp" size={22} color="#25D366" />
+              </TouchableOpacity>
+            )}
 
-            <TouchableOpacity
-              style={styles.socialIconBtn}
-              onPress={handleEmail}
-            >
-              <Icons.Ionicons name="mail" size={22} color="#EA4335" />
-            </TouchableOpacity>
+            {worker.contact_options?.email && (
+              <TouchableOpacity
+                style={styles.socialIconBtn}
+                onPress={handleEmail}
+              >
+                <Icons.Ionicons name="mail" size={22} color="#EA4335" />
+              </TouchableOpacity>
+            )}
 
-            <TouchableOpacity
-              style={styles.socialIconBtn}
-              onPress={() => handleSocial("facebook")}
-            >
-              <Icons.Ionicons name="logo-facebook" size={22} color="#1877F2" />
-            </TouchableOpacity>
+            {worker.contact_options?.facebook && (
+              <TouchableOpacity
+                style={styles.socialIconBtn}
+                onPress={() => handleSocial("facebook")}
+              >
+                <Icons.Ionicons name="logo-facebook" size={22} color="#1877F2" />
+              </TouchableOpacity>
+            )}
 
-            <TouchableOpacity
-              style={styles.socialIconBtn}
-              onPress={() => handleSocial("instagram")}
-            >
-              <Icons.Ionicons name="logo-instagram" size={22} color="#E4405F" />
-            </TouchableOpacity>
+            {worker.contact_options?.instagram && (
+              <TouchableOpacity
+                style={styles.socialIconBtn}
+                onPress={() => handleSocial("instagram")}
+              >
+                <Icons.Ionicons name="logo-instagram" size={22} color="#E4405F" />
+              </TouchableOpacity>
+            )}
           </View>
 
           <View style={styles.divider} />
@@ -220,6 +236,7 @@ const styles = StyleSheet.create({
     height: 200,
     backgroundColor: "#f8fafc",
     resizeMode: "cover",
+    objectFit: 'cover'
   },
   profileInfoContainer: {
     padding: 20,
@@ -232,7 +249,6 @@ const styles = StyleSheet.create({
     width: 60,
     height: 60,
     backgroundColor: "#000",
-    borderRadius: 2,
     justifyContent: "center",
     alignItems: "center",
     borderRadius: 6,

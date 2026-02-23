@@ -29,7 +29,6 @@ import { AppContext } from "../../context/appContext";
 import { supabase } from "../../service/Supabase-Client";
 import { AuthContext } from "../../context/authProvider";
 import { MoreDropdown } from "../../components/moreDropDown";
-import { likeWorker } from "../../service/Supabase-Fuctions";
 
 const MEDIA_HEIGHT = 180;
 const { height, width } = Dimensions.get("window");
@@ -204,12 +203,12 @@ const GigsScreen = ({ navigation }) => {
   ).current;
 
   const moreItems = [
-    {
-      title: "Find Freelancers",
-      icon: "MaterialCommunityIcons",
-      iconName: "briefcase-account-outline",
-      onPress: () => navigation.navigate("WorkerDirectory"),
-    },
+    // {
+    //   title: "Find Freelancers",
+    //   icon: "MaterialCommunityIcons",
+    //   iconName: "briefcase-account-outline",
+    //   onPress: () => navigation.navigate("WorkerDirectory"),
+    // },
     {
       title: "My Applied Gigs",
       icon: "FontAwesome6",
@@ -222,13 +221,13 @@ const GigsScreen = ({ navigation }) => {
       icon: "Ionicons",
       iconName: "newspaper-outline",
       onPress: () => navigation.navigate("MyPostedGigs"),
-    },
-    {
-      title: isWorker ? "My Worker Profile" : "Become a Worker",
-      icon: "Ionicons",
-      iconName: isWorker ? "person-circle-outline" : "construct-outline",
-      onPress: () => navigation.navigate("WorkerRegistration"),
-    },
+    }
+    // {
+    //   title: isWorker ? "My Worker Profile" : "Become a Worker",
+    //   icon: "Ionicons",
+    //   iconName: isWorker ? "person-circle-outline" : "construct-outline",
+    //   onPress: () => navigation.navigate("WorkerRegistration"),
+    // },
   ];
 
   // 1. Move this function ABOVE your useEffect calls
