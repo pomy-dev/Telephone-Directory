@@ -48,7 +48,7 @@ const WorkerProfileScreen = ({ route }) => {
             setWorker(null);
           }
         } catch (error) {
-          console.log("Error fetching worker profile:", error);
+          console.log("Error fetching worker profile isues:", error);
         } finally {
           setLoading(false);
         }
