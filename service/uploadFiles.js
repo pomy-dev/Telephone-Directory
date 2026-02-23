@@ -149,8 +149,10 @@ export const uploadAttachments = async (path, subpath, files = []) => {
         mimeType = mimeMap[ext] || 'application/octet-stream';
       }
 
-      const fileExt = mimeType.startsWith('image/') ? mimeType.split('/')[1] :
-        mimeType.startsWith('video/') ? mimeType.split('/')[1] :
+      const fileExt = mimeType.startsWith('image/')
+        ? mimeType.split('/')[1] :
+        mimeType.startsWith('video/')
+          ? mimeType.split('/')[1] :
           fileName.split('.').pop() || 'bin';
 
       const safeFileName = `disc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}.${fileExt}`;
@@ -158,7 +160,7 @@ export const uploadAttachments = async (path, subpath, files = []) => {
       // === 4. Upload to Supabase Storage ===
       const { data, error } = await supabase.storage
         .from(path)
-        .upload(`${subpath}/${fileName}`, bytes, {
+        .upload(`${subpath}/${safeFileName}`, bytes, {
           contentType: mimeType,
           upsert: false,
         });
@@ -184,6 +186,7 @@ export const uploadAttachments = async (path, subpath, files = []) => {
       uploaded.push({
         url: publicUrl,
         name: fileName,
+        storageName: safeFileName,
         type,
         size: fileSize || bytes.byteLength,
         mimeType,

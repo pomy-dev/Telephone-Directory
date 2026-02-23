@@ -13,12 +13,10 @@ import {
   Dimensions,
   Alert,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import { Icons } from "../../constants/Icons";
 import { AppContext } from "../../context/appContext";
 import SecondaryNav from "../../components/SecondaryNav";
 import { getTransportById } from "../../service/Supabase-Fuctions";
-import App from "../../App";
 import { AuthContext } from "../../context/authProvider";
 
 const { width } = Dimensions.get("window");
@@ -90,7 +88,7 @@ export default function TransportationDetailsScreen({ navigation, route }) {
   );
   const from = route.params?.from || "direct";
   const { theme, isDarkMode } = React.useContext(AppContext);
-  const { user} = React.useContext(AuthContext);
+  const { user } = React.useContext(AuthContext);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isBookmarked, setIsBookmarked] = useState(false);
 
@@ -181,13 +179,8 @@ export default function TransportationDetailsScreen({ navigation, route }) {
   };
 
   return (
-    <View
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
-    >
-      <StatusBar
-        barStyle={isDarkMode ? "light-content" : "dark-content"}
-        backgroundColor={theme.colors.background}
-      />
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
       <SecondaryNav title="Fore-Hire Details" />
 
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -224,7 +217,7 @@ export default function TransportationDetailsScreen({ navigation, route }) {
           </View>
           {vehicle.boarder_crossing && (
             <View style={styles.borderBadge}>
-              <Ionicons name="globe" size={16} color="#fff" />
+              <Icons.Ionicons name="globe" size={16} color="#fff" />
               <Text style={styles.borderBadgeText}>Cross Border</Text>
             </View>
           )}
@@ -232,7 +225,7 @@ export default function TransportationDetailsScreen({ navigation, route }) {
             style={styles.bookmarkButton}
             onPress={() => setIsBookmarked(!isBookmarked)}
           >
-            <Ionicons
+            <Icons.Ionicons
               name={isBookmarked ? "heart" : "heart-outline"}
               size={24}
               color={isBookmarked ? "#2563eb" : "#fff"}
@@ -255,13 +248,12 @@ export default function TransportationDetailsScreen({ navigation, route }) {
                 <Text style={styles.makeModel}>
                   {vehicle.vehicle_make} {vehicle.model}
                 </Text>
-                <Text style={styles.year}>• {vehicle.year_made}</Text>
                 <Text style={styles.registration}>
                   • {vehicle.registration}
                 </Text>
               </View>
               <View style={styles.locationRow}>
-                <Ionicons name="location" size={16} color="#64748b" />
+                <Icons.Ionicons name="location" size={16} color="#64748b" />
                 <Text style={styles.address}>{vehicle.location.address}</Text>
               </View>
             </View>
@@ -276,7 +268,7 @@ export default function TransportationDetailsScreen({ navigation, route }) {
                   { backgroundColor: theme.colors.card },
                 ]}
               >
-                <Ionicons
+                <Icons.Ionicons
                   name="people"
                   size={24}
                   color={theme.colors.indicator}
@@ -296,7 +288,7 @@ export default function TransportationDetailsScreen({ navigation, route }) {
             <View
               style={[styles.detailBox, { backgroundColor: theme.colors.card }]}
             >
-              <Ionicons name="time" size={24} color={theme.colors.indicator} />
+              <Icons.Ionicons name="time" size={24} color={theme.colors.indicator} />
               <Text style={[styles.detailValue, { color: theme.colors.text }]}>
                 {vehicle.operating_start}
               </Text>
@@ -309,7 +301,7 @@ export default function TransportationDetailsScreen({ navigation, route }) {
             <View
               style={[styles.detailBox, { backgroundColor: theme.colors.card }]}
             >
-              <Ionicons
+              <Icons.Ionicons
                 name="time-outline"
                 size={24}
                 color={theme.colors.indicator}
@@ -351,12 +343,12 @@ export default function TransportationDetailsScreen({ navigation, route }) {
                 <View key={index} style={styles.routeCard}>
                   <View style={styles.routeHeader}>
                     <View style={styles.routeOrigin}>
-                      <Ionicons name="location" size={20} color="#2563eb" />
+                      <Icons.Ionicons name="location" size={20} color="#2563eb" />
                       <Text style={styles.routeLocation}>{route.origin}</Text>
                     </View>
-                    <Ionicons name="arrow-forward" size={20} color="#64748b" />
+                    <Icons.Ionicons name="arrow-forward" size={20} color="#64748b" />
                     <View style={styles.routeDestination}>
-                      <Ionicons name="location" size={20} color="#10b981" />
+                      <Icons.Ionicons name="location" size={20} color="#10b981" />
                       <Text style={styles.routeLocation}>
                         {route.destination}
                       </Text>
@@ -364,19 +356,19 @@ export default function TransportationDetailsScreen({ navigation, route }) {
                   </View>
                   <View style={styles.routeDetails}>
                     <View style={styles.routeDetailItem}>
-                      <Ionicons name="resize" size={16} color="#64748b" />
+                      <Icons.Ionicons name="resize" size={16} color="#64748b" />
                       <Text style={styles.routeDetailText}>
                         {route.distance}
                       </Text>
                     </View>
                     <View style={styles.routeDetailItem}>
-                      <Ionicons name="time" size={16} color="#64748b" />
+                      <Icons.Ionicons name="time" size={16} color="#64748b" />
                       <Text style={styles.routeDetailText}>
                         {route.duration}
                       </Text>
                     </View>
                     <View style={styles.routeDetailItem}>
-                      <Ionicons name="pricetag" size={16} color="#64748b" />
+                      <Icons.Ionicons name="pricetag" size={16} color="#64748b" />
                       <Text style={styles.routeDetailText}>
                         E {route.price.toLocaleString() || "Unknown"}
                       </Text>
@@ -384,7 +376,7 @@ export default function TransportationDetailsScreen({ navigation, route }) {
                   </View>
                   {route.boarder_crossing && (
                     <View style={styles.borderRouteBadge}>
-                      <Ionicons name="globe" size={14} color="#10b981" />
+                      <Icons.Ionicons name="globe" size={14} color="#10b981" />
                       <Text style={styles.borderRouteText}>
                         Cross Border Route
                       </Text>
@@ -396,9 +388,7 @@ export default function TransportationDetailsScreen({ navigation, route }) {
           )}
 
           {/* Operating Schedule */}
-          <View
-            style={[styles.section, { backgroundColor: theme.colors.card }]}
-          >
+          <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
             <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
               Operating Schedule
             </Text>
@@ -437,16 +427,14 @@ export default function TransportationDetailsScreen({ navigation, route }) {
           </View>
 
           {/* Features */}
-          <View
-            style={[styles.section, { backgroundColor: theme.colors.card }]}
-          >
+          <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
             <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
               Features
             </Text>
             <View style={styles.featuresGrid}>
               {vehicle?.vehicle_features?.map((feature, index) => (
                 <View key={index} style={styles.featureItem}>
-                  <Ionicons name="checkmark-circle" size={18} color="#10b981" />
+                  <Icons.Ionicons name="checkmark-circle" size={18} color="#10b981" />
                   <Text
                     style={[
                       styles.featureText,
@@ -482,7 +470,7 @@ export default function TransportationDetailsScreen({ navigation, route }) {
                   </Text>
                   {vehicle.vehicle_certifications.license && (
                     <View style={styles.verifiedBadge}>
-                      <Ionicons
+                      <Icons.Ionicons
                         name="checkmark-circle"
                         size={16}
                         color="#10b981"
@@ -492,7 +480,7 @@ export default function TransportationDetailsScreen({ navigation, route }) {
                   )}
                 </View>
                 <View style={styles.ratingContainer}>
-                  <Ionicons name="star" size={16} color="#fbbf24" />
+                  <Icons.Ionicons name="star" size={16} color="#fbbf24" />
                   <Text
                     style={[styles.rating, { color: theme.colors.sub_text }]}
                   >
@@ -500,6 +488,11 @@ export default function TransportationDetailsScreen({ navigation, route }) {
                   </Text>
                 </View>
               </View>
+              {vehicle.owner_info?.driver && (
+                <Text style={[styles.responseTime, { color: theme.colors.text }]}>
+                  Driver Name: {vehicle.owner_info?.driver}
+                </Text>
+              )}
               <Text style={[styles.responseTime, { color: theme.colors.text }]}>
                 Response Time: {vehicle.owner_info.responsetime}
               </Text>
@@ -508,21 +501,21 @@ export default function TransportationDetailsScreen({ navigation, route }) {
                   style={styles.contactButton}
                   onPress={handleCall}
                 >
-                  <Ionicons name="call-outline" size={30} color="#2563eb" />
+                  <Icons.Ionicons name="call-outline" size={30} color="#2563eb" />
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   style={styles.contactButton}
                   onPress={handleWhatsApp}
                 >
-                  <Ionicons name="logo-whatsapp" size={30} color="#25D366" />
+                  <Icons.Ionicons name="logo-whatsapp" size={30} color="#25D366" />
                 </TouchableOpacity>
 
                 <TouchableOpacity
                   style={styles.contactButton}
                   onPress={handleEmail}
                 >
-                  <Ionicons name="mail-outline" size={30} color="#eb2550ff" />
+                  <Icons.Ionicons name="mail-outline" size={30} color="#eb2550ff" />
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -549,7 +542,7 @@ export default function TransportationDetailsScreen({ navigation, route }) {
             <View style={styles.certificationsContainer}>
               {vehicle.vehicle_certifications?.insurance && (
                 <View style={styles.certificationItem}>
-                  <Ionicons name="shield-checkmark" size={20} color="#10b981" />
+                  <Icons.Ionicons name="shield-checkmark" size={20} color="#10b981" />
                   <Text
                     style={[
                       styles.certificationText,
@@ -562,7 +555,7 @@ export default function TransportationDetailsScreen({ navigation, route }) {
               )}
               {vehicle.vehicle_certifications?.license && (
                 <View style={styles.certificationItem}>
-                  <Ionicons name="document-text" size={20} color="#10b981" />
+                  <Icons.Ionicons name="document-text" size={20} color="#10b981" />
                   <Text
                     style={[
                       styles.certificationText,
@@ -575,7 +568,7 @@ export default function TransportationDetailsScreen({ navigation, route }) {
               )}
               {vehicle.boarder_crossing && (
                 <View style={styles.certificationItem}>
-                  <Ionicons name="globe" size={20} color="#10b981" />
+                  <Icons.Ionicons name="globe" size={20} color="#10b981" />
                   <Text
                     style={[
                       styles.certificationText,
@@ -600,14 +593,15 @@ export default function TransportationDetailsScreen({ navigation, route }) {
           ]}
           onPress={handleShare}
         >
-          <Icons.Feather name="share-2" size={20} color="#2563eb" />
+          <Icons.Feather name="share-2" size={20} color="#fff" />
         </TouchableOpacity>
+
         <TouchableOpacity
           style={[styles.bookButton, { backgroundColor: theme.colors.primary }]}
           onPress={handleBook}
         >
           <Text style={styles.bookButtonText}>Request Service</Text>
-          <Ionicons name="arrow-forward" size={20} color="#fff" />
+          <Icons.Ionicons name="arrow-forward" size={20} color="#fff" />
         </TouchableOpacity>
       </View>
     </View>

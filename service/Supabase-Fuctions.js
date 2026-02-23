@@ -133,7 +133,6 @@ export async function getForHireTransport() {
 // ──────────────────────────────────────────────────────────────
 // Vehicle Interactions - Likes, Ratings, Comments
 // ──────────────────────────────────────────────────────────────
-
 export async function updateVehicleLike(vehicleId, increment = true) {
   try {
     const change = increment ? 1 : -1;
@@ -294,7 +293,6 @@ export const subscribeToGigs = (onCallback) => {
     .subscribe();
 };
 
-
 /** Fetch all applications for a specific gig */
 export async function getGigApplicants(gigId) {
   try {
@@ -311,7 +309,6 @@ export async function getGigApplicants(gigId) {
     return { success: false, error: error.message };
   }
 }
-
 
 /**
  * Register a new worker with the updated schema including skills array
@@ -384,8 +381,6 @@ export async function getWorkerProfile(userId) {
 /**
  * Updates an existing worker profile
  */
-// Supabase-Fuctions.js updates
-
 export async function updateWorkerProfile(uid, updateData) {
   try {
     let workerProfile = updateData.worker_pp || []
@@ -456,8 +451,6 @@ export async function updateWorkerProfile(uid, updateData) {
     } else {
       documents = existingDocs || []
     }
-
-    console.log('Portfolio Img: ', portfolioImgs)
 
     const payload = {
       ...updateData,
@@ -538,7 +531,6 @@ export async function approveGigApplication(applicationId) {
     return { success: false, error: error.message };
   }
 }
-
 
 // Hire/Accept a worker
 export async function updateApplicationStatus(applicationId, status) {
@@ -674,10 +666,6 @@ export async function deleteMyApplication(appId, userEmail) {
   }
 }
 
-
-/**
- * Fetches personalized recommendations using the Supabase RPC
- */
 /**
  * Fetches personalized recommendations using the Supabase RPC
  */

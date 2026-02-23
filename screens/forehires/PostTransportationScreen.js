@@ -84,7 +84,7 @@ export default function PostTransportationScreen({ navigation }) {
         try {
             setIsPickingImg(true)
             const result = await ImagePicker.launchImageLibraryAsync({
-                mediaTypes: ['images', 'videos'],
+                mediaTypes: ['images'],
                 allowsMultipleSelection: true,
                 aspect: [4, 3],
                 quality: 0.8

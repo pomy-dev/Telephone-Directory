@@ -763,7 +763,7 @@ const GigsScreen = ({ navigation }) => {
                 size={18}
                 color={workerVotes[item.id] === "dislike" ? "#ef4444" : "#64748b"}
               />
-              <Text style={styles.voteCount}>{item.dislikes || 0}</Text>
+              {/* <Text style={styles.voteCount}>{item.dislikes}</Text> */}
             </TouchableOpacity>
           </View>
 
@@ -1671,7 +1671,7 @@ const styles = StyleSheet.create({
   // Single image
   portfolioImageSingle: {
     width: "100%",
-    height: height * 0.2,
+    height: height * 0.3,
     borderRadius: 8,
     backgroundColor: "#f1f5f9",
     resizeMode: "cover",

@@ -13,6 +13,7 @@ import {
   Platform,
   StatusBar,
 } from "react-native";
+import Carousel from "react-native-reanimated-carousel";
 import SecondaryNav from "../../components/SecondaryNav";
 import { AppContext } from "../../context/appContext";
 import { Icons } from "../../constants/Icons";
@@ -46,8 +47,7 @@ const WorkerProfileScreen = ({ route }) => {
   const hasImages = worker.experience_images && worker.experience_images.length > 0;
   const hasProfile = worker.worker_pp && worker.worker_pp.length > 0;
   const hasSkills = worker.skills && worker.skills.length > 0;
-
-  // console.log('Worker: ', worker)
+  const hasDocs = worker.documents && worker.documents.length > 0;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -56,21 +56,20 @@ const WorkerProfileScreen = ({ route }) => {
       <SecondaryNav title={'Freelancer Profile'} />
 
       {/* BODY CONTENT */}
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        style={styles.scrollView}
-      >
+      <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollView}>
         {/* SMART HERO SECTION: Only renders if images exist */}
         {hasImages && (
-          <ScrollView
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-          >
-            {worker.experience_images.map((img, idx) => (
-              <Image key={idx} source={{ uri: img.url || img }} style={styles.heroImage} />
-            ))}
-          </ScrollView>
+          <Carousel
+            loop={worker.experience_images?.length > 1}
+            width={width}
+            height={200}
+            autoPlay={worker.experience_images?.length > 1}
+            data={worker.experience_images}
+            scrollAnimationDuration={3000}
+            renderItem={({ item, index }) => (
+              <Image key={index} source={{ uri: item.url || item }} style={styles.heroImage} />
+            )}
+          />
         )}
 
         <View style={styles.profileInfoContainer}>
@@ -168,6 +167,41 @@ const WorkerProfileScreen = ({ route }) => {
             </>
           )}
 
+          {hasDocs && (
+            worker.documents && worker.documents.length > 0 && (
+              <View style={{ marginTop: 20 }}>
+                <Text style={styles.sectionTitle}>Qualification Documents</Text>
+                <View style={{ gap: 10 }}>
+                  {worker.documents.map((doc, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      style={styles.docPreviewItem}
+                      onPress={() => {
+                        if (doc?.url) {
+                          Linking.openURL(doc?.url);
+                        }
+                      }}
+                    >
+                      <Icons.Ionicons
+                        name="document-text"
+                        size={18}
+                        color={theme.colors.sub_text}
+                      />
+                      <Text style={styles.docPreviewText} numberOfLines={1}>
+                        {doc.name || "Document"}
+                      </Text>
+                      <Icons.Ionicons
+                        name="open-outline"
+                        size={16}
+                        color="#94a3b8"
+                      />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            )
+          )}
+
           {/* TRUST BOX */}
           <View style={styles.trustBox}>
             <Icons.Ionicons name="shield-checkmark" size={20} color="#10b981" />
@@ -241,23 +275,12 @@ const styles = StyleSheet.create({
   profileInfoContainer: {
     padding: 20,
   },
-  mainRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
+  mainRow: { flexDirection: "row", alignItems: "center" },
   avatarSquare: {
-    width: 60,
-    height: 60,
-    backgroundColor: "#000",
-    justifyContent: "center",
-    alignItems: "center",
-    borderRadius: 6,
+    width: 60, height: 60, backgroundColor: "#000",
+    justifyContent: "center", alignItems: "center", borderRadius: 6
   },
-  avatarText: {
-    color: "#fff",
-    fontSize: 28,
-    fontWeight: "bold",
-  },
+  avatarText: { color: "#fff", fontSize: 28, fontWeight: "bold" },
   nameGroup: {
     flex: 1,
     marginLeft: 15,
@@ -335,6 +358,22 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     color: "#1e293b",
     lineHeight: 22,
+  },
+  docPreviewItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f8fafc",
+    padding: 12,
+    borderRadius: 10,
+    gap: 10,
+    borderWidth: 1,
+    borderColor: "#f1f5f9",
+  },
+  docPreviewText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#334155",
   },
   trustBox: {
     marginTop: 30,

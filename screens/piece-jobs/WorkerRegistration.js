@@ -128,7 +128,7 @@ const ProfilePreview = ({ form, setGalleryVisible, handleCall, theme }) => {
           </View>
 
           <View style={styles.section}>
-            {form.documents && form.documents.length > 0 ? (
+            {form.documents && form.documents.length > 0 && (
               <>
                 <Text style={styles.sectionLabel}>Qualifications / Certification</Text>
                 <View style={{ gap: 10 }}>
@@ -159,10 +159,6 @@ const ProfilePreview = ({ form, setGalleryVisible, handleCall, theme }) => {
                   ))}
                 </View>
               </>
-            ) : (
-              <Text style={styles.bioPreviewText}>
-
-              </Text>
             )}
           </View>
 
@@ -833,7 +829,7 @@ const styles = StyleSheet.create({
   bioPreviewText: { fontSize: 15, lineHeight: 22, color: '#475569' },
   bioInputEdit: { backgroundColor: '#f8fafc', padding: 15, borderRadius: 12, minHeight: 120, textAlignVertical: 'top', borderWidth: 1, borderColor: '#e2e8f0' },
   helperText: { fontSize: 12, color: '#94a3b8', marginBottom: 10, marginTop: -5 },
-  uploadDocBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#eff6ff', padding: 15, borderRadius: 12, borderWidth: 1, borderStyle: 'dashed', borderColor: '#3b82f6', gap: 10 },
+  uploadDocBtn: { marginBottom: 5, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#eff6ff', padding: 15, borderRadius: 12, borderWidth: 1, borderStyle: 'dashed', borderColor: '#3b82f6', gap: 10 },
   uploadDocBtnText: { color: '#3b82f6', fontWeight: '800' },
   docList: { gap: 10 },
   docItem: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#f8fafc', padding: 12, borderRadius: 10, gap: 10 },
