@@ -132,7 +132,7 @@ const PersonalizedAdsSection = () => {
           title: item.real_title,
           imageUrl: item.real_image,
           description: item.real_description,
-          price: item.price,
+          price: item.price || '',
         }));
         setPersonalizedAds(formatted);
       }
