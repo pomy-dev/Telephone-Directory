@@ -16,7 +16,10 @@ import {
   Animated,
   TextInput,
   Linking,
-  Dimensions, KeyboardAvoidingView, PanResponder, Platform,
+  Dimensions,
+  KeyboardAvoidingView,
+  PanResponder,
+  Platform,
 } from "react-native";
 import { Icons } from "../../constants/Icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -110,9 +113,9 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos((lat1 * Math.PI) / 180) *
-    Math.cos((lat2 * Math.PI) / 180) *
-    Math.sin(dLon / 2) *
-    Math.sin(dLon / 2);
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   const distance = R * c;
   return distance;
@@ -191,15 +194,23 @@ const GigsScreen = ({ navigation }) => {
       onPanResponderRelease: (evt, gestureState) => {
         const { dy, vy } = gestureState;
         if (dy > 120 || vy > 1.2) {
-          Animated.timing(pan, { toValue: Dimensions.get('window').height, duration: 180, useNativeDriver: true }).start(() => {
+          Animated.timing(pan, {
+            toValue: Dimensions.get("window").height,
+            duration: 180,
+            useNativeDriver: true,
+          }).start(() => {
             pan.setValue(0);
             toggleSheet(false);
           });
         } else {
-          Animated.spring(pan, { toValue: 0, bounciness: 0, useNativeDriver: true }).start();
+          Animated.spring(pan, {
+            toValue: 0,
+            bounciness: 0,
+            useNativeDriver: true,
+          }).start();
         }
       },
-    })
+    }),
   ).current;
 
   const moreItems = [
@@ -221,7 +232,7 @@ const GigsScreen = ({ navigation }) => {
       icon: "Ionicons",
       iconName: "newspaper-outline",
       onPress: () => navigation.navigate("MyPostedGigs"),
-    }
+    },
     // {
     //   title: isWorker ? "My Worker Profile" : "Become a Worker",
     //   icon: "Ionicons",
@@ -255,7 +266,7 @@ const GigsScreen = ({ navigation }) => {
     fetchLiveGigs(false);
     fetchWorkers();
 
-    loadWorkerVotes()
+    loadWorkerVotes();
 
     const subscription = subscribeToGigs(() => {
       if (viewMode === "gigs") fetchLiveGigs(false);
@@ -307,7 +318,6 @@ const GigsScreen = ({ navigation }) => {
         });
 
         updateLocalVote(workerId, null, -1, 0);
-
       } else {
         // If previously disliked, remove dislike first
         if (currentVote === "dislike") {
@@ -322,7 +332,12 @@ const GigsScreen = ({ navigation }) => {
           vote_type: "like",
         });
 
-        updateLocalVote(workerId, "like", 1, currentVote === "dislike" ? -1 : 0);
+        updateLocalVote(
+          workerId,
+          "like",
+          1,
+          currentVote === "dislike" ? -1 : 0,
+        );
       }
     } catch (err) {
       console.log("Vote error:", err);
@@ -343,7 +358,6 @@ const GigsScreen = ({ navigation }) => {
         });
 
         updateLocalVote(workerId, null, 0, -1);
-
       } else {
         if (currentVote === "like") {
           await supabase.rpc("toggle_pomy_worker_vote", {
@@ -357,14 +371,24 @@ const GigsScreen = ({ navigation }) => {
           vote_type: "dislike",
         });
 
-        updateLocalVote(workerId, "dislike", currentVote === "like" ? -1 : 0, 1);
+        updateLocalVote(
+          workerId,
+          "dislike",
+          currentVote === "like" ? -1 : 0,
+          1,
+        );
       }
     } catch (err) {
       console.log("Vote error:", err);
     }
   };
 
-  const updateLocalVote = async (workerId, voteType, likeChange, dislikeChange) => {
+  const updateLocalVote = async (
+    workerId,
+    voteType,
+    likeChange,
+    dislikeChange,
+  ) => {
     // Update votes map
     const updatedVotes = { ...workerVotes };
 
@@ -382,12 +406,12 @@ const GigsScreen = ({ navigation }) => {
       prev.map((w) =>
         w.id === workerId
           ? {
-            ...w,
-            likes: Math.max((w.likes || 0) + likeChange, 0),
-            dislikes: Math.max((w.dislikes || 0) + dislikeChange, 0),
-          }
-          : w
-      )
+              ...w,
+              likes: Math.max((w.likes || 0) + likeChange, 0),
+              dislikes: Math.max((w.dislikes || 0) + dislikeChange, 0),
+            }
+          : w,
+      ),
     );
   };
 
@@ -405,9 +429,17 @@ const GigsScreen = ({ navigation }) => {
     if (open) {
       pan.setValue(0);
       setSheetVisible(true);
-      Animated.timing(sheetAnim, { toValue, duration: 240, useNativeDriver: true }).start();
+      Animated.timing(sheetAnim, {
+        toValue,
+        duration: 240,
+        useNativeDriver: true,
+      }).start();
     } else {
-      Animated.timing(sheetAnim, { toValue, duration: 200, useNativeDriver: true }).start(() => {
+      Animated.timing(sheetAnim, {
+        toValue,
+        duration: 200,
+        useNativeDriver: true,
+      }).start(() => {
         setSheetVisible(false);
         pan.setValue(0);
       });
@@ -424,7 +456,7 @@ const GigsScreen = ({ navigation }) => {
     if (!error) {
       // Filter out the current user's own profile
       const otherWorkers = user?.uid
-        ? data // data.filter((worker) => worker.user_id !== user.uid)
+        ? data 
         : data;
 
       setWorkers(otherWorkers);
@@ -487,7 +519,6 @@ const GigsScreen = ({ navigation }) => {
           styles.jobCard,
           { backgroundColor: isDarkMode ? "#1A1A1A" : "#fff" },
         ]}
-        // onPress={() => navigation.navigate("JobDetailScreen", { job: item })}
         onPress={() => handlePressGig(item)}
       >
         {/* --- TOP MEDIA SECTION (Fixed Height) --- */}
@@ -590,7 +621,8 @@ const GigsScreen = ({ navigation }) => {
 
   const renderWorkerCard = ({ item }) => {
     // 1. Logic for Images: If no images, we won't render the block at all
-    const hasImages = item.experience_images && item.experience_images.length > 0;
+    const hasImages =
+      item.experience_images && item.experience_images.length > 0;
     const worker_pp = item.worker_pp && item.worker_pp.length > 0;
 
     const locationString =
@@ -606,17 +638,26 @@ const GigsScreen = ({ navigation }) => {
       <TouchableOpacity
         activeOpacity={0.9}
         style={styles.workerCard}
-        onPress={() => navigation.navigate("WorkerProfileScreen", { worker: item })}
+        onPress={() => {
+          navigation.navigate("WorkerProfileScreen", { worker: item });         
+        }}
       >
         {/* HEADER AREA */}
         <View style={styles.cardHeader}>
           <View style={styles.avatarSquare}>
-            {worker_pp ?
-              <Image source={{ uri: item.worker_pp[0].url || item.worker_pp[0] }}
-                style={{ objectFit: 'cover', width: '100%', height: '100%', borderRadius: 6 }}
+            {worker_pp ? (
+              <Image
+                source={{ uri: item.worker_pp[0].url || item.worker_pp[0] }}
+                style={{
+                  objectFit: "cover",
+                  width: "100%",
+                  height: "100%",
+                  borderRadius: 6,
+                }}
               />
-              : <Text style={styles.avatarText}>{item.name?.charAt(0)}</Text>
-            }
+            ) : (
+              <Text style={styles.avatarText}>{item.name?.charAt(0)}</Text>
+            )}
           </View>
           <View style={styles.headerInfo}>
             <Text style={styles.workerName}>{item.name}</Text>
@@ -631,7 +672,8 @@ const GigsScreen = ({ navigation }) => {
         {!hasSkills && (
           <View style={styles.bodyContent}>
             <Text numberOfLines={2} style={styles.bioText}>
-              {item.bio || "Top-rated professional. Tap to view full portfolio and contact details."}
+              {item.bio ||
+                "Top-rated professional. Tap to view full portfolio and contact details."}
             </Text>
           </View>
         )}
@@ -640,7 +682,11 @@ const GigsScreen = ({ navigation }) => {
         {hasSkills && (
           <View style={styles.skillsContainer}>
             <Text style={styles.sectionHeader}>Services Provided</Text>
-            <Text style={styles.skillsRowText} numberOfLines={1} ellipsizeMode="tail">
+            <Text
+              style={styles.skillsRowText}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
               {skills.map((skill, index) => (
                 <React.Fragment key={index}>
                   {skill}
@@ -657,7 +703,10 @@ const GigsScreen = ({ navigation }) => {
             {item.experience_images.length === 1 ? (
               // Single image - full width
               <Image
-                source={{ uri: item.experience_images[0].url || item.experience_images[0] }}
+                source={{
+                  uri:
+                    item.experience_images[0].url || item.experience_images[0],
+                }}
                 style={styles.portfolioImageSingle}
               />
             ) : item.experience_images.length === 2 ? (
@@ -676,11 +725,19 @@ const GigsScreen = ({ navigation }) => {
                 <View style={styles.portfolioTopRow}>
                   {/* First image - larger on the left */}
                   <Image
-                    source={{ uri: item.experience_images[0].url || item.experience_images[0] }}
+                    source={{
+                      uri:
+                        item.experience_images[0].url ||
+                        item.experience_images[0],
+                    }}
                     style={styles.portfolioImageBottom}
                   />
                   <Image
-                    source={{ uri: item.experience_images[1].url || item.experience_images[0] }}
+                    source={{
+                      uri:
+                        item.experience_images[1].url ||
+                        item.experience_images[0],
+                    }}
                     style={styles.portfolioImageBottom}
                   />
                 </View>
@@ -703,7 +760,11 @@ const GigsScreen = ({ navigation }) => {
                 <View style={styles.portfolioTopRow}>
                   {/* First image - larger on the left */}
                   <Image
-                    source={{ uri: item.experience_images[0].url || item.experience_images[0] }}
+                    source={{
+                      uri:
+                        item.experience_images[0].url ||
+                        item.experience_images[0],
+                    }}
                     style={styles.portfolioImageLargeLeft}
                   />
                   {/* Right column - 2 images stacked */}
@@ -732,8 +793,7 @@ const GigsScreen = ({ navigation }) => {
               </View>
             )}
           </View>
-        )
-        }
+        )}
 
         {/* FOOTER AREA */}
         <View style={styles.cardFooter}>
@@ -743,7 +803,11 @@ const GigsScreen = ({ navigation }) => {
               onPress={() => handleLikeWorker(item.id)}
             >
               <Icons.Ionicons
-                name={workerVotes[item.id] === "like" ? "thumbs-up" : "thumbs-up-outline"}
+                name={
+                  workerVotes[item.id] === "like"
+                    ? "thumbs-up"
+                    : "thumbs-up-outline"
+                }
                 size={18}
                 color={workerVotes[item.id] === "like" ? "#10b981" : "#64748b"}
               />
@@ -761,7 +825,9 @@ const GigsScreen = ({ navigation }) => {
                     : "thumbs-down-outline"
                 }
                 size={18}
-                color={workerVotes[item.id] === "dislike" ? "#ef4444" : "#64748b"}
+                color={
+                  workerVotes[item.id] === "dislike" ? "#ef4444" : "#64748b"
+                }
               />
               {/* <Text style={styles.voteCount}>{item.dislikes}</Text> */}
             </TouchableOpacity>
@@ -775,13 +841,18 @@ const GigsScreen = ({ navigation }) => {
             <Icons.Ionicons name="arrow-forward" size={14} color="#10b981" />
           </TouchableOpacity>
         </View>
-      </TouchableOpacity >
+      </TouchableOpacity>
     );
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+    >
+      <StatusBar
+        barStyle={isDarkMode ? "light-content" : "dark-content"}
+        backgroundColor={theme.colors.background}
+      />
       <View style={{ height: 20 }} />
 
       {/* Custom Modern Header */}
@@ -820,9 +891,22 @@ const GigsScreen = ({ navigation }) => {
               onChangeText={setSearchQuery}
             />
             {searchQuery.length > 0 && (
-              <TouchableOpacity style={{ position: 'absolute', right: 20, paddingHorizontal: 5, paddingVertical: 3, backgroundColor: '#f0f4ff', borderRadius: 10 }}
-                onPress={() => setSearchQuery('')}>
-                <Icons.Ionicons name="close" size={18} color={theme.colors.sub_text} />
+              <TouchableOpacity
+                style={{
+                  position: "absolute",
+                  right: 20,
+                  paddingHorizontal: 5,
+                  paddingVertical: 3,
+                  backgroundColor: "#f0f4ff",
+                  borderRadius: 10,
+                }}
+                onPress={() => setSearchQuery("")}
+              >
+                <Icons.Ionicons
+                  name="close"
+                  size={18}
+                  color={theme.colors.sub_text}
+                />
               </TouchableOpacity>
             )}
           </View>
@@ -840,7 +924,10 @@ const GigsScreen = ({ navigation }) => {
       {/* BOTTOM SHEET FOR CATEGORIES / WORKER FILTER */}
       {sheetVisible && (
         <Animated.View style={[styles.sheetOverlay, { opacity: sheetAnim }]}>
-          <Pressable style={styles.sheetBackdrop} onPress={() => toggleSheet(false)} />
+          <Pressable
+            style={styles.sheetBackdrop}
+            onPress={() => toggleSheet(false)}
+          />
 
           <Animated.View
             style={[
@@ -849,8 +936,11 @@ const GigsScreen = ({ navigation }) => {
                 transform: [
                   {
                     translateY: Animated.add(
-                      sheetAnim.interpolate({ inputRange: [0, 1], outputRange: [600, 0] }),
-                      pan
+                      sheetAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [600, 0],
+                      }),
+                      pan,
                     ),
                   },
                 ],
@@ -859,38 +949,78 @@ const GigsScreen = ({ navigation }) => {
             {...panResponder.panHandlers}
           >
             <KeyboardAvoidingView
-              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-              keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 80}
+              behavior={Platform.OS === "ios" ? "padding" : "height"}
+              keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 80}
             >
               <View style={styles.sheetHandle} />
               <View style={styles.sheetHeader}>
-                <Text style={{ fontSize: 16, fontWeight: '700', color: theme.colors.text }}>Filter</Text>
-                <TouchableOpacity onPress={() => { setSelectedCategory('all'); setSearchQuery(''); }}>
-                  <Text style={{ color: theme.colors.indicator, fontWeight: '700' }}>Clear</Text>
+                <Text
+                  style={{
+                    fontSize: 16,
+                    fontWeight: "700",
+                    color: theme.colors.text,
+                  }}
+                >
+                  Filter
+                </Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    setSelectedCategory("all");
+                    setSearchQuery("");
+                  }}
+                >
+                  <Text
+                    style={{ color: theme.colors.indicator, fontWeight: "700" }}
+                  >
+                    Clear
+                  </Text>
                 </TouchableOpacity>
               </View>
 
               <View style={{ paddingHorizontal: 14, paddingTop: 8 }}>
                 <TextInput
-                  style={[styles.sheetInput, { color: theme.colors.text, backgroundColor: theme.colors.sub_card }]}
+                  style={[
+                    styles.sheetInput,
+                    {
+                      color: theme.colors.text,
+                      backgroundColor: theme.colors.sub_card,
+                    },
+                  ]}
                   placeholder="Filter by name, profession, expertise or skill"
                   placeholderTextColor={theme.colors.sub_text}
                   value={searchQuery}
                   onChangeText={setSearchQuery}
                 />
 
-                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.categorySet}>
+                <ScrollView
+                  showsVerticalScrollIndicator={false}
+                  contentContainerStyle={styles.categorySet}
+                >
                   {CATEGORIES.map((cat) => (
                     <TouchableOpacity
                       key={cat.id}
                       style={[
                         styles.categoryButton,
-                        selectedCategory === cat.id && styles.categoryButtonActive,
+                        selectedCategory === cat.id &&
+                          styles.categoryButtonActive,
                       ]}
-                      onPress={() => { setSelectedCategory(cat.id); toggleSheet(false); }}
+                      onPress={() => {
+                        setSelectedCategory(cat.id);
+                        toggleSheet(false);
+                      }}
                     >
-                      <cat.iconType name={cat.iconName} size={18} color={selectedCategory === cat.id ? "#fff" : "#666"} />
-                      <Text style={[styles.categoryText, selectedCategory === cat.id && styles.categoryTextActive]}>
+                      <cat.iconType
+                        name={cat.iconName}
+                        size={18}
+                        color={selectedCategory === cat.id ? "#fff" : "#666"}
+                      />
+                      <Text
+                        style={[
+                          styles.categoryText,
+                          selectedCategory === cat.id &&
+                            styles.categoryTextActive,
+                        ]}
+                      >
                         {cat.name}
                       </Text>
                     </TouchableOpacity>
@@ -1038,12 +1168,27 @@ const GigsScreen = ({ navigation }) => {
         {/* Secondary Buttons */}
         {fabOpen && (
           <>
-            <Animated.View style={[styles.secondaryFabButton, { opacity: new Animated.Value(1), transform: [{ translateY: new Animated.Value(0) }] }]}>
+            <Animated.View
+              style={[
+                styles.secondaryFabButton,
+                {
+                  opacity: new Animated.Value(1),
+                  transform: [{ translateY: new Animated.Value(0) }],
+                },
+              ]}
+            >
               <TouchableOpacity
-                style={[styles.secondaryFab, { backgroundColor: '#10b981' }]}
-                onPress={() => { toggleFAB(); navigation.navigate('PostJobScreen') }}
+                style={[styles.secondaryFab, { backgroundColor: "#10b981" }]}
+                onPress={() => {
+                  toggleFAB();
+                  navigation.navigate("PostJobScreen");
+                }}
               >
-                <Icons.Ionicons name="construct-outline" size={20} color="#fff" />
+                <Icons.Ionicons
+                  name="construct-outline"
+                  size={20}
+                  color="#fff"
+                />
               </TouchableOpacity>
             </Animated.View>
 
@@ -1067,7 +1212,13 @@ const GigsScreen = ({ navigation }) => {
                   navigation.navigate("WorkerRegistration");
                 }}
               >
-                <Icons.MaterialCommunityIcons name={isWorker ? "account-hard-hat" : "briefcase-account-outline"} size={20} color="#fff" />
+                <Icons.MaterialCommunityIcons
+                  name={
+                    isWorker ? "account-hard-hat" : "briefcase-account-outline"
+                  }
+                  size={20}
+                  color="#fff"
+                />
               </TouchableOpacity>
             </Animated.View>
           </>
@@ -1128,7 +1279,10 @@ const styles = StyleSheet.create({
     paddingRight: 16,
   },
   categorySet: {
-    flexDirection: 'row', flexWrap: 'wrap', marginTop: 12, paddingBottom: 30
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginTop: 12,
+    paddingBottom: 30,
   },
   categoryButton: {
     flexDirection: "row",
@@ -1561,8 +1715,8 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     paddingBottom: 28,
-    backgroundColor: '#fff',
-    minHeight: height * 0.5
+    backgroundColor: "#fff",
+    minHeight: height * 0.5,
   },
   sheetHandle: {
     width: 40,
@@ -1789,21 +1943,20 @@ const styles = StyleSheet.create({
   },
   sectionHeader: {
     fontSize: 11,
-    fontWeight: '800',
-    color: '#64748b',
-    textTransform: 'uppercase',
+    fontWeight: "800",
+    color: "#64748b",
+    textTransform: "uppercase",
     letterSpacing: 1,
     marginBottom: 2,
   },
   skillsRowText: {
     fontSize: 14,
-    fontWeight: '400',
-    color: '#1e293b',
+    fontWeight: "400",
+    color: "#1e293b",
     lineHeight: 20,
     // This color makes the pipe separators pop slightly less than the text for better focus
     includeFontPadding: false,
   },
-
 });
 
 export default GigsScreen;

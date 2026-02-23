@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -12,17 +12,89 @@ import {
   Share,
   Platform,
   StatusBar,
+  ActivityIndicator,
 } from "react-native";
 import Carousel from "react-native-reanimated-carousel";
 import SecondaryNav from "../../components/SecondaryNav";
 import { AppContext } from "../../context/appContext";
+import { AuthContext } from "../../context/authProvider";
 import { Icons } from "../../constants/Icons";
+import {
+  logUserActivity,
+  getWorkerProfileClient,
+} from "../../service/Supabase-Fuctions";
 
 const { width } = Dimensions.get("window");
 
 const WorkerProfileScreen = ({ route }) => {
-  const { worker } = route.params;
+  const { user, isWorker } = React.useContext(AuthContext);
+  const workerIdFromRoute =
+    route.params?.workerId || route.params?.workerID || [];
+  const [worker, setWorker] = useState(route.params?.worker || null);
   const { theme, isDarkMode } = React.useContext(AppContext);
+  const [loading, setLoading] = useState(!route.params?.worker);
+
+  React.useEffect(() => {}, []);
+
+  React.useEffect(() => {
+    const fetchWorkerData = async () => {
+      if (!worker && workerIdFromRoute) {
+        setLoading(true);
+        try {
+          const response = await getWorkerProfileClient(workerIdFromRoute);
+
+          if (response && response.success && response.data) {
+            setWorker(response.data);
+          } else if (response && !response.data) {
+            setWorker(null);
+          }
+        } catch (error) {
+          console.log("Error fetching worker profile isues:", error);
+        } finally {
+          setLoading(false);
+        }
+      } else {
+        if (user) {
+          logUserActivity(user.uid, worker.id, "pomy_workers");
+        }
+      }
+    };
+
+    fetchWorkerData();
+  }, [workerIdFromRoute]);
+
+  // 3. Handle Loading State
+  if (loading) {
+    return (
+      <View
+        style={[
+          styles.container,
+          {
+            justifyContent: "center",
+            backgroundColor: theme.colors.background,
+          },
+        ]}
+      >
+        <ActivityIndicator size="large" color={theme.colors.primary} />
+      </View>
+    );
+  }
+
+  // 4. Handle Not Found State
+  if (!worker) {
+    return (
+      <View
+        style={[
+          styles.container,
+          { justifyContent: "center", alignItems: "center" },
+        ]}
+      >
+        <Text style={{ color: theme.colors.text }}>
+          Worker profile not found.
+        </Text>
+      </View>
+    );
+  }
 
   // --- DATA FIXES ---
   const locationString =
@@ -31,9 +103,13 @@ const WorkerProfileScreen = ({ route }) => {
       : worker.location || "Eswatini";
 
   // --- CONTACT HANDLERS ---
-  const handleEmail = () => Linking.openURL(`mailto:${worker.contact_options?.email}`);
+  const handleEmail = () =>
+    Linking.openURL(`mailto:${worker.contact_options?.email}`);
 
-  const handleWhatsApp = () => Linking.openURL(`whatsapp://send?phone=${worker.contact_options?.whatsapp}`);
+  const handleWhatsApp = () =>
+    Linking.openURL(
+      `whatsapp://send?phone=${worker.contact_options?.whatsapp}`,
+    );
 
   const handleSocial = (platform) => {
     // Logic to open social media links if they exist in your worker object
@@ -44,16 +120,20 @@ const WorkerProfileScreen = ({ route }) => {
   const handleCall = () => Linking.openURL(`tel:${worker.phone}`);
 
   // SMART LOGIC: Only true if images array exists and has content
-  const hasImages = worker.experience_images && worker.experience_images.length > 0;
+  const hasImages =
+    worker.experience_images && worker.experience_images.length > 0;
   const hasProfile = worker.worker_pp && worker.worker_pp.length > 0;
   const hasSkills = worker.skills && worker.skills.length > 0;
   const hasDocs = worker.documents && worker.documents.length > 0;
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
+      <StatusBar
+        barStyle={isDarkMode ? "light-content" : "dark-content"}
+        backgroundColor={theme.colors.background}
+      />
       <View style={{ height: 20 }} />
-      <SecondaryNav title={'Freelancer Profile'} />
+      <SecondaryNav title={"Freelancer Profile"} />
 
       {/* BODY CONTENT */}
       <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollView}>
@@ -76,12 +156,21 @@ const WorkerProfileScreen = ({ route }) => {
           {/* NAME & REPUTATION */}
           <View style={styles.mainRow}>
             <View style={styles.avatarSquare}>
-              {hasProfile
-                ? <Image source={{ uri: worker.worker_pp[0].url || worker.worker_pp[0] }}
-                  style={{ objectFit: 'cover', borderRaduis: 6, height: '100%', width: '100%' }}
+              {hasProfile ? (
+                <Image
+                  source={{
+                    uri: worker.worker_pp[0].url || worker.worker_pp[0],
+                  }}
+                  style={{
+                    objectFit: "cover",
+                    borderRaduis: 6,
+                    height: "100%",
+                    width: "100%",
+                  }}
                 />
-                : <Text style={styles.avatarText}>{worker.name?.charAt(0)}</Text>
-              }
+              ) : (
+                <Text style={styles.avatarText}>{worker.name?.charAt(0)}</Text>
+              )}
             </View>
             <View style={styles.nameGroup}>
               <Text style={styles.workerName}>{worker.name}</Text>
@@ -107,7 +196,11 @@ const WorkerProfileScreen = ({ route }) => {
                 style={styles.socialIconBtn}
                 onPress={handleWhatsApp}
               >
-                <Icons.Ionicons name="logo-whatsapp" size={22} color="#25D366" />
+                <Icons.Ionicons
+                  name="logo-whatsapp"
+                  size={22}
+                  color="#25D366"
+                />
               </TouchableOpacity>
             )}
 
@@ -125,7 +218,11 @@ const WorkerProfileScreen = ({ route }) => {
                 style={styles.socialIconBtn}
                 onPress={() => handleSocial("facebook")}
               >
-                <Icons.Ionicons name="logo-facebook" size={22} color="#1877F2" />
+                <Icons.Ionicons
+                  name="logo-facebook"
+                  size={22}
+                  color="#1877F2"
+                />
               </TouchableOpacity>
             )}
 
@@ -134,7 +231,11 @@ const WorkerProfileScreen = ({ route }) => {
                 style={styles.socialIconBtn}
                 onPress={() => handleSocial("instagram")}
               >
-                <Icons.Ionicons name="logo-instagram" size={22} color="#E4405F" />
+                <Icons.Ionicons
+                  name="logo-instagram"
+                  size={22}
+                  color="#E4405F"
+                />
               </TouchableOpacity>
             )}
           </View>
@@ -270,7 +371,7 @@ const styles = StyleSheet.create({
     height: 200,
     backgroundColor: "#f8fafc",
     resizeMode: "cover",
-    objectFit: 'cover'
+    objectFit: "cover",
   },
   profileInfoContainer: {
     padding: 20,
