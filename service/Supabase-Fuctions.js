@@ -325,33 +325,41 @@ export async function getGigApplicants(gigId) {
  */
 export async function registerAsWorker(workerData) {
   try {
-    // Validation: ensure skills is an array even if empty
-    const skillsArray = Array.isArray(workerData.skills) ? workerData.skills : [];
+    // 1. Upload Portfolio Images first
+    const uploadedImages = workerData.experience_images?.length > 0
+      ? await uploadImages('worker_portfolios', 'images', workerData.experience_images)
+      : [];
+
+    // 2. Upload Documents (Qualifications)
+    const uploadedDocs = workerData.documents?.length > 0
+      ? await uploadAttachments('worker_docs', 'attachments', workerData.documents)
+      : [];
 
     const { data, error } = await supabase
       .from('pomy_workers')
       .insert([
         {
-          user_id: workerData.user_id, // Added user_id mapping
+          user_id: workerData.user_id,
           name: workerData.name,
           phone: workerData.phone,
           location: workerData.location,
           bio: workerData.bio,
-          skills: skillsArray, // Updated to use the JSONB skills array
-          is_available: true,  // Defaulting to true on registration
+          skills: workerData.skills || [],
+          documents: uploadedDocs, // Now stores array of {url, name, type}
+          experience_images: uploadedImages.map(img => img.url), // Array of URLs
+          contact_options: workerData.contact_options || {},
+          is_available: true,
         }
       ])
-      .select(); // Returns the inserted data
+      .select();
 
     if (error) throw error;
-
     return { success: true, data: data[0] };
   } catch (error) {
     console.error('Registration Error:', error.message);
     return { success: false, error: error.message };
   }
 }
-
 
 /**
  * Fetches a worker profile by user_id
@@ -376,17 +384,99 @@ export async function getWorkerProfile(userId) {
 /**
  * Updates an existing worker profile
  */
+// Supabase-Fuctions.js updates
+
 export async function updateWorkerProfile(uid, updateData) {
   try {
+    let workerProfile = updateData.worker_pp || []
+    let portfolioImgs = updateData.experience_images || [];
+    let documents = updateData.documents || [];
+
+    console.log('Worker P.: ', workerProfile, '\nGallery Imgs: ', portfolioImgs, '\nDocuments: ', documents)
+
+    const isLocalFile = (item) => {
+      if (!item) return false
+      if (typeof item === 'string') return item.startsWith('file://')
+      if (typeof item === 'object') return !!(item.uri && String(item.uri).startsWith('file://'))
+      return false
+    }
+
+    const isRemoteUrl = (item) => {
+      if (!item) return false
+      if (typeof item === 'string') return item.startsWith('https')
+      if (typeof item === 'object') return !!(item.url && String(item.url).startsWith('https'))
+      return false
+    }
+
+    // Profile picture(s)
+    const existingPP = workerProfile?.filter(item => !isLocalFile(item))
+    const toUploadPP = workerProfile?.filter(isLocalFile).map(i => (typeof i === 'string' ? i : { uri: i }))
+
+    if (toUploadPP.length > 0) {
+      const uploadedPP = await uploadImages('workers', 'profile_pictures', toUploadPP)
+      workerProfile = [...existingPP, ...(uploadedPP || [])]
+    } else {
+      workerProfile = existingPP
+    }
+
+    // Portfolio images: want array of URL strings
+    // Keep existing remote URLs and append newly uploaded ones
+    const existingPortfolioUrls = portfolioImgs
+      ?.filter(isRemoteUrl)
+      .map(i => (typeof i === 'string' ? i : i.url))
+
+    const toUploadPortfolio = portfolioImgs
+      ?.filter(isLocalFile)
+      .map(i => (typeof i === 'string' ? i : i.uri))
+
+    if (toUploadPortfolio.length > 0) {
+      const uploadedPortfolio = await uploadImages('workers', 'portfolio', toUploadPortfolio)
+      // Append newly uploaded images to existing remote URLs
+      const uploadedUrls = uploadedPortfolio.map(img => (typeof img === 'object' ? img : img.url))
+      portfolioImgs = [...(existingPortfolioUrls || []), ...uploadedUrls]
+    }
+    else {
+      portfolioImgs = existingPortfolioUrls || []
+    }
+
+    // Documents: keep array of objects {url,name,type,...}
+    // Keep existing remote documents and append newly uploaded ones
+    const existingDocs = documents
+      ?.filter(isRemoteUrl)
+      .map(i => (typeof i === 'string' ? { url: i } : i))
+
+    const toUploadDocs = documents
+      ?.filter(isLocalFile)
+      .map(i => (typeof i === 'string' ? { uri: i } : i))
+
+    if (toUploadDocs.length > 0) {
+      const uploadedDocs = await uploadAttachments('workers', 'certificates', toUploadDocs)
+      // Append newly uploaded documents to existing remote documents
+      documents = [...(existingDocs || []), ...(uploadedDocs || [])]
+    } else {
+      documents = existingDocs || []
+    }
+
+    console.log('Portfolio Img: ', portfolioImgs)
+
+    const payload = {
+      ...updateData,
+      worker_pp: workerProfile,
+      experience_images: portfolioImgs,
+      documents: documents,
+      contact_options: updateData.contact_options || {}
+    }
+
     const { data, error } = await supabase
       .from('pomy_workers')
-      .update(updateData)
+      .update(payload)
       .eq('user_id', uid)
-      .select();
+      .select()
 
     if (error) throw error;
     return { success: true, data: data[0] };
   } catch (error) {
+    console.error('Update Error:', error.message);
     return { success: false, error: error.message };
   }
 }
@@ -412,7 +502,7 @@ export async function updateWorkerAvailability(workerId, isAvailable) {
  * the db
  */
 export async function getGigById(Id) {
-    try {
+  try {
     const { data, error } = await supabase
       .from('pomy_gigs')
       .select('*')
@@ -655,7 +745,7 @@ export async function syncUserProfile(firebaseUser) {
         last_login: new Date().toISOString(),
         // Note: We DO NOT include interest_embedding here. 
         // This prevents us from overwriting their AI profile with NULL.
-      }, { onConflict: 'user_id' }) 
+      }, { onConflict: 'user_id' })
       .select();
 
     if (error) throw error;

@@ -110,9 +110,9 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
+    Math.cos((lat2 * Math.PI) / 180) *
+    Math.sin(dLon / 2) *
+    Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   const distance = R * c;
   return distance;
@@ -164,6 +164,7 @@ const GigsScreen = ({ navigation }) => {
   const [userLocation, setUserLocation] = useState(null);
   const [jobs, setJobs] = useState([]);
   const [workers, setWorkers] = useState([]);
+  const [workerVotes, setWorkerVotes] = useState({});
   const [filteredWorkers, setFilteredWorkers] = useState([]);
   const [loadingWorkers, setLoadingWorkers] = useState(true);
   const [loadingGigs, setLoadingGigs] = useState(true);
@@ -202,12 +203,12 @@ const GigsScreen = ({ navigation }) => {
   ).current;
 
   const moreItems = [
-    {
-      title: "Find Freelancers",
-      icon: "MaterialCommunityIcons",
-      iconName: "briefcase-account-outline",
-      onPress: () => navigation.navigate("WorkerDirectory"),
-    },
+    // {
+    //   title: "Find Freelancers",
+    //   icon: "MaterialCommunityIcons",
+    //   iconName: "briefcase-account-outline",
+    //   onPress: () => navigation.navigate("WorkerDirectory"),
+    // },
     {
       title: "My Applied Gigs",
       icon: "FontAwesome6",
@@ -220,13 +221,13 @@ const GigsScreen = ({ navigation }) => {
       icon: "Ionicons",
       iconName: "newspaper-outline",
       onPress: () => navigation.navigate("MyPostedGigs"),
-    },
-    {
-      title: isWorker ? "My Worker Profile" : "Become a Worker",
-      icon: "Ionicons",
-      iconName: isWorker ? "person-circle-outline" : "construct-outline",
-      onPress: () => navigation.navigate("WorkerRegistration"),
-    },
+    }
+    // {
+    //   title: isWorker ? "My Worker Profile" : "Become a Worker",
+    //   icon: "Ionicons",
+    //   iconName: isWorker ? "person-circle-outline" : "construct-outline",
+    //   onPress: () => navigation.navigate("WorkerRegistration"),
+    // },
   ];
 
   // 1. Move this function ABOVE your useEffect calls
@@ -254,6 +255,8 @@ const GigsScreen = ({ navigation }) => {
     fetchLiveGigs(false);
     fetchWorkers();
 
+    loadWorkerVotes()
+
     const subscription = subscribeToGigs(() => {
       if (viewMode === "gigs") fetchLiveGigs(false);
     });
@@ -262,6 +265,131 @@ const GigsScreen = ({ navigation }) => {
       if (subscription) supabase.removeChannel(subscription);
     };
   }, [viewMode]);
+
+  useEffect(() => {
+    // Handle search filtering
+    if (viewMode === "workers") {
+      const filtered = workers.filter(
+        (worker) =>
+          worker.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (worker.skills &&
+            worker.skills.some((skill) =>
+              skill.toLowerCase().includes(searchQuery.toLowerCase()),
+            )),
+      );
+      setFilteredWorkers(filtered);
+    }
+  }, [searchQuery, workers, viewMode]);
+
+  // Re-fetch when category changes
+  useEffect(() => {
+    fetchLiveGigs(false);
+  }, [selectedCategory, userLocation]);
+
+  const loadWorkerVotes = async () => {
+    const stored = await AsyncStorage.getItem("workerVotes");
+    if (stored) {
+      setWorkerVotes(JSON.parse(stored));
+    }
+  };
+
+  const handleLikeWorker = async (workerId) => {
+    if (!user) return;
+
+    const currentVote = workerVotes[workerId];
+
+    try {
+      if (currentVote === "like") {
+        // REMOVE LIKE
+        await supabase.rpc("toggle_pomy_worker_vote", {
+          worker_id: workerId,
+          vote_type: "remove_like",
+        });
+
+        updateLocalVote(workerId, null, -1, 0);
+
+      } else {
+        // If previously disliked, remove dislike first
+        if (currentVote === "dislike") {
+          await supabase.rpc("toggle_pomy_worker_vote", {
+            worker_id: workerId,
+            vote_type: "remove_dislike",
+          });
+        }
+
+        await supabase.rpc("toggle_pomy_worker_vote", {
+          worker_id: workerId,
+          vote_type: "like",
+        });
+
+        updateLocalVote(workerId, "like", 1, currentVote === "dislike" ? -1 : 0);
+      }
+    } catch (err) {
+      console.log("Vote error:", err);
+    }
+  };
+
+  const handleDislikeWorker = async (workerId) => {
+    if (!user) return;
+
+    const currentVote = workerVotes[workerId];
+
+    try {
+      if (currentVote === "dislike") {
+        // REMOVE DISLIKE
+        await supabase.rpc("toggle_pomy_worker_vote", {
+          worker_id: workerId,
+          vote_type: "remove_dislike",
+        });
+
+        updateLocalVote(workerId, null, 0, -1);
+
+      } else {
+        if (currentVote === "like") {
+          await supabase.rpc("toggle_pomy_worker_vote", {
+            worker_id: workerId,
+            vote_type: "remove_like",
+          });
+        }
+
+        await supabase.rpc("toggle_pomy_worker_vote", {
+          worker_id: workerId,
+          vote_type: "dislike",
+        });
+
+        updateLocalVote(workerId, "dislike", currentVote === "like" ? -1 : 0, 1);
+      }
+    } catch (err) {
+      console.log("Vote error:", err);
+    }
+  };
+
+  const updateLocalVote = async (workerId, voteType, likeChange, dislikeChange) => {
+    // Update votes map
+    const updatedVotes = { ...workerVotes };
+
+    if (!voteType) {
+      delete updatedVotes[workerId];
+    } else {
+      updatedVotes[workerId] = voteType;
+    }
+
+    setWorkerVotes(updatedVotes);
+    await AsyncStorage.setItem("workerVotes", JSON.stringify(updatedVotes));
+
+    // Optimistic UI update
+    setWorkers((prev) =>
+      prev.map((w) =>
+        w.id === workerId
+          ? {
+            ...w,
+            likes: Math.max((w.likes || 0) + likeChange, 0),
+            dislikes: Math.max((w.dislikes || 0) + dislikeChange, 0),
+          }
+          : w
+      )
+    );
+  };
 
   const toggleFAB = () => {
     const toValue = fabOpen ? 0 : 1;
@@ -286,21 +414,6 @@ const GigsScreen = ({ navigation }) => {
     }
   };
 
-  useEffect(() => {
-    // Handle search filtering
-    if (viewMode === "workers") {
-      const filtered = workers.filter(
-        (worker) =>
-          worker.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (worker.skills &&
-            worker.skills.some((skill) =>
-              skill.toLowerCase().includes(searchQuery.toLowerCase()),
-            )),
-      );
-      setFilteredWorkers(filtered);
-    }
-  }, [searchQuery, workers, viewMode]);
-
   const fetchWorkers = async () => {
     setLoadingWorkers(true);
     const { data, error } = await supabase
@@ -311,22 +424,13 @@ const GigsScreen = ({ navigation }) => {
     if (!error) {
       // Filter out the current user's own profile
       const otherWorkers = user?.uid
-        ? data.filter((worker) => worker.user_id !== user.uid)
+        ? data // data.filter((worker) => worker.user_id !== user.uid)
         : data;
 
       setWorkers(otherWorkers);
       setFilteredWorkers(otherWorkers);
     }
     setLoadingWorkers(false);
-  };
-
-  const formatDate = (dateString) => {
-    if (!dateString) return "";
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-GB", {
-      month: "short",
-      year: "numeric",
-    });
   };
 
   // Fetch logic
@@ -362,11 +466,6 @@ const GigsScreen = ({ navigation }) => {
     setLoadingGigs(false);
     setRefreshing(false);
   };
-
-  // Re-fetch when category changes
-  useEffect(() => {
-    fetchLiveGigs(false);
-  }, [selectedCategory, userLocation]);
 
   const renderJobCard = ({ item }) => {
     const hasImage =
@@ -489,223 +588,200 @@ const GigsScreen = ({ navigation }) => {
     );
   };
 
-//  const renderWorkerCard = ({ item }) => {
-//     const staticImages = [
-//       "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?w=400",
-//       "https://images.unsplash.com/photo-1590856029826-c7a73142bbf1?w=400",
-//     ];
-
-//     const displayImages =
-//       item.experience_images?.length > 0
-//         ? item.experience_images
-//         : staticImages;
-//     const locationString =
-//       typeof item.location === "object"
-//         ? item.location?.address
-//         : item.location || "Eswatini";
-
-//     // Logic to handle skills/services (Assuming item.skills is an array or use item.category)
-//     const skills = item.skills || [item.category || "General Service"];
-
-//     return (
-//       <TouchableOpacity
-//         activeOpacity={0.9}
-//         style={styles.workerCard}
-//         onPress={() =>
-//           navigation.navigate("WorkerProfileScreen", { worker: item })
-//         }
-//       >
-//         {/* HEADER AREA */}
-//         <View style={styles.cardHeader}>
-//           <View style={styles.avatarSquare}>
-//             <Text style={styles.avatarText}>{item.name?.charAt(0)}</Text>
-//           </View>
-//           <View style={styles.headerInfo}>
-//             <Text style={styles.workerName}>{item.name}</Text>
-//             <View style={styles.locationRow}>
-//               <Icons.Ionicons name="location-sharp" size={12} color="#10b981" />
-//               <Text style={styles.locationText}>{locationString}</Text>
-//             </View>
-//           </View>
-//         </View>
-
-
-//         {/* SKILLS / SERVICES SECTION - Horizontal Row with Pipes */}
-//       <View style={styles.skillsContainer}>
-//         <Text style={styles.sectionHeader}>Services Provided</Text>
-        
-//         <Text 
-//           style={styles.skillsRowText} 
-//           numberOfLines={1} 
-//           ellipsizeMode="tail"
-//         >
-//           {skills.map((skill, index) => (
-//             <React.Fragment key={index}>
-//               {skill}
-//               {index < skills.length - 1 && "  |  "}
-//             </React.Fragment>
-//           ))}
-//         </Text>
-//       </View>
-
-      
-
-//         {/* FULL SCREEN HERO PORTFOLIO */}
-//         <View style={styles.portfolioWrapper}>
-//           <ScrollView
-//             horizontal
-//             pagingEnabled // Makes it snap like a gallery
-//             showsHorizontalScrollIndicator={false}
-//           >
-//             {displayImages.map((img, idx) => (
-//               <Image
-//                 key={idx}
-//                 source={{ uri: img }}
-//                 style={styles.portfolioImage}
-//               />
-//             ))}
-//           </ScrollView>
-//         </View>
-
-   
-
-//         {/* FOOTER AREA */}
-//         <View style={styles.cardFooter}>
-//           <View style={styles.interactionGroup}>
-//             <TouchableOpacity style={styles.voteBtn}>
-//               <Icons.Ionicons name="thumbs-up" size={18} color="#10b981" />
-//               <Text style={styles.voteCount}>{item.likes || "24"}</Text>
-//             </TouchableOpacity>
-//             <TouchableOpacity style={styles.voteBtn}>
-//               <Icons.Ionicons
-//                 name="thumbs-down-outline"
-//                 size={18}
-//                 color="#64748b"
-//               />
-//             </TouchableOpacity>
-//           </View>
-
-//           <TouchableOpacity
-//             style={styles.blackActionBtn}
-//             onPress={() => Linking.openURL(`tel:${item.phone}`)}
-//           >
-//             <Text style={styles.actionBtnText}>VIEW PROFILE</Text>
-//             <Icons.Ionicons name="arrow-forward" size={14} color="#10b981" />
-//           </TouchableOpacity>
-//         </View>
-//       </TouchableOpacity>
-//     );
-//   };
-
   const renderWorkerCard = ({ item }) => {
-  // 1. Logic for Images: If no images, we won't render the block at all
-  const hasImages = item.experience_images && item.experience_images.length > 0;
-  const displayImages = hasImages ? item.experience_images : [];
+    // 1. Logic for Images: If no images, we won't render the block at all
+    const hasImages = item.experience_images && item.experience_images.length > 0;
+    const worker_pp = item.worker_pp && item.worker_pp.length > 0;
 
-  const locationString =
-    typeof item.location === "object"
-      ? item.location?.address
-      : item.location || "Eswatini";
+    const locationString =
+      typeof item.location === "object"
+        ? item.location?.address
+        : item.location || "Eswatini";
 
-  // 2. Logic for Skills: Check if the worker actually has skills provided
-  const hasSkills = item.skills && item.skills.length > 0;
-  const skills = hasSkills ? item.skills : [];
+    // 2. Logic for Skills: Check if the worker actually has skills provided
+    const hasSkills = item.skills && item.skills.length > 0;
+    const skills = hasSkills ? item.skills : [];
 
-  return (
-    <TouchableOpacity
-      activeOpacity={0.9}
-      style={styles.workerCard}
-      onPress={() => navigation.navigate("WorkerProfileScreen", { worker: item })}
-    >
-      {/* HEADER AREA */}
-      <View style={styles.cardHeader}>
-        <View style={styles.avatarSquare}>
-          <Text style={styles.avatarText}>{item.name?.charAt(0)}</Text>
-        </View>
-        <View style={styles.headerInfo}>
-          <Text style={styles.workerName}>{item.name}</Text>
-          <View style={styles.locationRow}>
-            <Icons.Ionicons name="location-sharp" size={12} color="#10b981" />
-            <Text style={styles.locationText}>{locationString}</Text>
+    return (
+      <TouchableOpacity
+        activeOpacity={0.9}
+        style={styles.workerCard}
+        onPress={() => navigation.navigate("WorkerProfileScreen", { worker: item })}
+      >
+        {/* HEADER AREA */}
+        <View style={styles.cardHeader}>
+          <View style={styles.avatarSquare}>
+            {worker_pp ?
+              <Image source={{ uri: item.worker_pp[0].url || item.worker_pp[0] }}
+                style={{ objectFit: 'cover', width: '100%', height: '100%', borderRadius: 6 }}
+              />
+              : <Text style={styles.avatarText}>{item.name?.charAt(0)}</Text>
+            }
+          </View>
+          <View style={styles.headerInfo}>
+            <Text style={styles.workerName}>{item.name}</Text>
+            <View style={styles.locationRow}>
+              <Icons.Ionicons name="location-sharp" size={12} color="#10b981" />
+              <Text style={styles.locationText}>{locationString}</Text>
+            </View>
           </View>
         </View>
-      </View>
 
-      {/* CONDITION: Show Bio only if NO skills are provided */}
-      {!hasSkills && (
-        <View style={styles.bodyContent}>
-          <Text numberOfLines={2} style={styles.bioText}>
-            {item.bio || "Top-rated professional. Tap to view full portfolio and contact details."}
-          </Text>
-        </View>
-      )}
+        {/* CONDITION: Show Bio only if NO skills are provided */}
+        {!hasSkills && (
+          <View style={styles.bodyContent}>
+            <Text numberOfLines={2} style={styles.bioText}>
+              {item.bio || "Top-rated professional. Tap to view full portfolio and contact details."}
+            </Text>
+          </View>
+        )}
 
-      {/* CONDITION: Show Skills only if they exist */}
-      {hasSkills && (
-        <View style={styles.skillsContainer}>
-          <Text style={styles.sectionHeader}>Services Provided</Text>
-          <Text style={styles.skillsRowText} numberOfLines={1} ellipsizeMode="tail">
-            {skills.map((skill, index) => (
-              <React.Fragment key={index}>
-                {skill}
-                {index < skills.length - 1 && "  |  "}
-              </React.Fragment>
-            ))}
-          </Text>
-        </View>
-      )}
+        {/* CONDITION: Show Skills only if they exist */}
+        {hasSkills && (
+          <View style={styles.skillsContainer}>
+            <Text style={styles.sectionHeader}>Services Provided</Text>
+            <Text style={styles.skillsRowText} numberOfLines={1} ellipsizeMode="tail">
+              {skills.map((skill, index) => (
+                <React.Fragment key={index}>
+                  {skill}
+                  {index < skills.length - 1 && "  |  "}
+                </React.Fragment>
+              ))}
+            </Text>
+          </View>
+        )}
 
-      {/* CONDITION: Show Portfolio only if images exist */}
-      {hasImages && (
-        <View style={styles.portfolioWrapper}>
-          <ScrollView
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-          >
-            {displayImages.map((img, idx) => (
+        {/* CONDITION: Show Portfolio only if images exist */}
+        {hasImages && (
+          <View style={styles.portfolioWrapper}>
+            {item.experience_images.length === 1 ? (
+              // Single image - full width
               <Image
-                key={idx}
-                source={{ uri: img }}
-                style={styles.portfolioImage}
+                source={{ uri: item.experience_images[0].url || item.experience_images[0] }}
+                style={styles.portfolioImageSingle}
               />
-            ))}
-          </ScrollView>
-        </View>
-      )}
+            ) : item.experience_images.length === 2 ? (
+              // Two images - equal grid
+              <View style={styles.portfolioGridTwo}>
+                {item.experience_images.slice(0, 2).map((img, idx) => (
+                  <Image
+                    key={idx}
+                    source={{ uri: img.url || img }}
+                    style={styles.portfolioImageEqual}
+                  />
+                ))}
+              </View>
+            ) : item.experience_images.length === 4 ? (
+              <View style={styles.portfolioGridMultiple}>
+                <View style={styles.portfolioTopRow}>
+                  {/* First image - larger on the left */}
+                  <Image
+                    source={{ uri: item.experience_images[0].url || item.experience_images[0] }}
+                    style={styles.portfolioImageBottom}
+                  />
+                  <Image
+                    source={{ uri: item.experience_images[1].url || item.experience_images[0] }}
+                    style={styles.portfolioImageBottom}
+                  />
+                </View>
+                {/* Bottom row - remaining images (flex wrap) */}
+                {item.experience_images.length > 3 && (
+                  <View style={styles.portfolioBottomRow}>
+                    {item.experience_images.slice(2, 5).map((img, idx) => (
+                      <Image
+                        key={idx}
+                        source={{ uri: img.url || img }}
+                        style={styles.portfolioImageBottom}
+                      />
+                    ))}
+                  </View>
+                )}
+              </View>
+            ) : (
+              // 3+ images - Enhanced grid layout
+              <View style={styles.portfolioGridMultiple}>
+                <View style={styles.portfolioTopRow}>
+                  {/* First image - larger on the left */}
+                  <Image
+                    source={{ uri: item.experience_images[0].url || item.experience_images[0] }}
+                    style={styles.portfolioImageLargeLeft}
+                  />
+                  {/* Right column - 2 images stacked */}
+                  <View style={styles.portfolioRightColumn}>
+                    {item.experience_images.slice(1, 3).map((img, idx) => (
+                      <Image
+                        key={idx}
+                        source={{ uri: img.url || img }}
+                        style={styles.portfolioImageRightSmall}
+                      />
+                    ))}
+                  </View>
+                </View>
+                {/* Bottom row - remaining images (flex wrap) */}
+                {item.experience_images.length > 3 && (
+                  <View style={styles.portfolioBottomRow}>
+                    {item.experience_images.slice(3, 5).map((img, idx) => (
+                      <Image
+                        key={idx}
+                        source={{ uri: img.url || img }}
+                        style={styles.portfolioImageBottom}
+                      />
+                    ))}
+                  </View>
+                )}
+              </View>
+            )}
+          </View>
+        )
+        }
 
-      {/* FOOTER AREA */}
-      <View style={styles.cardFooter}>
-        <View style={styles.interactionGroup}>
-          <TouchableOpacity style={styles.voteBtn}>
-            <Icons.Ionicons name="thumbs-up" size={18} color="#10b981" />
-            <Text style={styles.voteCount}>{item.likes || "24"}</Text>
+        {/* FOOTER AREA */}
+        <View style={styles.cardFooter}>
+          <View style={styles.interactionGroup}>
+            <TouchableOpacity
+              style={styles.voteBtn}
+              onPress={() => handleLikeWorker(item.id)}
+            >
+              <Icons.Ionicons
+                name={workerVotes[item.id] === "like" ? "thumbs-up" : "thumbs-up-outline"}
+                size={18}
+                color={workerVotes[item.id] === "like" ? "#10b981" : "#64748b"}
+              />
+              <Text style={styles.voteCount}>{item.likes || 0}</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.voteBtn}
+              onPress={() => handleDislikeWorker(item.id)}
+            >
+              <Icons.Ionicons
+                name={
+                  workerVotes[item.id] === "dislike"
+                    ? "thumbs-down"
+                    : "thumbs-down-outline"
+                }
+                size={18}
+                color={workerVotes[item.id] === "dislike" ? "#ef4444" : "#64748b"}
+              />
+              <Text style={styles.voteCount}>{item.dislikes || 0}</Text>
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity
+            style={styles.blackActionBtn}
+            onPress={() => Linking.openURL(`tel:${item.phone}`)}
+          >
+            <Text style={styles.actionBtnText}>Connect</Text>
+            <Icons.Ionicons name="arrow-forward" size={14} color="#10b981" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.voteBtn}>
-            <Icons.Ionicons name="thumbs-down-outline" size={18} color="#64748b" />
-          </TouchableOpacity>
         </View>
+      </TouchableOpacity >
+    );
+  };
 
-        <TouchableOpacity
-          style={styles.blackActionBtn}
-          onPress={() => Linking.openURL(`tel:${item.phone}`)}
-        >
-          <Text style={styles.actionBtnText}>VIEW PROFILE</Text>
-          <Icons.Ionicons name="arrow-forward" size={14} color="#10b981" />
-        </TouchableOpacity>
-      </View>
-    </TouchableOpacity>
-  );
-};
-
-return (
-    <SafeAreaView
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
-    >
-      <StatusBar
-        barStyle={isDarkMode ? "light-content" : "dark-content"}
-        backgroundColor={theme.colors.background}
-      />
+  return (
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
       <View style={{ height: 20 }} />
 
       {/* Custom Modern Header */}
@@ -987,11 +1063,11 @@ return (
               <TouchableOpacity
                 style={[styles.secondaryFab, { backgroundColor: "#3b82f6" }]}
                 onPress={() => {
-                  // toggleFAB();
+                  toggleFAB();
                   navigation.navigate("WorkerRegistration");
                 }}
               >
-                <Icons.MaterialCommunityIcons name="briefcase-account-outline" size={20} color="#fff" />
+                <Icons.MaterialCommunityIcons name={isWorker ? "account-hard-hat" : "briefcase-account-outline"} size={20} color="#fff" />
               </TouchableOpacity>
             </Animated.View>
           </>
@@ -1015,7 +1091,7 @@ return (
               styles.mainFab,
               { backgroundColor: theme.colors.indicator },
             ]}
-            // onPress={toggleFAB}
+            onPress={toggleFAB}
           >
             <Icons.AntDesign name="plus" size={24} color="#fff" />
           </TouchableOpacity>
@@ -1096,7 +1172,7 @@ const styles = StyleSheet.create({
   },
   jobsList: {
     paddingTop: 16,
-    paddingBottom: 36,
+    paddingBottom: 110,
   },
   jobCard: {
     backgroundColor: "#fff",
@@ -1533,9 +1609,9 @@ const styles = StyleSheet.create({
 
   workerCard: {
     backgroundColor: "#fff",
-    marginHorizontal: 2, // Almost edge-to-edge
+    // marginHorizontal: 2,
     marginBottom: 10,
-    borderRadius: 14, // Sharp edges
+    // borderRadius: 14,
     borderWidth: 1,
     borderColor: "#e2e8f0",
     overflow: "hidden",
@@ -1586,19 +1662,72 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginLeft: 3,
   },
-  portfolioImage: {
-    // This width should match the card's internal width
-    width: width - 12,
-    height: 400,
-    borderRadius: 2, // Sharp edges
-    backgroundColor: "#f1f5f9",
-    resizeMode: "cover",
-    marginRight: 10,
-  },
   portfolioWrapper: {
     width: "100%",
+    maxHeight: height * 0.5,
     marginBottom: 12,
     paddingLeft: 0,
+  },
+  // Single image
+  portfolioImageSingle: {
+    width: "100%",
+    height: height * 0.2,
+    borderRadius: 8,
+    backgroundColor: "#f1f5f9",
+    resizeMode: "cover",
+    // marginHorizontal: 14,
+  },
+  // Two images - equal grid
+  portfolioGridTwo: {
+    flexDirection: "row",
+    gap: 8,
+    // marginHorizontal: 14,
+  },
+  portfolioImageEqual: {
+    flex: 1,
+    height: 200,
+    borderRadius: 8,
+    backgroundColor: "#f1f5f9",
+    resizeMode: "cover",
+  },
+  // 3+ images - Enhanced grid with first image larger on left
+  portfolioGridMultiple: {
+    // marginHorizontal: 14,
+  },
+  portfolioTopRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 8,
+  },
+  portfolioImageLargeLeft: {
+    flex: 1,
+    height: 240,
+    borderRadius: 8,
+    backgroundColor: "#f1f5f9",
+    resizeMode: "cover",
+  },
+  portfolioRightColumn: {
+    flex: 1,
+    gap: 8,
+  },
+  portfolioImageRightSmall: {
+    flex: 1,
+    height: 116,
+    borderRadius: 8,
+    backgroundColor: "#f1f5f9",
+    resizeMode: "cover",
+  },
+  portfolioBottomRow: {
+    flexDirection: "row",
+    gap: 8,
+    flexWrap: "wrap",
+  },
+  portfolioImageBottom: {
+    width: "48%",
+    height: 120,
+    borderRadius: 8,
+    backgroundColor: "#f1f5f9",
+    resizeMode: "cover",
   },
   bodyContent: {
     marginBottom: 15,
@@ -1654,13 +1783,6 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     marginRight: 6,
   },
-  // Adjusted Portfolio Wrapper to ensure it fits perfectly with the new list
-  portfolioWrapper: {
-    width: '100%',
-    marginBottom: 12,
-    marginTop: 4,
-  },
-
   skillsContainer: {
     paddingHorizontal: 12,
     marginBottom: 2,
@@ -1681,7 +1803,7 @@ const styles = StyleSheet.create({
     // This color makes the pipe separators pop slightly less than the text for better focus
     includeFontPadding: false,
   },
-  
+
 });
 
 export default GigsScreen;
