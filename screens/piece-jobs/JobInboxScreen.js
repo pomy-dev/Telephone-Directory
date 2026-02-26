@@ -165,7 +165,7 @@ const JobInboxScreen = ({ route, navigation }) => {
 
             <View style={{ flex: 1, marginLeft: 12 }}>
               <Text style={styles.name}>
-                {applicantData?.email || "Unknown Worker"}
+                {applicantData?.name ? applicantData?.name : applicantData?.phone || applicantData?.email ||  "Unknown Worker"}
               </Text>
 
               <Text style={styles.contactText}>{applicantData?.email}</Text>
@@ -468,22 +468,21 @@ const JobInboxScreen = ({ route, navigation }) => {
                     <View style={styles.contactRow}>
                       <Icons.Ionicons
                         name="mail-outline"
-                        size={14}
+                        size={19}
                         color="#666"
                       />
                       <Text style={styles.modalEmail}>
-                        {" "}
                         {selectedApp.applicant?.email}
                       </Text>
                     </View>
                     <View style={styles.contactRow}>
                       <Icons.Ionicons
                         name="call-outline"
-                        size={14}
+                        size={17}
                         color="#666"
                       />
                       <Text style={styles.modalEmail}>
-                        {" "}
+                      
                         {selectedApp.applicant?.phone}
                       </Text>
                     </View>
@@ -841,7 +840,8 @@ const styles = StyleSheet.create({
   },
   largeAvatarText: { color: "#fff", fontSize: 32, fontWeight: "800" },
   modalName: { fontSize: 22, fontWeight: "800", color: "#000" },
-  modalEmail: { fontSize: 14, color: "#666", marginTop: 4 },
+  contactRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 ,  justifyContent: "center",  alignItems: "center", paddingVertical: 6,},
+  modalEmail: { fontSize: 14, color: "#666" },
   divider: { height: 1, backgroundColor: "#f0f0f0", marginVertical: 20 },
   sectionTitle: {
     fontSize: 12,

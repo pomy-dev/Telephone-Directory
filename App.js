@@ -42,15 +42,6 @@ import BusinessScreen from "./screens/directory/BusinessesScreen";
 import FeaturedScreen from "./screens/directory/FeaturedScreen";
 import BusinessList from "./screens/directory/BusinessListScreen";
 
-// business tenders
-import AddTenderScreen from "./screens/tenders/AddTenderScreen";
-import TenderDetailsScreen from "./screens/tenders/TenderDetailsScreen";
-import PublishedTendersScreen from "./screens/tenders/PublishedTendersScreen";
-import BidTenderScreen from "./screens/tenders/BidTenderScreen";
-import MyBidsScreen from "./screens/tenders/MyBidsScreen";
-
-// vancancies screens
-import VacanciesScreen from "./screens/vacancies/VacanciesScreen";
 
 // gigs
 import GigsScreen from "./screens/piece-jobs/GigsScreen";
@@ -60,25 +51,8 @@ import PostJobScreen from "./screens/piece-jobs/PostJobScreen";
 import JobDetailScreen from "./screens/piece-jobs/JobDetailScreen";
 import WorkerRegistrationScreen from "./screens/piece-jobs/WorkerRegistration";
 import WorkerProfileScreen from "./screens/piece-jobs/WorkerProfileScreen";
-import WorkerDirectoryScreen from "./screens/piece-jobs/WorkerDirectoryScreen";
 import MyPostedGigsScreen from "./screens/piece-jobs/MyPostedGigsScreen";
 import JobInboxScreen from "./screens/piece-jobs/JobInboxScreen";
-
-// Property Rental
-import PropertyScreen from "./screens/property-rental/PropertyScreen";
-// import RentalHousesScreen from "./screens/property-rental/RentalHousesScreen"
-import MoreHouses from "./screens/property-rental/MoreHouses";
-import HouseDetailsScreen from "./screens/property-rental/HouseDetailsScreen";
-import HouseMapScreen from "./screens/property-rental/HouseMapScreen";
-import RentalHouseDetailsScreen from "./screens/property-rental/RentalHouseDetailsScreen";
-import PostRentalHouseScreen from "./screens/property-rental/PostRentalHouseScreen";
-import ApplyRentalScreen from "./screens/property-rental/ApplyRentalScreen";
-import MyRentalApplicationsScreen from "./screens/property-rental/MyRentalApplicationsScreen";
-import LeaseItemsScreen from "./screens/property-rental/LeaseItemsScreen";
-import PostLeaseItemScreen from "./screens/property-rental/PostLeaseItemScreen";
-import LeaseItemDetailsScreen from "./screens/property-rental/LeaseItemDetailsScreen";
-
-import AgentDetailsScreen from "./screens/property-rental/AgentDetailsScreen";
 
 // forehires (transportation)
 import TransportationListScreen from "./screens/forehires/TransportationListScreen";
@@ -86,11 +60,6 @@ import TransportationDetailsScreen from "./screens/forehires/TransportationDetai
 import PostTransportationScreen from "./screens/forehires/PostTransportationScreen";
 import BookTransportationScreen from "./screens/forehires/BookTransportationScreen";
 
-import HomeDealScreen from "./screens/special-deals/HomeDeals";
-import SearchDealScreen from "./screens/special-deals/SearchScreen";
-import ItemCompareScreen from "./screens/special-deals/ItemCompareScreen";
-import BasketScreen from "./screens/special-deals/BasketScreen";
-import PamphletScanner from "./screens/special-deals/PamphletScanner";
 
 // Splash Screen
 import SplashScreen from "./screens/SplashScreen";
@@ -364,14 +333,7 @@ function AppContent() {
                         // loading ? "SplashLoading" : user ? "MainTabs" : "Login"
                       }
                     >
-                      {/* Loading state */}
-                      {/* {loading && (
-                        <Stack.Screen
-                          name="SplashLoading"
-                          component={SplashScreen}
-                          options={{ animationEnabled: false }}
-                        />
-                      )} */}
+      
 
 
                       {/* Auth Screens */}
@@ -426,27 +388,7 @@ function AppContent() {
                             component={SavedListsScreen}
                           />
 
-                          {/* Tenders  */}
-                          <Stack.Screen
-                            name="AddTenderScreen"
-                            component={AddTenderScreen}
-                          />
-                          <Stack.Screen
-                            name="TenderDetailsScreen"
-                            component={TenderDetailsScreen}
-                          />
-                          <Stack.Screen
-                            name="PublishedTendersScreen"
-                            component={PublishedTendersScreen}
-                          />
-                          <Stack.Screen
-                            name="BidTenderScreen"
-                            component={BidTenderScreen}
-                          />
-                          <Stack.Screen
-                            name="MyBidsScreen"
-                            component={MyBidsScreen}
-                          />
+      
 
                           {/* Piece Jobs  */}
                           <Stack.Screen
@@ -471,10 +413,6 @@ function AppContent() {
                             component={WorkerProfileScreen}
                           />
                           <Stack.Screen
-                            name="WorkerDirectory"
-                            component={WorkerDirectoryScreen}
-                          />
-                          <Stack.Screen
                             name="MyPostedGigs"
                             component={MyPostedGigsScreen}
                           />
@@ -482,38 +420,7 @@ function AppContent() {
                             name="JobInbox"
                             component={JobInboxScreen}
                           />
-
-                          {/* vacancies */}
-                          <Stack.Screen
-                            name="VacanciesScreen"
-                            component={VacanciesScreen}
-                          />
-
-                          {/* rental houses */}
-                          <Stack.Screen name="PropertyScreen" component={PropertyScreen} />
-                          {/* <Stack.Screen name="RentalHousesScreen" component={RentalHousesScreen} /> */}
-                          <Stack.Screen name="MoreHouses" component={MoreHouses} />
-                          <Stack.Screen name="HouseDetailsScreen" component={HouseDetailsScreen} />
-                          <Stack.Screen name="HouseMapScreen" component={HouseMapScreen} />
-                          <Stack.Screen name="AgentDetailsScreen" component={AgentDetailsScreen} />
-                          {/* <Stack.Screen name="RentalHouseDetailsScreen" component={RentalHouseDetailsScreen} /> */}
-                          <Stack.Screen name="PostRentalHouseScreen" component={PostRentalHouseScreen} />
-                          <Stack.Screen name="ApplyRentalScreen" component={ApplyRentalScreen} />
-                          <Stack.Screen name="MyRentalApplicationsScreen" component={MyRentalApplicationsScreen} />
-
-                          {/* lease items */}
-                          <Stack.Screen
-                            name="LeaseItemsScreen"
-                            component={LeaseItemsScreen}
-                          />
-                          <Stack.Screen
-                            name="PostLeaseItemScreen"
-                            component={PostLeaseItemScreen}
-                          />
-                          <Stack.Screen
-                            name="LeaseItemDetailsScreen"
-                            component={LeaseItemDetailsScreen}
-                          />
+                    
 
                           {/* transport for hire */}
                           <Stack.Screen
@@ -546,28 +453,6 @@ function AppContent() {
                           <Stack.Screen
                             name="LoanCalculator"
                             component={LoanCalculator}
-                          />
-
-                          {/* deals assist */}
-                          <Stack.Screen
-                            name="SpecialDeals"
-                            component={HomeDealScreen}
-                          />
-                          <Stack.Screen
-                            name="SearchDeal"
-                            component={SearchDealScreen}
-                          />
-                          <Stack.Screen
-                            name="ItemComparison"
-                            component={ItemCompareScreen}
-                          />
-                          <Stack.Screen
-                            name="BasketScreen"
-                            component={BasketScreen}
-                          />
-                          <Stack.Screen
-                            name="ScanDealScreen"
-                            component={PamphletScanner}
                           />
                         </>
                       )}

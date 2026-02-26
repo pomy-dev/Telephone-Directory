@@ -40,7 +40,6 @@ const MyPostedGigsScreen = ({ navigation }) => {
       "Manage Job",
       `Options for "${gig.job_title}"`,
       [
-        { text: "Edit Post", onPress: () => console.log("Navigate to edit screen with gig data") },
         {
           text: "Delete Post",
           style: "destructive",

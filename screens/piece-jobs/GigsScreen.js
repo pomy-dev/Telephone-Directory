@@ -173,7 +173,7 @@ const GigsScreen = ({ navigation }) => {
   const [loadingGigs, setLoadingGigs] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [nextCursor, setNextCursor] = useState({ createdAt: null, id: null });
-  const [viewMode, setViewMode] = useState("gigs"); // "gigs" | "workers"
+  const [viewMode, setViewMode] = useState("gigs");
   const [searchQuery, setSearchQuery] = useState("");
   const [fabOpen, setFabOpen] = useState(false);
   const fabRotation = React.useRef(new Animated.Value(0)).current;
@@ -184,16 +184,16 @@ const GigsScreen = ({ navigation }) => {
   const panResponder = React.useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: (evt, gestureState) => {
-        return Math.abs(gestureState.dy) > 5 && gestureState.dy > 0;
+        return Math.abs(gestureState.dy) > 5 && gestureState.dy < 0;
       },
       onPanResponderMove: (evt, gestureState) => {
-        if (gestureState.dy > 0) {
+        if (gestureState.dy < 0) {
           pan.setValue(gestureState.dy);
         }
       },
       onPanResponderRelease: (evt, gestureState) => {
         const { dy, vy } = gestureState;
-        if (dy > 120 || vy > 1.2) {
+        if (dy < -120 || vy < -1.2) {
           Animated.timing(pan, {
             toValue: Dimensions.get("window").height,
             duration: 180,
@@ -233,12 +233,12 @@ const GigsScreen = ({ navigation }) => {
       iconName: "newspaper-outline",
       onPress: () => navigation.navigate("MyPostedGigs"),
     },
-    // {
-    //   title: isWorker ? "My Worker Profile" : "Become a Worker",
-    //   icon: "Ionicons",
-    //   iconName: isWorker ? "person-circle-outline" : "construct-outline",
-    //   onPress: () => navigation.navigate("WorkerRegistration"),
-    // },
+    {
+      title: isWorker ? "My Worker Profile" : "Become a Worker",
+      icon: "Ionicons",
+      iconName: isWorker ? "person-circle-outline" : "construct-outline",
+      onPress: () => navigation.navigate("WorkerRegistration"),
+    },
   ];
 
   // 1. Move this function ABOVE your useEffect calls
@@ -289,7 +289,7 @@ const GigsScreen = ({ navigation }) => {
             )),
       );
       setFilteredWorkers(filtered);
-    }
+    } else if (viewMode === "gigs") fetchLiveGigs(false);
   }, [searchQuery, workers, viewMode]);
 
   // Re-fetch when category changes
@@ -455,9 +455,7 @@ const GigsScreen = ({ navigation }) => {
 
     if (!error) {
       // Filter out the current user's own profile
-      const otherWorkers = user?.uid
-        ? data 
-        : data;
+      const otherWorkers = user?.uid ? data : data;
 
       setWorkers(otherWorkers);
       setFilteredWorkers(otherWorkers);
@@ -467,37 +465,47 @@ const GigsScreen = ({ navigation }) => {
 
   // Fetch logic
   const fetchLiveGigs = async (isLoadMore = false) => {
-    if (isLoadMore && !nextCursor.createdAt) return;
+  if (isLoadMore && (!nextCursor.createdAt || loadingGigs)) return;
 
-    isLoadMore ? setLoadingGigs(true) : setRefreshing(true);
+  isLoadMore ? setLoadingGigs(true) : setRefreshing(true);
 
-    const filters = {
-      category: selectedCategory === "all" ? null : selectedCategory,
-      status: "open",
-      afterCreatedAt: isLoadMore ? nextCursor.createdAt : null,
-      afterId: isLoadMore ? nextCursor.id : null,
-      pageSize: 15,
-    };
-
-    const result = await getPomyGigs(filters);
-
-    if (result.success) {
-      const mappedData = mapDatabaseToUI(result.data, userLocation);
-      setJobs((prev) => (isLoadMore ? [...prev, ...mappedData] : mappedData));
-
-      const lastItem = result.data[result.data.length - 1];
-      if (lastItem?.next_created_at) {
-        setNextCursor({
-          createdAt: lastItem.next_created_at,
-          id: lastItem.next_id,
-        });
-      } else {
-        setNextCursor({ createdAt: null, id: null });
-      }
-    }
-    setLoadingGigs(false);
-    setRefreshing(false);
+  const filters = {
+    category: selectedCategory === "all" ? null : selectedCategory,
+    searchTerm: searchQuery === "" ? null : searchQuery,
+    status: "open",
+    afterCreatedAt: isLoadMore ? nextCursor.createdAt : null,
+    afterId: isLoadMore ? nextCursor.id : null,
+    pageSize: 2,
   };
+
+  const result = await getPomyGigs(filters);
+
+  if (result.success && result.data.length > 0) {
+    const mappedData = mapDatabaseToUI(result.data, userLocation);
+
+    setJobs((prev) => {
+  if (!isLoadMore) return mappedData;
+
+  const existingIds = new Set(prev.map(item => item.id));
+
+  const newUniqueItems = mappedData.filter(
+    item => !existingIds.has(item.id)
+  );
+
+  return [...prev, ...newUniqueItems];
+});
+
+    const lastItem = result.data[result.data.length - 1];
+
+    setNextCursor({
+      createdAt: lastItem.created_at,
+      id: lastItem.id,
+    });
+  }
+
+  setLoadingGigs(false);
+  setRefreshing(false);
+};
 
   const renderJobCard = ({ item }) => {
     const hasImage =
@@ -639,7 +647,7 @@ const GigsScreen = ({ navigation }) => {
         activeOpacity={0.9}
         style={styles.workerCard}
         onPress={() => {
-          navigation.navigate("WorkerProfileScreen", { worker: item });         
+          navigation.navigate("WorkerProfileScreen", { worker: item });
         }}
       >
         {/* HEADER AREA */}
@@ -888,7 +896,7 @@ const GigsScreen = ({ navigation }) => {
               value={searchQuery}
               keyboardType="web-search"
               numberOfLines={1}
-              onChangeText={setSearchQuery}
+              onPress={() => toggleSheet(true)}
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity
@@ -938,7 +946,7 @@ const GigsScreen = ({ navigation }) => {
                     translateY: Animated.add(
                       sheetAnim.interpolate({
                         inputRange: [0, 1],
-                        outputRange: [600, 0],
+                        outputRange: [-600, 0],
                       }),
                       pan,
                     ),
@@ -978,19 +986,26 @@ const GigsScreen = ({ navigation }) => {
               </View>
 
               <View style={{ paddingHorizontal: 14, paddingTop: 8 }}>
-                <TextInput
+                <View
                   style={[
-                    styles.sheetInput,
-                    {
-                      color: theme.colors.text,
-                      backgroundColor: theme.colors.sub_card,
-                    },
+                    styles.searchBar2,
+                    { backgroundColor: theme.colors.sub_card },
                   ]}
-                  placeholder="Filter by name, profession, expertise or skill"
-                  placeholderTextColor={theme.colors.sub_text}
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                />
+                >
+                  <TextInput
+                    style={[
+                      styles.sheetInput,
+                      {
+                        color: theme.colors.text,
+                        backgroundColor: theme.colors.sub_card,
+                      },
+                    ]}
+                    placeholder="Search by name, profession, expertise or skill"
+                    placeholderTextColor={theme.colors.sub_text}
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                  />
+                </View>
 
                 <ScrollView
                   showsVerticalScrollIndicator={false}
@@ -1261,6 +1276,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     height: 44,
     width: width * 0.6,
+    gap: 8,
+    overflow: "hidden",
+  },
+  searchBar2: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 30,
+    paddingHorizontal: 12,
+    height: 44,
     gap: 8,
     overflow: "hidden",
   },
@@ -1704,7 +1728,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     top: 0,
     zIndex: 2000,
-    justifyContent: "flex-end",
+    justifyContent: "flex-start",
   },
   sheetBackdrop: {
     ...StyleSheet.absoluteFillObject,
@@ -1712,11 +1736,11 @@ const styles = StyleSheet.create({
   },
   sheetContainer: {
     width: "100%",
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    paddingBottom: 28,
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
+    paddingTop: 28,
     backgroundColor: "#fff",
-    minHeight: height * 0.5,
+    maxHeight: height * 0.75,
   },
   sheetHandle: {
     width: 40,
