@@ -14,7 +14,9 @@ import {
     Alert,
     Modal,
     Animated,
+    ActivityIndicator,
 } from 'react-native';
+import { TextInput as RnTextInput } from 'react-native-paper'
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Icons } from '../../constants/Icons';
 import {
@@ -31,55 +33,9 @@ import CustomLoader from '../../components/customLoader';
 import SecondaryNav from '../../components/SecondaryNav';
 import { AuthContext } from "../../context/authProvider";
 
-// ────── Comment Bottom Sheet ──────
-const CommentBottomSheet = React.forwardRef(
-    ({ vehicleId, theme, commentText, setCommentText, suggestion, setSuggestion, userNumber, setUserNumber, onSubmit, onDismiss, renderBackdrop }, ref) => (
-        <BottomSheetModal
-            ref={ref}
-            index={0}
-            snapPoints={['65%', '75%']}
-            backdropComponent={renderBackdrop}
-            onDismiss={onDismiss}
-            enablePanDownToClose
-            keyboardBehavior="extend"
-            android_keyboardInputMode="adjustResize"
-        >
-            <BottomSheetView style={[sheetStyles.container, { backgroundColor: theme.colors.card }]}>
-                <Text style={[sheetStyles.title, { color: theme.colors.text }]}>Write a Review</Text>
-                <TextInput
-                    style={[sheetStyles.textArea, { height: 100 }]}
-                    placeholder="Share your experience with this vehicle..."
-                    value={commentText}
-                    onChangeText={setCommentText}
-                    multiline
-                    textAlignVertical="top"
-                />
-                <TextInput
-                    style={[sheetStyles.textArea, { height: 100 }]}
-                    placeholder="Any suggestions for improvement? (Optional)"
-                    value={suggestion}
-                    onChangeText={setSuggestion}
-                    multiline
-                    textAlignVertical="top"
-                />
-                <TextInput
-                    style={[sheetStyles.input]}
-                    placeholder="+268 7612 3456 (Your Contact Number)"
-                    keyboardType='numeric'
-                    value={userNumber}
-                    onChangeText={setUserNumber}
-                />
-                <TouchableOpacity style={sheetStyles.submitButton} onPress={onSubmit}>
-                    <Text style={sheetStyles.submitButtonText}>Submit Review</Text>
-                </TouchableOpacity>
-            </BottomSheetView>
-        </BottomSheetModal>
-    )
-);
-CommentBottomSheet.displayName = 'CommentBottomSheet';
-
 // ────── Rating Bottom Sheet ──────
-const RatingBottomSheet = React.forwardRef(({ theme, onSubmit, onDismiss, renderBackdrop }, ref) => {
+const RatingBottomSheet = React.forwardRef(({ theme, onSubmit, onDismiss,
+    renderBackdrop, isSubmitting }, ref) => {
     const [rating, setRating] = useState(0);
     return (
         <BottomSheetModal
@@ -113,7 +69,7 @@ const RatingBottomSheet = React.forwardRef(({ theme, onSubmit, onDismiss, render
                         ref.current?.close();
                     }}
                 >
-                    <Text style={ratingSheetStyles.submitButtonText}>Submit Rating</Text>
+                    {isSubmitting ? <ActivityIndicator color={'#fff'} size={24} /> : <Text style={ratingSheetStyles.submitButtonText}>Submit Rating</Text>}
                 </TouchableOpacity>
             </BottomSheetView>
         </BottomSheetModal>
@@ -256,39 +212,6 @@ const SortFilterBottomSheet = React.forwardRef(
     }
 );
 SortFilterBottomSheet.displayName = 'SortFilterBottomSheet';
-
-const sheetStyles = StyleSheet.create({
-    container: { flex: 1, paddingVertical: 24, paddingHorizontal: 12 },
-    title: { fontSize: 22, fontWeight: '700', textAlign: 'center', marginBottom: 24, color: '#1e293b' },
-    textArea: {
-        borderWidth: 1.5,
-        borderColor: '#e2e8f0',
-        borderRadius: 16,
-        padding: 16,
-        backgroundColor: '#fff',
-        fontSize: 16,
-        marginBottom: 10,
-        height: 120,
-    },
-    input: {
-        borderWidth: 1.5,
-        borderColor: '#e2e8f0',
-        borderRadius: 16,
-        padding: 16,
-        backgroundColor: '#fff',
-        fontSize: 16,
-        marginBottom: 10,
-        height: 60,
-    },
-    submitButton: {
-        backgroundColor: '#2563eb',
-        paddingVertical: 16,
-        borderRadius: 16,
-        alignItems: 'center',
-        marginTop: 8,
-    },
-    submitButtonText: { color: '#fff', fontSize: 17, fontWeight: '600' },
-});
 
 const ratingSheetStyles = StyleSheet.create({
     container: { padding: 32, alignItems: 'center' },
@@ -447,7 +370,7 @@ const sortFilterModalStyles = StyleSheet.create({
 // ──────────────────────────────────────────────────────────────
 export default function TransportationListScreen({ navigation }) {
     const { theme, isDarkMode } = React.useContext(AppContext)
-    const { user} = React.useContext(AuthContext);
+    const { user } = React.useContext(AuthContext);
     // ────── State ──────
     const [selectedType, setSelectedType] = useState('All');
     const [sortByCategory, setSortByCategory] = useState('All');
@@ -463,17 +386,13 @@ export default function TransportationListScreen({ navigation }) {
     const [loading, setLoading] = useState(false);
     const [isConnected, setIsConnected] = useState(null);
 
+    const [sortFilterModalVisible, setSortFilterModalVisible] = useState(false);
+    const [ratingVehicleId, setRatingVehicleId] = useState(null);
+    const [isSubmit, setIsSubmit] = useState(false);
+
     // Bottom sheets
-    const commentSheetRef = useRef(null);
     const ratingSheetRef = useRef(null);
     const scrollViewRef = useRef(null);
-    const [sortFilterModalVisible, setSortFilterModalVisible] = useState(false);
-    const [modalVehicleId, setModalVehicleId] = useState(null);
-    const [commentText, setCommentText] = useState('');
-    const [commentSuggestion, setCommentSuggestion] = useState('');
-    const [userNumber, setUserNumber] = useState('');
-    const [ratingVehicleId, setRatingVehicleId] = useState(null);
-    const [comments, setComments] = useState({});
 
     const types = ['All', 'Minibus', 'Bus',
         'Van', 'Truck', 'Motorcycle',
@@ -625,6 +544,7 @@ export default function TransportationListScreen({ navigation }) {
     // Submit ratings
     const submitRating = async (value) => {
         try {
+            setIsSubmit(false)
             const result = await submitVehicleRating(ratingVehicleId, value);
 
             if (result.success) {
@@ -637,56 +557,8 @@ export default function TransportationListScreen({ navigation }) {
         } catch (err) {
             console.error('Error submitting rating:', err);
             CustomToast('Error', 'Failed to submit rating');
-        }
-    };
-
-    // Open comment bottom sheet
-    const openCommentSheet = (id) => {
-        setModalVehicleId(id);
-        setCommentText('');
-        setCommentSuggestion('');
-        commentSheetRef.current?.present();
-    };
-
-    // Save comment
-    const submitComment = async () => {
-        if (!commentText.trim() && !userNumber.trim()) {
-            Alert.alert('Missing Details', 'Fill all none optional spaces.');
-            return;
-        }
-
-        try {
-            // Submit to database
-            const result = await submitVehicleComment(modalVehicleId, commentText, commentSuggestion, userNumber);
-
-            if (result.success) {
-                // Update local state
-                const newComment = {
-                    text: commentText.trim(),
-                    suggestion: commentSuggestion.trim(),
-                    date: new Date()
-                };
-
-                setComments(prev => ({
-                    ...prev,
-                    [modalVehicleId]: [
-                        ...(prev[modalVehicleId] || []),
-                        newComment
-                    ]
-                }));
-
-                commentSheetRef.current?.close();
-                CustomToast('Thank You! 🙏🏾', 'Your review is valuable');
-            } else {
-                throw new Error(result.error);
-            }
-        } catch (err) {
-            console.error('Error submitting comment:', err);
-            CustomToast('Error', 'Failed to submit review');
         } finally {
-            setCommentText('');
-            setCommentSuggestion('');
-            setUserNumber('');
+            setIsSubmit(false)
         }
     };
 
@@ -759,26 +631,22 @@ export default function TransportationListScreen({ navigation }) {
 
     // ────── RENDER VEHICLE CARD – Modern Overlay Style ──────
     const renderVehicleCard = (vehicle) => {
-         
+
         const isLiked = likedVehicles.has(vehicle.id);
         const userRating = vehicleRatings[vehicle.id];
         const rating = userRating || vehicle.rating_average || 0;
-        const likes = vehicle.likes || 0;  // Trust backend count, don't add +1 here
-        const vehicleComments = comments[vehicle.id] || [];
-        const latestComment = vehicleComments[vehicleComments.length - 1];
+        const likes = vehicle.likes || 0;
 
         return (
             <TouchableOpacity
                 key={vehicle.id}
                 style={[styles.vehicleCard, { backgroundColor: theme.colors.card }]}
                 activeOpacity={0.92}
-                onPress={() =>{
-                     if (user) {
-                              logUserActivity(user.uid, vehicle.id, 'pomy_forhire_transport'); 
-                            }
-
-                     navigation.navigate('TransportationDetailsScreen', { vehicle: vehicle })
-                    
+                onPress={() => {
+                    if (user) {
+                        logUserActivity(user.uid, vehicle.id, 'pomy_forhire_transport');
+                    }
+                    navigation.navigate('TransportationDetailsScreen', { vehicle: vehicle })
                 }}
             >
                 {/* Background Image */}
@@ -844,14 +712,11 @@ export default function TransportationListScreen({ navigation }) {
                             <Text style={styles.statText}>{likes}</Text>
                         </TouchableOpacity>
 
+                        <View style={{ width: 2, backgroundColor: '#f0f4ff', }} />
+
                         <TouchableOpacity style={styles.stat} onPress={(e) => { e.stopPropagation(); handleRate(vehicle.id); }}>
                             <Icons.Ionicons name="star" size={19} color="#fbbf24" />
                             <Text style={styles.statText}>{rating.toFixed(1)}</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity style={styles.stat} onPress={(e) => { e.stopPropagation(); openCommentSheet(vehicle.id); }}>
-                            <Icons.Ionicons name="chatbubble" size={18} color="#fff" />
-                            <Text style={styles.statText}>{vehicleComments.length}</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -908,9 +773,7 @@ export default function TransportationListScreen({ navigation }) {
             <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
                 <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
                 <View style={{ height: 20 }} />
-                <SecondaryNav
-                    title="Transport For Hire"
-                    rightIcon="options-outline"
+                <SecondaryNav title="Transport For Hire" rightIcon="options-outline"
                     onRightPress={() => setSortFilterModalVisible(true)}
                 />
 
@@ -1002,6 +865,10 @@ export default function TransportationListScreen({ navigation }) {
                     <View style={styles.center}>
                         <Icons.Feather name="wifi-off" size={50} color="#94a3b8" />
                         <Text style={{ color: '#94a3b8', fontSize: 16, marginTop: 10 }}>No internet connection</Text>
+                        <TouchableOpacity onPress={handleRefresh}
+                            style={{ marginVertical: 15, borderRadius: 50, borderWidth: 1, borderColor: theme.colors.border, elevation: 2 }}>
+                            <Text style={{ fontSize: 20, fontWeight: 400, color: theme.colors.indicator }}>Reload</Text>
+                        </TouchableOpacity>
                     </View>
                 ) : filteredVehicles.length === 0 ? (
                     <View style={styles.center}>
@@ -1037,25 +904,10 @@ export default function TransportationListScreen({ navigation }) {
                     </>
                 )}
 
-                {/* Bottom Sheets */}
-                <CommentBottomSheet
-                    ref={commentSheetRef}
-                    theme={theme}
-                    vehicleId={modalVehicleId}
-                    commentText={commentText}
-                    setCommentText={setCommentText}
-                    suggestion={commentSuggestion}
-                    setSuggestion={setCommentSuggestion}
-                    userNumber={userNumber}
-                    setUserNumber={setUserNumber}
-                    onSubmit={submitComment}
-                    onDismiss={() => setModalVehicleId(null)}
-                    renderBackdrop={renderBackdrop}
-                />
-
                 <RatingBottomSheet
                     ref={ratingSheetRef}
                     theme={theme}
+                    isSubmitting={isSubmit}
                     onSubmit={submitRating}
                     onDismiss={() => setRatingVehicleId(null)}
                     renderBackdrop={renderBackdrop}
@@ -1240,7 +1092,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         backgroundColor: '#eff6ff',
         paddingHorizontal: 6,
-        paddingVertical: 3,
+        paddingVertical: 8,
         borderRadius: 50,
         gap: 6,
         borderColor: '#e3e3e3ff',

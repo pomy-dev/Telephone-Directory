@@ -1,7 +1,7 @@
 // App.js
 import "react-native-gesture-handler";
 import React, { useContext, useState, useEffect } from "react";
-import { View, Text, StyleSheet, StatusBar, Platform } from "react-native";
+import { View, Text, StyleSheet, StatusBar, Platform, Dimensions } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import {
   NavigationContainer,
@@ -60,7 +60,6 @@ import TransportationDetailsScreen from "./screens/forehires/TransportationDetai
 import PostTransportationScreen from "./screens/forehires/PostTransportationScreen";
 import BookTransportationScreen from "./screens/forehires/BookTransportationScreen";
 
-
 // Splash Screen
 import SplashScreen from "./screens/SplashScreen";
 
@@ -70,13 +69,7 @@ import { AuthProvider, AuthContext } from "./context/authProvider";
 
 // Directory Model
 import {
-  Entity,
-  PhoneObject,
-  SocialMediaObject,
-  WorkingHoursObject,
-  TeamMember,
-  GeoPoint,
-  Review,
+  Entity, PhoneObject, SocialMediaObject, WorkingHoursObject, TeamMember, GeoPoint, Review,
 } from "./models/Entity";
 
 // Configure notification handler
@@ -217,14 +210,11 @@ export default function App() {
   );
 }
 
+const { height, width } = Dimensions.get('screen')
+
 function AppContent() {
-  const {
-    isDarkMode,
-    theme,
-    notificationsEnabled,
-    addNotification
-  } = useContext(AppContext);
-  const { user, loading } = useContext(AuthContext);
+  const { isDarkMode, theme, notificationsEnabled, addNotification } = useContext(AppContext);
+  const { user } = useContext(AuthContext);
   const [isAppReady, setIsAppReady] = useState(false);
   const navigationRef = useNavigationContainerRef();
 
@@ -333,8 +323,6 @@ function AppContent() {
                         // loading ? "SplashLoading" : user ? "MainTabs" : "Login"
                       }
                     >
-      
-
 
                       {/* Auth Screens */}
                       {!user ? (
@@ -388,7 +376,7 @@ function AppContent() {
                             component={SavedListsScreen}
                           />
 
-      
+
 
                           {/* Piece Jobs  */}
                           <Stack.Screen
@@ -420,7 +408,7 @@ function AppContent() {
                             name="JobInbox"
                             component={JobInboxScreen}
                           />
-                    
+
 
                           {/* transport for hire */}
                           <Stack.Screen
@@ -475,10 +463,10 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 16,
     right: 16,
-    bottom: 50,
-    height: 50,
-    marginHorizontal: 10,
-    borderRadius: 70,
+    bottom: height * 0.06,
+    height: height * 0.08,
+    // marginHorizontal: 10,
+    // borderRadius: 70,
     backgroundColor: "#fff",
     borderTopWidth: 0,
     shadowColor: "#0f172a",

@@ -1,6 +1,9 @@
 "use client"
 
-import { StyleSheet, Platform, StatusBar, Text, View, Image, TouchableOpacity, FlatList, ScrollView } from "react-native"
+import {
+  StyleSheet, Platform, StatusBar, Text, View, Image, TouchableOpacity,
+  FlatList, ScrollView, Dimensions
+} from "react-native"
 import React, { useEffect, useState } from "react"
 import TopNav from "../components/TopNav"
 import { AppContext } from "../context/appContext"
@@ -9,6 +12,8 @@ import { CustomToast } from "../components/customToast"
 import { Images } from '../constants/Images'
 import CustomLoader from "../components/customLoader"
 import PersonalizedAdsSection from "../components/PersonalizedAdsSection"
+
+const { height } = Dimensions.get('screen');
 
 export default function HomeScreen({ navigation }) {
   const { theme, isDarkMode, notifications } = React.useContext(AppContext)
@@ -158,7 +163,7 @@ export default function HomeScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 50,
+    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 50
   },
   greetingSection: {
     paddingHorizontal: 10,
