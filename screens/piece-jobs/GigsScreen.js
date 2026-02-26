@@ -456,7 +456,6 @@ const GigsScreen = ({ navigation }) => {
     if (!error) {
       // Filter out the current user's own profile
       const otherWorkers = user?.uid ? data : data;
-
       setWorkers(otherWorkers);
       setFilteredWorkers(otherWorkers);
     }
@@ -464,10 +463,18 @@ const GigsScreen = ({ navigation }) => {
   };
 
   // Fetch logic
-  const fetchLiveGigs = async (isLoadMore = false) => {
+
+
+const fetchLiveGigs = async (isLoadMore = false) => {
   if (isLoadMore && (!nextCursor.createdAt || loadingGigs)) return;
 
-  isLoadMore ? setLoadingGigs(true) : setRefreshing(true);
+  if (isLoadMore) {
+    setLoadingGigs(true);
+  } else {
+    setRefreshing(true);
+    // Reset cursor for fresh refresh
+    setNextCursor({ createdAt: null, id: null });
+  }
 
   const filters = {
     category: selectedCategory === "all" ? null : selectedCategory,
@@ -475,7 +482,7 @@ const GigsScreen = ({ navigation }) => {
     status: "open",
     afterCreatedAt: isLoadMore ? nextCursor.createdAt : null,
     afterId: isLoadMore ? nextCursor.id : null,
-    pageSize: 2,
+    pageSize: 10, // Increased from 2 for better UX
   };
 
   const result = await getPomyGigs(filters);
@@ -484,28 +491,30 @@ const GigsScreen = ({ navigation }) => {
     const mappedData = mapDatabaseToUI(result.data, userLocation);
 
     setJobs((prev) => {
-  if (!isLoadMore) return mappedData;
+      if (!isLoadMore) return mappedData;
+      
+      // Strict duplication check using a Map for performance
+      const combined = [...prev, ...mappedData];
+      const unique = Array.from(new Map(combined.map(item => [item.id, item])).values());
+      return unique;
+    });
 
-  const existingIds = new Set(prev.map(item => item.id));
-
-  const newUniqueItems = mappedData.filter(
-    item => !existingIds.has(item.id)
-  );
-
-  return [...prev, ...newUniqueItems];
-});
-
+    // Update cursor from the last item of the RAW result
     const lastItem = result.data[result.data.length - 1];
-
     setNextCursor({
       createdAt: lastItem.created_at,
       id: lastItem.id,
     });
-  }
+  } else if (!isLoadMore && result.success && result.data.length === 0) {
+    setJobs([]);
+  }else {
+  setNextCursor({ createdAt: null, id: null });
+}
 
   setLoadingGigs(false);
   setRefreshing(false);
 };
+
 
   const renderJobCard = ({ item }) => {
     const hasImage =
@@ -1145,10 +1154,9 @@ const GigsScreen = ({ navigation }) => {
           }
           ListFooterComponent={() =>
             loadingGigs && (
-              <ActivityIndicator
-                style={{ margin: 20 }}
-                color={theme.colors.indicator}
-              />
+             <Text style={styles.emptySubtitle}>
+                  fetching more  jobs.... 
+                </Text>
             )
           }
         />
