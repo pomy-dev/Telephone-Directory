@@ -159,7 +159,8 @@ export default function HomeScreen({ navigation }) {
         </View>
 
         <PersonalizedAdsSection ads={sampleAds} maxAdsToShow={10} />
-        {<View style={{ height: 100 }} />}
+
+        {height <= 720 && <View style={{ height: height * 0.15 }} />}
       </ScrollView>
     </View>
   )
