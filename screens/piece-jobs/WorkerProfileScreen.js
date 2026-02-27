@@ -182,7 +182,7 @@ const WorkerProfileScreen = ({ route }) => {
                   size={14}
                   color="#10b981"
                 />
-                <Text style={styles.locationText}>{locationString}</Text>
+                <Text  style={[styles.locationText, { color: theme.colors.text }]} >{locationString}</Text>
               </View>
             </View>
             <View style={styles.statsBadge}>
@@ -195,7 +195,7 @@ const WorkerProfileScreen = ({ route }) => {
           <View style={styles.socialContainer}>
             {worker.contact_options?.whatsapp && (
               <TouchableOpacity
-                style={styles.socialIconBtn}
+                style={[styles.socialIconBtn, {backgroundColor: theme.colors.sub_card }]}
                 onPress={handleWhatsApp}
               >
                 <Icons.Ionicons
@@ -208,7 +208,8 @@ const WorkerProfileScreen = ({ route }) => {
 
             {worker.contact_options?.email && (
               <TouchableOpacity
-                style={styles.socialIconBtn}
+                
+                style={[styles.socialIconBtn, {backgroundColor: theme.colors.sub_card }]}
                 onPress={handleEmail}
               >
                 <Icons.Ionicons name="mail" size={22} color="#EA4335" />
@@ -217,7 +218,7 @@ const WorkerProfileScreen = ({ route }) => {
 
             {worker.contact_options?.facebook && (
               <TouchableOpacity
-                style={styles.socialIconBtn}
+                style={[styles.socialIconBtn, {backgroundColor: theme.colors.sub_card }]}
                 onPress={() => handleSocial("facebook")}
               >
                 <Icons.Ionicons
@@ -230,7 +231,7 @@ const WorkerProfileScreen = ({ route }) => {
 
             {worker.contact_options?.instagram && (
               <TouchableOpacity
-                style={styles.socialIconBtn}
+                style={[styles.socialIconBtn, {backgroundColor: theme.colors.sub_card }]}
                 onPress={() => handleSocial("instagram")}
               >
                 <Icons.Ionicons
@@ -245,8 +246,8 @@ const WorkerProfileScreen = ({ route }) => {
           <View style={styles.divider} />
 
           {/* ABOUT / BIO */}
-          <Text style={styles.sectionTitle}>About the Professional</Text>
-          <Text style={styles.bioText}>
+          <Text style={[styles.sectionTitle, { color: theme.colors.text }] }>About the Professional</Text>
+          <Text style={[styles.bioText, { color: theme.colors.text }] } >
             {worker.bio ||
               "No detailed biography provided. This professional is verified and ready for work."}
           </Text>
@@ -254,16 +255,16 @@ const WorkerProfileScreen = ({ route }) => {
           {/* SERVICES LIST */}
           {hasSkills && (
             <>
-              <Text style={[styles.sectionTitle, { marginTop: 24 }]}>
+              <Text style={[styles.sectionTitle, { marginTop: 24 ,color: theme.colors.text }]} >
                 Services Offered
               </Text>
               <View style={styles.skillsList}>
                 {worker.skills.map((skill, index) => (
                   <View key={index} style={styles.skillItem}>
                     <View style={styles.skillNumberContainer}>
-                      <Text style={styles.skillNumber}>{index + 1}.</Text>
+                      <Text style={styles.skillNumber}  >{index + 1}.</Text>
                     </View>
-                    <Text style={styles.skillValue}>{skill}</Text>
+                    <Text style={[styles.skillValue, {color: theme.colors.text }]}>{skill}</Text>
                   </View>
                 ))}
               </View>
@@ -271,7 +272,7 @@ const WorkerProfileScreen = ({ route }) => {
           )}
 
           {/* TRUST BOX */}
-          <View style={styles.trustBox}>
+          <View  style={[styles.trustBox, {backgroundColor: theme.colors.sub_card }]}>
             <Icons.Ionicons name="shield-checkmark" size={20} color="#10b981" />
             <Text style={styles.trustText}>
               Always meet in public places and never pay upfront for services.
@@ -281,16 +282,16 @@ const WorkerProfileScreen = ({ route }) => {
       </ScrollView>
 
       {/* FIXED BOTTOM ACTION BAR - Moved outside ScrollView, removed absolute positioning */}
-      <View style={styles.bottomBar}>
+      <View style={[styles.bottomBar, {backgroundColor: theme.colors.sub_card ,  borderTopColor: theme.colors.sub_card,}]}>
         <TouchableOpacity
           style={styles.messageBtn}
           onPress={() => Linking.openURL(`sms:${worker.phone}`)}
         >
           <Icons.Ionicons name="mail-outline" size={24} color="#000" />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.callBtn} onPress={handleCall}>
-          <Text style={styles.callBtnText}>CONTACT NOW</Text>
-          <Icons.Ionicons name="call" size={18} color="#fff" />
+        <TouchableOpacity  style={[styles.callBtn, {backgroundColor: theme.colors.card }]} onPress={handleCall}>
+          <Text  style={[styles.callBtnText, { color: theme.colors.text }] }>CONTACT NOW</Text>
+          <Icons.Ionicons name="call" size={18} style={[{ color: theme.colors.text }] }  />
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -437,7 +438,8 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   trustBox: {
-    marginTop: 30,
+    marginTop: 70,
+    marginBottom: 70,
     padding: 16,
     backgroundColor: "#f8fafc",
     borderRadius: 6,
@@ -460,7 +462,7 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: Platform.OS === "ios" ? 30 : 60,
     borderTopWidth: 1,
-    borderTopColor: "#f1f5f9",
+   
     gap: 12,
   },
   messageBtn: {
@@ -497,8 +499,8 @@ const styles = StyleSheet.create({
     width: 45,
     height: 45,
     borderRadius: 6,
-    borderWidth: 1,
-    borderColor: "#f1f5f9",
+    // borderWidth: 1,
+    // borderColor: "#f1f5f9",
     backgroundColor: "#f8fafc",
     justifyContent: "center",
     alignItems: "center",
