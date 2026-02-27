@@ -1,17 +1,8 @@
 "use client"
 
 import {
-  StyleSheet,
-  Text,
-  View,
-  TouchableOpacity,
-  TextInput,
-  StatusBar,
-  Modal,
-  Pressable,
-  Keyboard,
-  TouchableWithoutFeedback,
-  Platform,
+  StyleSheet, Text, View, TouchableOpacity, TextInput, StatusBar,
+  Modal, Pressable, Keyboard, TouchableWithoutFeedback, Platform
 } from "react-native"
 import React, { useState, useEffect } from "react"
 import AsyncStorage from "@react-native-async-storage/async-storage"
@@ -19,12 +10,14 @@ import * as Location from "expo-location"
 import { Icons } from '../constants/Icons'
 import { AppContext } from "../context/appContext"
 import { Badge } from 'react-native-paper';
+import { LoaderKitView } from 'react-native-loader-kit';
 
 export default function TopNav({ onCartPress, onSearch, onNotificationPress, onLogout, notificationCount = 0 }) {
   const { theme, isDarkMode } = React.useContext(AppContext)
   const [location, setLocation] = useState("Fetching location...")
   const [modalVisible, setModalVisible] = useState(false)
   const [tempLocation, setTempLocation] = useState("")
+  const [isFindingLocation, setIsFindingLocation] = useState(false);
 
   useEffect(() => {
     loadLocation()
@@ -42,6 +35,7 @@ export default function TopNav({ onCartPress, onSearch, onNotificationPress, onL
 
   const getCurrentLocation = async () => {
     try {
+      setIsFindingLocation(true)
       const { status } = await Location.requestForegroundPermissionsAsync()
       if (status !== "granted") {
         setLocation("Permission denied")
@@ -55,6 +49,8 @@ export default function TopNav({ onCartPress, onSearch, onNotificationPress, onL
     } catch (error) {
       console.log("Error fetching location:", error)
       setLocation("Unable to get location")
+    } finally {
+      setIsFindingLocation(false)
     }
   }
 
@@ -110,12 +106,6 @@ export default function TopNav({ onCartPress, onSearch, onNotificationPress, onL
         </>
       </View>
 
-      {/* Search Bar */}
-      <TouchableOpacity style={[styles.searchContainer, { backgroundColor: theme.colors.sub_card, borderColor: theme.colors.border }]} activeOpacity={0.8} onPress={handleSearchPress}>
-        <Icons.Ionicons name="search" size={20} color="#8E8E93" style={styles.searchIcon} />
-        <Text style={styles.searchPlaceholder}>What are you looking for?</Text>
-      </TouchableOpacity>
-
       {/* Modal for Updating Location */}
       <Modal
         animationType="slide"
@@ -131,11 +121,11 @@ export default function TopNav({ onCartPress, onSearch, onNotificationPress, onL
         >
           <View style={styles.modalOverlay}>
             <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
-              <View style={styles.modalCard}>
+              <View style={[styles.modalCard, { backgroundColor: theme.colors.card }]}>
                 <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>Update Location</Text>
+                  <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Update Location</Text>
                   <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeButton}>
-                    <Icons.Ionicons name="close" size={24} color="#8E8E93" />
+                    <Icons.Ionicons name="close" size={24} color={theme.colors.sub_text} />
                   </TouchableOpacity>
                 </View>
 
@@ -154,8 +144,16 @@ export default function TopNav({ onCartPress, onSearch, onNotificationPress, onL
                 </View>
 
                 <TouchableOpacity style={styles.currentLocationButton} onPress={getCurrentLocation} activeOpacity={0.7}>
-                  <Icons.Ionicons name="navigate" size={20} color="#007AFF" style={{ marginRight: 8 }} />
-                  <Text style={styles.currentLocationText}>Use current location</Text>
+                  <Icons.Ionicons name="navigate" size={20} color={theme.colors.indicator} style={{ marginRight: 8 }} />
+                  {isFindingLocation ?
+                    <LoaderKitView
+                      style={{ width: 50, height: 30 }}
+                      name={'BallBeat'}
+                      animationSpeedMultiplier={1.0}
+                      color={theme.colors.indicator}
+                    />
+                    : <Text style={[styles.currentLocationText, { color: theme.colors.indicator }]}>Use current location</Text>
+                  }
                 </TouchableOpacity>
 
                 <View style={styles.modalActions}>
@@ -168,19 +166,19 @@ export default function TopNav({ onCartPress, onSearch, onNotificationPress, onL
                   </Pressable>
 
                   <Pressable
-                    style={[styles.modalButton, styles.saveButton]}
+                    style={[styles.modalButton, { backgroundColor: theme.colors.indicator }]}
                     onPress={() => saveLocation(tempLocation)}
                     android_ripple={{ color: "#000" }}
                   >
-                    <Text style={styles.saveText}>Confirm</Text>
+                    <Text style={[styles.saveText, { color: '#fff' }]}>Confirm</Text>
                   </Pressable>
                 </View>
               </View>
             </TouchableWithoutFeedback>
           </View>
-        </TouchableWithoutFeedback>
+        </TouchableWithoutFeedback >
       </Modal>
-    </View>
+    </View >
   )
 }
 
@@ -204,8 +202,7 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 12,
+    justifyContent: "space-between"
   },
   locationButton: {
     flexDirection: "row",
@@ -254,7 +251,6 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   modalCard: {
-    backgroundColor: "#fff",
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     padding: 24,
@@ -280,7 +276,6 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: "700",
-    color: "#1A1A1A",
   },
   closeButton: {
     padding: 4,
@@ -310,7 +305,6 @@ const styles = StyleSheet.create({
   currentLocationText: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#007AFF",
   },
   modalActions: {
     flexDirection: "row",
@@ -325,16 +319,12 @@ const styles = StyleSheet.create({
   cancelButton: {
     backgroundColor: "#F2F2F7",
   },
-  saveButton: {
-    backgroundColor: "#1A1A1A",
-  },
   cancelText: {
     color: "#1A1A1A",
     fontWeight: "600",
     fontSize: 16,
   },
   saveText: {
-    color: "#FFF",
     fontWeight: "600",
     fontSize: 16,
   },
