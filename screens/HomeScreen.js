@@ -90,6 +90,8 @@ export default function HomeScreen({ navigation }) {
         setStartingText("What are we doing today?")
         break
     }
+
+    console.log("Screen Height: ", height)
   }, [])
 
   const renderService = ({ item }) => (
@@ -125,7 +127,7 @@ export default function HomeScreen({ navigation }) {
   }
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <View style={styles.container}>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
 
       {islogingOut && <CustomLoader />}
@@ -138,25 +140,28 @@ export default function HomeScreen({ navigation }) {
         onLogout={() => handleLogout()}
       />
 
-      <View style={styles.greetingSection}>
-        <Text style={[styles.greetingText, { color: theme.colors.text }]}>Good {greetingText} 👋</Text>
-        <Text style={styles.startingText}>{startingText}</Text>
-      </View>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        <View style={styles.greetingSection}>
+          <Text style={[styles.greetingText, { color: theme.colors.text }]}>Good {greetingText} 👋</Text>
+          <Text style={styles.startingText}>{startingText}</Text>
+        </View>
 
-      <View style={[styles.servicesSection, { backgroundColor: theme.colors.card }]}>
-        <FlatList
-          data={services}
-          renderItem={renderService}
-          keyExtractor={(item) => item.id}
-          numColumns={4}
-          columnWrapperStyle={styles.gridRow}
-          scrollEnabled={false}
-          showsVerticalScrollIndicator={false}
-        />
-      </View>
+        <View style={[styles.servicesSection, { backgroundColor: theme.colors.card }]}>
+          <FlatList
+            data={services}
+            renderItem={renderService}
+            keyExtractor={(item) => item.id}
+            numColumns={4}
+            columnWrapperStyle={styles.gridRow}
+            scrollEnabled={false}
+            showsVerticalScrollIndicator={false}
+          />
+        </View>
 
-      <PersonalizedAdsSection ads={sampleAds} maxAdsToShow={10} />
-    </ScrollView>
+        <PersonalizedAdsSection ads={sampleAds} maxAdsToShow={10} />
+        {<View style={{ height: 100 }} />}
+      </ScrollView>
+    </View>
   )
 }
 
