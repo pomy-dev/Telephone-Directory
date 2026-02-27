@@ -24,6 +24,7 @@ import { CustomToast } from "../../components/customToast";
 import { AuthContext } from "../../context/authProvider";
 import { applyForGig, logUserActivity, getGigById } from "../../service/Supabase-Fuctions";
 import { AppContext } from "../../context/appContext";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const mapJobData = (rawJob) => {
   if (!rawJob) return {};
@@ -67,8 +68,7 @@ const mapJobData = (rawJob) => {
 const JobDetailScreen = ({ route, navigation }) => {
   const { theme, isDarkMode } = React.useContext(AppContext);
   const { user } = React.useContext(AuthContext);
-  // const { job } = route.params;
-  // 1. Wrap the initial job from params with the helper
+
   const [job, setJob] = useState(mapJobData(route.params?.job || {}));
   const from = route.params?.from || "direct";
 
@@ -214,6 +214,8 @@ const JobDetailScreen = ({ route, navigation }) => {
   };
 
   return (
+    <SafeAreaView style={{ flex: 1,}} edges={['top']}>
+
     <View style={styles.container}>
       <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
       <SecondaryNav
@@ -505,14 +507,14 @@ const JobDetailScreen = ({ route, navigation }) => {
         </View>
       </Modal>
     </View>
+    </SafeAreaView>
+
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
-    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 30,
   },
   content: {
     flex: 1,

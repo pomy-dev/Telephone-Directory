@@ -736,9 +736,8 @@ export async function logUserActivity(userId, itemId, itemType) {
       ]);
 
     if (error) throw error;
-    console.log(`Activity Logged: User ${userId} interacted with ${itemType} ${itemId}`);
   } catch (error) {
-    console.error('Error logging user activity:', error.message);
+    console.log('Error logging user activity:', error.message);
   }
 }
 

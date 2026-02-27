@@ -8,7 +8,6 @@ import {
   TouchableOpacity,
   Dimensions,
   Linking,
-  SafeAreaView,
   Share,
   Platform,
   StatusBar,
@@ -22,6 +21,7 @@ import {
   logUserActivity,
   getWorkerProfileClient,
 } from "../../service/Supabase-Fuctions";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const { width } = Dimensions.get("window");
 
@@ -125,12 +125,11 @@ const WorkerProfileScreen = ({ route }) => {
   const hasSkills = worker.skills && worker.skills.length > 0;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView   style={[styles.container, { backgroundColor: theme.colors.background }]}  edges={['top']}>
       <StatusBar
         barStyle={isDarkMode ? "light-content" : "dark-content"}
         backgroundColor={theme.colors.background}
       />
-      <View style={{ height: 20 }} />
       <SecondaryNav title={"Freelancer Profile"} />
 
       {/* BODY CONTENT */}
@@ -301,7 +300,7 @@ const WorkerProfileScreen = ({ route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
+  
   },
   headerNav: {
     flexDirection: "row",
@@ -312,8 +311,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderBottomWidth: 1,
     borderBottomColor: "#f1f5f9",
-    // Ensures header stays above content on Android
-    marginTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
   },
   backBtn: {
     zIndex: 10, // Ensure button stays clickable above the absolute title

@@ -138,7 +138,7 @@ function Tabs() {
           {
             backgroundColor: theme.colors.card,
             borderTopColor: theme.colors.border,
-            
+            bottom: insets.bottom,
           },
         ],
         tabBarActiveTintColor: "#0f172a",

@@ -87,12 +87,17 @@ const AdCard = ({ ad, onPress, onView, theme }) => {
 
         <View style={styles.cardFooter}>
           <View>
+          {ad.price ? (<>
             <Text style={[styles.priceLabel, { color: theme.colors.sub_text }]}>
               Starting from
             </Text>
             <Text style={[styles.priceText, { color: theme.colors.text }]}>
               {ad.price ? `E${ad.price}` : "Quote"}
             </Text>
+          </>) : (<>
+              <Text  style={[styles.priceText, { color: theme.colors.text }]}>
+            </Text>
+          </>)}
           </View>
           <View
             style={[
@@ -195,11 +200,6 @@ const PersonalizedAdsSection = () => {
         <Text style={[styles.headerTitle, { color: theme.colors.text }]}>
           Recommended For You
         </Text>
-        <TouchableOpacity onPress={getRag}>
-          <Text style={{ color: theme.colors.primary, fontWeight: "600" }}>
-            See All
-          </Text>
-        </TouchableOpacity>
       </View>
 
       <ScrollView
@@ -215,7 +215,7 @@ const PersonalizedAdsSection = () => {
             ad={ad}
             theme={theme}
             onPress={handleAdClick}
-            onView={(id) => console.log("Viewed Item:", id)}
+            onView={(id) => {}}
           />
         ))}
       </ScrollView>
