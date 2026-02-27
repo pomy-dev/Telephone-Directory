@@ -1,8 +1,15 @@
 // App.js
 import "react-native-gesture-handler";
 import React, { useContext, useState, useEffect } from "react";
-import { View, Text, StyleSheet, StatusBar, Platform, Dimensions } from "react-native";
-import { SafeAreaProvider } from "react-native-safe-area-context";
+import {
+  View,
+  Text,
+  StyleSheet,
+  StatusBar,
+  Platform,
+  Dimensions,
+} from "react-native";
+import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   NavigationContainer,
   useNavigationContainerRef,
@@ -27,13 +34,13 @@ import LoanCompare from "./screens/loans/LoanCompare";
 import LoanCalculator from "./screens/loans/LoanCalculator";
 
 // screens
-import HomeScreen from "./screens/HomeScreen"
-import SavedListsScreen from './screens/SavedListItems'
-import FavoritesScreen from "./screens/FavoritesScreen"
+import HomeScreen from "./screens/HomeScreen";
+import SavedListsScreen from "./screens/SavedListItems";
+import FavoritesScreen from "./screens/FavoritesScreen";
 // import PeopleScreen from "./screens/people/PeopleProfiles"
-import SettingsScreen from "./screens/SettingsScreen"
-import LoginScreen from "./screens/Login"
-import SignupScreen from "./screens/SignUp"
+import SettingsScreen from "./screens/SettingsScreen";
+import LoginScreen from "./screens/Login";
+import SignupScreen from "./screens/SignUp";
 
 // business directory screens
 import DirectoryScreen from "./screens/directory/DirectoryHome";
@@ -41,7 +48,6 @@ import BusinessDetailScreen from "./screens/directory/BusinessDetailsScreen";
 import BusinessScreen from "./screens/directory/BusinessesScreen";
 import FeaturedScreen from "./screens/directory/FeaturedScreen";
 import BusinessList from "./screens/directory/BusinessListScreen";
-
 
 // gigs
 import GigsScreen from "./screens/piece-jobs/GigsScreen";
@@ -69,7 +75,13 @@ import { AuthProvider, AuthContext } from "./context/authProvider";
 
 // Directory Model
 import {
-  Entity, PhoneObject, SocialMediaObject, WorkingHoursObject, TeamMember, GeoPoint, Review,
+  Entity,
+  PhoneObject,
+  SocialMediaObject,
+  WorkingHoursObject,
+  TeamMember,
+  GeoPoint,
+  Review,
 } from "./models/Entity";
 
 // Configure notification handler
@@ -114,13 +126,21 @@ async function requestNotificationPermissions() {
 // Bottom Tabs
 function Tabs() {
   const { theme } = useContext(AppContext);
+  const insets = useSafeAreaInsets();
   return (
     <Tab.Navigator
       initialRouteName="Home"
       screenOptions={{
         headerShown: false,
         tabBarShowLabel: false,
-        tabBarStyle: [styles.tabBar, { backgroundColor: theme.colors.card, borderTopColor: theme.colors.border }],
+        tabBarStyle: [
+          styles.tabBar,
+          {
+            backgroundColor: theme.colors.card,
+            borderTopColor: theme.colors.border,
+            
+          },
+        ],
         tabBarActiveTintColor: "#0f172a",
         tabBarInactiveTintColor: "#94a3b8",
       }}
@@ -192,8 +212,12 @@ function Tabs() {
         component={SettingsScreen}
         options={{
           tabBarIcon: ({ focused, color }) => (
-            <Icons.Ionicons name={focused ? "settings" : "settings-outline"} size={24} color={color} />
-          )
+            <Icons.Ionicons
+              name={focused ? "settings" : "settings-outline"}
+              size={24}
+              color={color}
+            />
+          ),
         }}
       />
     </Tab.Navigator>
@@ -210,10 +234,12 @@ export default function App() {
   );
 }
 
-const { height, width } = Dimensions.get('screen')
+// const { height, width } = Dimensions.get('screen')
+const { height, width } = Dimensions.get("window");
 
 function AppContent() {
-  const { isDarkMode, theme, notificationsEnabled, addNotification } = useContext(AppContext);
+  const { isDarkMode, theme, notificationsEnabled, addNotification } =
+    useContext(AppContext);
   const { user } = useContext(AuthContext);
   const [isAppReady, setIsAppReady] = useState(false);
   const navigationRef = useNavigationContainerRef();
@@ -323,7 +349,6 @@ function AppContent() {
                         // loading ? "SplashLoading" : user ? "MainTabs" : "Login"
                       }
                     >
-
                       {/* Auth Screens */}
                       {!user ? (
                         <>
@@ -340,7 +365,11 @@ function AppContent() {
                       ) : (
                         <>
                           {/* Main App Screens */}
-                          <Stack.Screen name="MainTabs" component={Tabs} options={{ animationEnabled: false }} />
+                          <Stack.Screen
+                            name="MainTabs"
+                            component={Tabs}
+                            options={{ animationEnabled: false }}
+                          />
 
                           {/* Business Directory */}
                           <Stack.Screen
@@ -376,8 +405,6 @@ function AppContent() {
                             component={SavedListsScreen}
                           />
 
-
-
                           {/* Piece Jobs  */}
                           <Stack.Screen
                             name="GigsScreen"
@@ -409,7 +436,6 @@ function AppContent() {
                             component={JobInboxScreen}
                           />
 
-
                           {/* transport for hire */}
                           <Stack.Screen
                             name="TransportationListScreen"
@@ -435,9 +461,15 @@ function AppContent() {
                           />
                           <Stack.Screen name="Askai" component={AIAgent} />
 
-                          <Stack.Screen name="LoanDetails" component={LoanDetails} />
+                          <Stack.Screen
+                            name="LoanDetails"
+                            component={LoanDetails}
+                          />
 
-                          <Stack.Screen name="LoanCompare" component={LoanCompare} />
+                          <Stack.Screen
+                            name="LoanCompare"
+                            component={LoanCompare}
+                          />
                           <Stack.Screen
                             name="LoanCalculator"
                             component={LoanCalculator}
@@ -463,8 +495,9 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 16,
     right: 16,
-    bottom: height * 0.06,
-    height: height * 0.08,
+    height: 60,
+    // bottom: height * 0.06,
+    // height: height * 0.08,
     // marginHorizontal: 10,
     // borderRadius: 70,
     backgroundColor: "#fff",
