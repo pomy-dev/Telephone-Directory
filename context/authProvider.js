@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect } from "react";
 import Auth0 from "react-native-auth0";
+import {  Alert} from "react-native";
 import {
   getAuth,
   createUserWithEmailAndPassword,
@@ -7,6 +8,11 @@ import {
   signOut,
   onAuthStateChanged,
   signInWithPhoneNumber,
+  updateProfile,
+  updateEmail,
+  updatePassword,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
 } from "@react-native-firebase/auth";
 import { jwtDecode } from "jwt-decode";
 import {
@@ -57,11 +63,8 @@ export const AuthProvider = ({ children }) => {
     const unsubscribe = onAuthStateChanged(
       firebaseAuth,
       async (currentUser) => {
-        if (currentUser.displayName) {
-          setUser(currentUser);
-        }
-
         if (currentUser) {
+          setUser(currentUser);
           // 2. CREATE OR UPDATE the profile in Supabase
           await syncUserProfile(currentUser);
           // App is opening with an existing logged-in user
@@ -112,7 +115,7 @@ export const AuthProvider = ({ children }) => {
       await user.updateProfile({ displayName: name.trim() });
       // Explicitly sync to Supabase now that we have the name
       await syncUserProfile(firebaseUser);
-      
+
       return user;
     } catch (error) {
       console.error("Sign Up Failed:", error.message);
@@ -180,6 +183,109 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  /**
+ * Function to update the user's email address.
+ * Requires the user's current password for re-authentication.
+ *
+ * @param {string} newEmail The new email address for the user.
+ * @param {string} currentPassword The user's current password for re-authentication.
+ */
+const sendEmailAddressChange = async (newEmail, currentPassword) => {
+  if (!user) {
+    Alert.alert("Error", "No user is currently logged in.");
+    return;
+  }
+
+  // Check if the new email is actually different from the current one
+  if (user.email === newEmail) {
+    Alert.alert("Info", "The new email is the same as the current email. No change needed.");
+    return;
+  }
+
+  try {
+    // 1. Re-authenticate the user first
+    const credential = EmailAuthProvider.credential(user.email, currentPassword);
+    await reauthenticateWithCredential(user, credential);
+    console.log("User re-authenticated successfully.");
+
+    // 2. Now attempt to update the email
+    await updateEmail(user, newEmail);
+    console.log("Email updated successfully to:", newEmail);
+
+  } catch (error) {
+    console.error("Error updating email:", error.code, error.message);
+    let errorMessage = "An unknown error occurred.";
+
+    switch (error.code) {
+      case 'auth/invalid-email':
+        errorMessage = "The new email address format is invalid.";
+        break;
+      case 'auth/email-already-in-use':
+        errorMessage = "This email address is already in use by another account.";
+        break;
+      case 'auth/wrong-password': // Re-authentication error
+        errorMessage = "Incorrect current password. Please try again.";
+        break;
+      case 'auth/user-not-found': // Should not happen if user is authenticated
+        errorMessage = "User not found or credentials invalid during re-authentication.";
+        break;
+      case 'auth/requires-recent-login':
+        // This case should ideally be caught by reauthenticateWithCredential,
+        // but can be a fallback if re-authentication wasn't performed correctly.
+        errorMessage = "You need to recently log in again to update your email. Please re-enter your password.";
+        break;
+      default:
+        errorMessage = `Failed to update email: ${error.message}`;
+    }
+    Alert.alert("Email Update Failed", errorMessage);
+  }
+};
+
+  const updateUserProfile = async (details) => {
+    const firebaseUser = firebaseAuth.currentUser;
+    if (!firebaseUser) throw new Error("No user logged in");
+
+    try {
+      // 1. Update Display Name (Non-sensitive)
+      if (details.name && details.name !== firebaseUser.displayName) {
+        await updateProfile(firebaseUser, { displayName: details.name });
+        await syncUserProfile(firebaseUser);
+      }
+
+      // 2. Handle Sensitive Updates (Email/Password)
+      if (details.newEmail || details.newPassword) {
+        if (!details.currentPassword) {
+          throw new Error(
+            "To change your email or password, please enter your current password for security verification.",
+          );
+        }
+
+        // Re-authenticate
+        const credential = EmailAuthProvider.credential(
+          firebaseUser.email,
+          details.currentPassword,
+        );
+        await reauthenticateWithCredential(firebaseUser, credential);
+
+        if (details.newEmail && details.newEmail !== firebaseUser.email) {
+          await sendEmailAddressChange(details.newEmail, details.currentPassword)
+        }
+
+        if (details.newPassword) {
+          await updatePassword(firebaseUser, details.newPassword);
+        }
+      }
+
+      // Refresh local user state
+      await firebaseUser.reload();
+      setUser(firebaseAuth.currentUser);
+      return { success: true };
+    } catch (error) {
+      console.error("Update Profile Error:", error);
+      throw error;
+    }
+  };
+
   const value = {
     googleLogin,
     emailSignUp,
@@ -193,6 +299,7 @@ export const AuthProvider = ({ children }) => {
     isWorker,
     setIsWorker,
     checkWorkerStatus,
+    updateUserProfile,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

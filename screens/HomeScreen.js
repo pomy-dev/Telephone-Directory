@@ -96,7 +96,7 @@ export default function HomeScreen({ navigation }) {
 
   const renderService = ({ item }) => (
     <TouchableOpacity style={[styles.serviceItem]} activeOpacity={0.7} onPress={() => { navigation.navigate(item.screen) }}>
-      <View style={[styles.serviceIconContainer, { backgroundColor: theme.colors.sub_card, borderColor: '#eeececff' }]}>
+      <View style={[styles.serviceIconContainer, { backgroundColor: theme.colors.sub_card, borderColor :theme.colors.sub_card }]}>
         <Image source={item.image} style={styles.serviceIcon} resizeMode="contain" />
       </View>
       <Text style={[styles.serviceText, { color: theme.colors.text }]} numberOfLines={2}>
@@ -213,7 +213,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 8,
-    elevation: 3,
+    // elevation: 3,
   },
   serviceIcon: {
     width: '100%',
