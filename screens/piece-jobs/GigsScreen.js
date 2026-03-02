@@ -534,7 +534,7 @@ const fetchLiveGigs = async (isLoadMore = false) => {
       <TouchableOpacity
         style={[
           styles.jobCard,
-          { backgroundColor: isDarkMode ? "#1A1A1A" : "#fff" },
+          { backgroundColor: theme.colors.card },
         ]}
         onPress={() => handlePressGig(item)}
       >
@@ -654,13 +654,13 @@ const fetchLiveGigs = async (isLoadMore = false) => {
     return (
       <TouchableOpacity
         activeOpacity={0.9}
-        style={styles.workerCard}
+        style={[styles.workerCard, { backgroundColor: theme.colors.card , borderColor: theme.colors.card,}]}
         onPress={() => {
           navigation.navigate("WorkerProfileScreen", { worker: item });
         }}
       >
         {/* HEADER AREA */}
-        <View style={styles.cardHeader}>
+        <View style={[styles.cardHeader, {color: theme.colors.text ,}]}>
           <View style={styles.avatarSquare}>
             {worker_pp ? (
               <Image
@@ -677,10 +677,10 @@ const fetchLiveGigs = async (isLoadMore = false) => {
             )}
           </View>
           <View style={styles.headerInfo}>
-            <Text style={styles.workerName}>{item.name}</Text>
+            <Text style={[styles.workerName, {color: theme.colors.text ,}]}>{item.name}</Text>
             <View style={styles.locationRow}>
               <Icons.Ionicons name="location-sharp" size={12} color="#10b981" />
-              <Text style={styles.locationText}>{locationString}</Text>
+              <Text style={[styles.locationText, {color: theme.colors.text ,}]}>{locationString}</Text>
             </View>
           </View>
         </View>
@@ -688,7 +688,7 @@ const fetchLiveGigs = async (isLoadMore = false) => {
         {/* CONDITION: Show Bio only if NO skills are provided */}
         {!hasSkills && (
           <View style={styles.bodyContent}>
-            <Text numberOfLines={2} style={styles.bioText}>
+            <Text numberOfLines={2} style={[styles.bioText, {color: theme.colors.text ,}]}>
               {item.bio ||
                 "Top-rated professional. Tap to view full portfolio and contact details."}
             </Text>
@@ -698,9 +698,9 @@ const fetchLiveGigs = async (isLoadMore = false) => {
         {/* CONDITION: Show Skills only if they exist */}
         {hasSkills && (
           <View style={styles.skillsContainer}>
-            <Text style={styles.sectionHeader}>Services Provided</Text>
+            <Text style={[styles.sectionHeader, {color: theme.colors.text ,}]}>Services Provided</Text>
             <Text
-              style={styles.skillsRowText}
+              style={[styles.skillsRowText, {color: theme.colors.text ,}]}
               numberOfLines={1}
               ellipsizeMode="tail"
             >
@@ -949,6 +949,7 @@ const fetchLiveGigs = async (isLoadMore = false) => {
           <Animated.View
             style={[
               styles.sheetContainer,
+              { backgroundColor: theme.colors.card },
               {
                 transform: [
                   {
@@ -1092,10 +1093,11 @@ const fetchLiveGigs = async (isLoadMore = false) => {
         </View>
 
         {/* ─── TOGGLE BUTTONS ─── */}
-        <View style={styles.toggleContainer}>
+        <View style={[styles.toggleContainer, { backgroundColor: theme.colors.card }]}>
           <TouchableOpacity
             style={[
               styles.toggleButton,
+              { backgroundColor: theme.colors.card },
               viewMode === "gigs" && styles.toggleButtonActive,
             ]}
             onPress={() => setViewMode("gigs")}
@@ -1410,12 +1412,11 @@ const styles = StyleSheet.create({
   },
   toggleContainer: {
     flexDirection: "row",
-    backgroundColor: "#f1f1f1",
     borderRadius: 50,
     padding: 4,
     marginHorizontal: 16,
     marginVertical: 8,
-    // overflow: "hidden",
+    overflow: "hidden",
   },
   toggleButton: {
     flex: 1,
@@ -1747,8 +1748,7 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 16,
     borderBottomRightRadius: 16,
     paddingTop: 28,
-    backgroundColor: "#fff",
-    maxHeight: height * 0.75,
+    minHeight: height * 0.80,
   },
   sheetHandle: {
     width: 40,
@@ -1794,12 +1794,11 @@ const styles = StyleSheet.create({
   },
 
   workerCard: {
-    backgroundColor: "#fff",
     // marginHorizontal: 2,
-    marginBottom: 10,
-    // borderRadius: 14,
+    marginBottom: 20,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: "#e2e8f0",
+    // borderColor: "#e2e8f0",
     overflow: "hidden",
     padding: 3,
     elevation: 2,
@@ -1928,8 +1927,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    borderTopWidth: 1,
-    borderTopColor: "#f1f5f9",
     paddingTop: 12,
     paddingBottom: 12,
     marginHorizontal: 14,
@@ -1988,6 +1985,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     // This color makes the pipe separators pop slightly less than the text for better focus
     includeFontPadding: false,
+    marginBottom:14,
   },
 });
 

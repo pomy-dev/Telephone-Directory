@@ -12,7 +12,6 @@ import {
   Platform,
   StatusBar,
   ActivityIndicator,
-  SafeAreaView,
   Modal,
   FlatList,
   KeyboardAvoidingView,
@@ -31,6 +30,7 @@ import { AuthContext } from "../../context/authProvider";
 import { AppContext } from "../../context/appContext";
 import CustomLoader from "../../components/customLoader";
 import { handleCall } from "../../utils/callFunctions";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const { width } = Dimensions.get("window");
 const MODAL_COLUMN_WIDTH = (width - 60) / 2;
@@ -78,7 +78,7 @@ const ProfilePreview = ({ form, setGalleryVisible, handleCall, theme }) => {
             style={styles.heroImage}
           />
         ) : (
-          <View style={styles.heroPlaceholder}>
+          <View style={[styles.heroPlaceholder, {backgroundColor: theme.colors.text }]}>
             <Icons.Ionicons
               name="person-circle-outline"
               size={80}
@@ -89,11 +89,11 @@ const ProfilePreview = ({ form, setGalleryVisible, handleCall, theme }) => {
       </View>
 
       <TouchableOpacity
-        style={styles.galleryTrigger}
+        style={[styles.galleryTrigger, {backgroundColor: theme.colors.card, borderColor: theme.colors.card }]}
         onPress={() => setGalleryVisible(true)}
       >
-        <Icons.Ionicons name="images" size={20} color="#000" />
-        <Text style={styles.galleryTriggerText}>
+        <Icons.Ionicons name="images" size={20} color={theme.colors.text} />
+        <Text style={[styles.galleryTriggerText,{ color:"#94a3b8"}]}>
           View Portfolio ({form.experience_images?.length || 0})
         </Text>
         <Icons.Ionicons name="chevron-forward" size={16} color="#94a3b8" />
@@ -253,6 +253,7 @@ const ProfileForm = ({
   setIsDeletingProfile,
   setManageModalVisible,
   setSelectedIndices,
+  theme
 }) => {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const scrollRef = React.useRef(null);
@@ -312,9 +313,9 @@ const ProfileForm = ({
         scrollEventThrottle={16}
       >
         {isWorker && (
-          <View style={styles.heroSectionContainer}>
+          <View style={[styles.heroSectionContainer,{ backgroundColor: theme.colors.background }]}>
             {/* Left Column: Profile Picture + Gallery */}
-            <View style={styles.heroLeftColumn}>
+            <View style={[styles.heroLeftColumn,{ backgroundColor: theme.colors.background }]}>
               {/* Profile Picture Section (2/3) */}
               <View style={styles.profilePictureSection}>
                 {form.worker_pp && form.worker_pp.length > 0 ? (
@@ -866,25 +867,23 @@ const WorkerRegistration = ({ navigation }) => {
   if (fetching) return <CustomLoader />;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, {backgroundColor: theme.colors.background}]}>
       <StatusBar
         barStyle={isDarkMode ? "light-content" : "dark-content"}
         backgroundColor={theme.colors.background}
       />
-      <View style={{ height: 20 }} />
-
       <View
         style={[
           styles.headerSafe,
           styles.headerNav,
-          { backgroundColor: theme.colors.card },
+          { backgroundColor: theme.colors.background , borderBottomColor: theme.colors.background },
         ]}
       >
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Icons.Ionicons name="arrow-back" size={24} color="#000" />
+          <Icons.Ionicons name="arrow-back" size={24} color={theme.colors.text} />
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>
+        <Text style={[styles.headerTitle,{color: theme.colors.text ,}]}>
           {isEditing ? "EDIT PROFILE" : "PROFILE"}
         </Text>
 
@@ -931,6 +930,7 @@ const WorkerRegistration = ({ navigation }) => {
             setIsDeletingProfile={setIsDeletingProfile}
             setManageModalVisible={setManageModalVisible}
             setSelectedIndices={setSelectedIndices}
+            theme={theme}
           />
         ) : (
           <ProfilePreview
@@ -1139,9 +1139,9 @@ const WorkerRegistration = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#fff" },
+  container: { flex: 1,},
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  headerSafe: { borderBottomWidth: 1, borderBottomColor: "#f1f5f9" },
+  headerSafe: { borderBottomWidth: 1,},
   headerNav: {
     flexDirection: "row",
     alignItems: "center",
@@ -1156,7 +1156,6 @@ const styles = StyleSheet.create({
   heroSectionContainer: {
     flexDirection: "row",
     height: 280,
-    backgroundColor: "#f8fafc",
     paddingHorizontal: 5,
     paddingVertical: 4,
     gap: 6,
@@ -1344,7 +1343,6 @@ const styles = StyleSheet.create({
     height: 200,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#f8fafc",
   },
   galleryTrigger: {
     flexDirection: "row",
@@ -1440,7 +1438,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   uploadDocBtnText: { color: "#3b82f6", fontWeight: "800" },
-  docList: { gap: 10 },
+  docList: { gap: 10 ,},
   docItem: {
     flexDirection: "row",
     alignItems: "center",
@@ -1448,6 +1446,8 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 10,
     gap: 10,
+    marginTop:6,
+    marginBottom:10,
   },
   docName: { flex: 1, fontSize: 14, fontWeight: "600" },
   skillInputWrapper: { flexDirection: "row", gap: 10, marginBottom: 15 },

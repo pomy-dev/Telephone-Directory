@@ -36,8 +36,8 @@ const AdCard = ({ ad, onPress, onView, theme }) => {
       style={[
         styles.adCard,
         {
-          backgroundColor: theme.colors.background,
-          borderColor: theme.dark ? "#334155" : "#e2e8f0",
+          backgroundColor: theme.colors.sub_card,
+          borderColor: theme.dark ? "#e2e8f0" : "#e2e8f0",
         },
       ]}
       onPress={() => onPress(ad)}
@@ -51,7 +51,7 @@ const AdCard = ({ ad, onPress, onView, theme }) => {
           <View
             style={[
               styles.noImageContainer,
-              { backgroundColor: theme.colors.highlight },
+              { backgroundColor: theme.colors.card },
             ]}
           >
             <Text
@@ -245,9 +245,10 @@ const styles = StyleSheet.create({
   adCard: {
     width: CARD_WIDTH,
     marginHorizontal: 8,
+    marginBottom:10,
     borderRadius: 16,
     overflow: "hidden",
-    borderWidth: 1,
+    // borderWidth: 1,
     elevation: 2,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
