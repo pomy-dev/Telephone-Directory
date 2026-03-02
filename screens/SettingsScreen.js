@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ImageBackground, Platform, Switch } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ImageBackground, Platform, Switch, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icons } from '../constants/Icons';
 import { AppContext } from '../context/appContext';
@@ -8,7 +8,7 @@ import { LinearGradient } from 'expo-linear-gradient'; // Optional: install expo
 
 // Reusable Menu Item Component
 const MenuItem = ({ item, theme, darkMode }) => (
-  <TouchableOpacity style={styles.menuItem} activeOpacity={0.7}>
+  <TouchableOpacity onPress={() => Linking.openURL('https://business-faq.vercel.app/')} style={styles.menuItem} activeOpacity={0.7}>
     <View style={styles.menuItemLeft}>
       <View style={[styles.menuIconContainer, darkMode && styles.iconContainerDark]}>
         <Icons.Ionicons name={item.icon} size={20} color={theme.colors.text} />
@@ -139,7 +139,7 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        <View style={[styles.section, { marginBottom: 60 }]}>
+        <View style={[styles.section]}>
           <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Support</Text>
           <View style={[styles.menuCard, { backgroundColor: theme.colors.card }]}>
             {supportItems.map((item, index) => (
@@ -150,6 +150,11 @@ export default function ProfileScreen() {
             ))}
           </View>
         </View>
+
+        <Text style={{ fontSize: 12, fontWeight: 400, color: theme.colors.sub_text, marginBottom: 60, marginTop: 10, alignSelf: 'center' }}
+        >
+          Version 1.0.0
+        </Text>
       </ScrollView>
     </SafeAreaView>
   );

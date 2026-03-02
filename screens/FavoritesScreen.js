@@ -302,7 +302,7 @@ const styles = StyleSheet.create({
     listContainer: {
         paddingTop: 16,
         paddingHorizontal: 8,
-        paddingBottom: 40,
+        paddingBottom: 100
     },
     favoriteCard: {
         backgroundColor: '#FFFFFF',

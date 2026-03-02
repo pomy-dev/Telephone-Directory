@@ -24,7 +24,9 @@
         "NSCameraUsageDescription": "Needed to scan pamphlets",
         "NSPhotoLibraryAddUsageDescription": "Allow this app to save images to your photo library.",
         "ITSAppUsesNonExemptEncryption": false,
-        "NSLocationWhenInUseUsageDescription": "This app needs your location to show directions to the business."
+        "NSLocationWhenInUseUsageDescription": "Allow $(PRODUCT_NAME) to use your location",
+        "NSLocationAlwaysUsageDescription": "Allow $(PRODUCT_NAME) to use your location",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Allow $(PRODUCT_NAME) to use your location"
       },
       "config": {
         "googleMapsApiKey": "AIzaSyD-tfJ9-YxVddtDWtx01lhTMpXBlT3s4aU"
@@ -38,6 +40,9 @@
       "permissions": [
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_LOCATION",
+        "android.permission.ACCESS_BACKGROUND_LOCATION",
         "android.permission.RECEIVE_BOOT_COMPLETED",
         "android.permission.VIBRATE",
         "com.google.android.c2dm.permission.RECEIVE",
@@ -63,6 +68,12 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
+      [
+        "expo-location",
+        {
+          "locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location."
+        }
+      ],
       [
         "expo-notifications",
         {

@@ -4,7 +4,8 @@ import {
   StyleSheet, Platform, StatusBar, Text, View, Image, TouchableOpacity,
   FlatList, ScrollView, Dimensions
 } from "react-native"
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useState } from "react";
+import { Badge } from "react-native-paper";
 import TopNav from "../components/TopNav"
 import { AppContext } from "../context/appContext"
 import { AuthContext } from "../context/authProvider"
@@ -13,6 +14,7 @@ import { Images } from '../constants/Images'
 import CustomLoader from "../components/customLoader"
 import PersonalizedAdsSection from "../components/PersonalizedAdsSection"
 import { SafeAreaView } from "react-native-safe-area-context";
+import { fetchOpenGigsCount, subscribeToGigs } from "../service/Supabase-Fuctions"
 
 const { height } = Dimensions.get('window');
 
@@ -20,49 +22,15 @@ export default function HomeScreen({ navigation }) {
   const { theme, isDarkMode, notifications } = React.useContext(AppContext)
   const { logout } = React.useContext(AuthContext)
   const [greetingText, setGreetingText] = useState("");
+  const [gigsCount, setGigsCount] = useState(0);
   const [startingText, setStartingText] = useState("");
   const [islogingOut, setIsLoggingOut] = useState(false)
 
-  const sampleAds = [
-    {
-      id: "1",
-      brandName: "Hungry Lion",
-      brandLogo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRpya4HK6j17V34ZvxPLYknyc4xLgDEZt5wAA&s",
-      title: "Big Boss Cheese Meal - Only R50",
-      imageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQDmje78j3KWDjwzNhJliz-bH5khVfJli1EMw&s",
-      category: "food",
-    },
-    {
-      id: "2",
-      brandName: "MTN Eswatini",
-      brandLogo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ9GiO2ctjyihVwKel9jQuEK4hf5YDo92q_jA&s",
-      title: "It's a Makoya Tuesday - E10 for 2GB",
-      imageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRLnkDWQ_uX5lm9o1adi6mfjN73Ohxm2-ExRA&s",
-      category: "telecom",
-    },
-    {
-      id: "3",
-      brandName: "FNB",
-      brandLogo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRosUIa-ejr5HS_vIbnNpVgaOUUpQD3p7cnbg&s",
-      title: "Zero fees on debit orders",
-      imageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSKvH6VnhgXitQgyBD2ro_04Cvbanh2Wobpgw&s",
-      category: "finance",
-    },
-    {
-      id: "4",
-      brandName: "Eswatini Telecom",
-      brandLogo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRHvcUUqf4x1GzNMn5vbZ95uhxNIIqkFIaAqw&s",
-      title: "Massive data drop",
-      imageUrl: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSYMDAWLG_u75RgvwzaQbIKDP-BZJ26iMY-gg&s",
-      category: "telecom",
-    },
-  ]
-
   const services = [
-    { id: "1", screen: "GigsScreen", name: "Quick Jobs", image: Images.piecejob },
-    { id: "2", screen: "TransportationListScreen", name: "For-Hires", image: Images.forhire },
-    { id: "3", screen: "LoanAssist", name: "Smart Financing", image: Images.Loans },
-    { id: "8", screen: "DirectoryScreen", name: "Telephone Directory", image: Images.bs_eswatini },
+    { id: "1", screen: "GigsScreen", count: { gigsCount }, name: "Quick Jobs", image: Images.piecejob },
+    { id: "2", screen: "TransportationListScreen", count: 0, name: "For-Hires", image: Images.forhire },
+    { id: "3", screen: "LoanAssist", count: 0, name: "Smart Financing", image: Images.Loans },
+    { id: "8", screen: "DirectoryScreen", count: 0, name: "Telephone Directory", image: Images.bs_eswatini },
   ]
 
   useEffect(() => {
@@ -94,10 +62,45 @@ export default function HomeScreen({ navigation }) {
 
   }, [])
 
+  // fetch count once on mount (or whenever you want to refresh explicitly)
+  useEffect(() => {
+    let mounted = true;
+
+    const loadCount = async () => {
+      try {
+        const count = await fetchOpenGigsCount();
+        if (mounted) {
+          setGigsCount(count);
+        }
+      } catch (err) {
+        console.log('Error fetching gigs count', err);
+      }
+    };
+
+    // initial fetch
+    loadCount();
+
+    // subscribe to realtime updates on gigs table and refresh count when changes arrive
+    const channel = subscribeToGigs(() => {
+      // callback from supabase print
+      if (mounted) {
+        loadCount();
+      }
+    });
+
+    return () => {
+      mounted = false;
+      if (channel && channel.unsubscribe) {
+        channel.unsubscribe();
+      }
+    };
+  }, []);
+
   const renderService = ({ item }) => (
     <TouchableOpacity style={[styles.serviceItem]} activeOpacity={0.7} onPress={() => { navigation.navigate(item.screen) }}>
       <View style={[styles.serviceIconContainer, { backgroundColor: theme.colors.sub_card, borderColor: '#eeececff' }]}>
         <Image source={item.image} style={styles.serviceIcon} resizeMode="contain" />
+        {item.name === "Quick Jobs" && <Badge style={{ position: 'absolute', top: -4, right: -2 }}>{gigsCount}</Badge>}
       </View>
       <Text style={[styles.serviceText, { color: theme.colors.text }]} numberOfLines={2}>
         {item.name}
@@ -158,7 +161,7 @@ export default function HomeScreen({ navigation }) {
           />
         </View>
 
-        <PersonalizedAdsSection ads={sampleAds} maxAdsToShow={10} />
+        <PersonalizedAdsSection />
         {<View style={{ height: 100 }} />}
       </ScrollView>
     </SafeAreaView>

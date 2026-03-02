@@ -287,6 +287,27 @@ const BusinessDetailScreen = ({ route, navigation }) => {
     extrapolate: "clamp",
   });
 
+  const getBusinessCoordinates = async (address) => {
+    try {
+      const encodedAddress = encodeURIComponent(address);
+      const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodedAddress}&key=${GOOGLE_MAPS_API_KEY}`;
+
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (data.status === "OK" && data.results?.length > 0) {
+        const { lat, lng } = data.results[0].geometry.location;
+        return { latitude: lat, longitude: lng };
+      } else {
+        console.log("Geocoding failed:", data.status, data.error_message);
+        return null;
+      }
+    } catch (err) {
+      console.error("Google Geocoding error:", err);
+      return null;
+    }
+  };
+
   useEffect(() => {
     const getLocationsAndDirections = async () => {
       try {
@@ -319,11 +340,12 @@ const BusinessDetailScreen = ({ route, navigation }) => {
         // Geocode business address
         if (business.address) {
           try {
-            const geocoded = await Location.geocodeAsync(business.address);
-            if (geocoded.length > 0) {
-              const { latitude, longitude } = geocoded[0];
+            const coords = await getBusinessCoordinates(business.address);
+            if (coords) {
+              setBusinessLocation(coords);
+              // const { latitude, longitude } = geocoded[0];
               // console.log('Business Location:', { latitude, longitude });
-              setBusinessLocation({ latitude, longitude });
+              // setBusinessLocation({ latitude, longitude });
 
               // Fetch directions
               const origin = `${userLoc.coords.latitude},${userLoc.coords.longitude}`;
@@ -361,7 +383,7 @@ const BusinessDetailScreen = ({ route, navigation }) => {
             console.error("Geocoding error:", error);
           }
         } else {
-          setLocationError("Business address is not available.");
+          setLocationError("Could not find coordinates for this address.");
           console.log("No business address provided");
         }
       } catch (error) {
@@ -374,6 +396,52 @@ const BusinessDetailScreen = ({ route, navigation }) => {
 
     getLocationsAndDirections();
   }, [business.address]);
+
+  useEffect(() => {
+    const fetchDirections = async () => {
+      if (!userLocation || !businessLocation) return;
+
+      try {
+        const origin = `${userLocation.latitude},${userLocation.longitude}`;
+        const destination = `${businessLocation.latitude},${businessLocation.longitude}`;
+
+        const url = `https://maps.googleapis.com/maps/api/directions/json?origin=${origin}&destination=${destination}&mode=driving&key=${GOOGLE_MAPS_API_KEY}`;
+
+        const response = await fetch(url);
+        const data = await response.json();
+
+        if (data.status === "OK" && data.routes?.length > 0) {
+          const points = decodePolyline(data.routes[0].overview_polyline.points);
+          setDirections(points);  // your state: array of {latitude, longitude}
+
+          // Optional: fit map to show entire route nicely
+          // You can calculate bounds or just center between points
+          const midLat = (userLocation.latitude + businessLocation.latitude) / 2;
+          const midLng = (userLocation.longitude + businessLocation.longitude) / 2;
+          const delta = Math.max(
+            Math.abs(userLocation.latitude - businessLocation.latitude) * 1.8,
+            Math.abs(userLocation.longitude - businessLocation.longitude) * 1.8
+          );
+
+          setMapRegion({
+            latitude: midLat,
+            longitude: midLng,
+            latitudeDelta: delta,
+            longitudeDelta: delta,
+          });
+        } else {
+          console.log("Directions failed:", data.status, data.error_message);
+          setLocationError("Could not fetch route. Showing straight line instead.");
+          // Fallback: setDirections([userLocation, businessLocation]);
+        }
+      } catch (err) {
+        console.error("Directions error:", err);
+        setLocationError("Network error fetching route.");
+      }
+    };
+
+    fetchDirections();
+  }, [userLocation, businessLocation]);
 
   useEffect(() => {
     if (showBottomSheet) {
@@ -477,24 +545,40 @@ const BusinessDetailScreen = ({ route, navigation }) => {
   };
 
   const handleGetDirections = () => {
-    if (businessLocation) {
-      const url = Platform.select({
-        ios: `maps://app?saddr=${userLocation?.latitude},${userLocation?.longitude}&daddr=${businessLocation.latitude},${businessLocation.longitude}`,
-        android: `google.navigation:q=${businessLocation.latitude},${businessLocation.longitude}`,
-      });
-      Linking.openURL(url);
-      console.log("url 1:", url);
-      console.log("Opening businessLocation:", businessLocation);
-    } else if (business.address) {
-      const url = Platform.select({
-        ios: `maps:0,0?q=${encodeURIComponent(business.address)}`,
-        android: `geo:0,0?q=${encodeURIComponent(business.address)}`,
-      });
-      Linking.openURL(url);
-      console.log("url 2:", url);
-    } else {
-      Alert.alert("Error", "Business location is not available.");
+    if (!userLocation || !businessLocation) {
+      Alert.alert("Location not available");
+      return;
     }
+
+    const scheme = Platform.select({
+      ios: 'maps://',
+      android: 'google.navigation:',
+    });
+    const url = `${scheme}saddr=${userLocation.latitude},${userLocation.longitude}&daddr=${businessLocation.latitude},${businessLocation.longitude}`;
+
+    Linking.openURL(url).catch(() => {
+      // Fallback to web
+      Linking.openURL(`https://www.google.com/maps/dir/?api=1&origin=${userLocation.latitude},${userLocation.longitude}&destination=${businessLocation.latitude},${businessLocation.longitude}`);
+    });
+
+    // if (businessLocation) {
+    //   const url = Platform.select({
+    //     ios: `maps://app?saddr=${userLocation?.latitude},${userLocation?.longitude}&daddr=${businessLocation.latitude},${businessLocation.longitude}`,
+    //     android: `google.navigation:q=${businessLocation.latitude},${businessLocation.longitude}`,
+    //   });
+    //   Linking.openURL(url);
+    //   console.log("url 1:", url);
+    //   console.log("Opening businessLocation:", businessLocation);
+    // } else if (business.address) {
+    //   const url = Platform.select({
+    //     ios: `maps:0,0?q=${encodeURIComponent(business.address)}`,
+    //     android: `geo:0,0?q=${encodeURIComponent(business.address)}`,
+    //   });
+    //   Linking.openURL(url);
+    //   console.log("url 2:", url);
+    // } else {
+    //   Alert.alert("Error", "Business location is not available.");
+    // }
   };
 
   const handleImagePress = (image) => {
@@ -1139,33 +1223,70 @@ const BusinessDetailScreen = ({ route, navigation }) => {
                   {mapRegion ? (
                     <MapView
                       style={styles.map}
-                      initialRegion={mapRegion}
-                      provider="google" // Use Google Maps provider
-                      showsUserLocation={true} // Show user's location (blue dot)
-                      onError={handleMapLoadError}
+                      initialRegion={mapRegion}   // your existing state
+                      showsUserLocation={true}    // shows blue dot for user (optional)
+                      provider="google"
                     >
+
+                      {/* User's current position (blue dot is automatic, but you can add a custom marker too) */}
+                      {userLocation && (
+                        <Marker
+                          coordinate={userLocation}
+                          title="You are here"
+                          pinColor="blue"                  // or use custom image
+                        // description="Your current location"
+                        />
+                      )}
+
+                      {/* Business pin */}
                       {businessLocation && (
                         <Marker
                           coordinate={businessLocation}
                           title={business.company_name}
                           description={business.address}
-                        >
-                          <Icons.Ionicons
-                            name="location"
-                            size={30}
-                            color="#FF0000"
-                          />
-                        </Marker>
-                      )}
-
-                      {directions && (
-                        <Polyline
-                          coordinates={directions}
-                          strokeColor="#003366"
-                          strokeWidth={4}
+                          pinColor="red"
                         />
                       )}
+
+                      {userLocation && businessLocation && (
+                        <Polyline
+                          coordinates={[userLocation, businessLocation]}   // array of points
+                          strokeColor="#1E90FF"     // blue-ish
+                          strokeWidth={5}
+                          lineDashPattern={[1, 2]}  // optional: dashed line
+                        />
+                      )}
+
                     </MapView>
+                    // <MapView
+                    //   style={styles.map}
+                    //   initialRegion={mapRegion}
+                    //   provider="google" // Use Google Maps provider
+                    //   showsUserLocation={true} // Show user's location (blue dot)
+                    //   onError={handleMapLoadError}
+                    // >
+                    //   {businessLocation && (
+                    //     <Marker
+                    //       coordinate={businessLocation}
+                    //       title={business.company_name}
+                    //       description={business.address}
+                    //     >
+                    //       <Icons.Ionicons
+                    //         name="location"
+                    //         size={30}
+                    //         color="#FF0000"
+                    //       />
+                    //     </Marker>
+                    //   )}
+
+                    //   {directions && (
+                    //     <Polyline
+                    //       coordinates={directions}
+                    //       strokeColor="#003366"
+                    //       strokeWidth={4}
+                    //     />
+                    //   )}
+                    // </MapView>
                   ) : (
                     <View style={styles.mapLoadingContainer}>
                       <Icons.MaterialCommunityIcons
@@ -1833,7 +1954,7 @@ const BusinessDetailScreen = ({ route, navigation }) => {
           </Animated.View>
         </View>
       )}
-      
+
       {showReviewModal && (
         <View style={styles.modalOverlay}>
           <View style={styles.reviewModalContainer}>

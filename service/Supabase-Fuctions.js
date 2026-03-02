@@ -152,7 +152,6 @@ export async function updateVehicleLike(vehicleId, increment = true) {
   }
 }
 
-
 /**
  * Fetches full details for a specific transportation vehicle by ID
  */
@@ -240,6 +239,18 @@ export async function submitGig(jobData) {
 }
 
 /**
+ * Get All Posted gigs count
+ */
+export async function fetchOpenGigsCount() {
+  const { data, error } = await supabase
+    .rpc('count_open_gigs')
+
+  if (error) throw error;
+
+  return data
+}
+
+/**
  * Fetches gigs with support for filtering and cursor-based pagination
  */
 export async function getPomyGigs(filters = {}) {
@@ -269,6 +280,8 @@ export async function getPomyGigs(filters = {}) {
     });
 
     if (error) throw error;
+
+    console.log(data)
 
     return {
       success: true,
