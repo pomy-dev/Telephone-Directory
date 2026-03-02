@@ -1740,6 +1740,7 @@ const BusinessDetailScreen = ({ route, navigation }) => {
           </Animated.View>
         </Animated.View>
       )}
+
       {showBottomSheet && (
         <View style={styles.bottomSheetContainer}>
           <TouchableOpacity
@@ -1832,6 +1833,7 @@ const BusinessDetailScreen = ({ route, navigation }) => {
           </Animated.View>
         </View>
       )}
+      
       {showReviewModal && (
         <View style={styles.modalOverlay}>
           <View style={styles.reviewModalContainer}>
