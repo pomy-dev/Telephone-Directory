@@ -11,7 +11,6 @@ import {
   StatusBar,
   Pressable,
   Image,
-  SafeAreaView,
   ActivityIndicator,
   Animated,
   TextInput,
@@ -32,6 +31,7 @@ import { AppContext } from "../../context/appContext";
 import { supabase } from "../../service/Supabase-Client";
 import { AuthContext } from "../../context/authProvider";
 import { MoreDropdown } from "../../components/moreDropDown";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const MEDIA_HEIGHT = 180;
 const { height, width } = Dimensions.get("window");
@@ -865,12 +865,12 @@ const fetchLiveGigs = async (isLoadMore = false) => {
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: theme.colors.background }]}
+      edges={['top']}
     >
       <StatusBar
         barStyle={isDarkMode ? "light-content" : "dark-content"}
         backgroundColor={theme.colors.background}
       />
-      <View style={{ height: 20 }} />
 
       {/* Custom Modern Header */}
       <View style={styles.customHeader}>

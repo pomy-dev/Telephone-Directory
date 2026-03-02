@@ -12,8 +12,9 @@ import { CustomToast } from "../components/customToast"
 import { Images } from '../constants/Images'
 import CustomLoader from "../components/customLoader"
 import PersonalizedAdsSection from "../components/PersonalizedAdsSection"
+import { SafeAreaView } from "react-native-safe-area-context";
 
-const { height } = Dimensions.get('screen');
+const { height } = Dimensions.get('window');
 
 export default function HomeScreen({ navigation }) {
   const { theme, isDarkMode, notifications } = React.useContext(AppContext)
@@ -91,7 +92,6 @@ export default function HomeScreen({ navigation }) {
         break
     }
 
-    console.log("Screen Height: ", height)
   }, [])
 
   const renderService = ({ item }) => (
@@ -127,7 +127,7 @@ export default function HomeScreen({ navigation }) {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={{ flex: 1 }} edges={['top']}>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
 
       {islogingOut && <CustomLoader />}
@@ -159,17 +159,15 @@ export default function HomeScreen({ navigation }) {
         </View>
 
         <PersonalizedAdsSection ads={sampleAds} maxAdsToShow={10} />
-
-        {height <= 720 && <View style={{ height: height * 0.15 }} />}
+        {<View style={{ height: 100 }} />}
       </ScrollView>
-    </View>
+    </SafeAreaView>
   )
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 50
   },
   greetingSection: {
     paddingHorizontal: 10,
