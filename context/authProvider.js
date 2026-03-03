@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect } from "react";
 import Auth0 from "react-native-auth0";
-import {  Alert} from "react-native";
+import { Alert } from "react-native";
 import {
   getAuth,
   createUserWithEmailAndPassword,
@@ -190,56 +190,56 @@ export const AuthProvider = ({ children }) => {
  * @param {string} newEmail The new email address for the user.
  * @param {string} currentPassword The user's current password for re-authentication.
  */
-const sendEmailAddressChange = async (newEmail, currentPassword) => {
-  if (!user) {
-    Alert.alert("Error", "No user is currently logged in.");
-    return;
-  }
-
-  // Check if the new email is actually different from the current one
-  if (user.email === newEmail) {
-    Alert.alert("Info", "The new email is the same as the current email. No change needed.");
-    return;
-  }
-
-  try {
-    // 1. Re-authenticate the user first
-    const credential = EmailAuthProvider.credential(user.email, currentPassword);
-    await reauthenticateWithCredential(user, credential);
-    console.log("User re-authenticated successfully.");
-
-    // 2. Now attempt to update the email
-    await updateEmail(user, newEmail);
-    console.log("Email updated successfully to:", newEmail);
-
-  } catch (error) {
-    console.error("Error updating email:", error.code, error.message);
-    let errorMessage = "An unknown error occurred.";
-
-    switch (error.code) {
-      case 'auth/invalid-email':
-        errorMessage = "The new email address format is invalid.";
-        break;
-      case 'auth/email-already-in-use':
-        errorMessage = "This email address is already in use by another account.";
-        break;
-      case 'auth/wrong-password': // Re-authentication error
-        errorMessage = "Incorrect current password. Please try again.";
-        break;
-      case 'auth/user-not-found': // Should not happen if user is authenticated
-        errorMessage = "User not found or credentials invalid during re-authentication.";
-        break;
-      case 'auth/requires-recent-login':
-        // This case should ideally be caught by reauthenticateWithCredential,
-        // but can be a fallback if re-authentication wasn't performed correctly.
-        errorMessage = "You need to recently log in again to update your email. Please re-enter your password.";
-        break;
-      default:
-        errorMessage = `Failed to update email: ${error.message}`;
+  const sendEmailAddressChange = async (newEmail, currentPassword) => {
+    if (!user) {
+      Alert.alert("Error", "No user is currently logged in.");
+      return;
     }
-    Alert.alert("Email Update Failed", errorMessage);
-  }
-};
+
+    // Check if the new email is actually different from the current one
+    if (user.email === newEmail) {
+      Alert.alert("Info", "The new email is the same as the current email. No change needed.");
+      return;
+    }
+
+    try {
+      // 1. Re-authenticate the user first
+      const credential = EmailAuthProvider.credential(user.email, currentPassword);
+      await reauthenticateWithCredential(user, credential);
+      console.log("User re-authenticated successfully.");
+
+      // 2. Now attempt to update the email
+      await updateEmail(user, newEmail);
+      console.log("Email updated successfully to:", newEmail);
+
+    } catch (error) {
+      console.error("Error updating email:", error.code, error.message);
+      let errorMessage = "An unknown error occurred.";
+
+      switch (error.code) {
+        case 'auth/invalid-email':
+          errorMessage = "The new email address format is invalid.";
+          break;
+        case 'auth/email-already-in-use':
+          errorMessage = "This email address is already in use by another account.";
+          break;
+        case 'auth/wrong-password': // Re-authentication error
+          errorMessage = "Incorrect current password. Please try again.";
+          break;
+        case 'auth/user-not-found': // Should not happen if user is authenticated
+          errorMessage = "User not found or credentials invalid during re-authentication.";
+          break;
+        case 'auth/requires-recent-login':
+          // This case should ideally be caught by reauthenticateWithCredential,
+          // but can be a fallback if re-authentication wasn't performed correctly.
+          errorMessage = "You need to recently log in again to update your email. Please re-enter your password.";
+          break;
+        default:
+          errorMessage = `Failed to update email: ${error.message}`;
+      }
+      Alert.alert("Email Update Failed", errorMessage);
+    }
+  };
 
   const updateUserProfile = async (details) => {
     const firebaseUser = firebaseAuth.currentUser;

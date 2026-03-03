@@ -307,7 +307,6 @@ export const subscribeToGigs = (onCallback) => {
     .subscribe();
 };
 
-
 /** Fetch all applications for a specific gig */
 export async function getGigApplicants(gigId) {
   try {
@@ -324,7 +323,6 @@ export async function getGigApplicants(gigId) {
     return { success: false, error: error.message };
   }
 }
-
 
 /**
  * Register a new worker with the updated schema including skills array
@@ -413,8 +411,6 @@ export async function getWorkerProfileClient(id) {
 /**
  * Updates an existing worker profile
  */
-// Supabase-Fuctions.js updates
-
 export async function updateWorkerProfile(uid, updateData) {
   try {
     let workerProfile = updateData.worker_pp || []
@@ -568,7 +564,6 @@ export async function approveGigApplication(applicationId) {
   }
 }
 
-
 // Hire/Accept a worker
 export async function updateApplicationStatus(applicationId, status) {
   try {
@@ -630,7 +625,7 @@ export async function getMyAppliedGigs(userEmail) {
   console.log('Fetching applied gigs for user:', userEmail);
   try {
     const { data, error } = await supabase.rpc(
-      "get_gigs_i_applied_for",
+      "get_user_related_gigs",
       { p_email: userEmail.trim() }
     )
 
@@ -660,7 +655,9 @@ export async function getApprovedGigs(userEmail) {
   }
 }
 
-/** approve application */
+/** 
+ * approve application 
+ */
 export async function approveApplication(applicationId) {
   try {
     const { data, error } = await supabase.rpc(
@@ -703,10 +700,6 @@ export async function deleteMyApplication(appId, userEmail) {
   }
 }
 
-
-/**
- * Fetches personalized recommendations using the Supabase RPC
- */
 /**
  * Fetches personalized recommendations using the Supabase RPC
  */

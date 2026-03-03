@@ -5,6 +5,7 @@ import {
   FlatList, ScrollView, Dimensions
 } from "react-native"
 import React, { useEffect, useState } from "react";
+import * as Notifications from 'expo-notifications';
 import { Badge } from "react-native-paper";
 import TopNav from "../components/TopNav"
 import { AppContext } from "../context/appContext"
@@ -19,12 +20,57 @@ import { fetchOpenGigsCount, subscribeToGigs } from "../service/Supabase-Fuction
 const { height } = Dimensions.get('window');
 
 export default function HomeScreen({ navigation }) {
-  const { theme, isDarkMode, notifications } = React.useContext(AppContext)
+  const { theme, isDarkMode, notifications, notificationsEnabled } = React.useContext(AppContext)
   const { logout } = React.useContext(AuthContext)
+  const [nots, setNots] = useState(null);
   const [greetingText, setGreetingText] = useState("");
   const [gigsCount, setGigsCount] = useState(0);
   const [startingText, setStartingText] = useState("");
   const [islogingOut, setIsLoggingOut] = useState(false)
+
+  const scheduleNotification = async (title, body, data = {}) => {
+    if (!notificationsEnabled) return;
+    const notificationId = data.notificationId;
+
+    // Schedule notification
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title,
+        body,
+        data: { ...data, notificationId }, // Include notificationId for deep linking
+      },
+      trigger: null, // Immediate notification
+    });
+  };
+
+  // Function to simulate mock notifications one by one
+  const syncNotifications = () => {
+    console.log('Notifications #', notifications.length)
+    if (!notificationsEnabled && notifications.length === 0) return;
+
+    notifications.forEach((notif, index) => {
+      setTimeout(() => {
+        // Notification title & body
+        const title = `${notif.title}`;
+        const body = `${notif.message}`;
+
+        // Extra data for deep linking or later use
+        const data = {
+          notificationId: notif._id,
+          category: notif.category,
+          startDate: notif.startDate,
+          endDate: notif.endDate,
+        };
+        // Call your schedule function
+        scheduleNotification(title, body, data);
+      }, index * 1000); // stagger them 1s apart
+    });
+  };
+
+  // Example: load notifications automatically on mount
+  useEffect(() => {
+    syncNotifications();
+  }, [notifications, notificationsEnabled]);
 
   const services = [
     { id: "1", screen: "GigsScreen", count: { gigsCount }, name: "Quick Jobs", image: Images.piecejob },
@@ -44,6 +90,7 @@ export default function HomeScreen({ navigation }) {
     else greeting = "Night"
 
     setGreetingText(greeting)
+    setNots(notifications)
 
     switch (greeting) {
       case "Morning":
@@ -98,7 +145,7 @@ export default function HomeScreen({ navigation }) {
 
   const renderService = ({ item }) => (
     <TouchableOpacity style={[styles.serviceItem]} activeOpacity={0.7} onPress={() => { navigation.navigate(item.screen) }}>
-      <View style={[styles.serviceIconContainer, { backgroundColor: theme.colors.sub_card, borderColor :theme.colors.sub_card }]}>
+      <View style={[styles.serviceIconContainer, { backgroundColor: theme.colors.sub_card, borderColor: theme.colors.sub_card }]}>
         <Image source={item.image} style={styles.serviceIcon} resizeMode="contain" />
         {item.name === "Quick Jobs" && <Badge style={{ position: 'absolute', top: -4, right: -2 }}>{gigsCount}</Badge>}
       </View>
@@ -121,7 +168,7 @@ export default function HomeScreen({ navigation }) {
   }
 
   const handleNotificationPress = () => {
-    if (notifications.length > 0) {
+    if (nots?.length > 0) {
       navigation.navigate("Nots")
     } else {
       CustomToast("No notifications", "You have no new notifications at the moment.")
@@ -138,7 +185,7 @@ export default function HomeScreen({ navigation }) {
       <TopNav
         onCartPress={() => console.log("Cart pressed")}
         onNotificationPress={handleNotificationPress}
-        notificationCount={notifications.length}
+        notificationCount={nots?.length}
         onSearch={() => console.log("Search tapped")}
         onLogout={() => handleLogout()}
       />

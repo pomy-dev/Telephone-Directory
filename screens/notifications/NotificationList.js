@@ -9,8 +9,10 @@ import {
   useWindowDimensions,
   Modal,
 } from "react-native";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { AppContext } from "../../context/appContext";
+import { AuthContext } from "../../context/authProvider";
 import { CustomToast } from "../../components/customToast";
 import { approveApplication } from "../../service/Supabase-Fuctions";
 import * as WebBrowser from 'expo-web-browser';
@@ -18,6 +20,7 @@ import { Icons } from "../../constants/Icons";
 
 const NotificationListScreen = ({ navigation }) => {
   const { theme, notifications } = useContext(AppContext);
+  const { user } = useContext(AuthContext);
   const route = useRoute();
   const listRef = useRef(null);
   const { width } = useWindowDimensions();
@@ -27,14 +30,22 @@ const NotificationListScreen = ({ navigation }) => {
   const [selectedNotification, setSelectedNotification] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
+  const [filterType, setFilterType] = useState('all'); // all | company | application | employer
 
   const toggleLayout = () => {
     setLayoutMode((prev) => (prev === "list" ? "grid" : "list"));
   };
 
+  // apply filter to notifications before rendering
+  const filteredNotifications = notifications.filter((n) => {
+    if (filterType === 'all') return true;
+    return n._type === filterType;
+  });
+
   useEffect(() => {
     if (selectedNotificationId && notifications.length > 0 && listRef.current) {
-      const index = notifications.findIndex(
+      // determine index in the currently filtered data set so scrolling still works when filter applied
+      const index = filteredNotifications.findIndex(
         (n) =>
           n.application_id === selectedNotificationId || n._id === selectedNotificationId
       );
@@ -42,7 +53,8 @@ const NotificationListScreen = ({ navigation }) => {
         listRef.current.scrollToIndex({ index, animated: true });
       }
     }
-  }, [selectedNotificationId, notifications]);
+    console.log(notifications)
+  }, [selectedNotificationId, notifications, filterType]);
 
   const handleNotificationPress = (item) => {
     setSelectedNotification(item);
@@ -75,106 +87,184 @@ const NotificationListScreen = ({ navigation }) => {
     }
   };
 
-  const renderNotification = ({ item }) => (
-    <TouchableOpacity
-      style={[
-        styles.notificationItem,
-        layoutMode === "grid" && [styles.gridItem, { width: (width - 48) / 2 }],
-        {
-          backgroundColor:
-            selectedNotificationId === item._id
-              ? theme.colors.primary
-              : theme.colors.card,
-        },
-      ]}
-      onPress={() => handleNotificationPress(item)}
-    >
-      {/* Logo */}
-      {item.company?.logo && (
+  const renderNotification = ({ item }) => {
+    const isCompany = item._type === 'company';
+    const isEmployer = item._type === 'employer';
+
+    const bgColor =
+      selectedNotificationId === item._id
+        ? theme.colors.primary
+        : theme.colors.card;
+
+    const borderColor = isCompany
+      ? theme.colors.indicator
+      : isEmployer
+        ? '#e08e0b'
+        : theme.colors.success;
+
+    return (
+      <TouchableOpacity
+        style={[
+          styles.notificationItem,
+          { borderLeftColor: borderColor, borderLeftWidth: 4 },
+          layoutMode === "grid" && [styles.gridItem, { width: (width - 48) / 2 }],
+          { backgroundColor: bgColor },
+        ]}
+        onPress={() => handleNotificationPress(item)}
+      >
+        {/* Logo (show for both types if available) */}
+        {item.company?.logo && (
+          <View
+            style={[
+              styles.logoContainer,
+              layoutMode === "grid" && styles.gridLogoContainer,
+            ]}
+          >
+            <Image
+              source={{ uri: item.company.logo }}
+              style={[
+                styles.companyLogo,
+                { borderColor: theme.colors.card, borderWidth: 1 },
+                layoutMode === "grid" && styles.gridCompanyLogo,
+              ]}
+              resizeMode="contain"
+            />
+          </View>
+        )}
+
         <View
           style={[
-            styles.logoContainer,
-            layoutMode === "grid" && styles.gridLogoContainer,
+            styles.textContainer,
+            layoutMode === "grid" && styles.gridTextContainer,
           ]}
         >
-          <Image
-            source={{ uri: item.company.logo }}
-            style={[
-              styles.companyLogo,
-              { borderColor: theme.colors.card, borderWidth: 1 },
-              layoutMode === "grid" && styles.gridCompanyLogo,
-            ]}
-            resizeMode="contain"
+          {/* type indicator dot */}
+          <View
+            style={{
+              position: 'absolute',
+              right: 8,
+              top: 0,
+              width: 8,
+              height: 8,
+              borderRadius: 4,
+              backgroundColor: borderColor,
+            }}
           />
+
+          {isCompany ? (
+            // company/system notification layout
+            <>
+              <Text
+                style={[
+                  styles.notificationTitle,
+                  { color: theme.colors.text },
+                ]}
+                numberOfLines={2}
+              >
+                {item.title || "Notification"}
+              </Text>
+
+              <Text
+                style={[
+                  styles.notificationBody,
+                  { color: theme.colors.text },
+                ]}
+                numberOfLines={3}
+              >
+                {item.message}
+              </Text>
+
+              {renderCategoryIcon(item.category)}
+
+              <Text
+                style={[styles.notificationTime, { color: theme.colors.sub_text }]}
+              >
+                {new Date(item.created_at || item.startDate || item.applied_at).toLocaleString()}
+              </Text>
+            </>
+          ) : (
+            // application / gig notification layout (includes employer alerts)
+            <>
+              <Text
+                style={[
+                  styles.notificationTitle,
+                  {
+                    color:
+                      selectedNotificationId === item._id ||
+                        selectedNotificationId === item.application_id
+                        ? theme.colors.secondary
+                        : theme.colors.text,
+                  },
+                ]}
+                numberOfLines={2}
+              >
+                {isEmployer ? 'New applicant:' : item.application_id ? 'Application:' : 'Applied for:'}{' '}
+                {item.title || item.job_title || 'Untitled'}
+              </Text>
+
+              <Text
+                style={[
+                  styles.notificationBody,
+                  {
+                    color:
+                      selectedNotificationId === item._id ||
+                        selectedNotificationId === item.application_id
+                        ? theme.colors.secondary
+                        : theme.colors.text,
+                  },
+                ]}
+                numberOfLines={3}
+              >
+                {item.message || item?.job_description}
+              </Text>
+
+              {renderCategoryIcon(item.category)}
+
+              <Text
+                style={[styles.companyInfo, {
+                  color:
+                    selectedNotificationId === item.application_id
+                      ? theme.colors.secondary
+                      : theme.colors.text,
+                }]}
+              >
+                {item.company?.company_name
+                  ? item.company.company_name
+                  : isEmployer
+                  && `Candidate: ${item?.applicant_details?.email || 'unknown'}${' '}\n`
+                }
+                {item.company?.company_type || `Status: ${item.application_status || 'N/A'}`}
+              </Text>
+
+              <Text
+                style={[styles.notificationTime, {
+                  color:
+                    selectedNotificationId === item._id ||
+                      selectedNotificationId === item.application_id
+                      ? theme.colors.secondary
+                      : theme.colors.text,
+                }]}
+              >
+                {new Date(item.startDate || item.applied_at).toLocaleString()}
+              </Text>
+            </>
+          )}
+
         </View>
-      )}
+      </TouchableOpacity>
+    );
+  };
 
-      {/* Text */}
-      <View
-        style={[
-          styles.textContainer,
-          layoutMode === "grid" && styles.gridTextContainer,
-        ]}
-      >
-        <Text
-          style={[
-            styles.notificationTitle,
-            {
-              color:
-                selectedNotificationId === item._id || selectedNotificationId === item.id
-                  ? theme.colors.secondary
-                  : theme.colors.text,
-            },
-          ]}
-          numberOfLines={2}
-        >
-          Applied for : {item.title || item.job_title + `, \n Worth: E${item.job_price}` || "Untitled Notification"}
-        </Text>
-
-        <Text
-          style={[styles.notificationBody, {
-            color:
-              selectedNotificationId === item._id || selectedNotificationId === item.application_id
-                ? theme.colors.secondary
-                : theme.colors.text,
-          }]}
-          numberOfLines={3}
-        >
-          {item.message || item?.job_description}
-        </Text>
-
-        {renderCategoryIcon(item.category)}
-
-        <Text style={[styles.companyInfo, {
-          color:
-            selectedNotificationId === item.application_id
-              ? theme.colors.secondary
-              : theme.colors.text,
-        },]}>
-          {item.company?.company_name || `Canditate: ${item.applicant.email}`} • {item.company?.company_type || item.application_status}
-        </Text>
-
-        <Text style={[styles.notificationTime, {
-          color:
-            selectedNotificationId === item._id || selectedNotificationId === item.application_id
-              ? theme.colors.secondary
-              : theme.colors.text,
-        },]}>
-          {new Date(item.startDate || item.applied_at).toLocaleString()}
-        </Text>
-      </View>
-    </TouchableOpacity>
-  );
-
-  const handleApprove = (application) => {
+  const handleApprove = async (application) => {
+    if (!application || (!application.application_id && !application._id)) return;
     try {
       setIsApproving(true);
-      const response = approveApplication(application.application_id || application._id);
+      const response = await approveApplication(application.application_id || application._id);
 
-      if (response.success) {
+      if (response?.success) {
         console.log('Application approved successfully:', response.data);
 
-        CustomToast("Application Approved", `You have approved application ${application.application_id}.`);
+        CustomToast("Application Approved", `You have approved application ${application.application_id || application._id}.`);
         // Store the approved applications as an array in AsyncStorage for later reference
         AsyncStorage.getItem('approvedApplications')
           .then((data) => {
@@ -183,11 +273,9 @@ const NotificationListScreen = ({ navigation }) => {
             AsyncStorage.setItem('approvedApplications', JSON.stringify(approvedApps));
           })
           .catch((err) => console.log('Error storing approved application:', err));
-
       } else {
         setError("Failed to approve application. Please try again.");
       }
-
     } catch (error) {
       console.log('Error approving application:', error);
       setError("An error occurred while approving the application. Please try again.");
@@ -197,138 +285,154 @@ const NotificationListScreen = ({ navigation }) => {
     }
   };
 
-  const renderModalContent = () => (
-    <View
-      style={[
-        styles.modalContainer,
-        { backgroundColor: theme.colors.background },
-      ]}
-    >
-      {/* Header with close button */}
+  const renderModalContent = () => {
+    if (!selectedNotification) return null;
+
+    const isCompany = selectedNotification._type === 'company';
+
+    return (
       <View
-        style={[styles.modalHeader, { backgroundColor: theme.colors.card }]}
+        style={[
+          styles.modalContainer,
+          { backgroundColor: theme.colors.background },
+        ]}
       >
-        <Text style={[styles.modalTitle, { color: theme.colors.text }]}>
-          {selectedNotification?.title || selectedNotification?.job_title || "Notification Details"}
-        </Text>
-
-        {/* approve button */}
-        <TouchableOpacity style={[styles.approveButton, { backgroundColor: theme.colors.primary }]}
-          onPress={() => handleApprove(selectedNotification)}
+        {/* Header with close button and optional approve button */}
+        <View
+          style={[styles.modalHeader, { backgroundColor: theme.colors.card }]}
         >
-          <Text style={{ color: "#fff", fontWeight: "bold" }}>Approve</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={() => setModalVisible(false)}
-          style={styles.closeButton}
-        >
-          <Icons.Ionicons name="close" size={24} color={theme.colors.text} />
-        </TouchableOpacity>
-      </View>
-
-      {/* Content */}
-      <View style={styles.modalContent}>
-        {selectedNotification?.company?.logo && (
-          <View style={styles.modalLogoContainer}>
-            <Image
-              source={{ uri: selectedNotification.company.logo }}
-              style={styles.modalCompanyLogo}
-              resizeMode="contain"
-            />
-          </View>
-        )}
-
-        <Text style={[styles.modalMessage, { color: theme.colors.text }]}>
-          {selectedNotification?.message || selectedNotification?.job_description || "No additional details available."}
-        </Text>
-
-        <View style={styles.modalCategoryContainer}>
-          {renderCategoryIcon(selectedNotification?.category)}
-          <Text
-            style={[styles.modalCategoryText, { color: theme.colors.text }]}
-          >
-            {`Category: ${selectedNotification?.category || selectedNotification?.job_category || "General"}`}
+          <Text style={[styles.modalTitle, { color: theme.colors.text }]}>
+            {selectedNotification?.title || selectedNotification?.job_title || "Notification Details"}
           </Text>
+          {/* type badge */}
+          {selectedNotification?._type && (
+            <Text
+              style={{
+                position: 'absolute',
+                right: 60,
+                top: 16,
+                fontSize: 12,
+                color: theme.colors.sub_text,
+              }}
+            >
+              {selectedNotification._type.toUpperCase()}
+            </Text>
+          )}
+
+          {!isCompany && selectedNotification._type === 'employer' && (
+            <TouchableOpacity
+              style={[styles.approveButton, { backgroundColor: theme.colors.primary }]}
+              onPress={() => handleApprove(selectedNotification)}
+            >
+              <Text style={{ color: "#fff", fontWeight: "bold" }}>Approve</Text>
+            </TouchableOpacity>
+          )}
+
+          <TouchableOpacity
+            onPress={() => setModalVisible(false)}
+            style={styles.closeButton}
+          >
+            <Icons.Ionicons name="close" size={24} color={theme.colors.text} />
+          </TouchableOpacity>
         </View>
 
-        {selectedNotification?.company?.company_name &&
-          <Text style={[styles.modalCompanyInfo, { color: theme.colors.text }]}>
-            {selectedNotification?.company?.company_name} •{" "}
-            {selectedNotification?.company?.company_type}
+        {/* Content */}
+        <View style={styles.modalContent}>
+          {selectedNotification?.company?.logo && (
+            <View style={styles.modalLogoContainer}>
+              <Image
+                source={{ uri: selectedNotification.company.logo }}
+                style={styles.modalCompanyLogo}
+                resizeMode="contain"
+              />
+            </View>
+          )}
+
+          <Text style={[styles.modalMessage, { color: theme.colors.text }]}>
+            {selectedNotification?.message || selectedNotification?.job_description || "No additional details available."}
           </Text>
-        }
 
-        {/* list skills */}
-        {selectedNotification?.skill_set && (
-          <View style={{ flexDirection: "row", flexWrap: "wrap", marginBottom: 12 }}>
-            {/* experties */}
-            <Text style={[styles.modalCategoryText, { color: theme.colors.text, marginBottom: 8 }]}>
-              Skills:
+          <View style={styles.modalCategoryContainer}>
+            {renderCategoryIcon(selectedNotification?.category)}
+            <Text
+              style={[styles.modalCategoryText, { color: theme.colors.text }]}
+            >
+              {`Category: ${selectedNotification?.category || selectedNotification?.job_category || "General"}`}
             </Text>
-
-            {selectedNotification?.skill_set?.map((skill, index) => (
-              <View
-                key={index}
-                style={{
-                  backgroundColor: "#F8F4FF",
-                  paddingHorizontal: 8,
-                  paddingVertical: 4,
-                  borderRadius: 12,
-                  marginRight: 8,
-                  marginBottom: 8,
-                }}
-              >
-                <Text style={{ color: theme.colors.sub_text, fontSize: 12 }}>{skill}</Text>
-              </View>
-            ))}
           </View>
-        )}
 
-        {/* display preview if documents */}
-        {selectedNotification?.attachments?.length > 0 && (
-          <View style={{ marginBottom: 12 }}>
-            <Text style={[styles.modalCategoryText, { color: theme.colors.text }]}>
-              Attachments:
+          {selectedNotification?.company?.company_name &&
+            <Text style={[styles.modalCompanyInfo, { color: theme.colors.text }]}>\
+              {selectedNotification?.company?.company_name} •{" "}
+              {selectedNotification?.company?.company_type}
             </Text>
-            {selectedNotification.attachments.map((file, index) => (
-              <TouchableOpacity
-                key={index}
-                onPress={() => {
-                  if (file.url) {
-                    WebBrowser.openBrowserAsync(file.url);
-                  }
-                }}
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  padding: 8,
-                  borderWidth: 1,
-                  borderColor: theme.colors.disabled,
-                  borderRadius: 8,
-                  marginTop: 8,
-                }}
-              >
-                <Icons.MaterialIcons name="attach-file" size={20} color={theme.colors.text} />
-                <Text style={{ marginLeft: 8, color: theme.colors.text }}>
-                  {file.name || `Attachment ${index + 1}`}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        )}
+          }
 
-        <Text style={[styles.modalTime, { color: theme.colors.text }]}>
-          {new Date(selectedNotification?.startDate || selectedNotification?.applied_at).toLocaleString()}
-        </Text>
+          {/* list skills (application-specific) */}
+          {!isCompany && selectedNotification?.skill_set && (
+            <View style={{ flexDirection: "row", flexWrap: "wrap", marginBottom: 12 }}>
+              <Text style={[styles.modalCategoryText, { color: theme.colors.text, marginBottom: 8 }]}>Skills:</Text>
+
+              {selectedNotification?.skill_set?.map((skill, index) => (
+                <View
+                  key={index}
+                  style={{
+                    backgroundColor: "#F8F4FF",
+                    paddingHorizontal: 8,
+                    paddingVertical: 4,
+                    borderRadius: 12,
+                    marginRight: 8,
+                    marginBottom: 8,
+                  }}
+                >
+                  <Text style={{ color: theme.colors.sub_text, fontSize: 12 }}>{skill}</Text>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {/* attachments (application-specific) */}
+          {!isCompany && selectedNotification?.attachments?.length > 0 && (
+            <View style={{ marginBottom: 12 }}>
+              <Text style={[styles.modalCategoryText, { color: theme.colors.text }]}>Attachments:</Text>
+              {selectedNotification.attachments.map((file, index) => (
+                <TouchableOpacity
+                  key={index}
+                  onPress={() => {
+                    if (file.url) {
+                      WebBrowser.openBrowserAsync(file.url);
+                    }
+                  }}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    padding: 8,
+                    borderWidth: 1,
+                    borderColor: theme.colors.disabled,
+                    borderRadius: 8,
+                    marginTop: 8,
+                  }}
+                >
+                  <Icons.MaterialIcons name="attach-file" size={20} color={theme.colors.text} />
+                  <Text style={{ marginLeft: 8, color: theme.colors.text }}>
+                    {file.name || `Attachment ${index + 1}`}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
+          <Text style={[styles.modalTime, { color: theme.colors.text }]}>
+            {new Date(selectedNotification?.startDate || selectedNotification?.applied_at).toLocaleString()}
+          </Text>
+        </View>
       </View>
-    </View>
-  );
+    );
+  };
 
   return (
-    <View
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
-    >
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]} >
+
       <View style={styles.headerContainer}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icons.Ionicons name='arrow-back' size={24} color={theme.colors.primary} />
@@ -344,17 +448,47 @@ const NotificationListScreen = ({ navigation }) => {
           />
         </TouchableOpacity>
       </View>
+
+      {/* filter buttons row under header */}
+      <View style={styles.filterRow}>
+        {['all', 'company', 'application', 'employer'].map((type) => (
+          <TouchableOpacity
+            key={type}
+            onPress={() => setFilterType(type)}
+            style={[
+              styles.filterButton,
+              filterType === type && { backgroundColor: theme.colors.primary },
+            ]}
+          >
+            <Text
+              style={{
+                color: filterType === type ? '#fff' : theme.colors.sub_text,
+                fontSize: 12,
+                textTransform: 'capitalize',
+              }}
+            >
+              {type === 'all' ? 'All'
+                : type === 'company' ? "Market"
+                  : type === 'application' ? 'My Approvals'
+                    : 'Candidates'
+              }
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
       {error && (
         <Text style={[styles.errorText, { color: "#b34141" }]}>{error}</Text>
       )}
-      {notifications.length === 0 ? (
+
+      {filteredNotifications.length === 0 ? (
         <Text style={[styles.noNotifications, { color: theme.colors.text }]}>
           No notifications
         </Text>
       ) : (
         <FlatList
           ref={listRef}
-          data={notifications}
+          data={filteredNotifications}
           renderItem={renderNotification}
           keyExtractor={(item, index) => `${item.application_id}-${index}`}
           // keyExtractor={(item) => item._id} 
@@ -418,6 +552,13 @@ const styles = StyleSheet.create({
   header: {
     fontSize: 24,
     fontWeight: "bold",
+  },
+  filterRow: {
+    flexDirection: 'row', alignContent: 'center', alignItems: 'center',
+    justifyContent: 'center', height: 30, gap: 10
+  },
+  filterButton: {
+    borderRadius: 50, paddingHorizontal: 10, paddingVertical: 5, backgroundColor: '#f0f4ff'
   },
   approveButton: {
     paddingHorizontal: 12,
@@ -490,7 +631,7 @@ const styles = StyleSheet.create({
   },
   list: {
     paddingTop: 16,
-    paddingBottom: 16,
+    paddingBottom: 30,
   },
   errorText: {
     fontSize: 16,
@@ -536,6 +677,20 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
     flex: 1,
+    filterRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginLeft: 12,
+    },
+    filterButton: {
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 6,
+      marginHorizontal: 2,
+      backgroundColor: 'transparent',
+      borderWidth: 1,
+      borderColor: '#ccc',
+    },
   },
   closeButton: {
     padding: 4,
