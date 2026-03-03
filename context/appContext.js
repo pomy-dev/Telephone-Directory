@@ -66,7 +66,7 @@ export const AppProvider = ({ children }) => {
 
           // 2. User-specific gig notifications (applications & approvals)
           if (user?.email) {
-            const userNots = await getMyAppliedGigs('mdzeshh@gmail.com');
+            const userNots = await getMyAppliedGigs(user?.email);
             if (userNots?.success && Array.isArray(userNots.data)) {
               merged.push(
                 ...userNots.data.map((n) => {
