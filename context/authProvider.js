@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect } from "react";
 import Auth0 from "react-native-auth0";
-import {  Alert} from "react-native";
+import { Alert } from "react-native";
 import {
   getAuth,
   createUserWithEmailAndPassword,
@@ -184,62 +184,70 @@ export const AuthProvider = ({ children }) => {
   };
 
   /**
- * Function to update the user's email address.
- * Requires the user's current password for re-authentication.
- *
- * @param {string} newEmail The new email address for the user.
- * @param {string} currentPassword The user's current password for re-authentication.
- */
-const sendEmailAddressChange = async (newEmail, currentPassword) => {
-  if (!user) {
-    Alert.alert("Error", "No user is currently logged in.");
-    return;
-  }
-
-  // Check if the new email is actually different from the current one
-  if (user.email === newEmail) {
-    Alert.alert("Info", "The new email is the same as the current email. No change needed.");
-    return;
-  }
-
-  try {
-    // 1. Re-authenticate the user first
-    const credential = EmailAuthProvider.credential(user.email, currentPassword);
-    await reauthenticateWithCredential(user, credential);
-    console.log("User re-authenticated successfully.");
-
-    // 2. Now attempt to update the email
-    await updateEmail(user, newEmail);
-    console.log("Email updated successfully to:", newEmail);
-
-  } catch (error) {
-    console.error("Error updating email:", error.code, error.message);
-    let errorMessage = "An unknown error occurred.";
-
-    switch (error.code) {
-      case 'auth/invalid-email':
-        errorMessage = "The new email address format is invalid.";
-        break;
-      case 'auth/email-already-in-use':
-        errorMessage = "This email address is already in use by another account.";
-        break;
-      case 'auth/wrong-password': // Re-authentication error
-        errorMessage = "Incorrect current password. Please try again.";
-        break;
-      case 'auth/user-not-found': // Should not happen if user is authenticated
-        errorMessage = "User not found or credentials invalid during re-authentication.";
-        break;
-      case 'auth/requires-recent-login':
-        // This case should ideally be caught by reauthenticateWithCredential,
-        // but can be a fallback if re-authentication wasn't performed correctly.
-        errorMessage = "You need to recently log in again to update your email. Please re-enter your password.";
-        break;
-      default:
-        errorMessage = `Failed to update email: ${error.message}`;
+   * Function to update the user's email address.
+   * Requires the user's current password for re-authentication.
+   *
+   * @param {string} newEmail The new email address for the user.
+   * @param {string} currentPassword The user's current password for re-authentication.
+   */
+  const sendEmailAddressChange = async (newEmail, currentPassword) => {
+    if (!user) {
+      Alert.alert("Error", "No user is currently logged in.");
+      return;
     }
-    Alert.alert("Email Update Failed", errorMessage);
-  }
-};
+
+    // Check if the new email is actually different from the current one
+    if (user.email === newEmail) {
+      Alert.alert(
+        "Info",
+        "The new email is the same as the current email. No change needed.",
+      );
+      return;
+    }
+
+    try {
+      // 1. Re-authenticate the user first
+      const credential = EmailAuthProvider.credential(
+        user.email,
+        currentPassword,
+      );
+      await reauthenticateWithCredential(user, credential);
+      console.log("User re-authenticated successfully.");
+
+      // 2. Now attempt to update the email
+      await updateEmail(user, newEmail);
+      console.log("Email updated successfully to:", newEmail);
+    } catch (error) {
+      console.error("Error updating email:", error.code, error.message);
+      let errorMessage = "An unknown error occurred.";
+
+      switch (error.code) {
+        case "auth/invalid-email":
+          errorMessage = "The new email address format is invalid.";
+          break;
+        case "auth/email-already-in-use":
+          errorMessage =
+            "This email address is already in use by another account.";
+          break;
+        case "auth/wrong-password": // Re-authentication error
+          errorMessage = "Incorrect current password. Please try again.";
+          break;
+        case "auth/user-not-found": // Should not happen if user is authenticated
+          errorMessage =
+            "User not found or credentials invalid during re-authentication.";
+          break;
+        case "auth/requires-recent-login":
+          // This case should ideally be caught by reauthenticateWithCredential,
+          // but can be a fallback if re-authentication wasn't performed correctly.
+          errorMessage =
+            "You need to recently log in again to update your email. Please re-enter your password.";
+          break;
+        default:
+          errorMessage = `Failed to update email: ${error.message}`;
+      }
+      Alert.alert("Email Update Failed", errorMessage);
+    }
+  };
 
   const updateUserProfile = async (details) => {
     const firebaseUser = firebaseAuth.currentUser;
@@ -260,15 +268,18 @@ const sendEmailAddressChange = async (newEmail, currentPassword) => {
           );
         }
 
-        // Re-authenticate
-        const credential = EmailAuthProvider.credential(
-          firebaseUser.email,
-          details.currentPassword,
-        );
-        await reauthenticateWithCredential(firebaseUser, credential);
+        // // Re-authenticate
+        // const credential = EmailAuthProvider.credential(
+        //   firebaseUser.email,
+        //   details.currentPassword,
+        // );
+        // await reauthenticateWithCredential(firebaseUser, credential);
 
         if (details.newEmail && details.newEmail !== firebaseUser.email) {
-          await sendEmailAddressChange(details.newEmail, details.currentPassword)
+          await sendEmailAddressChange(
+            details.newEmail,
+            details.currentPassword,
+          );
         }
 
         if (details.newPassword) {
@@ -284,6 +295,88 @@ const sendEmailAddressChange = async (newEmail, currentPassword) => {
       console.error("Update Profile Error:", error);
       throw error;
     }
+  };
+
+  /**
+   * Handles the user account deletion process.
+   * Requires the user's current password for re-authentication.
+   *
+   * @param {string} currentPassword The user's current password for re-authentication.
+   */
+  const deleteUserAccount = async (currentPassword) => {
+    if (!user) {
+      Alert.alert("Error", "No user is currently logged in.");
+      return;
+    }
+
+    // 1. Confirm with the user that they want to delete their account
+    Alert.alert(
+      "Delete Account",
+      "Are you sure you want to permanently delete your account? This action cannot be undone.",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            // Move async logic inside here
+            try {
+              // 2. Re-authenticate the user first
+              const credential = EmailAuthProvider.credential(
+                user.email,
+                currentPassword,
+              );
+              await reauthenticateWithCredential(user, credential);
+              console.log("User re-authenticated successfully for deletion.");
+
+              // 3. Now attempt to delete the user account
+              await user.delete();
+              Alert.alert(
+                "Success",
+                "Your account has been successfully deleted.",
+              );
+              console.log("User account deleted successfully.");
+
+              // After deletion, the user is signed out.
+              // You should navigate them back to a login/signup screen.
+              // Example: navigation.navigate('AuthStack');
+
+              // IMPORTANT: Also delete any associated user data from Firestore/Realtime DB
+              // This would typically involve calling a Cloud Function (see below).
+              // Example: await deleteUserDataCloudFunction({ uid: user.uid });
+            } catch (error) {
+              console.error(
+                "Error deleting account:",
+                error.code,
+                error.message,
+              );
+              let errorMessage = "An unknown error occurred.";
+
+              switch (error.code) {
+                case "auth/requires-recent-login":
+                  errorMessage =
+                    "For security, please re-enter your password to confirm account deletion.";
+                  break;
+                case "auth/wrong-password":
+                  errorMessage = "Incorrect password. Please try again.";
+                  break;
+                case "auth/network-request-failed":
+                  errorMessage =
+                    "Network error. Please check your internet connection.";
+                  break;
+                default:
+                  errorMessage = `Failed to delete account: ${error.message}`;
+              }
+              Alert.alert("Account Deletion Failed", errorMessage);
+            }
+          },
+        },
+      ],
+      { cancelable: true },
+    );
   };
 
   const value = {
