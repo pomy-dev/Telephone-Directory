@@ -2,24 +2,15 @@ import React, { createContext, useState, useEffect } from "react";
 import Auth0 from "react-native-auth0";
 import { Alert } from "react-native";
 import {
-  getAuth,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged,
-  signInWithPhoneNumber,
-  updateProfile,
-  updateEmail,
-  updatePassword,
-  EmailAuthProvider,
-  reauthenticateWithCredential,
+  getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+  signOut, onAuthStateChanged, signInWithPhoneNumber,
+  updateProfile, updateEmail, updatePassword, EmailAuthProvider,
+  reauthenticateWithCredential, GoogleAuthProvider, signInWithCredential
 } from "@react-native-firebase/auth";
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { jwtDecode } from "jwt-decode";
 import {
-  AUTH0_DOMAIN,
-  AUTH0_CLIENT_ID,
-  AUTH0_REDIRECT_URI,
-  AUTH0_LOGOUT_REDIRECT_URI,
+  AUTH0_DOMAIN, AUTH0_CLIENT_ID, AUTH0_REDIRECT_URI, AUTH0_LOGOUT_REDIRECT_URI,
 } from "../config/env";
 import { supabase } from "../service/Supabase-Client";
 import { syncUserProfile } from "../service/Supabase-Fuctions";
@@ -79,7 +70,38 @@ export const AuthProvider = ({ children }) => {
     );
 
     return unsubscribe;
-  }, []);
+  }, [user]);
+
+  useEffect(() => {
+    GoogleSignin.configure({
+      webClientId: '200364606139-5bkuo0she2e1lou9ruiq5qkvnej9lp3u.apps.googleusercontent.com',
+    });
+  }, [])
+
+  const fireBaseGoogleLogin = async () => {
+    // Check if your device supports Google Play
+    await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+    // Get the users ID token
+    const signInResult = await GoogleSignin.signIn();
+
+    // Try the new style of google-sign in result, from v13+ of that module
+    idToken = signInResult.data?.idToken;
+    if (!idToken) {
+      // if you are using older versions of google-signin, try old style result
+      idToken = signInResult.idToken;
+    }
+    if (!idToken) {
+      throw new Error('No ID token found');
+    }
+
+    console.log('User', signInResult.data?.user)
+
+    // Create a Google credential with the token
+    const googleCredential = GoogleAuthProvider.credential(signInResult.data.idToken);
+
+    // Sign-in the user with the credential
+    return signInWithCredential(getAuth(), googleCredential);
+  }
 
   const googleLogin = async (connection) => {
     try {
@@ -287,19 +309,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   const value = {
-    googleLogin,
-    emailSignUp,
-    emailLogin,
-    phoneLogin,
-    verifyOTP,
-    logout,
-    accessToken,
-    user,
-    loading,
-    isWorker,
-    setIsWorker,
-    checkWorkerStatus,
-    updateUserProfile,
+    fireBaseGoogleLogin, googleLogin, emailSignUp, emailLogin, phoneLogin, verifyOTP,
+    logout, accessToken, user, loading, isWorker, setIsWorker, checkWorkerStatus, updateUserProfile,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

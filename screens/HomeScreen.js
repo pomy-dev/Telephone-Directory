@@ -107,7 +107,7 @@ export default function HomeScreen({ navigation }) {
         break
     }
 
-  }, [])
+  }, [notifications])
 
   // fetch count once on mount (or whenever you want to refresh explicitly)
   useEffect(() => {
