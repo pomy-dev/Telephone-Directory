@@ -646,7 +646,7 @@ export default function TransportationListScreen({ navigation }) {
                     if (user) {
                         logUserActivity(user.uid, vehicle.id, 'pomy_forhire_transport');
                     }
-                    navigation.navigate('TransportationDetailsScreen', { vehicle: vehicle })
+                    navigation.navigate('TransDetailsScreen', { vehicle: vehicle })
                 }}
             >
                 {/* Background Image */}

@@ -2,24 +2,15 @@ import React, { createContext, useState, useEffect } from "react";
 import Auth0 from "react-native-auth0";
 import { Alert } from "react-native";
 import {
-  getAuth,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged,
-  signInWithPhoneNumber,
-  updateProfile,
-  updateEmail,
-  updatePassword,
-  EmailAuthProvider,
-  reauthenticateWithCredential,
+  getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+  signOut, onAuthStateChanged, signInWithPhoneNumber,
+  updateProfile, updateEmail, updatePassword, EmailAuthProvider,
+  reauthenticateWithCredential, GoogleAuthProvider, signInWithCredential
 } from "@react-native-firebase/auth";
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import { jwtDecode } from "jwt-decode";
 import {
-  AUTH0_DOMAIN,
-  AUTH0_CLIENT_ID,
-  AUTH0_REDIRECT_URI,
-  AUTH0_LOGOUT_REDIRECT_URI,
+  AUTH0_DOMAIN, AUTH0_CLIENT_ID, AUTH0_REDIRECT_URI, AUTH0_LOGOUT_REDIRECT_URI,
 } from "../config/env";
 import { supabase } from "../service/Supabase-Client";
 import { syncUserProfile } from "../service/Supabase-Fuctions";
@@ -79,7 +70,38 @@ export const AuthProvider = ({ children }) => {
     );
 
     return unsubscribe;
-  }, []);
+  }, [user]);
+
+  useEffect(() => {
+    GoogleSignin.configure({
+      webClientId: '200364606139-5bkuo0she2e1lou9ruiq5qkvnej9lp3u.apps.googleusercontent.com',
+    });
+  }, [])
+
+  const fireBaseGoogleLogin = async () => {
+    // Check if your device supports Google Play
+    await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+    // Get the users ID token
+    const signInResult = await GoogleSignin.signIn();
+
+    // Try the new style of google-sign in result, from v13+ of that module
+    idToken = signInResult.data?.idToken;
+    if (!idToken) {
+      // if you are using older versions of google-signin, try old style result
+      idToken = signInResult.idToken;
+    }
+    if (!idToken) {
+      throw new Error('No ID token found');
+    }
+
+    console.log('User', signInResult.data?.user)
+
+    // Create a Google credential with the token
+    const googleCredential = GoogleAuthProvider.credential(signInResult.data.idToken);
+
+    // Sign-in the user with the credential
+    return signInWithCredential(getAuth(), googleCredential);
+  }
 
   const googleLogin = async (connection) => {
     try {
@@ -184,12 +206,12 @@ export const AuthProvider = ({ children }) => {
   };
 
   /**
-   * Function to update the user's email address.
-   * Requires the user's current password for re-authentication.
-   *
-   * @param {string} newEmail The new email address for the user.
-   * @param {string} currentPassword The user's current password for re-authentication.
-   */
+ * Function to update the user's email address.
+ * Requires the user's current password for re-authentication.
+ *
+ * @param {string} newEmail The new email address for the user.
+ * @param {string} currentPassword The user's current password for re-authentication.
+ */
   const sendEmailAddressChange = async (newEmail, currentPassword) => {
     if (!user) {
       Alert.alert("Error", "No user is currently logged in.");
@@ -198,49 +220,41 @@ export const AuthProvider = ({ children }) => {
 
     // Check if the new email is actually different from the current one
     if (user.email === newEmail) {
-      Alert.alert(
-        "Info",
-        "The new email is the same as the current email. No change needed.",
-      );
+      Alert.alert("Info", "The new email is the same as the current email. No change needed.");
       return;
     }
 
     try {
       // 1. Re-authenticate the user first
-      const credential = EmailAuthProvider.credential(
-        user.email,
-        currentPassword,
-      );
+      const credential = EmailAuthProvider.credential(user.email, currentPassword);
       await reauthenticateWithCredential(user, credential);
       console.log("User re-authenticated successfully.");
 
       // 2. Now attempt to update the email
       await updateEmail(user, newEmail);
       console.log("Email updated successfully to:", newEmail);
+
     } catch (error) {
       console.error("Error updating email:", error.code, error.message);
       let errorMessage = "An unknown error occurred.";
 
       switch (error.code) {
-        case "auth/invalid-email":
+        case 'auth/invalid-email':
           errorMessage = "The new email address format is invalid.";
           break;
-        case "auth/email-already-in-use":
-          errorMessage =
-            "This email address is already in use by another account.";
+        case 'auth/email-already-in-use':
+          errorMessage = "This email address is already in use by another account.";
           break;
-        case "auth/wrong-password": // Re-authentication error
+        case 'auth/wrong-password': // Re-authentication error
           errorMessage = "Incorrect current password. Please try again.";
           break;
-        case "auth/user-not-found": // Should not happen if user is authenticated
-          errorMessage =
-            "User not found or credentials invalid during re-authentication.";
+        case 'auth/user-not-found': // Should not happen if user is authenticated
+          errorMessage = "User not found or credentials invalid during re-authentication.";
           break;
-        case "auth/requires-recent-login":
+        case 'auth/requires-recent-login':
           // This case should ideally be caught by reauthenticateWithCredential,
           // but can be a fallback if re-authentication wasn't performed correctly.
-          errorMessage =
-            "You need to recently log in again to update your email. Please re-enter your password.";
+          errorMessage = "You need to recently log in again to update your email. Please re-enter your password.";
           break;
         default:
           errorMessage = `Failed to update email: ${error.message}`;
@@ -380,19 +394,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   const value = {
-    googleLogin,
-    emailSignUp,
-    emailLogin,
-    phoneLogin,
-    verifyOTP,
-    logout,
-    accessToken,
-    user,
-    loading,
-    isWorker,
-    setIsWorker,
-    checkWorkerStatus,
-    updateUserProfile,
+    fireBaseGoogleLogin, googleLogin, emailSignUp, emailLogin, phoneLogin, verifyOTP,
+    logout, accessToken, user, loading, isWorker, setIsWorker, checkWorkerStatus, updateUserProfile,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

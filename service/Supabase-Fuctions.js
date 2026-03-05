@@ -501,8 +501,6 @@ export const fetchPomyWorkers = async ({
 /**
  * Updates an existing worker profile
  */
-// Supabase-Fuctions.js updates
-
 export async function updateWorkerProfile(uid, updateData) {
   try {
     let workerProfile = updateData.worker_pp || [];
@@ -749,9 +747,10 @@ export async function applyForGig(formData) {
 export async function getMyAppliedGigs(userEmail) {
   console.log("Fetching applied gigs for user:", userEmail);
   try {
-    const { data, error } = await supabase.rpc("get_gigs_i_applied_for", {
-      p_email: userEmail.trim(),
-    });
+    const { data, error } = await supabase.rpc(
+      "get_user_related_gigs",
+      { p_email: userEmail.trim() }
+    )
 
     if (error) throw error;
 
@@ -778,7 +777,9 @@ export async function getApprovedGigs(userEmail) {
   }
 }
 
-/** approve application */
+/** 
+ * approve application 
+ */
 export async function approveApplication(applicationId) {
   try {
     const { data, error } = await supabase.rpc("approve_gig_application", {
@@ -817,9 +818,6 @@ export async function deleteMyApplication(appId, userEmail) {
   }
 }
 
-/**
- * Fetches personalized recommendations using the Supabase RPC
- */
 /**
  * Fetches personalized recommendations using the Supabase RPC
  */

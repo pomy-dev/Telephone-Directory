@@ -79,6 +79,7 @@ export const CustomDarkTheme = {
     text: '#CCC',
     sub_text: '#CCCC',
     light: '#FFFFFF',
+    success: '#388E3C',
     indicator: '#5a85b0ff',
     border: '#272727',
     notification: '#FF4500',

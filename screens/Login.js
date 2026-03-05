@@ -18,20 +18,28 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Images } from '../constants/Images';
 import { AppContext } from '../context/appContext';
 import { AuthContext } from '../context/authProvider';
+import { LoaderKitView } from 'react-native-loader-kit';
 import { TextInput as PaperTextInput } from 'react-native-paper';
 import { Icons } from '../constants/Icons';
 
 export default function LoginScreen({ navigation }) {
   const { theme, isDarkMode } = useContext(AppContext);
-  const { googleLogin, emailLogin, phoneLogin, verifyOTP } = useContext(AuthContext);
+  const { fireBaseGoogleLogin, googleLogin, emailLogin, phoneLogin, verifyOTP } = useContext(AuthContext);
 
   const [isConnecting, setIsConnecting] = useState(false);
+  const [isGoogleConnecting, setIsGoogleConnecting] = useState(false);
   const [loginMode, setLoginMode] = useState('email');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
+
+  // If null, no SMS has been sent
+  const [confirm, setConfirm] = useState(null);
+
+  // verification code (OTP - One-Time-Passcode)
+  const [code, setCode] = useState('');
 
   // OTP verification states
   const [showOTPSheet, setShowOTPSheet] = useState(false);
@@ -58,6 +66,17 @@ export default function LoginScreen({ navigation }) {
       Alert.alert('Login Failed', err.message || 'Please try again.');
     } finally {
       setIsConnecting(false);
+    }
+  };
+
+  const handleFirebaseGoogleLogin = async () => {
+    setIsGoogleConnecting(true);
+    try {
+      await fireBaseGoogleLogin();
+    } catch (err) {
+      Alert.alert('Login Failed', err.message || 'Please try again.');
+    } finally {
+      setIsGoogleConnecting(false);
     }
   };
 
@@ -147,7 +166,7 @@ export default function LoginScreen({ navigation }) {
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={{ flex: 1 }}
       >
-        <ScrollView contentContainerStyle={styles.scrollContent}>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
           {/* Logo */}
           <View style={styles.logoContainer}>
             <Image source={Images.logo} style={styles.logo} resizeMode="contain" />
@@ -162,11 +181,19 @@ export default function LoginScreen({ navigation }) {
           {/* Google Login */}
           <TouchableOpacity
             style={[styles.googleBtn, { borderColor: theme.colors.border }]}
-            onPress={() => handleSocialLogin('google-oauth2')}
-            disabled={isConnecting}
+            onPress={() => {
+              handleFirebaseGoogleLogin()
+              // handleSocialLogin('google-oauth2')
+            }}
+            disabled={isGoogleConnecting}
           >
             <Image source={Images.google} style={styles.googleIcon} />
-            <Text style={[styles.googleText, { color: theme.colors.text }]}>Continue with Google</Text>
+            {isGoogleConnecting ?
+              <LoaderKitView name='BallBeat' style={{ width: 50, height: 50 }}
+                color={theme.colors.indicator} animationSpeedMultiplier={1.0}
+              />
+              : <Text style={[styles.googleText, { color: theme.colors.text }]}>Continue with Google</Text>
+            }
           </TouchableOpacity>
 
           <View style={styles.dividerContainer}>
@@ -357,8 +384,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 24,
-    paddingTop: 60,
+    paddingHorizontal: 24,
     flexGrow: 1,
   },
   logoContainer: {
@@ -467,7 +493,7 @@ const styles = StyleSheet.create({
   signupLink: {
     marginTop: 24,
     alignItems: 'center',
-    marginBottom: 80,
+    marginBottom: 20,
   },
   signupText: {
     fontSize: 15,

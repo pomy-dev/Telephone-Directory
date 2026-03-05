@@ -547,7 +547,7 @@ export const fetchNotifications = async () => {
     const notifications = await mongoNots.json();
     return notifications;
   } catch (err) {
-    console.error('Error fetching notifications:', err);
+    console.error('Error fetching notifications:', err.status, err.message);
     throw new Error(err.message);
   }
 };

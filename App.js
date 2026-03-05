@@ -1,14 +1,7 @@
 // App.js
 import "react-native-gesture-handler";
 import React, { useContext, useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  StatusBar,
-  Platform,
-  Dimensions,
-} from "react-native";
+import { View, Text, StyleSheet, StatusBar, Platform } from "react-native";
 import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
 import {
   NavigationContainer,
@@ -37,7 +30,6 @@ import LoanCalculator from "./screens/loans/LoanCalculator";
 import HomeScreen from "./screens/HomeScreen";
 import SavedListsScreen from "./screens/SavedListItems";
 import FavoritesScreen from "./screens/FavoritesScreen";
-// import PeopleScreen from "./screens/people/PeopleProfiles"
 import SettingsScreen from "./screens/SettingsScreen";
 import LoginScreen from "./screens/Login";
 import SignupScreen from "./screens/SignUp";
@@ -68,6 +60,9 @@ import BookTransportationScreen from "./screens/forehires/BookTransportationScre
 
 // Splash Screen
 import SplashScreen from "./screens/SplashScreen";
+
+// Notification screen
+import NotificationListScreen from './screens/notifications/NotificationList';
 
 // App Context
 import { AppContext, AppProvider } from "./context/appContext";
@@ -226,16 +221,23 @@ function Tabs() {
 
 export default function App() {
   return (
-    <AppProvider>
-      <AuthProvider>
+    <AuthProvider>
+      <AppProvider>
         <AppContent />
-      </AuthProvider>
-    </AppProvider>
+      </AppProvider>
+    </AuthProvider>
   );
 }
 
-// const { height, width } = Dimensions.get('screen')
-const { height, width } = Dimensions.get("window");
+// export default function App() {
+//   return (
+//     <AppProvider>
+//       <AuthProvider>
+//         <AppContent />
+//       </AuthProvider>
+//     </AppProvider>
+//   );
+// }
 
 function AppContent() {
   const { isDarkMode, theme, notificationsEnabled, addNotification } =
@@ -371,6 +373,12 @@ function AppContent() {
                             options={{ animationEnabled: false }}
                           />
 
+                          {/* Notifications */}
+                          <Stack.Screen
+                            name="Nots"
+                            component={NotificationListScreen}
+                          />
+
                           {/* Business Directory */}
                           <Stack.Screen
                             name="DirectoryScreen"
@@ -442,7 +450,7 @@ function AppContent() {
                             component={TransportationListScreen}
                           />
                           <Stack.Screen
-                            name="TransportationDetailsScreen"
+                            name="TransDetailsScreen"
                             component={TransportationDetailsScreen}
                           />
                           <Stack.Screen
