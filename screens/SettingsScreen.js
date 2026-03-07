@@ -1,18 +1,33 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
-  View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal,
-  ImageBackground, Platform, Switch, Linking, ActivityIndicator
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { TextInput } from 'react-native-paper';
-import { Icons } from '../constants/Icons';
-import { AppContext } from '../context/appContext';
-import { AuthContext } from '../context/authProvider';
-import { LinearGradient } from 'expo-linear-gradient'; // Optional: install expo-linear-gradient
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  Modal,
+  ImageBackground,
+  Platform,
+  Switch,
+  Linking,
+  ActivityIndicator,
+  Alert,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { TextInput } from "react-native-paper";
+import { Icons } from "../constants/Icons";
+import { AppContext } from "../context/appContext";
+import { AuthContext } from "../context/authProvider";
+import { LinearGradient } from "expo-linear-gradient";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Reusable Menu Item Component
 const MenuItem = ({ item, theme, darkMode }) => (
-  <TouchableOpacity onPress={() => Linking.openURL('https://business-faq.vercel.app/')} style={styles.menuItem} activeOpacity={0.7}>
+  <TouchableOpacity
+    onPress={() => Linking.openURL("https://business-faq.vercel.app/")}
+    style={styles.menuItem}
+    activeOpacity={0.7}
+  >
     <View style={styles.menuItemLeft}>
       <View
         style={[styles.menuIconContainer, darkMode && styles.iconContainerDark]}
@@ -100,8 +115,8 @@ const PreferenceItem = ({
           trackColor={{ false: "#cbd5e1", true: "#3b82f6" }}
           thumbColor={
             (item.title === "Dark Mode" && isDarkMode) ||
-              (item.title === "Is Online" && isOnline) ||
-              (item.title === "Notifications" && isNotifications)
+            (item.title === "Is Online" && isOnline) ||
+            (item.title === "Notifications" && isNotifications)
               ? "#1e40af"
               : "#f1f5f9"
           }
@@ -148,18 +163,22 @@ export default function ProfileScreen() {
     toggleNotifications,
     toggleOnlineMode,
   } = React.useContext(AppContext);
-  const { user, logout, updateUserProfile } = React.useContext(AuthContext);
+  const { user, logout, updateUserProfile, handleDeleteAccount } =
+    React.useContext(AuthContext);
   // State for Editing
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
-  const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
     name: user?.displayName || "",
     email: user?.email || "",
     currentPassword: "",
     newPassword: "",
   });
+
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [deletePassword, setDeletePassword] = useState("");
+  const [requestDate, setRequestDate] = useState(null);
 
   const [modalVisible, setModalVisible] = useState(false);
   const [modalType, setModalType] = useState(null);
@@ -171,6 +190,36 @@ export default function ProfileScreen() {
     newPassword: "",
     confirmPassword: "",
   });
+
+  // Check for existing timer on load
+  React.useEffect(() => {
+    const checkTimer = async () => {
+      const storedDate = await AsyncStorage.getItem(
+        `deletion_timer_${user?.uid}`,
+      );
+      if (storedDate) setRequestDate(new Date(storedDate));
+    };
+    checkTimer();
+  }, [user]);
+
+  // Calculate days remaining
+  const today = new Date();
+  const daysDiff = requestDate
+    ? Math.floor((today - requestDate) / (1000 * 60 * 60 * 24))
+    : 0;
+  const canDeleteNow = daysDiff >= 5;
+  const daysLeft = 5 - daysDiff;
+
+  const startTimer = async () => {
+    const now = new Date().toISOString();
+    await AsyncStorage.setItem(`deletion_timer_${user?.uid}`, now);
+    setRequestDate(new Date(now));
+  };
+
+  const cancelTimer = async () => {
+    await AsyncStorage.removeItem(`deletion_timer_${user?.uid}`);
+    setRequestDate(null);
+  };
 
   const handleSave = async () => {
     setLoading(true);
@@ -272,17 +321,19 @@ export default function ProfileScreen() {
     }
   };
 
-  const handleSaveName = async () => {
-    try {
-      await updateUserProfile({
-        name: formData.name,
-      });
 
-      Alert.alert("Success", "Name updated successfully");
-    } catch (err) {
-      Alert.alert("Error", err.message);
-    }
-  };
+
+
+  // Check for existing timer on load
+  React.useEffect(() => {
+    const checkTimer = async () => {
+      const storedDate = await AsyncStorage.getItem(
+        `deletion_timer_${user?.uid}`,
+      );
+      if (storedDate) setRequestDate(new Date(storedDate));
+    };
+    checkTimer();
+  }, [user]);
 
   React.useEffect(() => {
     if (user) {
@@ -561,13 +612,297 @@ export default function ProfileScreen() {
               </View>
             ))}
           </View>
+          <>
+            {/* Divider before the Danger Zone */}
+            <View style={styles.divider} />
+
+            {/* The Trigger Button */}
+            <TouchableOpacity
+              onPress={() => setDeleteModalVisible(true)}
+              style={styles.menuItem}
+              activeOpacity={0.7}
+            >
+              <View style={styles.menuItemLeft}>
+                <View
+                  style={[
+                    styles.menuIconContainer,
+                    isDarkMode && styles.iconContainerDark,
+                  ]}
+                >
+                  <Icons.Ionicons
+                    name={requestDate ? "time-outline" : "trash-outline"}
+                    size={20}
+                    color={requestDate ? "#FF9500" : "#FF3B30"}
+                  />
+                </View>
+                <Text
+                  style={[
+                    styles.menuItemTitle,
+                    {
+                      color: requestDate ? "#FF9500" : "#FF3B30",
+                      fontWeight: "600",
+                    },
+                  ]}
+                >
+                  {requestDate ? "View Deletion Status" : "Delete Account"}
+                </Text>
+              </View>
+              <Icons.Feather
+                name="chevron-right"
+                size={20}
+                color={theme.colors.text}
+                style={{ opacity: 0.3 }}
+              />
+            </TouchableOpacity>
+          </>
         </View>
 
-        <Text style={{ fontSize: 12, fontWeight: 400, color: theme.colors.sub_text, marginBottom: 60, marginTop: 10, alignSelf: 'center' }}
+        <Text
+          style={{
+            fontSize: 12,
+            fontWeight: 400,
+            color: theme.colors.sub_text,
+            marginBottom: 60,
+            marginTop: 10,
+            alignSelf: "center",
+          }}
         >
           Version 1.0.0
         </Text>
       </ScrollView>
+
+      <Modal
+        visible={deleteModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setDeleteModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View
+            style={[
+              styles.modalContainer,
+              {
+                backgroundColor: theme.colors.card,
+                borderWidth: 1,
+                borderColor: theme.colors.border,
+              },
+            ]}
+          >
+            {/* Header */}
+            <View style={{ alignItems: "center", marginBottom: 15 }}>
+              <Icons.Ionicons
+                name="warning-outline"
+                size={48}
+                color="#FF3B30"
+              />
+              <Text
+                style={[
+                  styles.modalTitle,
+                  { color: theme.colors.text, marginTop: 10, marginBottom: 0 },
+                ]}
+              >
+                Delete Account
+              </Text>
+            </View>
+
+            {/* STEP 1 — No deletion requested yet */}
+            {!requestDate && (
+              <>
+                <Text
+                  style={{
+                    color: theme.colors.text,
+                    fontSize: 16,
+                    fontWeight: "700",
+                    marginBottom: 10,
+                  }}
+                >
+                  What happens if you delete?
+                </Text>
+
+                <View style={{ marginBottom: 20 }}>
+                  {[
+                    "All your posted gigs will be removed.",
+                    "Your worker profile & applications will vanish.",
+                    "This action is permanent and cannot be undone.",
+                  ].map((text, i) => (
+                    <View
+                      key={i}
+                      style={{
+                        flexDirection: "row",
+                        marginBottom: 5,
+                        paddingRight: 10,
+                      }}
+                    >
+                      <Icons.Entypo
+                        name="dot-single"
+                        size={20}
+                        color={theme.colors.text}
+                      />
+                      <Text
+                        style={{
+                          color: theme.colors.text,
+                          opacity: 0.8,
+                          fontSize: 14,
+                        }}
+                      >
+                        {text}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+
+                <View
+                  style={{
+                    backgroundColor: isDarkMode ? "#332100" : "#FFF9E6",
+                    padding: 12,
+                    borderRadius: 10,
+                    marginBottom: 20,
+                  }}
+                >
+                  <Text
+                    style={{
+                      color: isDarkMode ? "#FFD60A" : "#856404",
+                      fontSize: 13,
+                      fontWeight: "600",
+                    }}
+                  >
+                    🛡️ Security Policy: A 5-day cooling-off period is required
+                    before permanent deletion.
+                  </Text>
+                </View>
+
+                <TouchableOpacity
+                  onPress={startTimer}
+                  style={[styles.saveBtn, { backgroundColor: "#FF9500" }]}
+                >
+                  <Text style={styles.saveBtnText}>
+                    Begin 5-Day Wait Period
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
+
+            {/* STEP 2 — Timer Running */}
+            {requestDate && canDeleteNow && (
+              <>
+                <View style={{ alignItems: "center", marginVertical: 20 }}>
+                  <Text
+                    style={{
+                      color: theme.colors.text,
+                      fontSize: 18,
+                      fontWeight: "800",
+                    }}
+                  >
+                    Day {daysDiff + 1} of 5
+                  </Text>
+
+                  <View
+                    style={{
+                      width: "100%",
+                      height: 8,
+                      backgroundColor: theme.colors.border,
+                      borderRadius: 4,
+                      marginTop: 15,
+                    }}
+                  >
+                    <View
+                      style={{
+                        width: `${Math.min(((daysDiff + 1) / 5) * 100, 100)}%`,
+                        height: 8,
+                        backgroundColor: "#FF9500",
+                        borderRadius: 4,
+                      }}
+                    />
+                  </View>
+                </View>
+
+                <Text
+                  style={{
+                    color: theme.colors.text,
+                    textAlign: "center",
+                    marginBottom: 20,
+                    opacity: 0.8,
+                  }}
+                >
+                  Your account is scheduled for deletion. Return in {daysLeft}{" "}
+                  days to finalize deletion.
+                </Text>
+              </>
+            )}
+
+            {/* STEP 3 — Timer Finished */}
+            {requestDate && canDeleteNow && (
+              <>
+                <Text
+                  style={{
+                    color: theme.colors.text,
+                    textAlign: "center",
+                    marginBottom: 15,
+                    fontWeight: "700",
+                  }}
+                >
+                  Final confirmation required
+                </Text>
+
+                <TextInput
+                  style={[
+                    styles.input,
+                    {
+                      backgroundColor: theme.colors.background,
+                      borderColor: theme.colors.border,
+                      borderWidth: 1,
+                      color: theme.colors.text,
+                    },
+                  ]}
+                  placeholder="Enter your current password"
+                  placeholderTextColor="#999"
+                  secureTextEntry
+                  value={deletePassword}
+                  onChangeText={setDeletePassword}
+                />
+
+                <TouchableOpacity
+                  onPress={async () => {
+                    try {
+                      await handleDeleteAccount(deletePassword);
+                      setDeletePassword("");
+                      setDeleteModalVisible(false);
+
+                      Alert.alert("Deleted", "Your account has been removed.");
+                    } catch (err) {
+                      Alert.alert(
+                        "Error",
+                        "Could not delete account. Check your password.",
+                      );
+                    }
+                  }}
+                  style={[styles.saveBtn, { backgroundColor: "#FF3B30" }]}
+                >
+                  <Text style={styles.saveBtnText}>
+                    Permanently Delete Account
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
+
+            {/* Close Button */}
+            <TouchableOpacity
+              onPress={() => setDeleteModalVisible(false)}
+              style={{ marginTop: 20, padding: 10 }}
+            >
+              <Text
+                style={{
+                  color: theme.colors.text,
+                  textAlign: "center",
+                  opacity: 0.5,
+                }}
+              >
+                Go Back
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       <Modal
         visible={modalVisible}

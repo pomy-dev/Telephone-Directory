@@ -171,6 +171,7 @@ const JobDetailScreen = ({ route, navigation }) => {
           name: user.displayName,
           email: user.email,
           phone: phone?.trim(),
+          user_id: user?.uid,
         },
         skillSet: expertises,
         status: "pending",

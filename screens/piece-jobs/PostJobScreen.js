@@ -164,7 +164,7 @@ const PostGigScreen = ({ navigation }) => {
                 description,
                 category,
                 price: Number(price),
-                postedBy: { name: user?.displayName.trim(), phone: phone?.trim(), email: user?.email.trim() },
+                postedBy: { name: user?.displayName.trim(), phone: phone?.trim(), email: user?.email.trim(), user_id: user?.uid},
                 locationSpot: location || { latitude: "", longitude: "" },
                 requirements,
                 photos: images,
