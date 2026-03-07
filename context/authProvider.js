@@ -245,15 +245,18 @@ export const AuthProvider = ({ children }) => {
           );
         }
 
-        // Re-authenticate
-        const credential = EmailAuthProvider.credential(
-          firebaseUser.email,
-          details.currentPassword,
-        );
-        await reauthenticateWithCredential(firebaseUser, credential);
+        // // Re-authenticate
+        // const credential = EmailAuthProvider.credential(
+        //   firebaseUser.email,
+        //   details.currentPassword,
+        // );
+        // await reauthenticateWithCredential(firebaseUser, credential);
 
         if (details.newEmail && details.newEmail !== firebaseUser.email) {
-          await sendEmailAddressChange(details.newEmail, details.currentPassword)
+          await sendEmailAddressChange(
+            details.newEmail,
+            details.currentPassword,
+          );
         }
 
         if (details.newPassword) {
@@ -269,6 +272,88 @@ export const AuthProvider = ({ children }) => {
       console.error("Update Profile Error:", error);
       throw error;
     }
+  };
+
+  /**
+   * Handles the user account deletion process.
+   * Requires the user's current password for re-authentication.
+   *
+   * @param {string} currentPassword The user's current password for re-authentication.
+   */
+  const deleteUserAccount = async (currentPassword) => {
+    if (!user) {
+      Alert.alert("Error", "No user is currently logged in.");
+      return;
+    }
+
+    // 1. Confirm with the user that they want to delete their account
+    Alert.alert(
+      "Delete Account",
+      "Are you sure you want to permanently delete your account? This action cannot be undone.",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            // Move async logic inside here
+            try {
+              // 2. Re-authenticate the user first
+              const credential = EmailAuthProvider.credential(
+                user.email,
+                currentPassword,
+              );
+              await reauthenticateWithCredential(user, credential);
+              console.log("User re-authenticated successfully for deletion.");
+
+              // 3. Now attempt to delete the user account
+              await user.delete();
+              Alert.alert(
+                "Success",
+                "Your account has been successfully deleted.",
+              );
+              console.log("User account deleted successfully.");
+
+              // After deletion, the user is signed out.
+              // You should navigate them back to a login/signup screen.
+              // Example: navigation.navigate('AuthStack');
+
+              // IMPORTANT: Also delete any associated user data from Firestore/Realtime DB
+              // This would typically involve calling a Cloud Function (see below).
+              // Example: await deleteUserDataCloudFunction({ uid: user.uid });
+            } catch (error) {
+              console.error(
+                "Error deleting account:",
+                error.code,
+                error.message,
+              );
+              let errorMessage = "An unknown error occurred.";
+
+              switch (error.code) {
+                case "auth/requires-recent-login":
+                  errorMessage =
+                    "For security, please re-enter your password to confirm account deletion.";
+                  break;
+                case "auth/wrong-password":
+                  errorMessage = "Incorrect password. Please try again.";
+                  break;
+                case "auth/network-request-failed":
+                  errorMessage =
+                    "Network error. Please check your internet connection.";
+                  break;
+                default:
+                  errorMessage = `Failed to delete account: ${error.message}`;
+              }
+              Alert.alert("Account Deletion Failed", errorMessage);
+            }
+          },
+        },
+      ],
+      { cancelable: true },
+    );
   };
 
   const value = {

@@ -16,7 +16,7 @@ import {
     Animated,
     ActivityIndicator,
 } from 'react-native';
-import { TextInput as RnTextInput } from 'react-native-paper'
+import { TextInput as RnTextInput } from 'react-native-paper';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Icons } from '../../constants/Icons';
 import {

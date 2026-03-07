@@ -206,6 +206,7 @@ const GigsScreen = ({ navigation }) => {
   const [nextCursor, setNextCursor] = useState({ createdAt: null, id: null });
   const [viewMode, setViewMode] = useState("gigs");
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchInput, setSearchInput] = useState("");
   const [fabOpen, setFabOpen] = useState(false);
   const fabRotation = React.useRef(new Animated.Value(0)).current;
   const [sheetVisible, setSheetVisible] = useState(false);
@@ -287,6 +288,22 @@ const GigsScreen = ({ navigation }) => {
     } catch (error) {
       console.log("Error loading location:", error);
       setUserLocation({ lat: -26.4833, lng: 31.3667 });
+    }
+  };
+
+  useEffect(() => {
+    if (sheetVisible) {
+      setSearchInput(viewMode === "gigs" ? gigSearch : workerSearch);
+    }
+  }, [sheetVisible, viewMode]);
+
+  const handleSearchChange = (text) => {
+    setSearchInput(text);
+
+    if (viewMode === "gigs") {
+      setGigSearch(text);
+    } else {
+      setWorkerSearch(text);
     }
   };
 
@@ -960,8 +977,12 @@ const GigsScreen = ({ navigation }) => {
             <TouchableOpacity onPress={() => toggleSheet(true)}>
               <Text style={[styles.searchInput, { color: theme.colors.text }]}>
                 {viewMode === "gigs"
-                  ?"search for gigs..."
-                  :  "search for workers..."}
+                  ? gigSearch
+                    ? gigSearch
+                    : "search for gigs..."
+                  : workerSearch
+                    ? workerSearch
+                    : "search for workers..."}
               </Text>
             </TouchableOpacity>
             {((viewMode === "gigs" && gigSearch.length > 0) ||
@@ -1001,10 +1022,10 @@ const GigsScreen = ({ navigation }) => {
       {/* BOTTOM SHEET FOR CATEGORIES / WORKER FILTER */}
       {sheetVisible && (
         <Animated.View style={[styles.sheetOverlay, { opacity: sheetAnim }]}>
-          <Pressable
+          {/* <Pressable
             style={styles.sheetBackdrop}
             onPress={() => toggleSheet(false)}
-          />
+          /> */}
 
           <Animated.View
             style={[
@@ -1024,7 +1045,7 @@ const GigsScreen = ({ navigation }) => {
                 ],
               },
             ]}
-            {...panResponder.panHandlers}
+            // {...panResponder.panHandlers}
           >
             <KeyboardAvoidingView
               behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -1045,9 +1066,7 @@ const GigsScreen = ({ navigation }) => {
                   onPress={() => {
                     viewMode === "gigs"
                       ? setGigSearch("")
-                      : () => {
-                          setWorkerSearch("");
-                        };
+                      : setWorkerSearch("");
                   }}
                 >
                   <Text
@@ -1061,32 +1080,30 @@ const GigsScreen = ({ navigation }) => {
               <View style={{ paddingHorizontal: 14, paddingTop: 8 }}>
                 <View
                   style={[
-                    // styles.searchBar2,
+                    styles.searchBar2,
                     { backgroundColor: theme.colors.sub_card },
                   ]}
                 >
                   <TextInput
                     style={[
-                      // styles.sheetInput,
+                      styles.sheetInput,
                       {
                         color: theme.colors.text,
                         backgroundColor: theme.colors.sub_card,
                       },
                     ]}
-                    // 1. Force wrap to new line
-                    multiline={true}
-                    // 2. Limit the characters (Optional)
-                    maxLength={70}
-                    
                     placeholder="Search by name, profession, expertise or skill"
                     placeholderTextColor={theme.colors.sub_text}
-                    value={viewMode === "gigs" ? gigSearch : workerSearch}
-                    onChangeText={(text) =>
-                      viewMode === "gigs"
-                        ? setGigSearch(text)
-                        : setWorkerSearch(text)
-                    }
-                    blurOnSubmit={true}
+                    // value={viewMode === "gigs" ? gigSearch : workerSearch}
+                    value={searchInput}
+                    onChangeText={handleSearchChange}
+                    // onChangeText={(text) => {
+                    //   if (viewMode === "gigs") {
+                    //     setGigSearch(text);
+                    //   } else {
+                    //     setWorkerSearch(text);
+                    //   }
+                    // }}
                     returnKeyType="search"
                     onSubmitEditing={() => {
                       loadWorkers(true);
@@ -1097,6 +1114,7 @@ const GigsScreen = ({ navigation }) => {
 
                 <ScrollView
                   showsVerticalScrollIndicator={false}
+                  keyboardShouldPersistTaps="handled"
                   contentContainerStyle={styles.categorySet}
                 >
                   {CATEGORIES.map((cat) => (
@@ -1439,18 +1457,17 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   searchBar2: {
-    // flexDirection: "row",
-    // alignItems: "flex-start",
+    flexDirection: "row",
+    alignItems: "center",
     borderRadius: 30,
     paddingHorizontal: 12,
-    minHeight: 44,
+    height: 44,
     gap: 8,
-    // overflow: "hidden",
+    overflow: "hidden",
   },
   searchInput: {
     // flex: 1,
     fontSize: 14,
-    
   },
   categoriesContainer: {
     borderBottomWidth: 1,
