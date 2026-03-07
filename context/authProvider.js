@@ -1,5 +1,4 @@
 import React, { createContext, useState, useEffect } from "react";
-import Auth0 from "react-native-auth0";
 import { Alert } from "react-native";
 import {
   getAuth,
@@ -194,7 +193,7 @@ export const AuthProvider = ({ children }) => {
     try {
       const userCredential = await confirmationResult.confirm(otp);
       const user = userCredential.user;
-      console.log("Verified phone:", user.phoneNumber);
+      console.log("Verified phone:", user);
       return user;
     } catch (error) {
       console.error("OTP Verification Failed:", error.message);
@@ -204,12 +203,6 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      if (accessToken && user)
-        await auth0.webAuth.clearSession({
-          federated: true,
-          returnTo: AUTH0_LOGOUT_REDIRECT_URI,
-        });
-
       await signOut(firebaseAuth);
 
       setAccessToken(null);

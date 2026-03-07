@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -15,6 +15,7 @@ import {
   TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { OtpInput } from 'react-native-otp-entry';
 import { Images } from '../constants/Images';
 import { AppContext } from '../context/appContext';
 import { AuthContext } from '../context/authProvider';
@@ -24,7 +25,7 @@ import { Icons } from '../constants/Icons';
 
 export default function LoginScreen({ navigation }) {
   const { theme, isDarkMode } = useContext(AppContext);
-  const { fireBaseGoogleLogin, googleLogin, emailLogin, phoneLogin, verifyOTP } = useContext(AuthContext);
+  const { fireBaseGoogleLogin, emailLogin, phoneLogin, verifyOTP } = useContext(AuthContext);
 
   const [isConnecting, setIsConnecting] = useState(false);
   const [isGoogleConnecting, setIsGoogleConnecting] = useState(false);
@@ -35,18 +36,22 @@ export default function LoginScreen({ navigation }) {
   const [showPassword, setShowPassword] = useState(false);
   const [errors, setErrors] = useState({});
 
-  // If null, no SMS has been sent
-  const [confirm, setConfirm] = useState(null);
-
-  // verification code (OTP - One-Time-Passcode)
-  const [code, setCode] = useState('');
-
   // OTP verification states
   const [showOTPSheet, setShowOTPSheet] = useState(false);
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [confirmationResult, setConfirmationResult] = useState(null);
   const [isVerifying, setIsVerifying] = useState(false);
   const [waitingForOTP, setWaitingForOTP] = useState(true);
+
+  const inputRefs = useRef([]);
+
+  useEffect(() => {
+    if (showOTPSheet) {
+      setTimeout(() => {
+        inputRefs.current[0]?.focus();
+      }, 300); // small delay after modal animation
+    }
+  }, [showOTPSheet]);
 
   // Validation
   const validate = () => {
@@ -95,7 +100,8 @@ export default function LoginScreen({ navigation }) {
           setShowOTPSheet(true);
           setWaitingForOTP(true);
           setOtp(['', '', '', '', '', '']);
-          console.log('OTP sent to:', phone.trim());
+          // console.log('OTP sent to:', phone.trim());
+          // console.log('OTP Code:', confirmation);
         } else {
           Alert.alert('Failed', 'Could not send OTP. Please try again.');
         }
@@ -132,9 +138,9 @@ export default function LoginScreen({ navigation }) {
 
     // Auto-move to next field
     if (numericValue && index < 5) {
-      // Automatically focus next input by storing refs
-      const nextInput = document.getElementById(`otpInput${index + 1}`);
-      if (nextInput) nextInput.focus();
+      setTimeout(() => {
+        inputRefs.current[index + 1]?.focus();
+      }, 50);
     }
   };
 
@@ -326,10 +332,11 @@ export default function LoginScreen({ navigation }) {
             </Text>
 
             {/* OTP Input Squares */}
-            <View style={styles.otpInputContainer}>
+            {/* <View style={styles.otpInputContainer}>
               {otp.map((digit, index) => (
                 <TextInput
                   key={index}
+                  ref={(ref) => (inputRefs.current[index] = ref)}
                   style={[
                     styles.otpInput,
                     { borderColor: digit ? theme.colors.primary : theme.colors.border },
@@ -340,9 +347,61 @@ export default function LoginScreen({ navigation }) {
                   onChangeText={(value) => handleOTPChange(index, value)}
                   editable={!isVerifying}
                   placeholderTextColor={theme.colors.textSecondary}
+                // onSubmitEditing={() => {          // optional: keyboard "Next" button
+                //   if (index < 5) inputRefs.current[index + 1]?.focus();
+                // }}
                 />
               ))}
-            </View>
+            </View> */}
+
+            <OtpInput
+              numberOfDigits={6}
+              onTextChange={(text) => {
+                // text is the full string (e.g. "123456")
+                const digits = text.split('').slice(0, 6);
+                setOtp([...digits, ...Array(6 - digits.length).fill('')]);
+
+                const isComplete = digits.length === 6 && digits.every(d => d !== '');
+                setWaitingForOTP(!isComplete);
+              }}
+              onComplete={(completedText) => {
+                // Auto-submit when full 6 digits (optional but great UX)
+                if (completedText.length === 6 && confirmationResult) {
+                  const otpCode = completedText;
+                  setIsVerifying(true);
+                  verifyOTP(confirmationResult, otpCode)
+                    .then(() => {
+                      setShowOTPSheet(false);
+                      setOtp(['', '', '', '', '', '']);
+                      setConfirmationResult(null);
+                    })
+                    .catch((err) => {
+                      Alert.alert('Verification Failed', err.message || 'Invalid OTP');
+                    })
+                    .finally(() => setIsVerifying(false));
+                }
+              }}
+              // Styling to match your theme
+              focusColor={theme.colors.primary}
+              secureTextEntry={false}          // false = show digits (default for OTP)
+              autoFocus={true}                 // Focus first digit when modal opens
+              theme={{
+                container: { width: '100%', justifyContent: 'space-between' },
+                pinCodeContainer: {
+                  borderWidth: 2,
+                  borderRadius: 12,
+                  borderColor: theme.colors.border,
+                  width: 50,
+                  height: 60,
+                },
+                pinCodeText: {
+                  fontSize: 24,
+                  fontWeight: '600',
+                  color: theme.colors.text,
+                },
+                // You can override more styles (focusPinCodeContainer, etc.)
+              }}
+            />
 
             {/* Waiting for OTP Spinner */}
             {waitingForOTP && (

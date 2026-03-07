@@ -7,9 +7,3 @@ export const API_BASE_URL = 'https://phone-bool-eswatini.onrender.com';
 // export const API_BASE_URL = 'http://10.150.14.116:5000';
 
 export const GOOGLE_MAPS_API_KEY = 'AIzaSyD-tfJ9-YxVddtDWtx01lhTMpXBlT3s4aU';
-
-export const AUTH0_DOMAIN = 'dev-3zyqmqx2ka58kywm.us.auth0.com';
-export const AUTH0_CLIENT_ID = 'wuNnffEgLMLYx1G6ZSBL6ci2rL8b1VOT';
-
-export const AUTH0_REDIRECT_URI = 'com.pld.phonebook.auth0://dev-3zyqmqx2ka58kywm.us.auth0.com/android/com.pld.phonebook/callback';
-export const AUTH0_LOGOUT_REDIRECT_URI = 'com.pld.phonebook.auth0://dev-3zyqmqx2ka58kywm.us.auth0.com/android/com.pld.phonebook/logout';
