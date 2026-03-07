@@ -256,14 +256,14 @@ function AppContent() {
       const notificationData = {
         id:
           notification.request.content.data?.notificationId ||
-          notification._id ||
-          Date.now().toString(),
+          notification._id || Date.now().toString(),
         title: notification.request.content.title,
         body: notification.request.content.body,
         data: notification.request.content.data,
-        timestamp: new Date().toISOString(),
+        timestamp: new Date().toISOString()
       };
 
+      // console.log('Notification ID ', notificationData.id)
       // addNotification(notificationData);
 
       navigationRef.navigate("Nots", {

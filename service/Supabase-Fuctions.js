@@ -1,9 +1,5 @@
 import { supabase } from "./Supabase-Client";
-import {
-  UploadImage,
-  uploadImages,
-  uploadAttachments,
-} from "../service/uploadFiles";
+import { UploadImage, uploadImages, uploadAttachments } from "../service/uploadFiles";
 
 export async function subscribeRealtime() {
   const channel = supabase
@@ -104,6 +100,7 @@ export async function addForhire(formData) {
 
   const { data, error } = await supabase.rpc("save_forehire_listing", {
     p_type: formData?.type,
+    p_agent_phone: '+26876957019',
     p_category: formData?.category,
     p_make: formData?.make,
     p_model: formData?.model,
@@ -349,20 +346,20 @@ export async function registerAsWorker(workerData) {
     const uploadedImages =
       workerData.experience_images?.length > 0
         ? await uploadImages(
-            "worker_portfolios",
-            "images",
-            workerData.experience_images,
-          )
+          "worker_portfolios",
+          "images",
+          workerData.experience_images,
+        )
         : [];
 
     // 2. Upload Documents (Qualifications)
     const uploadedDocs =
       workerData.documents?.length > 0
         ? await uploadAttachments(
-            "worker_docs",
-            "attachments",
-            workerData.documents,
-          )
+          "worker_docs",
+          "attachments",
+          workerData.documents,
+        )
         : [];
 
     const { data, error } = await supabase
@@ -470,7 +467,7 @@ export const fetchPomyWorkers = async ({
     }
 
     if (!data) {
-      
+
       return { workers: [], hasMore: false, lastVisible: null };
     }
 
@@ -482,9 +479,9 @@ export const fetchPomyWorkers = async ({
       lastVisible:
         data.length > 0
           ? {
-              id: data[data.length - 1].id,
-              created_at: data[data.length - 1].created_at,
-            }
+            id: data[data.length - 1].id,
+            created_at: data[data.length - 1].created_at,
+          }
           : null,
     };
   } catch (err) {

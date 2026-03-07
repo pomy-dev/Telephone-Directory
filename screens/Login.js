@@ -99,7 +99,7 @@ export default function LoginScreen({ navigation }) {
           setConfirmationResult(confirmation);
           setShowOTPSheet(true);
           setWaitingForOTP(true);
-          setOtp(['', '', '', '', '', '']);
+          // setOtp(['', '', '', '', '', '']);
           // console.log('OTP sent to:', phone.trim());
           // console.log('OTP Code:', confirmation);
         } else {
@@ -332,28 +332,6 @@ export default function LoginScreen({ navigation }) {
             </Text>
 
             {/* OTP Input Squares */}
-            {/* <View style={styles.otpInputContainer}>
-              {otp.map((digit, index) => (
-                <TextInput
-                  key={index}
-                  ref={(ref) => (inputRefs.current[index] = ref)}
-                  style={[
-                    styles.otpInput,
-                    { borderColor: digit ? theme.colors.primary : theme.colors.border },
-                  ]}
-                  maxLength={1}
-                  keyboardType="number-pad"
-                  value={digit}
-                  onChangeText={(value) => handleOTPChange(index, value)}
-                  editable={!isVerifying}
-                  placeholderTextColor={theme.colors.textSecondary}
-                // onSubmitEditing={() => {          // optional: keyboard "Next" button
-                //   if (index < 5) inputRefs.current[index + 1]?.focus();
-                // }}
-                />
-              ))}
-            </View> */}
-
             <OtpInput
               numberOfDigits={6}
               onTextChange={(text) => {
@@ -644,6 +622,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: 20
   },
   confirmText: {
     color: '#fff',

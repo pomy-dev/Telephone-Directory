@@ -548,10 +548,10 @@ export default function PostTransportationScreen({ navigation }) {
                                 <Text style={styles.reviewText}><Text style={styles.bold}>Contact:</Text> 📞{formData.ownerInfo.phone} • 🤳🏾{formData.ownerInfo.whatsapp}</Text>
                             </View>
 
-                            <TouchableOpacity style={styles.finalSubmitBtn} onPress={handleSubmit} disabled={isSubmiting}>
+                            <TouchableOpacity style={[styles.finalSubmitBtn, { backgroundColor: theme.colors.indicator }]} onPress={handleSubmit} disabled={isSubmiting}>
                                 <Text style={styles.finalSubmitText}>Post Vehicle Now</Text>
                                 {isSubmiting ?
-                                    <ActivityIndicator color={theme.colors.indicator} size={22} /> :
+                                    <ActivityIndicator color='#fff' size={22} /> :
                                     <Ionicons name="send" size={22} color="#fff" />
                                 }
                             </TouchableOpacity>
@@ -561,11 +561,11 @@ export default function PostTransportationScreen({ navigation }) {
 
                 {/* Bottom Navigation Buttons */}
                 {currentStep < 6 ? (
-                    <View style={styles.footer}>
+                    <View style={[styles.footer, { backgroundColor: theme.colors.card }]}>
                         <TouchableOpacity style={styles.backBtn} onPress={goBack}>
                             <Text style={styles.backText}>Back</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.nextBtn} onPress={goNext}>
+                        <TouchableOpacity style={[styles.nextBtn, { backgroundColor: theme.colors.primary }]} onPress={goNext}>
                             <Text style={styles.nextText}>Next</Text>
                             <Ionicons name="arrow-forward" size={20} color="#fff" />
                         </TouchableOpacity>
@@ -598,7 +598,7 @@ const styles = StyleSheet.create({
 
     chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 12 },
     chip: { paddingHorizontal: 16, paddingVertical: 10, backgroundColor: '#f1f5f9', borderRadius: 30, borderWidth: 1, borderColor: '#e2e8f0' },
-    chipActive: { backgroundColor: '#2563eb', borderColor: '#2563eb' },
+    chipActive: { backgroundColor: '#003366', borderColor: '#003366' },
     chipText: { fontSize: 14, fontWeight: '600', color: '#475569' },
     chipTextActive: { color: '#fff' },
     smallChip: { paddingHorizontal: 12, paddingVertical: 6 },
@@ -684,14 +684,14 @@ const styles = StyleSheet.create({
 
     footer: {
         flexDirection: 'row', gap: 10, paddingHorizontal: 16,
-        paddingVertical: 10, backgroundColor: '#fff',
+        paddingVertical: 10,
         borderTopWidth: 1, borderColor: '#e2e8f0',
         marginBottom: height * 0.07
     },
     backBtn: { flex: 1, padding: 16, backgroundColor: '#f1f5f9', borderRadius: 12, alignItems: 'center' },
     backText: { color: '#64748b', fontWeight: '600' },
-    nextBtn: { flex: 1, flexDirection: 'row', backgroundColor: '#2563eb', padding: 16, borderRadius: 12, justifyContent: 'center', alignItems: 'center', gap: 8 },
+    nextBtn: { flex: 1, flexDirection: 'row', padding: 16, borderRadius: 12, justifyContent: 'center', alignItems: 'center', gap: 8 },
     nextText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-    finalSubmitBtn: { backgroundColor: '#10b981', flexDirection: 'row', padding: 18, borderRadius: 16, justifyContent: 'center', alignItems: 'center', gap: 10 },
+    finalSubmitBtn: { flexDirection: 'row', padding: 18, borderRadius: 16, justifyContent: 'center', alignItems: 'center', gap: 10 },
     finalSubmitText: { color: '#fff', fontSize: 17, fontWeight: '800' },
 });

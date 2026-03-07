@@ -43,10 +43,10 @@ import stokfela from '../assets/custom-pics/informal-group.png'
 import noImage from '../assets/no-image.jpg';
 
 // logo
-import logo from '../assets/logo.png';
+// import logo from '../assets/logo.png';
 
 // app icon
-import appLogo from '../assets/logo.png'
+import appLogo from '../assets/splash-icon.png'
 
 // default user
 import default_user from '../assets/default-user.png';
@@ -92,7 +92,7 @@ export const Images = {
   travel, specialAlert, item, product, priceTag, single, combo,
 
   // logo,App icon
-  logo, appLogo,
+  appLogo,
 
   // home screen services
   forhire, houses, Phonebook, piecejob, deals, tender, vacancies,

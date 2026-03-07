@@ -17,8 +17,6 @@ import PersonalizedAdsSection from "../components/PersonalizedAdsSection"
 import { SafeAreaView } from "react-native-safe-area-context";
 import { fetchOpenGigsCount, subscribeToGigs } from "../service/Supabase-Fuctions"
 
-const { height } = Dimensions.get('window');
-
 export default function HomeScreen({ navigation }) {
   const { theme, isDarkMode, notifications, notificationsEnabled } = React.useContext(AppContext)
   const { logout } = React.useContext(AuthContext)
@@ -45,21 +43,30 @@ export default function HomeScreen({ navigation }) {
 
   // Function to simulate mock notifications one by one
   const syncNotifications = () => {
-    console.log('Notifications #', notifications.length)
+    console.log('Notifications No.: ', notifications.length)
+    // console.log('Notifications : ', notifications)
     if (!notificationsEnabled && notifications.length === 0) return;
 
     notifications.forEach((notif, index) => {
       setTimeout(() => {
         // Notification title & body
-        const title = `${notif.title}`;
-        const body = `${notif.message}`;
+        const title = `${notif._type === 'employer'
+          ? 'New Application Received'
+          : notif._type === 'application'
+            ? '👍Your Candidature succeeded!'
+            : notif.title}`;
+        const body = `${notif._type === 'employer'
+          ? notif.applicant_details?.name + ' applied for ' + notif.job_title + 'job. Check his credentials for approval.'
+          : notif._type === 'application'
+            ? 'Your application for ' + notif.job_title + ' posted by ' + notif.posted_by?.name + ' was successful. Connect with him/her via' + notif.posted_by?.phone
+            : notif.message}`;
 
         // Extra data for deep linking or later use
         const data = {
-          notificationId: notif._id,
-          category: notif.category,
-          startDate: notif.startDate,
-          endDate: notif.endDate,
+          notificationId: notif._id || notif.application_id,
+          category: notif.category || notif.job_category,
+          startDate: notif.startDate || new Date(notif.applied_at)?.toLocaleDateString(),
+          endDate: notif.endDate || 'N/A',
         };
         // Call your schedule function
         scheduleNotification(title, body, data);
@@ -73,10 +80,10 @@ export default function HomeScreen({ navigation }) {
   }, [notifications, notificationsEnabled]);
 
   const services = [
-    { id: "1", screen: "GigsScreen", count: { gigsCount }, name: "Quick Jobs", image: Images.piecejob },
-    { id: "2", screen: "TransportationListScreen", count: 0, name: "For-Hires", image: Images.forhire },
-    { id: "3", screen: "LoanAssist", count: 0, name: "Smart Financing", image: Images.Loans },
-    { id: "8", screen: "DirectoryScreen", count: 0, name: "Telephone Directory", image: Images.bs_eswatini },
+    { id: "1", screen: "GigsScreen", name: "Quick Jobs", image: Images.piecejob },
+    { id: "2", screen: "TransportationListScreen", name: "For-Hires", image: Images.forhire },
+    { id: "3", screen: "LoanAssist", name: "Smart Financing", image: Images.Loans },
+    { id: "8", screen: "DirectoryScreen", name: "Telephone Directory", image: Images.Phonebook },
   ]
 
   useEffect(() => {
@@ -169,7 +176,7 @@ export default function HomeScreen({ navigation }) {
 
   const handleNotificationPress = () => {
     if (nots?.length > 0) {
-      navigation.navigate("Nots")
+      navigation.navigate("Nots", { params: null })
     } else {
       CustomToast("No notifications", "You have no new notifications at the moment.")
       return

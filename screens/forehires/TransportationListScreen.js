@@ -450,6 +450,7 @@ export default function TransportationListScreen({ navigation }) {
             setVehicles(vehiclesData);
             const filtered_v = filterVehicles(vehiclesData);
             setFilteredVehicles(filtered_v);
+            // console.log(vehiclesData[0])
         } catch (err) {
             console.error('Error fetching vehicles:', err);
             setVehicles([]);
@@ -588,7 +589,7 @@ export default function TransportationListScreen({ navigation }) {
     };
 
     const handleCall = (vehicle) => {
-        Linking.openURL(`tel:${vehicle.owner_info.phone}`);
+        Linking.openURL(`tel:${vehicle.agent_phone}`);
     };
 
     const handleWhatsApp = (vehicle) => {
@@ -666,7 +667,7 @@ export default function TransportationListScreen({ navigation }) {
                             </View>
                         )}
                         {vehicle?.vehicle_certifications?.license && (
-                            <Icons.Ionicons name="checkmark-circle" size={20} color="#10b981" style={{ marginLeft: 8 }} />
+                            <Icons.Ionicons name="checkmark-circle" size={20} color={theme.colors.indicator} style={{ marginLeft: 8 }} />
                         )}
                     </View>
 
@@ -837,26 +838,28 @@ export default function TransportationListScreen({ navigation }) {
                 </View>
 
                 {/* Type Tabs */}
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.typeTabs}>
-                    {types.map(type => (
-                        <TouchableOpacity
-                            key={type}
-                            style={[styles.typeTab, selectedType === type && styles.typeTabActive]}
-                            onPress={() => setSelectedType(type)}
-                        >
-                            <Text style={[styles.typeTabText, selectedType === type && styles.typeTabTextActive]}>
-                                {type}
-                            </Text>
-                        </TouchableOpacity>
-                    ))}
-                </ScrollView>
+                <View>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.typeTabs}>
+                        {types.map(type => (
+                            <TouchableOpacity
+                                key={type}
+                                style={[styles.typeTab, selectedType === type && styles.typeTabActive]}
+                                onPress={() => setSelectedType(type)}
+                            >
+                                <Text style={[styles.typeTabText, selectedType === type && styles.typeTabTextActive]}>
+                                    {type}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
+                </View>
 
                 <TouchableOpacity
-                    style={styles.postBtn}
+                    style={[styles.postBtn, { backgroundColor: theme.colors.sub_card }]}
                     onPress={() => navigation.navigate('PostTransportationScreen')}
                 >
-                    <Icons.Ionicons name="add-circle-outline" size={20} color="#2563eb" />
-                    <Text style={styles.postBtnText}>Post Vehicle</Text>
+                    <Icons.Ionicons name="add-circle-outline" size={20} color={theme.colors.sub_text} />
+                    <Text style={[styles.postBtnText, { color: theme.colors.sub_text }]}>Post Vehicle</Text>
                 </TouchableOpacity>
 
                 {isConnected === null || loading ? (
@@ -895,7 +898,7 @@ export default function TransportationListScreen({ navigation }) {
                                     <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>All Vehicles ({filteredVehicles?.length})</Text>
                                     {/* scroll down */}
                                     <TouchableOpacity onPress={scrollToVehicles}>
-                                        <Text style={styles.seeAllText}>See all</Text>
+                                        <Text style={[styles.seeAllText, { color: theme.colors.indicator }]}>See all</Text>
                                     </TouchableOpacity>
                                 </View>
                                 {filteredVehicles.map(renderVehicleCard)}
@@ -998,7 +1001,7 @@ const styles = StyleSheet.create({
     },
     searchInput: { flex: 1, fontSize: 16, color: '#1e293b' },
 
-    typeTabs: { height: 60, paddingHorizontal: 16, paddingVertical: 10, marginBottom: 25 },
+    typeTabs: { height: 60, paddingHorizontal: 16, paddingVertical: 10 },
     typeTab: {
         paddingHorizontal: 20,
         paddingVertical: 10,
@@ -1007,7 +1010,7 @@ const styles = StyleSheet.create({
         backgroundColor: '#f3f0faff',
         marginRight: 10,
     },
-    typeTabActive: { backgroundColor: '#2563eb' },
+    typeTabActive: { backgroundColor: '#003366' },
     typeTabText: { fontSize: 14, fontWeight: '600', color: '#64748b' },
     typeTabTextActive: { color: '#fff' },
 
@@ -1040,7 +1043,7 @@ const styles = StyleSheet.create({
         alignItems: 'flex-start',
     },
     borderBadge: {
-        backgroundColor: 'rgba(16, 185, 129, 0.9)',
+        backgroundColor: 'rgba(41, 16, 185, 0.9)',
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: 10,
@@ -1135,17 +1138,15 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: '#eff6ff',
         paddingHorizontal: 16,
         marginHorizontal: 16,
-        marginBottom: 10,
         paddingVertical: 10,
         borderRadius: 30,
         gap: 6
     },
-    postBtnText: { color: '#2563eb', fontWeight: '600' },
+    postBtnText: { fontWeight: '600' },
     section: { marginTop: 8 },
     sectionHeader: { flexDirection: 'row', justifyContent: 'space-between', marginHorizontal: 20, marginBottom: 12 },
     sectionTitle: { fontSize: 18, fontWeight: '700', color: '#1e293b' },
-    seeAllText: { color: '#2563eb', fontWeight: '600' }
+    seeAllText: { fontWeight: '600' }
 });

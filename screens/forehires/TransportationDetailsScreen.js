@@ -90,7 +90,7 @@ export default function TransportationDetailsScreen({ navigation, route }) {
   );
   const from = route.params?.from || "direct";
   const { theme, isDarkMode } = React.useContext(AppContext);
-  const { user} = React.useContext(AuthContext);
+  const { user } = React.useContext(AuthContext);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isBookmarked, setIsBookmarked] = useState(false);
 
@@ -126,7 +126,7 @@ export default function TransportationDetailsScreen({ navigation, route }) {
   }
 
   const handleCall = () => {
-    Linking.openURL(`tel:${vehicle.owner_info.phone}`);
+    Linking.openURL(`tel:${vehicle.agent_phone}`);
   };
 
   const handleWhatsApp = () => {

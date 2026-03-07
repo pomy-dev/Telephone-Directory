@@ -10,7 +10,6 @@ import {
   Modal,
 } from "react-native";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useNavigation, useRoute } from "@react-navigation/native";
 import { AppContext } from "../../context/appContext";
 import { AuthContext } from "../../context/authProvider";
 import { CustomToast } from "../../components/customToast";
@@ -18,19 +17,21 @@ import { approveApplication } from "../../service/Supabase-Fuctions";
 import * as WebBrowser from 'expo-web-browser';
 import { Icons } from "../../constants/Icons";
 
-const NotificationListScreen = ({ navigation }) => {
+const NotificationListScreen = ({ navigation, route }) => {
   const { theme, notifications } = useContext(AppContext);
   const { user } = useContext(AuthContext);
-  const route = useRoute();
   const listRef = useRef(null);
   const { width } = useWindowDimensions();
-  const selectedNotificationId = route.params?.notificationId || null;
+  const { params } = route.params;
   const [error, setError] = useState(null);
   const [layoutMode, setLayoutMode] = useState("list");
   const [selectedNotification, setSelectedNotification] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [isApproving, setIsApproving] = useState(false);
   const [filterType, setFilterType] = useState('all'); // all | company | application | employer
+
+  // initialize selectedNotificationId
+  const selectedNotificationId = params?.notificationId || null
 
   const toggleLayout = () => {
     setLayoutMode((prev) => (prev === "list" ? "grid" : "list"));
@@ -43,17 +44,18 @@ const NotificationListScreen = ({ navigation }) => {
   });
 
   useEffect(() => {
+    // const selectedNotificationId = params.notificationId || null;
+
     if (selectedNotificationId && notifications.length > 0 && listRef.current) {
       // determine index in the currently filtered data set so scrolling still works when filter applied
+      console.log('Selected ID: ', selectedNotificationId)
       const index = filteredNotifications.findIndex(
-        (n) =>
-          n.application_id === selectedNotificationId || n._id === selectedNotificationId
+        (n) => n.application_id === selectedNotificationId || n._id === selectedNotificationId
       );
       if (index !== -1) {
         listRef.current.scrollToIndex({ index, animated: true });
       }
     }
-    console.log(notifications)
   }, [selectedNotificationId, notifications, filterType]);
 
   const handleNotificationPress = (item) => {
@@ -92,7 +94,7 @@ const NotificationListScreen = ({ navigation }) => {
     const isEmployer = item._type === 'employer';
 
     const bgColor =
-      selectedNotificationId === item._id
+      selectedNotificationId === (item._id || item.application_id)
         ? theme.colors.primary
         : theme.colors.card;
 
@@ -106,7 +108,11 @@ const NotificationListScreen = ({ navigation }) => {
       <TouchableOpacity
         style={[
           styles.notificationItem,
-          { borderLeftColor: borderColor, borderLeftWidth: 4 },
+          {
+            borderLeftColor: selectedNotificationId === (item._id || item.application_id)
+              ? theme.colors.notification : '#CCCCCC',
+            borderLeftWidth: 4
+          },
           layoutMode === "grid" && [styles.gridItem, { width: (width - 48) / 2 }],
           { backgroundColor: bgColor },
         ]}
@@ -438,7 +444,7 @@ const NotificationListScreen = ({ navigation }) => {
           <Icons.Ionicons name='arrow-back' size={24} color={theme.colors.primary} />
         </TouchableOpacity>
         <Text style={[styles.header, { color: theme.colors.text }]}>
-          Notifications
+          Alert List
         </Text>
         <TouchableOpacity onPress={toggleLayout} style={styles.toggleButton}>
           <Icons.Ionicons
@@ -579,7 +585,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: "#CCCCCC",
+    borderTopColor: '#cccccc',
+    borderRightColor: "#CCCCCC",
+    borderBottomColor: "#CCCCCC",
   },
   gridItem: {
     flex: 1,
