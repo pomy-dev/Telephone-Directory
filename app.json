@@ -15,7 +15,7 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.pomy.phonebook",
+      "bundleIdentifier": "com.pld.phonebook",
       "googleServicesFile": "./GoogleService-Info.plist",
       "infoPlist": {
         "UIBackgroundModes": [
@@ -119,13 +119,6 @@
           "visibility": "visible",
           "behavior": "inset-swipe",
           "position": "relative"
-        }
-      ],
-      [
-        "react-native-auth0",
-        {
-          "clientId": "wuNnffEgLMLYx1G6ZSBL6ci2rL8b1VOT",
-          "domain": "dev-3zyqmqx2ka58kywm.us.auth0.com"
         }
       ],
       [

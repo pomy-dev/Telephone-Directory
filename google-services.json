@@ -7,7 +7,7 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:200364606139:android:f3523113f7b89374b95f9e",
+        "mobilesdk_app_id": "1:200364606139:android:8560b039332fc07cb95f9e",
         "android_client_info": {
           "package_name": "com.pld.phonebook"
         }
@@ -39,10 +39,10 @@
               "client_type": 3
             },
             {
-              "client_id": "200364606139-thoin1i1cpnqtb5lnve3drrddtvqd63i.apps.googleusercontent.com",
+              "client_id": "200364606139-o9s7gnnpnpcl9mdo1sa2dh7d0pmrhh0d.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.pomy.phonebook"
+                "bundle_id": "com.pld.phonebook"
               }
             }
           ]
