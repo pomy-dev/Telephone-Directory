@@ -130,6 +130,7 @@ export const AuthProvider = ({ children }) => {
   // };
 
   const emailSignUp = async (name, email, password) => {
+    
     try {
       const userCredential = await createUserWithEmailAndPassword(
         firebaseAuth, email, password
@@ -137,7 +138,14 @@ export const AuthProvider = ({ children }) => {
       const user = userCredential.user;
       // Update Firebase profile with the name
       await user.updateProfile({ displayName: name.trim() });
+
       // Explicitly sync to Supabase now that we have the name
+      //this will create the firebase user_profile for recommendation
+      console.log('444444444444444444444444444444444444444444');
+      console.log('444444444444444444444444444444444444444444');
+      console.log('444444444444444444444444444444444444444444');
+      const firebaseUser = firebaseAuth.currentUser;
+      console.log(firebaseUser);
       await syncUserProfile(firebaseUser);
 
       return user;
@@ -201,29 +209,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Inside your deleteAccount function in authProvider.js
-  // const handleDelete = async () => {
-  //   try {
-  //     const currentUser = firebaseAuth.currentUser;
-  //     if (currentUser) {
-  //       // This line is the ONLY thing you need to trigger the cleanup.
-  //       // Firebase triggers the Cloud Function the moment the user is removed.
-  //       await currentUser.delete();
-
-  //       Alert.alert(
-  //         "Success",
-  //         "Account and data have been permanently removed.",
-  //       );
-  //     }
-  //   } catch (error) {
-  //     if (error.code === "auth/requires-recent-login") {
-  //       // Prompt user to log in again and then retry delete
-  //     }
-  //     console.log(error);
-  //   }
-  // };
-
-  // ... existing code ...
 
   const handleDeleteAccount = async (currentPassword) => {
     try {
@@ -331,13 +316,6 @@ export const AuthProvider = ({ children }) => {
             "To change your email or password, please enter your current password for security verification.",
           );
         }
-
-        // // Re-authenticate
-        // const credential = EmailAuthProvider.credential(
-        //   firebaseUser.email,
-        //   details.currentPassword,
-        // );
-        // await reauthenticateWithCredential(firebaseUser, credential);
 
         if (details.newEmail && details.newEmail !== firebaseUser.email) {
           await sendEmailAddressChange(
