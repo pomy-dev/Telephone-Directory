@@ -141,11 +141,7 @@ export const AuthProvider = ({ children }) => {
 
       // Explicitly sync to Supabase now that we have the name
       //this will create the firebase user_profile for recommendation
-      console.log('444444444444444444444444444444444444444444');
-      console.log('444444444444444444444444444444444444444444');
-      console.log('444444444444444444444444444444444444444444');
       const firebaseUser = firebaseAuth.currentUser;
-      console.log(firebaseUser);
       await syncUserProfile(firebaseUser);
 
       return user;
