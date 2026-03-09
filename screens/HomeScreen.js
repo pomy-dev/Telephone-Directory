@@ -4,7 +4,8 @@ import {
   StyleSheet, Platform, StatusBar, Text, View, Image, TouchableOpacity,
   FlatList, ScrollView, Dimensions
 } from "react-native"
-import React, { useEffect, useState } from "react";
+import { useFocusEffect } from '@react-navigation/native';
+import React, { useEffect, useState,useCallback ,useRef} from "react";
 import * as Notifications from 'expo-notifications';
 import { Badge } from "react-native-paper";
 import TopNav from "../components/TopNav"
@@ -25,6 +26,9 @@ export default function HomeScreen({ navigation }) {
   const [gigsCount, setGigsCount] = useState(0);
   const [startingText, setStartingText] = useState("");
   const [islogingOut, setIsLoggingOut] = useState(false)
+  const adsRef = useRef(null);
+
+  
 
   const scheduleNotification = async (title, body, data = {}) => {
     if (!notificationsEnabled) return;
@@ -150,6 +154,22 @@ export default function HomeScreen({ navigation }) {
     };
   }, []);
 
+
+  // This runs every time the user navigates TO this screen
+  useFocusEffect(
+    useCallback(() => {
+      // Trigger the refresh in the child component
+      if (adsRef.current) {
+        adsRef.current.refreshRecommendations();
+      }
+      
+      // You can also refresh your gig counts here if needed
+      return () => {};
+    }, []) 
+  );
+
+
+
   const renderService = ({ item }) => (
     <TouchableOpacity style={[styles.serviceItem]} activeOpacity={0.7} onPress={() => { navigation.navigate(item.screen) }}>
       <View style={[styles.serviceIconContainer, { backgroundColor: theme.colors.sub_card, borderColor: theme.colors.sub_card }]}>
@@ -215,7 +235,7 @@ export default function HomeScreen({ navigation }) {
           />
         </View>
 
-        <PersonalizedAdsSection />
+        <PersonalizedAdsSection ref={adsRef}/>
         {<View style={{ height: 100 }} />}
       </ScrollView>
     </SafeAreaView>

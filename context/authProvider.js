@@ -130,6 +130,7 @@ export const AuthProvider = ({ children }) => {
   // };
 
   const emailSignUp = async (name, email, password) => {
+    
     try {
       const userCredential = await createUserWithEmailAndPassword(
         firebaseAuth, email, password
@@ -137,7 +138,10 @@ export const AuthProvider = ({ children }) => {
       const user = userCredential.user;
       // Update Firebase profile with the name
       await user.updateProfile({ displayName: name.trim() });
+
       // Explicitly sync to Supabase now that we have the name
+      //this will create the firebase user_profile for recommendation
+      const firebaseUser = firebaseAuth.currentUser;
       await syncUserProfile(firebaseUser);
 
       return user;
@@ -201,29 +205,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Inside your deleteAccount function in authProvider.js
-  // const handleDelete = async () => {
-  //   try {
-  //     const currentUser = firebaseAuth.currentUser;
-  //     if (currentUser) {
-  //       // This line is the ONLY thing you need to trigger the cleanup.
-  //       // Firebase triggers the Cloud Function the moment the user is removed.
-  //       await currentUser.delete();
-
-  //       Alert.alert(
-  //         "Success",
-  //         "Account and data have been permanently removed.",
-  //       );
-  //     }
-  //   } catch (error) {
-  //     if (error.code === "auth/requires-recent-login") {
-  //       // Prompt user to log in again and then retry delete
-  //     }
-  //     console.log(error);
-  //   }
-  // };
-
-  // ... existing code ...
 
   const handleDeleteAccount = async (currentPassword) => {
     try {
@@ -332,13 +313,6 @@ export const AuthProvider = ({ children }) => {
           );
         }
 
-        // // Re-authenticate
-        // const credential = EmailAuthProvider.credential(
-        //   firebaseUser.email,
-        //   details.currentPassword,
-        // );
-        // await reauthenticateWithCredential(firebaseUser, credential);
-
         if (details.newEmail && details.newEmail !== firebaseUser.email) {
           await sendEmailAddressChange(
             details.newEmail,
@@ -361,87 +335,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  /**
-   * Handles the user account deletion process.
-   * Requires the user's current password for re-authentication.
-   *
-   * @param {string} currentPassword The user's current password for re-authentication.
-   */
-  const deleteUserAccount = async (currentPassword) => {
-    if (!user) {
-      Alert.alert("Error", "No user is currently logged in.");
-      return;
-    }
 
-    // 1. Confirm with the user that they want to delete their account
-    Alert.alert(
-      "Delete Account",
-      "Are you sure you want to permanently delete your account? This action cannot be undone.",
-      [
-        {
-          text: "Cancel",
-          style: "cancel",
-        },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            // Move async logic inside here
-            try {
-              // 2. Re-authenticate the user first
-              const credential = EmailAuthProvider.credential(
-                user.email,
-                currentPassword,
-              );
-              await reauthenticateWithCredential(user, credential);
-              console.log("User re-authenticated successfully for deletion.");
-
-              // 3. Now attempt to delete the user account
-              await user.delete();
-              Alert.alert(
-                "Success",
-                "Your account has been successfully deleted.",
-              );
-              console.log("User account deleted successfully.");
-
-              // After deletion, the user is signed out.
-              // You should navigate them back to a login/signup screen.
-              // Example: navigation.navigate('AuthStack');
-
-              // IMPORTANT: Also delete any associated user data from Firestore/Realtime DB
-              // This would typically involve calling a Cloud Function (see below).
-              // Example: await deleteUserDataCloudFunction({ uid: user.uid });
-            } catch (error) {
-              console.error(
-                "Error deleting account:",
-                error.code,
-                error.message,
-              );
-              let errorMessage = "An unknown error occurred.";
-
-              switch (error.code) {
-                case "auth/requires-recent-login":
-                  errorMessage =
-                    "For security, please re-enter your password to confirm account deletion.";
-                  break;
-                case "auth/wrong-password":
-                  errorMessage = "Incorrect password. Please try again.";
-                  break;
-                case "auth/network-request-failed":
-                  errorMessage =
-                    "Network error. Please check your internet connection.";
-                  break;
-                default:
-                  errorMessage = `Failed to delete account: ${error.message}`;
-              }
-              Alert.alert("Account Deletion Failed", errorMessage);
-            }
-          },
-        },
-      ],
-      { cancelable: true },
-    );
-  };
 
   const value = {
     fireBaseGoogleLogin, emailSignUp, emailLogin, phoneLogin,
