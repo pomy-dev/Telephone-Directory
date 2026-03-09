@@ -55,7 +55,7 @@ export default function SignupScreen({ navigation }) {
       await emailSignUp(name.trim(), email.trim(), password);
 
       CustomToast('Success', 'Account created! Please sign in.');
-      navigation?.navigate('Login');
+      // navigation?.navigate('Login');
     } catch (err) {
       let message = err.message;
       if (err.code === 'auth/email-already-in-use') {
