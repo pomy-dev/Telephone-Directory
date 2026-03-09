@@ -36,7 +36,7 @@ const AdCard = ({ ad, onPress, onView, theme }) => {
       style={[
         styles.adCard,
         {
-          backgroundColor: theme.colors.sub_card,
+          backgroundColor: theme.colors.card,
           borderColor: theme.dark ? "#e2e8f0" : "#e2e8f0",
         },
       ]}
@@ -87,17 +87,17 @@ const AdCard = ({ ad, onPress, onView, theme }) => {
 
         <View style={styles.cardFooter}>
           <View>
-          {ad.price ? (<>
-            <Text style={[styles.priceLabel, { color: theme.colors.sub_text }]}>
-              Starting from
-            </Text>
-            <Text style={[styles.priceText, { color: theme.colors.text }]}>
-              {ad.price ? `E${ad.price}` : "Quote"}
-            </Text>
-          </>) : (<>
-              <Text  style={[styles.priceText, { color: theme.colors.text }]}>
-            </Text>
-          </>)}
+            {ad.price ? (<>
+              <Text style={[styles.priceLabel, { color: theme.colors.sub_text }]}>
+                Starting from
+              </Text>
+              <Text style={[styles.priceText, { color: theme.colors.text }]}>
+                {ad.price ? `E${ad.price}` : "Quote"}
+              </Text>
+            </>) : (<>
+              <Text style={[styles.priceText, { color: theme.colors.text }]}>
+              </Text>
+            </>)}
           </View>
           <View
             style={[
@@ -215,7 +215,7 @@ const PersonalizedAdsSection = () => {
             ad={ad}
             theme={theme}
             onPress={handleAdClick}
-            onView={(id) => {}}
+            onView={(id) => { }}
           />
         ))}
       </ScrollView>
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
   adCard: {
     width: CARD_WIDTH,
     marginHorizontal: 8,
-    marginBottom:10,
+    marginBottom: 10,
     borderRadius: 16,
     overflow: "hidden",
     // borderWidth: 1,

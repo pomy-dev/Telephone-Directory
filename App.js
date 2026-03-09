@@ -133,7 +133,7 @@ function Tabs() {
             bottom: insets.bottom,
           },
         ],
-        tabBarActiveTintColor: "#0f172a",
+        tabBarActiveTintColor: "#003366",
         tabBarInactiveTintColor: "#94a3b8",
       }}
     >
@@ -225,16 +225,6 @@ export default function App() {
     </AuthProvider>
   );
 }
-
-// export default function App() {
-//   return (
-//     <AppProvider>
-//       <AuthProvider>
-//         <AppContent />
-//       </AuthProvider>
-//     </AppProvider>
-//   );
-// }
 
 function AppContent() {
   const { isDarkMode, theme, notificationsEnabled, addNotification } =
