@@ -28,7 +28,6 @@ import { Images } from '../../constants/Images';
 import { API_BASE_URL } from '../../config/env';
 import { CustomToast } from '../../components/customToast';
 import { CustomModal } from '../../components/customModal';
-import LoginScreen from '../../components/loginModal';
 import { useCallFunction } from '../../components/customCallAlert';
 import { AppContext } from '../../context/appContext';
 import * as Notifications from 'expo-notifications';

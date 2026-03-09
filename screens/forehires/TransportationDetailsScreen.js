@@ -30,7 +30,7 @@ const mapTransportData = (raw) => {
       routes: [],
       vehicle_features: [],
       owner_info: {},
-      location: { address: "" },
+      location: {},
     };
 
   // 1. Handle JSONB owner_info (Safe Parsing)
@@ -131,7 +131,7 @@ export default function TransportationDetailsScreen({ navigation, route }) {
 
   const handleWhatsApp = () => {
     // Optional chaining and check if whatsapp exists
-    const whatsappNum = vehicle.owner_info?.whatsapp;
+    const whatsappNum = vehicle?.agent_phone;
 
     if (!whatsappNum) {
       Alert.alert("Error", "WhatsApp number not provided by owner.");
@@ -151,8 +151,8 @@ export default function TransportationDetailsScreen({ navigation, route }) {
     shareMessage = `Hello ${vehicle?.owner_info?.name}!\n\n`;
     const smsUrl =
       Platform.OS === "ios"
-        ? `sms:${vehicle?.owner_info?.phone}&body=${encodeURIComponent(shareMessage)}` // iOS uses semicolon
-        : `smsto:${vehicle?.owner_info?.phone}?body=${encodeURIComponent(shareMessage)}`;
+        ? `sms:${vehicle?.agent_phone}&body=${encodeURIComponent(shareMessage)}` // iOS uses semicolon
+        : `smsto:${vehicle?.agent_phone}?body=${encodeURIComponent(shareMessage)}`;
     if (await Linking.canOpenURL(smsUrl)) await Linking.openURL(smsUrl);
     else throw new Error("SMS client not available");
   };
@@ -161,7 +161,7 @@ export default function TransportationDetailsScreen({ navigation, route }) {
     try {
       await Share.share({
         message: `Check out this vehicle for hire: ${vehicle.vehicle_category}\nLocation: ${vehicle.location.address}`,
-        title: vehicle.vehicle_type,
+        title: vehicle.vehicle_type
       });
     } catch (error) {
       console.log("Error sharing:", error);
@@ -181,13 +181,8 @@ export default function TransportationDetailsScreen({ navigation, route }) {
   };
 
   return (
-    <View
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
-    >
-      <StatusBar
-        barStyle={isDarkMode ? "light-content" : "dark-content"}
-        backgroundColor={theme.colors.background}
-      />
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
       <SecondaryNav title="Fore-Hire Details" />
 
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -211,6 +206,7 @@ export default function TransportationDetailsScreen({ navigation, route }) {
               />
             ))}
           </ScrollView>
+
           <View style={styles.imageIndicator}>
             {vehicle?.vehicle_images?.map((_, index) => (
               <View
@@ -222,12 +218,14 @@ export default function TransportationDetailsScreen({ navigation, route }) {
               />
             ))}
           </View>
+
           {vehicle.boarder_crossing && (
             <View style={styles.borderBadge}>
               <Ionicons name="globe" size={16} color="#fff" />
               <Text style={styles.borderBadgeText}>Cross Border</Text>
             </View>
           )}
+
           <TouchableOpacity
             style={styles.bookmarkButton}
             onPress={() => setIsBookmarked(!isBookmarked)}
@@ -246,23 +244,22 @@ export default function TransportationDetailsScreen({ navigation, route }) {
             <View style={styles.headerLeft}>
               <Text style={styles.title}>
                 {vehicle?.vehicle_category
-                  .replace(/_/g, " ")
-                  .split(" ")
-                  .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                  .join(" ") || "Vehicle Details"}
+                  .replace(/_/g, " ").split(" ").map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                  .join(" ") || "Vehicle Details"
+                }
               </Text>
               <View style={styles.vehicleInfoRow}>
                 <Text style={styles.makeModel}>
                   {vehicle.vehicle_make} {vehicle.model}
                 </Text>
-                <Text style={styles.year}>• {vehicle.year_made}</Text>
+                {/* {vehicle.owner_info?.driver && <Text style={styles.year}>• {vehicle.owner_info?.driver}</Text>} */}
                 <Text style={styles.registration}>
                   • {vehicle.registration}
                 </Text>
               </View>
               <View style={styles.locationRow}>
                 <Ionicons name="location" size={16} color="#64748b" />
-                <Text style={styles.address}>{vehicle.location.address}</Text>
+                <Text style={styles.address}>{vehicle.location?.address}</Text>
               </View>
             </View>
           </View>

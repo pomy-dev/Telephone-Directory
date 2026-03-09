@@ -17,20 +17,9 @@ import {
 } from "@react-native-firebase/auth";
 import { GoogleSignin } from "@react-native-google-signin/google-signin";
 import { jwtDecode } from "jwt-decode";
-import {
-  AUTH0_DOMAIN,
-  AUTH0_CLIENT_ID,
-  AUTH0_REDIRECT_URI,
-  AUTH0_LOGOUT_REDIRECT_URI,
-} from "../config/env";
 import { supabase } from "../service/Supabase-Client";
 import { syncUserProfile } from "../service/Supabase-Fuctions";
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-const auth0 = new Auth0({
-  domain: AUTH0_DOMAIN,
-  clientId: AUTH0_CLIENT_ID,
-});
 
 export const AuthContext = createContext();
 
@@ -118,34 +107,32 @@ export const AuthProvider = ({ children }) => {
     return signInWithCredential(getAuth(), googleCredential);
   };
 
-  const googleLogin = async (connection) => {
-    try {
-      const credentials = await auth0.webAuth.authorize({
-        scope: "openid profile email",
-        connection,
-        redirectUri: AUTH0_REDIRECT_URI,
-      });
+  // const googleLogin = async (connection) => {
+  //   try {
+  //     const credentials = await auth0.webAuth.authorize({
+  //       scope: "openid profile email",
+  //       connection,
+  //       redirectUri: AUTH0_REDIRECT_URI,
+  //     });
 
-      // Decode the JWT to get user info
-      const decodedUser = jwtDecode(credentials.idToken);
+  //     // Decode the JWT to get user info
+  //     const decodedUser = jwtDecode(credentials.idToken);
 
-      // Store tokens & user info
-      setAccessToken(credentials.accessToken);
-      setUser(decodedUser);
+  //     // Store tokens & user info
+  //     setAccessToken(credentials.accessToken);
+  //     setUser(decodedUser);
 
-      return credentials;
-    } catch (error) {
-      console.error(`Social login (${connection}) failed:`, error);
-      throw error;
-    }
-  };
+  //     return credentials;
+  //   } catch (error) {
+  //     console.error(`Social login (${connection}) failed:`, error);
+  //     throw error;
+  //   }
+  // };
 
   const emailSignUp = async (name, email, password) => {
     try {
       const userCredential = await createUserWithEmailAndPassword(
-        firebaseAuth,
-        email,
-        password,
+        firebaseAuth, email, password
       );
       const user = userCredential.user;
       // Update Firebase profile with the name
@@ -236,32 +223,29 @@ export const AuthProvider = ({ children }) => {
   //   }
   // };
 
-
   // ... existing code ...
 
-const handleDeleteAccount = async (currentPassword) => {
-  try {
-    const user = firebaseAuth.currentUser;
-    if (!user) return;
+  const handleDeleteAccount = async (currentPassword) => {
+    try {
+      const user = firebaseAuth.currentUser;
+      if (!user) return;
 
-    // 1. Re-authenticate (Required by Firebase for account deletion)
-    const credential = EmailAuthProvider.credential(user.email, currentPassword);
-    await reauthenticateWithCredential(user, credential);
+      // 1. Re-authenticate (Required by Firebase for account deletion)
+      const credential = EmailAuthProvider.credential(user.email, currentPassword);
+      await reauthenticateWithCredential(user, credential);
 
-    // Clear the local timer before deleting
-    await AsyncStorage.removeItem(`deletion_timer_${user.uid}`);
+      // Clear the local timer before deleting
+      await AsyncStorage.removeItem(`deletion_timer_${user.uid}`);
 
-    // 2. Delete the user from Firebase
-    // This will automatically trigger your Cloud Function to wipe Supabase
-    await user.delete();    
-    return { success: true };
-  } catch (error) {
-    console.log("Delete Account Error:", error);
-    // throw error;
-  }
-};
-
-
+      // 2. Delete the user from Firebase
+      // This will automatically trigger your Cloud Function to wipe Supabase
+      await user.delete();
+      return { success: true };
+    } catch (error) {
+      console.log("Delete Account Error:", error);
+      // throw error;
+    }
+  };
 
   /**
    * Function to update the user's email address.
@@ -460,21 +444,9 @@ const handleDeleteAccount = async (currentPassword) => {
   };
 
   const value = {
-    fireBaseGoogleLogin,
-    googleLogin,
-    emailSignUp,
-    emailLogin,
-    phoneLogin,
-    verifyOTP,
-    logout,
-    accessToken,
-    user,
-    loading,
-    isWorker,
-    setIsWorker,
-    checkWorkerStatus,
-    updateUserProfile,
-    handleDeleteAccount,
+    fireBaseGoogleLogin, emailSignUp, emailLogin, phoneLogin,
+    verifyOTP, logout, accessToken, user, loading, isWorker, setIsWorker,
+    checkWorkerStatus, updateUserProfile, handleDeleteAccount,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

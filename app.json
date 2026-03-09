@@ -4,10 +4,10 @@
     "slug": "Business-Link",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.jpg",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
-    "scheme": "com.pld.phonebook.auth0",
+    // "scheme": "com.pld.phonebook.auth0",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -34,7 +34,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.jpg",
+        "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
       "permissions": [

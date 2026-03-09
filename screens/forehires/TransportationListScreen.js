@@ -596,16 +596,15 @@ export default function TransportationListScreen({ navigation }) {
         Linking.openURL(`whatsapp://send?phone=${vehicle.owner_info.whatsapp.replace(/[^0-9]/g, '')}`);
     };
 
-    const handleEmail = (vehicle) => {
-        Linking.openURL(`mailto:${vehicle.owner_info.email}`);
+    const handleEmail = () => {
+        Linking.openURL(`mailto:indabukocalculus@gmail.com`);
     };
 
     const handleSMS = async (vehicle) => {
-        console.log('Preparing to send SMS to:', vehicle?.owner_info?.phone);
-        shareMessage = `Hello ${vehicle?.owner_info.name}!\n\n`;
+        const shareMessage = `Hello ${vehicle?.owner_info.name}!\n\n`;
         const smsUrl = Platform.OS === "ios"
-            ? `sms:${vehicle?.owner_info?.phone}&body=${encodeURIComponent(shareMessage)}` // iOS uses semicolon
-            : `smsto:${vehicle?.owner_info?.phone}?body=${encodeURIComponent(shareMessage)}`;
+            ? `sms:${vehicle?.agent_phone}&body=${encodeURIComponent(shareMessage)}` // iOS uses semicolon
+            : `smsto:${vehicle?.agent_phone}?body=${encodeURIComponent(shareMessage)}`;
         if (await Linking.canOpenURL(smsUrl)) {
             await Linking.openURL(smsUrl);
             console.log('Preparing to send SMS to:', vehicle?.owner_info?.phone);

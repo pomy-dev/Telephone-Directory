@@ -1,17 +1,7 @@
 import React, { useState } from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  Modal,
-  ImageBackground,
-  Platform,
-  Switch,
-  Linking,
-  ActivityIndicator,
-  Alert,
+  View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, ImageBackground,
+  Platform, Switch, Linking, ActivityIndicator, Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { TextInput } from "react-native-paper";
@@ -115,8 +105,8 @@ const PreferenceItem = ({
           trackColor={{ false: "#cbd5e1", true: "#3b82f6" }}
           thumbColor={
             (item.title === "Dark Mode" && isDarkMode) ||
-            (item.title === "Is Online" && isOnline) ||
-            (item.title === "Notifications" && isNotifications)
+              (item.title === "Is Online" && isOnline) ||
+              (item.title === "Notifications" && isNotifications)
               ? "#1e40af"
               : "#f1f5f9"
           }

@@ -12,7 +12,6 @@ import { Icons } from "../../constants/Icons";
 import { Images } from '../../constants/Images';
 import { AppContext } from "../../context/appContext";
 import FinancialBanner from "../../components/customBanner";
-import AIAgent from './AgentChat';
 
 const { width } = Dimensions.get("window");
 const isTablet = width >= 768;

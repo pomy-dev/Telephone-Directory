@@ -1594,15 +1594,6 @@ export const mockOrders = [
   }
 ];
 
-export const mockCategories = [
-  { id: '1', name: 'Tilimo', icon: '🥬', color: '#4CAF50' },
-  { id: '2', name: 'Food & Beverages', icon: '🍲', color: '#FF9800' },
-  { id: '3', name: 'Handicrafts', icon: '🎨', color: '#9C27B0' },
-  { id: '4', name: 'Electronics', icon: '📱', color: '#2196F3' },
-  { id: '5', name: 'Clothing', icon: '👕', color: '#E91E63' },
-  { id: '6', name: 'Home & Garden', icon: '🏠', color: '#795548' }
-];
-
 export const mockAreas = ['Hhohho', 'Shiselweni', 'Lubombo', 'Manzini', 'Matsapha', 'Skhuphe'];
 
 // Rental Houses Mock Data
