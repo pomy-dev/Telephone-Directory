@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useContext } from "react";
+import React, { useState, useEffect, useRef, useContext, forwardRef, useImperativeHandle } from "react";
 import {
   View,
   Text,
@@ -113,12 +113,21 @@ const AdCard = ({ ad, onPress, onView, theme }) => {
   );
 };
 
-const PersonalizedAdsSection = () => {
+const PersonalizedAdsSection = forwardRef((props, ref) => {
   const navigation = useNavigation();
   const { theme } = useContext(AppContext);
   const { user } = useContext(AuthContext);
   const [personalizedAds, setPersonalizedAds] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Expose the getRag function to the parent
+  useImperativeHandle(ref, () => ({
+    refreshRecommendations: () => {
+      if (user?.uid) {
+        getRag();
+      }
+    }
+  }));
 
   useEffect(() => {
     if (user?.uid) {
@@ -221,7 +230,7 @@ const PersonalizedAdsSection = () => {
       </ScrollView>
     </View>
   );
-};
+});
 
 const styles = StyleSheet.create({
   container: {
