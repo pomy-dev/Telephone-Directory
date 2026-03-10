@@ -1000,14 +1000,14 @@ const WorkerRegistration = ({ navigation }) => {
                 setSelectedIndices([]);
               }}
             >
-              <Icons.Ionicons name="close" size={28} color="#000" />
+              <Icons.Ionicons name="close" size={28} color={theme.colors.text} />
             </TouchableOpacity>
 
-            <Text style={styles.modalTitle}>Manage Gallery</Text>
+            <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Manage Gallery</Text>
 
             {/* Corrected: Comments inside JSX must be wrapped like this */}
             <TouchableOpacity onPress={toggleSelectAll}>
-              <Text style={{ color: "#3b82f6", fontWeight: "700" }}>
+              <Text style={{ color: '#54adf0ff', fontWeight: "700" }}>
                 {selectedIndices.length === form.experience_images.length
                   ? "Deselect All"
                   : "Select All"}
@@ -1069,8 +1069,8 @@ const WorkerRegistration = ({ navigation }) => {
             </View>
           )}
         </SafeAreaView>
-      </Modal>
-    </SafeAreaView>
+      </Modal >
+    </SafeAreaView >
   );
 };
 

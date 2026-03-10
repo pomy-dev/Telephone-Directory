@@ -78,7 +78,7 @@ RatingBottomSheet.displayName = 'RatingBottomSheet';
 
 // ────── Sort/Filter Bottom Sheet Modal ──────
 const SortFilterBottomSheet = React.forwardRef(
-    ({ theme, sortByCategory, setSortByCategory, sortByBorderCrossing, setSortByBorderCrossing, isVisible, onClose }, ref) => {
+    ({ isDarkMode, theme, sortByCategory, setSortByCategory, sortByBorderCrossing, setSortByBorderCrossing, isVisible, onClose }, ref) => {
         const slideAnim = useRef(new Animated.Value(400)).current;
         const categories = ['All', 'Public Transport', 'Cargo', 'Passenger', 'Luxury'];
 
@@ -116,7 +116,7 @@ const SortFilterBottomSheet = React.forwardRef(
                 <Animated.View
                     style={[
                         sortFilterModalStyles.container,
-                        { transform: [{ translateY: slideAnim }], backgroundColor: theme.colors.card }
+                        { transform: [{ translateY: slideAnim }], backgroundColor: isDarkMode ? '#666' : '#fff' }
                     ]}
                 >
                     {/* Drag Handle */}
@@ -956,6 +956,7 @@ export default function TransportationListScreen({ navigation }) {
 
                 <SortFilterBottomSheet
                     theme={theme}
+                    isDarkMode={isDarkMode}
                     sortByCategory={sortByCategory}
                     setSortByCategory={setSortByCategory}
                     sortByBorderCrossing={sortByBorderCrossing}

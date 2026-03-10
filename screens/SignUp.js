@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useContext } from 'react';
 import {
   View,
   Text,
@@ -82,12 +82,12 @@ export default function SignupScreen({ navigation }) {
         <ScrollView contentContainerStyle={styles.scrollContent}>
           {/* Logo */}
           <View style={styles.logoContainer}>
-            <Image source={Images.logo} style={styles.logo} resizeMode="contain" />
+            <Image source={Images.appLogo} style={styles.logo} resizeMode="contain" />
           </View>
 
           {/* Title */}
           <Text style={[styles.title, { color: theme.colors.text }]}>Create Account</Text>
-          <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>
+          <Text style={[styles.subtitle, { color: theme.colors.sub_text }]}>
             Join <Text style={{ fontWeight: '700' }}>Business Link</Text> today
           </Text>
 
@@ -190,9 +190,9 @@ export default function SignupScreen({ navigation }) {
             style={styles.signInLink}
             onPress={() => navigation?.navigate('Login')}
           >
-            <Text style={[styles.signInText, { color: theme.colors.textSecondary }]}>
+            <Text style={[styles.signInText, { color: theme.colors.sub_text }]}>
               Already have an account?{' '}
-              <Text style={{ color: theme.colors.primary, fontWeight: '600' }}>Sign In</Text>
+              <Text style={{ color: theme.colors.indicator, fontWeight: '600' }}>Sign In</Text>
             </Text>
           </TouchableOpacity>
         </ScrollView>

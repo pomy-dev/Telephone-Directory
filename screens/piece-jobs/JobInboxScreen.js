@@ -35,11 +35,11 @@ import CustomLoader from "../../components/customLoader";
 
 const JobInboxScreen = ({ route, navigation }) => {
   const insets = useSafeAreaInsets();
-  const { gigSelection, gigId, gigTitle } = route.params
+  const { gigSelection, gigId } = route.params
   const [applicants, setApplicants] = useState([]);
   const [loading, setLoading] = useState(true);
   const { user } = React.useContext(AuthContext);
-  const { theme, isDarkMode }  = React.useContext(AppContext);
+  const { theme, isDarkMode } = React.useContext(AppContext);
 
   const [selectedApp, setSelectedApp] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
@@ -148,7 +148,7 @@ const JobInboxScreen = ({ route, navigation }) => {
     };
 
     return (
-      <View style={[styles.appCard, {backgroundColor: theme.colors.card, borderColor: theme.colors.card }]}>
+      <View style={[styles.appCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.card }]}>
         <TouchableOpacity
           onPress={() => {
             setSelectedApp({ ...item, applicant: applicantData });
@@ -158,18 +158,18 @@ const JobInboxScreen = ({ route, navigation }) => {
         >
           <View style={styles.cardInfo}>
             <View style={styles.avatar}>
-              <Text style={[styles.avatarText, {color: theme.colors.text ,}]}>
+              <Text style={[styles.avatarText, { color: '#fff'}]}>
                 {getEmailIdentifier(applicantData?.email)}
               </Text>
             </View>
 
             <View style={{ flex: 1, marginLeft: 12 }}>
-              <Text style={[styles.name,{color: theme.colors.text ,}]}>
-                {applicantData?.name ? applicantData?.name : applicantData?.phone || applicantData?.email ||  "Unknown Worker"}
+              <Text style={[styles.name, { color: theme.colors.text, }]}>
+                {applicantData?.name ? applicantData?.name : applicantData?.phone || applicantData?.email || "Unknown Worker"}
               </Text>
 
-              <Text style={styles.contactText}>{applicantData?.email}</Text>
-              <Text style={[styles.dateText,{color: theme.colors.text ,}]}>
+              <Text style={[styles.contactText, { color: theme.colors.indicator }]}>{applicantData?.email}</Text>
+              <Text style={[styles.dateText, { color: theme.colors.text, }]}>
                 {` Applied at: ${formatDate(item.created_at)}`}
               </Text>
             </View>
@@ -178,7 +178,7 @@ const JobInboxScreen = ({ route, navigation }) => {
               style={styles.iconCallBtn}
               onPress={() => Linking.openURL(`tel:${applicantData?.phone}`)}
             >
-              <Icons.Ionicons name="call" size={18} color="#10b981" />
+              <Icons.Ionicons name="call" size={18} color={theme.colors.indicator} />
             </TouchableOpacity>
           </View>
         </TouchableOpacity>
@@ -188,8 +188,8 @@ const JobInboxScreen = ({ route, navigation }) => {
             style={styles.emailBtn}
             onPress={() => Linking.openURL(`mailto:${applicantData?.email}`)}
           >
-            <Icons.Ionicons name="mail-outline" size={18} color="#10b981" />
-            <Text style={styles.emailBtnText}>Email</Text>
+            <Icons.Ionicons name="mail-outline" size={18} color="#b60303ff" />
+            <Text style={[styles.emailBtnText, { color: theme.colors.text }]}>Email</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -252,8 +252,8 @@ const JobInboxScreen = ({ route, navigation }) => {
           onPress={() => toggleExpand(item.application_id)}
           activeOpacity={0.8}
         >
-          <View style={[styles.leftContent, {color: theme.colors.text ,}]}>
-            <Text style={[styles.jobTitle, {color: theme.colors.text ,}]} numberOfLines={1}>
+          <View style={[styles.leftContent, { color: theme.colors.text, }]}>
+            <Text style={[styles.jobTitle, { color: theme.colors.text, }]} numberOfLines={1}>
               {item.job_title}
             </Text>
 
@@ -272,7 +272,7 @@ const JobInboxScreen = ({ route, navigation }) => {
                 <Text style={styles.listItemstatusText}>{item.application_status}</Text>
               </View>
 
-              <Text style={[styles.appliedDate, {color: theme.colors.text }]}>Applied {appliedDate}</Text>
+              <Text style={[styles.appliedDate, { color: theme.colors.text }]}>Applied {appliedDate}</Text>
             </View>
           </View>
 
@@ -287,13 +287,13 @@ const JobInboxScreen = ({ route, navigation }) => {
             {/* Employer Info */}
             <View style={[styles.listItemsection, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
               <View>
-                <Text style={[styles.sectionTitle,{color: theme.colors.text ,}]}>Employer</Text>
-                <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.employerName, {color: theme.colors.text ,}]}>👤{item.posted_by?.name || 'N/A'}</Text>
+                <Text style={[styles.sectionTitle, { color: theme.colors.text, }]}>Employer</Text>
+                <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.employerName, { color: theme.colors.text, }]}>👤{item.posted_by?.name || 'N/A'}</Text>
                 {item.employer?.company && (
-                  <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.company, {color: theme.colors.text ,}]}>{item.employer.company}</Text>
+                  <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.company, { color: theme.colors.text, }]}>{item.employer.company}</Text>
                 )}
                 {item.job_location && (
-                  <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.location, {color: theme.colors.text ,}]}>📍{item?.job_location?.address}</Text>
+                  <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.location, { color: theme.colors.text, }]}>📍{item?.job_location?.address}</Text>
                 )}
               </View>
               {/* Call employer */}
@@ -306,17 +306,17 @@ const JobInboxScreen = ({ route, navigation }) => {
             {/* job description */}
             {item.job_description && (
               <View style={styles.listItemsection}>
-                <Text style={[styles.sectionTitle,{color: theme.colors.text ,}]}>Job Description</Text>
-                <Text style={[styles.requirementItem,{color: theme.colors.text ,}]}>{item.job_description}</Text>
+                <Text style={[styles.sectionTitle, { color: theme.colors.text, }]}>Job Description</Text>
+                <Text style={[styles.requirementItem, { color: theme.colors.text, }]}>{item.job_description}</Text>
               </View>
             )}
 
             {/* Requirements */}
             {item.job_requirements && item.job_requirements.length > 0 && (
               <View style={styles.listItemsection}>
-                <Text style={[styles.listItemsectionTitle,{color: theme.colors.text ,}]}>Requirements</Text>
+                <Text style={[styles.listItemsectionTitle, { color: theme.colors.text, }]}>Requirements</Text>
                 {item.job_requirements.map((req, index) => (
-                  <Text key={index} style={[styles.requirementItem,{color: theme.colors.text ,}]}>
+                  <Text key={index} style={[styles.requirementItem, { color: theme.colors.text, }]}>
                     • {req}
                   </Text>
                 ))}
@@ -337,14 +337,14 @@ const JobInboxScreen = ({ route, navigation }) => {
                 }}
               >
                 <Icons.Ionicons name="navigate" size={16} color="#fff" />
-                <Text style={[styles.reapplyButtonText,{color:"#fff"}]}>Get Directions</Text>
+                <Text style={[styles.reapplyButtonText, { color: "#fff" }]}>Get Directions</Text>
               </TouchableOpacity>
             )}
 
             {/* images */}
             {item.job_images && item.job_images.length > 0 && (
               <View style={styles.listItemsection}>
-                <Text style={[styles.listItemsectionTitle,{color: theme.colors.text ,}]}>Job Snapshots</Text>
+                <Text style={[styles.listItemsectionTitle, { color: theme.colors.text, }]}>Job Snapshots</Text>
                 <ScrollView horizontal contentContainerStyle={{ flexDirection: 'row', gap: 12, flexWrap: 'wrap' }}>
                   {item.job_images.map((file, index) => (
                     <TouchableOpacity key={index} style={styles.imageContainer} onPress={() => Linking.openURL(file.url)}>
@@ -362,7 +362,8 @@ const JobInboxScreen = ({ route, navigation }) => {
                   style={[styles.listItemactionButton, styles.cancelButton]}
                   onPress={() => cancelMyApplication(item.application_id)}
                 >
-                  <Text style={styles.cancelButtonText}>Cancel Application</Text>
+                  <Icons.MaterialCommunityIcons name="delete-empty-outline" color={'#e74c3c'} size={24} />
+                  <Text style={styles.cancelButtonText}>Abort</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
@@ -372,7 +373,19 @@ const JobInboxScreen = ({ route, navigation }) => {
                     console.log('Re-apply', item.id);
                   }}
                 >
+                  <Icons.MaterialCommunityIcons name="send-circle-outline" color={'#fff'} size={24} />
                   <Text style={styles.reapplyButtonText}>Re-apply</Text>
+                </TouchableOpacity>
+              </View>}
+
+            {item.application_status === 'approved' &&
+              <View style={styles.buttonRow}>
+                <TouchableOpacity
+                  style={[styles.listItemactionButton, styles.cancelButton]}
+                  onPress={() => cancelMyApplication(item.application_id)}
+                >
+                  <Icons.MaterialCommunityIcons name="delete-empty-outline" color={'#e74c3c'} size={24} />
+                  <Text style={styles.cancelButtonText}>Clear</Text>
                 </TouchableOpacity>
               </View>}
           </ScrollView>
@@ -382,7 +395,7 @@ const JobInboxScreen = ({ route, navigation }) => {
   };
 
   const cancelMyApplication = async (applicationId) => {
-    Alert.alert("Confirm Cancellation", "Are you sure you want to cancel your application for this job?", [
+    Alert.alert("Confirm Cancellation", "Are you sure you want to cancel this application item?", [
       { text: "No", style: "cancel" },
       {
         text: "Yes, Cancel", style: "destructive", onPress: async () => {
@@ -406,19 +419,17 @@ const JobInboxScreen = ({ route, navigation }) => {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top , backgroundColor: theme.colors.background }]}>
-       <StatusBar
-              barStyle={isDarkMode ? "light-content" : "dark-content"}
-              backgroundColor={theme.colors.background}
-        />
-      <View style={[styles.header, {borderColor:theme.colors.background}]}>
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: theme.colors.background }]}>
+      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
+
+      <View style={[styles.header, { borderColor: theme.colors.background }]}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={styles.backBtn}
         >
-          <Icons.Ionicons name="arrow-back" size={24} color={theme.colors.text }/>
+          <Icons.Ionicons name="arrow-back" size={24} color={theme.colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle , {color: theme.colors.text ,}]}>{gigSelection === 'applied' ? 'Track Gigs Applied-for' : `Inbox for Gig`}</Text>
+        <Text style={[styles.headerTitle, { color: theme.colors.text, }]}>{gigSelection === 'applied' ? 'Track Gigs Applied-for' : `Inbox for Gig`}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -444,9 +455,10 @@ const JobInboxScreen = ({ route, navigation }) => {
         onRequestClose={() => setModalVisible(false)}
       >
         <View style={[styles.modalContainer]}>
-          <View style={[styles.modalContent, { marginTop: insets.top + 40 , backgroundColor: theme.colors.card}]}>
+          <View style={[styles.modalContent, { backgroundColor: isDarkMode ? '#666' : '#fff' }]}>
+            <View style={styles.sheetHandle} />
             <View style={styles.modalHeader}>
-              <Text style={[styles.modalHeaderTitle,{color: theme.colors.text ,}]}>Application Details</Text>
+              <Text style={[styles.modalHeaderTitle, { color: theme.colors.text, }]}>Application Details</Text>
               <TouchableOpacity onPress={() => setModalVisible(false)}>
                 <Icons.Ionicons name="close-circle" size={32} color={theme.colors.text} />
               </TouchableOpacity>
@@ -454,10 +466,7 @@ const JobInboxScreen = ({ route, navigation }) => {
 
             {selectedApp && (
               <>
-                <ScrollView
-                  showsVerticalScrollIndicator={false}
-                  contentContainerStyle={{ paddingBottom: 20 }}
-                >
+                <ScrollView showsVerticalScrollIndicator={false}>
                   <View style={styles.profileHero}>
                     <View style={styles.largeAvatar}>
                       <Text style={styles.largeAvatarText}>
@@ -465,26 +474,26 @@ const JobInboxScreen = ({ route, navigation }) => {
                         {selectedApp.applicant?.name?.[0] || "?"}
                       </Text>
                     </View>
-                    <Text style={[styles.modalName, {color: theme.colors.text ,}]}>
-                      {selectedApp.applicant?.name || "Anonymous Applicant"}
+                    <Text style={[styles.modalName, { color: theme.colors.text, }]}>
+                      {selectedApp.applicant?.name || "Name Undefined"}
                     </Text>
                     <View style={[styles.contactRow,]}>
                       <Icons.Ionicons
                         name="mail-outline"
-                        size={19}
-                        color="#666"
+                        size={20}
+                        color={theme.colors.error}
                       />
-                      <Text style={[styles.modalEmail,{color: theme.colors.text ,}]}>
+                      <Text style={[styles.modalEmail, { color: theme.colors.text, }]}>
                         {selectedApp.applicant?.email}
                       </Text>
                     </View>
-                    <View style={[styles.contactRow,{color: theme.colors.text ,}]}>
+                    <View style={[styles.contactRow, { color: theme.colors.text, }]}>
                       <Icons.Ionicons
                         name="call-outline"
-                        size={17}
-                        color="#666"
+                        size={20}
+                        color={theme.colors.primary}
                       />
-                      <Text style={[styles.modalEmail,  {color: theme.colors.text ,}]}>
+                      <Text style={[styles.modalEmail, { color: theme.colors.text, }]}>
                         {selectedApp.applicant?.phone}
                       </Text>
                     </View>
@@ -493,7 +502,7 @@ const JobInboxScreen = ({ route, navigation }) => {
                   <View style={styles.divider} />
 
                   {/* Skills Section - Specific to this application */}
-                  <Text style={[styles.sectionTitle,{color: theme.colors.text ,}]}>Skills for this Gig</Text>
+                  <Text style={[styles.sectionTitle, { color: theme.colors.text, }]}>Skills for this Gig</Text>
                   <View style={styles.skillBadgeRow}>
                     {selectedApp.skill_set &&
                       selectedApp.skill_set.length > 0 ? (
@@ -503,7 +512,7 @@ const JobInboxScreen = ({ route, navigation }) => {
                         </View>
                       ))
                     ) : (
-                      <Text style={[{color: theme.colors.text ,}]}>
+                      <Text style={[{ color: theme.colors.text, }]}>
                         No specific skills listed.
                       </Text>
                     )}
@@ -511,7 +520,7 @@ const JobInboxScreen = ({ route, navigation }) => {
 
                   {/* Status Info */}
                   <View style={[styles.statusInfoBox]}>
-                    <Text style={[styles.sectionTitle,{color: theme.colors.text ,}]}>Application Status</Text>
+                    <Text style={[styles.sectionTitle, { color: theme.colors.text, }]}>Application Status</Text>
                     <Text
                       style={[
                         styles.statusText,
@@ -531,7 +540,7 @@ const JobInboxScreen = ({ route, navigation }) => {
                   {selectedApp.attachments &&
                     selectedApp.attachments.length > 0 && (
                       <>
-                        <Text style={[styles.sectionTitle, { marginTop: 20, color:theme.colors.text }]}>
+                        <Text style={[styles.sectionTitle, { marginTop: 20, color: theme.colors.text }]}>
                           Attached Documents
                         </Text>
                         {selectedApp.attachments.map((file, index) => (
@@ -543,7 +552,7 @@ const JobInboxScreen = ({ route, navigation }) => {
                             <Icons.Ionicons
                               name="document-attach"
                               size={20}
-                              color="#10b981"
+                              color={theme.colors.indicator}
                             />
                             <Text style={styles.attachmentText}>
                               {file.name || `View Document ${index + 1}`}
@@ -555,12 +564,7 @@ const JobInboxScreen = ({ route, navigation }) => {
                 </ScrollView>
 
                 {/* Modal Action Footer */}
-                <View
-                  style={[
-                    styles.modalFooter,
-                    { paddingBottom: insets.bottom + 10 },
-                  ]}
-                >
+                <View style={[styles.modalFooter]}>
                   <TouchableOpacity
                     style={styles.modalCallBtn}
                     onPress={() =>
@@ -604,9 +608,9 @@ const styles = StyleSheet.create({
     marginVertical: 6,
     overflow: 'hidden',
     borderColor: '#eee',
-    borderRadius:14,
+    borderRadius: 14,
     elevation: 4,
-    marginBottom:10,
+    marginBottom: 10,
   },
   listItemHeaderRow: {
     flexDirection: 'row',
@@ -705,6 +709,7 @@ const styles = StyleSheet.create({
   },
   listItemactionButton: {
     flex: 1,
+    flexDirection: 'row',
     paddingVertical: 12,
     borderRadius: 10,
     alignItems: 'center',
@@ -745,7 +750,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     padding: 16,
     borderBottomWidth: 1,
-    marginBottom:10,
+    marginBottom: 10,
   },
   headerTitle: { fontSize: 17, fontWeight: "800" },
   backBtn: { width: 40, height: 40, justifyContent: "center" },
@@ -773,7 +778,7 @@ const styles = StyleSheet.create({
   avatarText: { color: "#fff", fontSize: 18, fontWeight: "800" },
   name: { fontSize: 16, fontWeight: "700", color: "#000" },
   skillText: { fontSize: 12, color: "#666", marginTop: 2 },
-  contactText: { fontSize: 11, color: "#10b981", marginTop: 2 },
+  contactText: { fontSize: 11, marginTop: 2 },
   iconCallBtn: { padding: 10, backgroundColor: "#f0f4ff", borderRadius: 10 },
   actionRow: {
     flexDirection: "row",
@@ -791,13 +796,13 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: "#10b981",
+    borderColor: "#a10505ff",
     gap: 6,
   },
-  emailBtnText: { color: "#10b981", fontWeight: "700", fontSize: 14 },
+  emailBtnText: { fontWeight: "700", fontSize: 14 },
   hireBtn: {
     flex: 1.5,
-    backgroundColor: "#10b981",
+    backgroundColor: "#003366",
     padding: 10,
     borderRadius: 8,
     alignItems: "center",
@@ -815,14 +820,23 @@ const styles = StyleSheet.create({
   modalContent: {
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
-    padding: 25,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
     height: "85%",
+  },
+  sheetHandle: {
+    width: 40,
+    height: 6,
+    backgroundColor: "#E6E7EA",
+    borderRadius: 6,
+    alignSelf: "center",
+    marginBottom: 8,
   },
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 20,
+    marginBottom: 5,
   },
   modalHeaderTitle: {
     fontSize: 14,
@@ -842,7 +856,7 @@ const styles = StyleSheet.create({
   },
   largeAvatarText: { color: "#fff", fontSize: 32, fontWeight: "800" },
   modalName: { fontSize: 22, fontWeight: "800", color: "#000" },
-  contactRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 ,  justifyContent: "center",  alignItems: "center", paddingVertical: 6,},
+  contactRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, justifyContent: "center", alignItems: "center", paddingVertical: 6, },
   modalEmail: { fontSize: 14, color: "#666" },
   divider: { height: 1, backgroundColor: "#f0f0f0", marginVertical: 20 },
   sectionTitle: {
@@ -859,7 +873,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
-    marginBottom:15,
+    marginBottom: 15,
   },
   skillBadgeText: { fontSize: 13, color: "#444", fontWeight: "600" },
   attachmentCard: {
@@ -897,6 +911,7 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     borderTopWidth: 1,
     borderTopColor: "#f0f0f0",
+    marginTop: 20
   },
   modalCallBtn: {
     flex: 1,
@@ -910,7 +925,7 @@ const styles = StyleSheet.create({
   },
   modalHireBtn: {
     flex: 2,
-    backgroundColor: "#10b981",
+    backgroundColor: "#003366",
     borderRadius: 15,
     height: 55,
     alignItems: "center",

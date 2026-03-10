@@ -19,7 +19,7 @@ const MyPostedGigsScreen = ({ navigation }) => {
   const { user } = useContext(AuthContext);
   const [myGigs, setMyGigs] = useState([]);
   const [loading, setLoading] = useState(true);
-  const { theme, isDarkMode }  = React.useContext(AppContext);
+  const { theme, isDarkMode } = React.useContext(AppContext);
 
   useEffect(() => {
     if (user?.email) fetchMyGigs();
@@ -70,24 +70,24 @@ const MyPostedGigsScreen = ({ navigation }) => {
 
   const renderGigItem = ({ item }) => (
     <TouchableOpacity
-      style={[styles.gigCard,{backgroundColor: theme.colors.card ,borderColor: theme.colors.card }]}
+      style={[styles.gigCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.card }]}
       activeOpacity={0.7}
       onPress={() => navigation.navigate("JobInbox", { gigSelection: 'candidates', gigId: item.id, gigTitle: item.job_title })}
       onLongPress={() => showOptionsMenu(item)} // Long press to delete/edit
     >
       <View style={styles.cardContent}>
         <View style={styles.cardInfo}>
-          <Text style={styles.categoryText}>{item.job_category?.toUpperCase()}</Text>
-          <Text style={[styles.jobTitle, {color: theme.colors.text ,}]}>{item.job_title}</Text>
+          <Text style={[styles.categoryText, { color: theme.colors.indicator }]}>{item.job_category?.toUpperCase()}</Text>
+          <Text style={[styles.jobTitle, { color: theme.colors.text, }]}>{item.job_title}</Text>
 
           {/* Descriptive snippet */}
-          <Text style={[styles.descriptionSnippet,{color: theme.colors.text ,}]} numberOfLines={2}>
+          <Text style={[styles.descriptionSnippet, { color: theme.colors.text, }]} numberOfLines={2}>
             {item.job_description ? `${item.job_description}` : "No description provided."}
           </Text>
 
           <View style={styles.priceRow}>
-            <Icons.Ionicons name="cash-outline" size={14} color="#10b981" />
-            <Text style={[styles.priceText, {color: theme.colors.text ,}]}>E{item.job_price}</Text>
+            <Icons.Ionicons name="cash-outline" size={16} color={theme.colors.indicator} />
+            <Text style={[styles.priceText, { color: theme.colors.text, }]}>E{item.job_price}</Text>
           </View>
         </View>
 
@@ -96,7 +96,7 @@ const MyPostedGigsScreen = ({ navigation }) => {
             style={styles.menuBtn}
             onPress={() => showOptionsMenu(item)}
           >
-            <Icons.Ionicons name="ellipsis-vertical" size={20} color="#666" />
+            <Icons.Ionicons name="ellipsis-vertical" size={20} color={theme.colors.text} />
           </TouchableOpacity>
 
           <View style={styles.applicantBadge}>
@@ -109,12 +109,8 @@ const MyPostedGigsScreen = ({ navigation }) => {
   );
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top ,backgroundColor: theme.colors.background }]}>
-           <StatusBar
-                    barStyle={isDarkMode ? "light-content" : "dark-content"}
-                    backgroundColor={theme.colors.background}
-              />
-
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: theme.colors.background }]}>
+      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
       <SecondaryNav title={'My Job Posts'} onRightPress={fetchMyGigs} rightIcon={'refresh-outline'} />
 
       {loading ? (
@@ -128,7 +124,7 @@ const MyPostedGigsScreen = ({ navigation }) => {
           ListEmptyComponent={
             <View style={styles.emptyContainer}>
               <Icons.Ionicons name="document-text-outline" size={48} color="#ccc" />
-              <Text style={[styles.emptyText, {color: theme.colors.text ,}]}>No jobs posted yet.</Text>
+              <Text style={[styles.emptyText, { color: theme.colors.text, }]}>No jobs posted yet.</Text>
             </View>
           }
         />
@@ -172,7 +168,7 @@ const styles = StyleSheet.create({
   cardContent: { flexDirection: 'row', justifyContent: 'space-between' },
   cardInfo: { flex: 1, paddingRight: 10 },
 
-  categoryText: { fontSize: 9, fontWeight: '800', color: '#10b981', marginBottom: 2, letterSpacing: 1 },
+  categoryText: { fontSize: 12, fontWeight: '800', marginBottom: 2, letterSpacing: 1 },
   jobTitle: { fontSize: 18, fontWeight: '800', color: '#000', marginBottom: 4 },
   descriptionSnippet: { fontSize: 13, color: '#666', lineHeight: 18, marginBottom: 10 },
 

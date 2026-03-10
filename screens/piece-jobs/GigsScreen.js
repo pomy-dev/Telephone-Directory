@@ -631,7 +631,7 @@ const GigsScreen = ({ navigation }) => {
             >
               {item.title}
             </Text>
-            <Text style={styles.jobPrice}>R{item.price}</Text>
+            <Text style={[styles.jobPrice, { color: theme.colors.success }]}>E{item.price}</Text>
           </View>
 
           {hasImage ? (
@@ -650,13 +650,13 @@ const GigsScreen = ({ navigation }) => {
 
           <View style={styles.jobFooter}>
             <View style={styles.locationContainer}>
-              <Icons.Ionicons name="location-outline" size={14} color="#666" />
+              <Icons.Ionicons name="location-outline" size={14} color={theme.colors.indicator} />
               <Text style={styles.locationText} numberOfLines={1}>
                 {item.location}
               </Text>
             </View>
             {item.distance && (
-              <Text style={styles.distanceText}>
+              <Text style={{ color: theme.colors.sub_text }}>
                 {item.distance.toFixed(1)} km
               </Text>
             )}
@@ -934,14 +934,8 @@ const GigsScreen = ({ navigation }) => {
   }
 
   return (
-    <SafeAreaView
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
-      edges={["top"]}
-    >
-      <StatusBar
-        barStyle={isDarkMode ? "light-content" : "dark-content"}
-        backgroundColor={theme.colors.background}
-      />
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={["top"]}>
+      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
 
       {/* Custom Modern Header */}
       <View style={styles.customHeader}>
@@ -1540,7 +1534,6 @@ const styles = StyleSheet.create({
   jobPrice: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#10b981",
   },
   jobDescription: {
     fontSize: 14,

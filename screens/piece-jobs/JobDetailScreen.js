@@ -1,21 +1,9 @@
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  Image,
-  Modal,
-  Alert,
-  ActivityIndicator,
-  TouchableOpacity,
-  StatusBar,
-  Platform,
-  Linking,
-  TextInput,
-  Dimensions,
-  Share,
+  View, Text, StyleSheet, ScrollView, Image, Modal, Alert, ActivityIndicator,
+  TouchableOpacity, StatusBar, Platform, Linking, Dimensions, Share,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
+import { TextInput } from "react-native-paper";
+import { Icons } from "../../constants/Icons";
 import React, { useState } from "react";
 import Carousel from "react-native-reanimated-carousel";
 import * as DocumentPicker from "expo-document-picker";
@@ -263,19 +251,19 @@ const JobDetailScreen = ({ route, navigation }) => {
 
             <View style={styles.metaRow}>
               <View style={styles.metaItem}>
-                <Ionicons name="person-outline" size={16} color="#666" />
+                <Icons.Ionicons name="person-outline" size={16} color="#666" />
                 <Text style={styles.metaText}>
                   Posted by {job.postedBy?.name}
                 </Text>
               </View>
               <View style={styles.metaItem}>
-                <Ionicons name="time-outline" size={16} color="#666" />
+                <Icons.Ionicons name="time-outline" size={16} color="#666" />
                 <Text style={styles.metaText}>{job.postedTime}</Text>
               </View>
             </View>
 
             <View style={styles.locationRow}>
-              <Ionicons name="location" size={20} color="#ef4444" />
+              <Icons.Ionicons name="location" size={20} color="#ef4444" />
               <Text style={[styles.locationText, { color: theme.colors.sub_text }]}>{job.location}</Text>
               {job.distance && (
                 <Text style={styles.distanceText}>({job.distance.toFixed(1)} km away)</Text>
@@ -292,13 +280,13 @@ const JobDetailScreen = ({ route, navigation }) => {
               {job.requirements?.length > 0 ? (
                 job.requirements.map((requirement, index) => (
                   <View key={index} style={styles.requirementItem}>
-                    <Ionicons name="checkmark-circle" size={20} color="#10b981" />
+                    <Icons.Ionicons name="checkmark-circle" size={20} color="#10b981" />
                     <Text style={styles.requirementText}>{requirement}</Text>
                   </View>
                 ))
               ) : (
                 <View style={styles.requirementEmpty}>
-                  <Ionicons name="alert-circle" size={20} color="#ef4444" />
+                  <Icons.Ionicons name="alert-circle" size={20} color="#ef4444" />
                   <Text style={styles.requirementText}>
                     No specific requirements listed.
                   </Text>
@@ -322,7 +310,7 @@ const JobDetailScreen = ({ route, navigation }) => {
                       { backgroundColor: theme.colors.indicator },
                     ]}
                   >
-                    <Ionicons name="call-outline" size={20} color="#fff" />
+                    <Icons.Ionicons name="call-outline" size={20} color="#fff" />
                     <Text style={styles.contactButtonText}>
                       Call {job.postedBy?.name}
                     </Text>
@@ -339,15 +327,11 @@ const JobDetailScreen = ({ route, navigation }) => {
                       onPress={handleSMS}
                       style={[
                         styles.contactButtonSecondary,
-                        { borderColor: theme.colors.disabled, flex: 1 },
+                        { borderColor: theme.colors.disabled, flex: 1, backgroundColor: isDarkMode ? '#666' : '#fff' },
                       ]}
                     >
-                      <Ionicons
-                        name="chatbubble-outline"
-                        size={20}
-                        color="#4381f3ff"
-                      />
-                      <Text style={styles.contactButtonTextSecondary}>
+                      <Icons.Ionicons name="chatbubble-outline" size={20} color="#4381f3ff" />
+                      <Text style={[styles.contactButtonTextSecondary, { color: theme.colors.text }]}>
                         Send Message
                       </Text>
                     </TouchableOpacity>
@@ -355,11 +339,11 @@ const JobDetailScreen = ({ route, navigation }) => {
                       onPress={handleEmail}
                       style={[
                         styles.contactButtonSecondary,
-                        { borderColor: theme.colors.disabled, flex: 1 },
+                        { borderColor: theme.colors.disabled, flex: 1, backgroundColor: isDarkMode ? '#666' : '#fff' },
                       ]}
                     >
-                      <Ionicons name="mail-outline" size={20} color="#fb2121ff" />
-                      <Text style={styles.contactButtonTextSecondary}>
+                      <Icons.Ionicons name="mail-outline" size={20} color="#fb2121ff" />
+                      <Text style={[styles.contactButtonTextSecondary, { color: theme.colors.text }]}>
                         Send Email
                       </Text>
                     </TouchableOpacity>
@@ -403,26 +387,29 @@ const JobDetailScreen = ({ route, navigation }) => {
               style={styles.modalBackdrop}
               onPress={() => setModalVisible(false)}
             />
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Apply for this Gig</Text>
+            <View style={[styles.modalContent, { backgroundColor: isDarkMode ? '#4b4a4aff' : '#fff' }]}>
+              <View style={styles.sheetHandle} />
+              <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Apply for this Gig</Text>
               <TextInput
-                placeholder="Phone Number"
-                placeholderTextColor="#999"
+                label="Phone Number"
+                mode="outlined"
+                theme={{ roundness: 12 }}
                 value={phone}
                 onChangeText={setPhone}
-                style={styles.input}
+                style={[styles.input, { backgroundColor: isDarkMode ? '#666' : '#fff' }]}
                 keyboardType="phone-pad"
               />
 
               <View
-                style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
+                style={{ flexDirection: "row", alignItems: "center", justifyContent: 'center', gap: 10 }}
               >
                 <TextInput
-                  placeholder="Add Expertise"
-                  placeholderTextColor="#999"
+                  label="Add Expertise"
+                  mode="outlined"
+                  theme={{ roundness: 12 }}
                   value={expertiseInput}
                   onChangeText={setExpertiseInput}
-                  style={[styles.input, { flex: 2 }]}
+                  style={[styles.input, { flex: 2, backgroundColor: isDarkMode ? '#666' : '#fff' }]}
                 />
                 <TouchableOpacity
                   onPress={() => {
@@ -433,13 +420,13 @@ const JobDetailScreen = ({ route, navigation }) => {
                   }}
                   style={[styles.addButton, { flex: 1 }]}
                 >
-                  <Ionicons name="add-circle-outline" size={20} color="#fff" />
+                  <Icons.Ionicons name="add-circle-outline" size={20} color="#fff" />
                 </TouchableOpacity>
               </View>
 
               <ScrollView style={styles.expertisesList}>
                 {expertises.map((exp, index) => (
-                  <Text key={index} style={styles.expertiseItem}>
+                  <Text key={index} style={[styles.expertiseItem, { color: theme.colors.sub_text }]}>
                     ✔️{exp}
                   </Text>
                 ))}
@@ -447,8 +434,9 @@ const JobDetailScreen = ({ route, navigation }) => {
 
               <TouchableOpacity
                 onPress={pickDocuments}
-                style={styles.attachButton}
+                style={[styles.attachButton, { backgroundColor: theme.colors.card2 }]}
               >
+                <Icons.Ionicons name='attach-outline' color={'#fff'} size={24} />
                 <Text style={styles.attachButtonText}>Attach Documents</Text>
               </TouchableOpacity>
               <ScrollView style={styles.attachmentsList}>
@@ -472,7 +460,7 @@ const JobDetailScreen = ({ route, navigation }) => {
                         setAttachments(attachments.filter((_, i) => i !== index))
                       }
                     >
-                      <Ionicons name="close" size={20} color="red" />
+                      <Icons.Ionicons name="close" size={20} color="red" />
                     </TouchableOpacity>
                   </View>
                 ))}
@@ -482,6 +470,7 @@ const JobDetailScreen = ({ route, navigation }) => {
                 onPress={handleSubmit}
                 style={styles.submitButton}
               >
+                <Icons.Feather name='send' color={'#fff'} size={24} />
                 <Text style={styles.submitButtonText}>Submit Application</Text>
                 {isSubmitting && (
                   <ActivityIndicator
@@ -625,7 +614,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#fff",
     paddingVertical: 14,
     borderRadius: 12,
     gap: 8,
@@ -633,8 +621,7 @@ const styles = StyleSheet.create({
   },
   contactButtonTextSecondary: {
     fontSize: 16,
-    fontWeight: "600",
-    color: "#000",
+    fontWeight: "600"
   },
   footer: {
     paddingHorizontal: 16,
@@ -664,8 +651,15 @@ const styles = StyleSheet.create({
   modalBackdrop: {
     flex: 1,
   },
+  sheetHandle: {
+    width: 40,
+    height: 6,
+    backgroundColor: "#E6E7EA",
+    borderRadius: 6,
+    alignSelf: "center",
+    marginBottom: 8,
+  },
   modalContent: {
-    backgroundColor: "white",
     padding: 20,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
@@ -677,18 +671,14 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    padding: 10,
     marginBottom: 10,
-    borderRadius: 5,
   },
   addButton: {
-    backgroundColor: "#10b981",
-    padding: 10,
-    borderRadius: 5,
+    backgroundColor: "#003366",
+    paddingVertical: 14,
+    borderRadius: 12,
     alignItems: "center",
-    marginBottom: 10,
+    // marginBottom: 10,
   },
   addButtonText: {
     color: "white",
@@ -700,11 +690,11 @@ const styles = StyleSheet.create({
   },
   expertiseItem: {
     fontSize: 14,
-    color: "#666",
     marginBottom: 5,
   },
   attachButton: {
-    backgroundColor: "#4381f3ff",
+    flexDirection: 'row',
+    justifyContent: 'center',
     padding: 10,
     borderRadius: 5,
     alignItems: "center",
@@ -748,7 +738,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "#000",
     padding: 15,
-    borderRadius: 5,
+    borderRadius: 70,
     alignItems: "center",
   },
   submitButtonText: {
