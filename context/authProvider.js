@@ -57,24 +57,24 @@ export const AuthProvider = ({ children }) => {
       firebaseAuth,
       async (currentUser) => {
         if (currentUser) {
-          if (currentUser.emailVerified) {
-            setUser(currentUser);
-            // 2. CREATE OR UPDATE the profile in Supabase
-            await syncUserProfile(currentUser);
-            // App is opening with an existing logged-in user
-            await checkWorkerStatus(currentUser.uid);
-          } else {
-            Alert.alert('Email Unverified!', 'Your email account is unverified. Try to verify it from your account.',
-              [
-                { text: "Cancel", style: "cancel" },
-                { text: "Verify", onPress: async () => { await currentUser.reload() } }
-              ])
-          }
+          // await currentUser.reload()
+          // if (currentUser.emailVerified) {
+          setUser(currentUser);
+          // 2. CREATE OR UPDATE the profile in Supabase
+          await syncUserProfile(currentUser);
+          // App is opening with an existing logged-in user
+          await checkWorkerStatus(currentUser.uid);
+          // } else {
+          //   Alert.alert('Email Unverified!', 'Your email account is unverified. Try to verify it from your account.',
+          //     [
+          //       { text: "Cancel", style: "cancel" },
+          //       { text: "Verify", onPress: async () => { verifyEmail() } }
+          //     ])
+          // }
         } else {
           setUser(null);
           setIsWorker(false);
         }
-
         setLoading(false);
       },
     );
@@ -138,6 +138,10 @@ export const AuthProvider = ({ children }) => {
   //   }
   // };
 
+  // const verifyEmail = async (user) => {
+  //   await sendEmailVerification(user);
+  // }
+
   const emailSignUp = async (name, email, password) => {
 
     try {
@@ -148,12 +152,8 @@ export const AuthProvider = ({ children }) => {
       // Update Firebase profile with the name
       await user.updateProfile({ displayName: name.trim() });
 
-      await sendEmailVerification(user, {
-        url: 'https://busineinkauth.firebaseapp.com/__/auth/action', // deep link or continue URL
-        handleCodeInApp: true, // if you want to handle in-app
-        iOS: { bundleId: 'com.pld.phonebook' },
-        android: { packageName: 'com.pld.phonebook', installApp: true },
-      });
+      // Send Verification email link to provided account
+      // await verifyEmail(user);
 
       // Explicitly sync to Supabase now that we have the name
       //this will create the firebase user_profile for recommendation
@@ -175,8 +175,18 @@ export const AuthProvider = ({ children }) => {
         password,
       );
       const user = userCredential.user;
-      console.log("Logged in with:", user.email);
-      return user;
+      // if (user && user.emailVerified) {
+      //   return user
+      // } else {
+      //   Alert.alert('Email Unverified!', 'Your email account is unverified. Try to verify it from your account.',
+      //     [
+      //       { text: "Cancel", style: "cancel" },
+      //       {
+      //         text: "Verify", onPress: async () => { await verifyEmail(user) }
+      //       }
+      //     ])
+      // }
+      return user
     } catch (error) {
       console.error("Login Failed:", error.message);
       throw error;
