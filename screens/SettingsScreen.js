@@ -372,8 +372,6 @@ export default function ProfileScreen({ navigation }) {
     }
   }, [user]);
 
-
-
   const handleLogout = () => {
     try {
       logout()
@@ -1237,7 +1235,7 @@ const styles = StyleSheet.create({
   },
   editButton: {
     position: "absolute",
-    bottom: 10,
+    bottom: 5,
     right: 15,
     flexDirection: "row",
     alignItems: "center",

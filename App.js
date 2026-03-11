@@ -4,7 +4,6 @@ import React, { useContext, useState, useEffect } from "react";
 import { View, Text, StyleSheet, StatusBar, Platform } from "react-native";
 import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
 import { NavigationContainer, useNavigationContainerRef } from "@react-navigation/native";
-import { Icons } from "./constants/Icons";
 import Toast from "react-native-toast-message";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Provider as PaperProvider } from "react-native-paper";
@@ -25,18 +24,9 @@ import LoanCalculator from "./screens/loans/LoanCalculator";
 
 // screens
 import HomeScreen from "./screens/HomeScreen";
-import SavedListsScreen from "./screens/SavedListItems";
-import FavoritesScreen from "./screens/FavoritesScreen";
-import SettingsScreen from "./screens/SettingsScreen";
 import LoginScreen from "./screens/Login";
 import SignupScreen from "./screens/SignUp";
-
-// business directory screens
-import DirectoryScreen from "./screens/directory/DirectoryHome";
-import BusinessDetailScreen from "./screens/directory/BusinessDetailsScreen";
-import BusinessScreen from "./screens/directory/BusinessesScreen";
-import FeaturedScreen from "./screens/directory/FeaturedScreen";
-import BusinessList from "./screens/directory/BusinessListScreen";
+import SettingsScreen from "./screens/SettingsScreen";
 
 // gigs
 import GigsScreen from "./screens/piece-jobs/GigsScreen";
@@ -379,7 +369,7 @@ function AppContent() {
                           />
 
                           {/* Business Directory */}
-                          <Stack.Screen
+                          {/* <Stack.Screen
                             name="DirectoryScreen"
                             component={DirectoryScreen}
                           />
@@ -398,19 +388,19 @@ function AppContent() {
                           <Stack.Screen
                             name="BusinessDetails"
                             component={BusinessDetailScreen}
-                          />
+                          /> */}
 
                           {/* Liked Businesses */}
-                          <Stack.Screen
+                          {/* <Stack.Screen
                             name="Favorites"
                             component={FavoritesScreen}
-                          />
+                          /> */}
 
                           {/* list items screen */}
-                          <Stack.Screen
+                          {/* <Stack.Screen
                             name="SavedListScreen"
                             component={SavedListsScreen}
-                          />
+                          /> */}
 
                           {/* Piece Jobs  */}
                           <Stack.Screen

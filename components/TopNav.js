@@ -121,7 +121,8 @@ export default function TopNav({ onCartPress, onSearch, onNotificationPress, onL
         >
           <View style={styles.modalOverlay}>
             <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
-              <View style={[styles.modalCard, { backgroundColor: theme.colors.card }]}>
+              <View style={[styles.modalCard, { backgroundColor: isDarkMode ? '#666' : '#fff' }]}>
+                <View style={styles.sheetHandle} />
                 <View style={styles.modalHeader}>
                   <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Update Location</Text>
                   <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeButton}>
@@ -130,9 +131,9 @@ export default function TopNav({ onCartPress, onSearch, onNotificationPress, onL
                 </View>
 
                 <View style={styles.inputContainer}>
-                  <Icons.Ionicons name="location-outline" size={20} color="#8E8E93" style={{ marginRight: 10 }} />
+                  <Icons.Ionicons name="location-outline" size={20} color={theme.colors.sub_text} style={{ marginRight: 10 }} />
                   <TextInput
-                    style={styles.modalInput}
+                    style={[styles.modalInput, { color: theme.colors.sub_text }]}
                     placeholder="Enter your address"
                     value={tempLocation}
                     onChangeText={setTempLocation}
@@ -253,7 +254,8 @@ const styles = StyleSheet.create({
   modalCard: {
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
-    padding: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 10,
     paddingBottom: Platform.OS === "ios" ? 40 : 24,
     ...Platform.select({
       ios: {
@@ -266,6 +268,13 @@ const styles = StyleSheet.create({
         elevation: 8,
       },
     }),
+  },
+  sheetHandle: {
+    width: 40,
+    height: 6,
+    backgroundColor: "#E6E7EA",
+    borderRadius: 6,
+    alignSelf: "center",
   },
   modalHeader: {
     flexDirection: "row",
@@ -287,19 +296,20 @@ const styles = StyleSheet.create({
     borderColor: "#E5E5EA",
     borderRadius: 12,
     paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingVertical: 5,
     marginBottom: 16,
   },
   modalInput: {
     flex: 1,
-    fontSize: 16,
-    color: "#1A1A1A",
+    fontSize: 16
   },
   currentLocationButton: {
+    backgroundColor: '#f0f4ff',
+    borderRadius: 70,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingVertical: 14,
+    paddingVertical: 5,
     marginBottom: 24,
   },
   currentLocationText: {
