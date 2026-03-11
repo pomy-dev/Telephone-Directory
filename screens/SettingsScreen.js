@@ -1,14 +1,14 @@
 import React, { useState } from "react";
 import {
   View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, ImageBackground,
-  Platform, Switch, Linking, ActivityIndicator, Alert,
+  Platform, Switch, Linking, ActivityIndicator, Alert, Image
 } from "react-native";
+import * as ImagePicker from 'expo-image-picker';
 import { SafeAreaView } from "react-native-safe-area-context";
 import { TextInput } from "react-native-paper";
 import { Icons } from "../constants/Icons";
 import { AppContext } from "../context/appContext";
 import { AuthContext } from "../context/authProvider";
-import { LinearGradient } from "expo-linear-gradient";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Reusable Menu Item Component
@@ -143,7 +143,7 @@ const supportItems = [
   { id: "8", title: "Terms of Service", icon: "list-outline" },
 ];
 
-export default function ProfileScreen() {
+export default function ProfileScreen({ navigation }) {
   const {
     theme,
     isDarkMode,
@@ -159,6 +159,8 @@ export default function ProfileScreen() {
   const [isEditing, setIsEditing] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [isPicking, setIsPicking] = useState(false);
+  const [image, setImage] = useState(null);
   const [formData, setFormData] = useState({
     name: user?.displayName || "",
     email: user?.email || "",
@@ -206,10 +208,10 @@ export default function ProfileScreen() {
     setRequestDate(new Date(now));
   };
 
-  const cancelTimer = async () => {
-    await AsyncStorage.removeItem(`deletion_timer_${user?.uid}`);
-    setRequestDate(null);
-  };
+  // const cancelTimer = async () => {
+  //   await AsyncStorage.removeItem(`deletion_timer_${user?.uid}`);
+  //   setRequestDate(null);
+  // };
 
   const handleSave = async () => {
     setLoading(true);
@@ -251,6 +253,43 @@ export default function ProfileScreen() {
       setLoading(false);
     }
   };
+
+  const handleUpdatePhoto = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission Needed', 'Please allow access to your photos.');
+      return;
+    }
+
+    if (!user) {
+      throw new Error("No user is currently signed in");
+    }
+
+    try {
+      setIsPicking(true)
+      const result = await ImagePicker.launchImageLibraryAsync({
+        allowsEditing: true,
+        aspect: [4, 3], quality: 0.8,
+        mediaTypes: ['images']
+      });
+
+      if (!result.canceled) {
+        const newImgs = result.assets.map(a => a.uri);
+        if (!newImgs[0] && typeof newImgs[0] !== "string") {
+          throw new Error("Valid photo URL is required");
+        }
+
+        setImage(newImgs[0])
+        await user.updateProfile({ photoURL: newImgs[0].trim() });
+      }
+
+    } catch (e) {
+      console.log(e.message)
+      throw new Error(e.message)
+    } finally {
+      setIsPicking(false)
+    }
+  }
 
   const handleModalSave = async () => {
     setLoading(true);
@@ -311,9 +350,6 @@ export default function ProfileScreen() {
     }
   };
 
-
-
-
   // Check for existing timer on load
   React.useEffect(() => {
     const checkTimer = async () => {
@@ -341,10 +377,15 @@ export default function ProfileScreen() {
     >
       {/* Header */}
       <View style={styles.header}>
-        {/* Profile text */}
-        <Text style={[styles.title, { color: theme.colors.text }]}>
-          Profile
-        </Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'flex-start', alignItems: 'center', gap: 16 }}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Icons.Ionicons name="arrow-back" size={24} color={theme.colors.text} />
+          </TouchableOpacity>
+          {/* Profile text */}
+          <Text style={[styles.title, { color: theme.colors.text }]}>
+            Profile
+          </Text>
+        </View>
 
         {/* Logout Button */}
         <TouchableOpacity onPress={logout} style={styles.logoutButton}>
@@ -364,16 +405,20 @@ export default function ProfileScreen() {
           style={styles.heroCard}
           imageStyle={{ borderRadius: 20, opacity: 0.15 }}
         >
-          <LinearGradient
-            colors={[theme.colors.background, "rgba(250, 210, 247, 0.9)"]}
-            style={StyleSheet.absoluteFill}
-          />
           <View style={styles.heroContent}>
             <View style={styles.avatarContainer}>
               <View style={styles.avatar}>
-                <Icons.Ionicons name="person" size={48} color="#fff" />
+                {(user.photoURL || image) ? (
+                  <Image source={{ uri: user.photoURL || image }} style={{ position: 'relative', objectFit: 'cover', width: '100%', height: '100%', borderRadius: 50 }} />
+                ) : (
+                  <Icons.Ionicons name="person" size={48} color="#fff" />
+                )}
               </View>
-              <View style={styles.onlineIndicator} />
+              <TouchableOpacity onPress={handleUpdatePhoto} style={styles.onlineIndicator} >
+                {isPicking ?
+                  <ActivityIndicator size={16} color={theme.colors.indicator} />
+                  : <Icons.Ionicons name="camera-reverse-sharp" color={theme.colors.indicator} size={16} />}
+              </TouchableOpacity>
             </View>
 
             <View style={styles.profileInfo}>
@@ -388,12 +433,12 @@ export default function ProfileScreen() {
                   <Icons.Feather
                     name="check-circle"
                     size={16}
-                    color={theme.colors.primary}
+                    color={theme.colors.indicator}
                   />
                   <Text
                     style={[
                       styles.verifiedText,
-                      { color: theme.colors.primary },
+                      { color: theme.colors.indicator },
                     ]}
                   >
                     Verified Account
@@ -586,7 +631,7 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        <View style={[styles.section, { marginBottom: 60 }]}>
+        <View style={[styles.section, { marginBottom: 10 }]}>
           <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
             Support
           </Text>
@@ -604,7 +649,7 @@ export default function ProfileScreen() {
           </View>
           <>
             {/* Divider before the Danger Zone */}
-            <View style={styles.divider} />
+            <View style={styles.dangerZoneLine} />
 
             {/* The Trigger Button */}
             <TouchableOpacity
@@ -640,8 +685,8 @@ export default function ProfileScreen() {
               <Icons.Feather
                 name="chevron-right"
                 size={20}
-                color={theme.colors.text}
-                style={{ opacity: 0.3 }}
+                color={theme.colors.sub_text}
+              // style={{ opacity: 0.3 }}
               />
             </TouchableOpacity>
           </>
@@ -1115,10 +1160,7 @@ const styles = StyleSheet.create({
   },
   heroCard: {
     marginBottom: 1,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
     overflow: "hidden",
-    backgroundColor: "#fff",
     ...Platform.select({
       ios: {
         shadowColor: "#000",
@@ -1153,12 +1195,11 @@ const styles = StyleSheet.create({
     position: "absolute",
     bottom: 8,
     right: 4,
-    width: 16,
-    height: 16,
-    backgroundColor: "#10b981",
-    borderRadius: 8,
+    borderRadius: 20,
     borderWidth: 2,
+    backgroundColor: '#fff',
     borderColor: "#fff",
+    alignItems: 'center', justifyContent: 'center'
   },
   profileInfo: {
     flex: 1,
@@ -1310,6 +1351,11 @@ const styles = StyleSheet.create({
     height: 1,
     backgroundColor: "#f1f5f9",
     marginLeft: 76, // Align with title
+  },
+  dangerZoneLine: {
+    height: 1,
+    backgroundColor: "#f0f0f0",
+    marginTop: 30
   },
   logoutButton: {
     flexDirection: "row",

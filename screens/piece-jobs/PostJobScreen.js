@@ -25,7 +25,7 @@ import { AppContext } from "../../context/appContext";
 
 const CATEGORIES = ["Moving", "Cleaning", "Groundsman", "LandScaping", "Delivery", "Gardening", "Pet Care", "Tech"]
 const STEPS = ["Job Details", "Description", "Photos", "Contacts"]
-const { width, height } = Dimensions.get('window')
+const { width } = Dimensions.get('window')
 
 const PostGigScreen = ({ navigation }) => {
     const { theme, isDarkMode } = useContext(AppContext)
@@ -101,7 +101,8 @@ const PostGigScreen = ({ navigation }) => {
             const result = await ImagePicker.launchImageLibraryAsync({
                 allowsMultipleSelection: true,
                 quality: 0.8,
-                mediaTypes: ['videos', 'images'],
+                selectionLimit: 8,
+                mediaTypes: ['images'],
             });
             if (!result.canceled) {
                 const newImgs = result.assets.map(a => a.uri);

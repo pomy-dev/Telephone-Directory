@@ -189,6 +189,10 @@ export default function HomeScreen({ navigation }) {
     }
   }
 
+  const handleSettings = () => {
+    navigation.navigate('Settings')
+  }
+
   const handleNotificationPress = () => {
     if (nots?.length > 0) {
       navigation.navigate("Nots", { params: null })
@@ -209,7 +213,7 @@ export default function HomeScreen({ navigation }) {
         onNotificationPress={handleNotificationPress}
         notificationCount={nots?.length}
         onSearch={() => console.log("Search tapped")}
-        onLogout={() => handleLogout()}
+        onLogout={handleSettings}
       />
 
       <ScrollView showsVerticalScrollIndicator={false}>

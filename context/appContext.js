@@ -3,7 +3,7 @@ import React, { createContext, useState, useEffect, useContext } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CustomDarkTheme, CustomLightTheme } from '../constants/theme';
 import { fetchNotifications } from '../service/getApi';
-import { getMyAppliedGigs } from '../service/Supabase-Fuctions';
+import { getMyAppliedGigsThatApproved } from '../service/Supabase-Fuctions';
 import { AuthContext } from './authProvider';
 
 export const AppContext = createContext();
@@ -66,7 +66,7 @@ export const AppProvider = ({ children }) => {
 
           // 2. User-specific gig notifications (applications & approvals)
           if (user?.email) {
-            const userNots = await getMyAppliedGigs(user?.email);
+            const userNots = await getMyAppliedGigsThatApproved(user?.email);
             if (userNots?.success && Array.isArray(userNots.data)) {
               merged.push(
                 ...userNots.data.map((n) => {

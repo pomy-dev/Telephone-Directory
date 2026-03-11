@@ -158,7 +158,7 @@ const JobInboxScreen = ({ route, navigation }) => {
         >
           <View style={styles.cardInfo}>
             <View style={styles.avatar}>
-              <Text style={[styles.avatarText, { color: '#fff'}]}>
+              <Text style={[styles.avatarText, { color: '#fff' }]}>
                 {getEmailIdentifier(applicantData?.email)}
               </Text>
             </View>

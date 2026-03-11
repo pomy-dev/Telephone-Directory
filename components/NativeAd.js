@@ -1,9 +1,7 @@
 import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native"
 
 const NativeAd = ({ ads, maxAdsToShow = 1 }) => {
-    if (!ads || ads.length === 0) {
-        return null
-    }
+    if (!ads || ads.length === 0) return null;
 
     const displayAds = ads.slice(0, maxAdsToShow)
 

@@ -116,105 +116,105 @@ async function requestNotificationPermissions() {
 }
 
 // Bottom Tabs
-function Tabs() {
-  const { theme } = useContext(AppContext);
-  const insets = useSafeAreaInsets();
-  return (
-    <Tab.Navigator
-      initialRouteName="Home"
-      screenOptions={{
-        headerShown: false,
-        tabBarShowLabel: false,
-        tabBarStyle: [
-          styles.tabBar,
-          {
-            backgroundColor: theme.colors.card,
-            borderTopColor: theme.colors.border,
-            bottom: insets.bottom,
-          },
-        ],
-        tabBarActiveTintColor: "#003366",
-        tabBarInactiveTintColor: "#94a3b8",
-      }}
-    >
-      {/* <Tab.Screen
-        name="SavedListScreen"
-        component={SavedListsScreen}
-        options={{
-          tabBarIcon: ({ focused, color }) => (
-            <Icons.Ionicons name={focused ? "list" : "list-outline"} size={28} color={color} />
-          )
-        }}
-      /> */}
-      <Tab.Screen
-        name="Favorites"
-        component={FavoritesScreen}
-        options={{
-          tabBarIcon: ({ focused, color }) => (
-            <Icons.MaterialCommunityIcons
-              name={focused ? "notebook-check" : "notebook-check-outline"}
-              size={24}
-              color={color}
-            />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Home"
-        component={HomeScreen}
-        options={{
-          tabBarIcon: ({ focused }) => {
-            // console.log(props.accessibilityState?.selected)
-            return (
-              <View
-                // {...props}
-                style={styles.fabButtonWrapper}
-                activeOpacity={0.8}
-              >
-                <View
-                  style={[
-                    styles.fab,
-                    {
-                      backgroundColor: focused ? "#0f172a" : "#94a3b8",
-                    },
-                  ]}
-                >
-                  <Icons.Ionicons
-                    name="home"
-                    size={28}
-                    color={focused ? "#fff" : "#ddd"}
-                  />
-                </View>
-              </View>
-            );
-          },
-        }}
-      />
-      {/* <Tab.Screen
-        name="PeopleScreen"
-        component={PeopleScreen}
-        options={{
-          tabBarIcon: ({ focused, color }) => (
-            <Icons.MaterialCommunityIcons name={focused ? "account-cog" : "account-cog-outline"} size={28} color={color} />
-          )
-        }}
-      /> */}
-      <Tab.Screen
-        name="Settings"
-        component={SettingsScreen}
-        options={{
-          tabBarIcon: ({ focused, color }) => (
-            <Icons.Ionicons
-              name={focused ? "settings" : "settings-outline"}
-              size={24}
-              color={color}
-            />
-          ),
-        }}
-      />
-    </Tab.Navigator>
-  );
-}
+// function Tabs() {
+//   const { theme } = useContext(AppContext);
+//   const insets = useSafeAreaInsets();
+//   return (
+//     <Tab.Navigator
+//       initialRouteName="Home"
+//       screenOptions={{
+//         headerShown: false,
+//         tabBarShowLabel: false,
+//         tabBarStyle: [
+//           styles.tabBar,
+//           {
+//             backgroundColor: theme.colors.card,
+//             borderTopColor: theme.colors.border,
+//             bottom: insets.bottom,
+//           },
+//         ],
+//         tabBarActiveTintColor: "#003366",
+//         tabBarInactiveTintColor: "#94a3b8",
+//       }}
+//     >
+//       {/* <Tab.Screen
+//         name="SavedListScreen"
+//         component={SavedListsScreen}
+//         options={{
+//           tabBarIcon: ({ focused, color }) => (
+//             <Icons.Ionicons name={focused ? "list" : "list-outline"} size={28} color={color} />
+//           )
+//         }}
+//       /> */}
+//       {/* <Tab.Screen
+//         name="Favorites"
+//         component={FavoritesScreen}
+//         options={{
+//           tabBarIcon: ({ focused, color }) => (
+//             <Icons.MaterialCommunityIcons
+//               name={focused ? "notebook-check" : "notebook-check-outline"}
+//               size={24}
+//               color={color}
+//             />
+//           ),
+//         }}
+//       /> */}
+//       {/* <Tab.Screen
+//         name="Home"
+//         component={HomeScreen}
+//         options={{
+//           tabBarIcon: ({ focused }) => {
+//             // console.log(props.accessibilityState?.selected)
+//             return (
+//               <View
+//                 // {...props}
+//                 style={styles.fabButtonWrapper}
+//                 activeOpacity={0.8}
+//               >
+//                 <View
+//                   style={[
+//                     styles.fab,
+//                     {
+//                       backgroundColor: focused ? "#0f172a" : "#94a3b8",
+//                     },
+//                   ]}
+//                 >
+//                   <Icons.Ionicons
+//                     name="home"
+//                     size={28}
+//                     color={focused ? "#fff" : "#ddd"}
+//                   />
+//                 </View>
+//               </View>
+//             );
+//           },
+//         }}
+//       /> */}
+//       {/* <Tab.Screen
+//         name="PeopleScreen"
+//         component={PeopleScreen}
+//         options={{
+//           tabBarIcon: ({ focused, color }) => (
+//             <Icons.MaterialCommunityIcons name={focused ? "account-cog" : "account-cog-outline"} size={28} color={color} />
+//           )
+//         }}
+//       /> */}
+//       {/* <Tab.Screen
+//         name="Settings"
+//         component={SettingsScreen}
+//         options={{
+//           tabBarIcon: ({ focused, color }) => (
+//             <Icons.Ionicons
+//               name={focused ? "settings" : "settings-outline"}
+//               size={24}
+//               color={color}
+//             />
+//           ),
+//         }}
+//       /> */}
+//     </Tab.Navigator>
+//   );
+// }
 
 export default function App() {
   return (
@@ -334,7 +334,8 @@ function AppContent() {
                     <Stack.Navigator
                       screenOptions={{ headerShown: false }}
                       initialRouteName={
-                        user ? "MainTabs" : "Login"
+                        // user ? "MainTabs" : "Login"
+                        user ? "Home" : "Login"
                         // loading ? "SplashLoading" : user ? "MainTabs" : "Login"
                       }
                     >
@@ -354,10 +355,21 @@ function AppContent() {
                       ) : (
                         <>
                           {/* Main App Screens */}
-                          <Stack.Screen
+                          {/* <Stack.Screen
                             name="MainTabs"
                             component={Tabs}
                             options={{ animationEnabled: false }}
+                          /> */}
+
+                          {/* Home Screen */}
+                          <Stack.Screen
+                            name="Home"
+                            component={HomeScreen}
+                          />
+
+                          <Stack.Screen
+                            name="Settings"
+                            component={SettingsScreen}
                           />
 
                           {/* Notifications */}

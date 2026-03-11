@@ -101,7 +101,7 @@ export default function TopNav({ onCartPress, onSearch, onNotificationPress, onL
           </TouchableOpacity>
 
           <TouchableOpacity onPress={onLogout} style={styles.iconButton} activeOpacity={0.7}>
-            <Icons.AntDesign name="logout" size={20} color="#ef4444" />
+            <Icons.Ionicons name="settings-outline" size={24} color={theme.colors.text} />
           </TouchableOpacity>
         </>
       </View>

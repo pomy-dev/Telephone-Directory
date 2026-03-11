@@ -7,30 +7,17 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Animated,
+  StatusBar,
   Dimensions,
 } from "react-native";
-import { useColorScheme } from "react-native";
 import { AppContext } from "../context/appContext";
 import { Images } from '../constants/Images';
 
-const { width } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window");
 
 const SplashScreen = ({ onConnectionSuccess }) => {
   const { theme, isDarkMode } = React.useContext(AppContext)
   const [isLoading, setIsLoading] = useState(true);
-  const scheme = useColorScheme();
-  const isDark = scheme === "dark";
-
-  // const theme = {
-  //   background: isDark ? "#121212" : "#FFFFFF",
-  //   primary: isDark ? "#5D5FEF" : "#003366",
-  //   secondary: isDark ? "#2D2D3A" : "#F3F4F8",
-  //   text: isDark ? "#FFFFFF" : "#2D2D3A",
-  //   subtext: isDark ? "#AAAAAA" : "#71727A",
-  //   error: isDark ? "#FF6B6B" : "#FF4757",
-  //   card: isDark ? "#1E1E2C" : "#FFFFFF",
-  //   border: isDark ? "#2D2D3A" : "#EAEAEA",
-  // };
 
   useEffect(() => {
     setTimeout(() => {
@@ -40,17 +27,19 @@ const SplashScreen = ({ onConnectionSuccess }) => {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
+      
       <View style={styles.backgroundElements}>
         <View
           style={[
             styles.circle,
-            { backgroundColor: isDarkMode ? '#003366' + "10" : "#5D5FEF" + "10", left: -50, top: 100 },
+            { backgroundColor: isDarkMode ? '#003366' + '10' : "#5D5FEF" + "10", left: -50, top: 100 },
           ]}
         />
         <View
           style={[
             styles.circle,
-            { backgroundColor: isDarkMode ? '#003366' + "10" : "#5D5FEF" + "10", right: -70, bottom: 150 },
+            { backgroundColor: isDarkMode ? '#003366' + "08" : "#5D5FEF" + "08", right: -70, bottom: 150 },
           ]}
         />
       </View>
@@ -80,7 +69,7 @@ const SplashScreen = ({ onConnectionSuccess }) => {
           <Animated.View
             style={styles.loadingContainer}
           >
-            <ActivityIndicator size="large" color={theme.colors.primary} />
+            <ActivityIndicator size="large" color={theme.colors.indicator} />
             <Text style={[styles.loadingText, { color: theme.colors.sub_text }]}>
               Starting...
             </Text>
@@ -88,11 +77,11 @@ const SplashScreen = ({ onConnectionSuccess }) => {
         ) : (
           <Animated.View>
             <TouchableOpacity
-              style={[styles.offlineButton, { borderColor: theme.colors.primary }]}
+              style={[styles.offlineButton, { borderColor: theme.colors.indicator }]}
               onPress={() => onConnectionSuccess()}
             >
               <Text
-                style={[styles.offlineButtonText, { color: theme.colors.primary }]}
+                style={[styles.offlineButtonText, { color: theme.colors.indicator }]}
               >
                 Get Started
               </Text>
@@ -166,7 +155,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     marginTop: 50,
   },
-  versionText: { fontSize: 12, marginBottom: 16 },
+  versionText: { fontSize: 12, marginBottom: height * 0.05 },
 });
 
 export default SplashScreen;

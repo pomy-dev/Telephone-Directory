@@ -203,7 +203,6 @@ export default function BookTransportationScreen({ navigation, route }) {
             setSelectedRoute(null);
             setErrors({});
         }
-
     };
 
     const getVehicleTypeIcon = (type) => {

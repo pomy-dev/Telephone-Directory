@@ -745,6 +745,23 @@ export async function getMyAppliedGigs(userEmail) {
   console.log("Fetching applied gigs for user:", userEmail);
   try {
     const { data, error } = await supabase.rpc(
+      "get_gigs_i_applied_for",
+      { p_email: userEmail.trim() }
+    )
+
+    if (error) throw error;
+
+    return { success: true, data };
+  } catch (error) {
+    console.error("Error fetching applied gigs:", error);
+    return { success: false, error: error.message, data: [] };
+  }
+}
+
+export async function getMyAppliedGigsThatApproved(userEmail) {
+  console.log("Fetching applied gigs for user:", userEmail);
+  try {
+    const { data, error } = await supabase.rpc(
       "get_user_related_gigs",
       { p_email: userEmail.trim() }
     )
