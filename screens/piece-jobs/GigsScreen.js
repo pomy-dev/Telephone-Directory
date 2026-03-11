@@ -1410,7 +1410,7 @@ const GigsScreen = ({ navigation }) => {
               styles.toggleButton,
               { backgroundColor: viewMode === "gigs" ? theme.colors.card2 : 'transparent' },
             ]}
-            onPress={handleToggleWorker}
+           onPress={() => setViewMode("gigs")}
           >
             <Text
               style={[
@@ -1427,7 +1427,7 @@ const GigsScreen = ({ navigation }) => {
               styles.toggleButton,
               { backgroundColor: viewMode === "workers" ? theme.colors.card2 : 'transparent' },
             ]}
-            onPress={handleToggleWorker}
+            onPress={() => setViewMode("workers")}
           >
             <Text
               style={[
