@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -19,6 +19,7 @@ import {
   KeyboardAvoidingView,
   PanResponder,
   Platform,
+  AppState,
 } from "react-native";
 import { Icons } from "../../constants/Icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -33,6 +34,8 @@ import { supabase } from "../../service/Supabase-Client";
 import { AuthContext } from "../../context/authProvider";
 import { MoreDropdown } from "../../components/moreDropDown";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { isConnected } from "../../utils/checkNetworkBlocker";
+import NetInfo from "@react-native-community/netinfo";
 
 const MEDIA_HEIGHT = 180;
 const { height, width } = Dimensions.get("window");
@@ -178,12 +181,13 @@ const useDebounce = (value, delay = 500) => {
 };
 
 const GigsScreen = ({ navigation }) => {
+  const [checkingConnection, setCheckingConnection] = useState(true);
+  const [isOffline, setIsOffline] = useState(false);
   const { user, isWorker } = React.useContext(AuthContext);
   const { theme, isDarkMode } = React.useContext(AppContext);
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [userLocation, setUserLocation] = useState(null);
   const [jobs, setJobs] = useState([]);
-  const [workers, setWorkers] = useState([]);
   const [workerVotes, setWorkerVotes] = useState({});
   const [isWorkerMode, setIsWorkerMode] = useState(false);
   const [lastVisible, setLastVisible] = useState(null);
@@ -245,12 +249,12 @@ const GigsScreen = ({ navigation }) => {
   ).current;
 
   const moreItems = [
-    // {
-    //   title: "Find Freelancers",
-    //   icon: "MaterialCommunityIcons",
-    //   iconName: "briefcase-account-outline",
-    //   onPress: () => navigation.navigate("WorkerDirectory"),
-    // },
+    {
+      title: "Post Gig",
+      icon: "Ionicons",
+      iconName: "construct-outline",
+      onPress: () => navigation.navigate("PostJobScreen"),
+    },
     {
       title: "My Applied Gigs",
       icon: "FontAwesome6",
@@ -266,8 +270,8 @@ const GigsScreen = ({ navigation }) => {
     },
     {
       title: isWorker ? "My Worker Profile" : "Become a Worker",
-      icon: "Ionicons",
-      iconName: isWorker ? "person-circle-outline" : "construct-outline",
+      icon: isWorker ? "Ionicons" : "MaterialCommunityIcons",
+      iconName: isWorker ? "person-circle-outline" : "briefcase-account-outline",
       onPress: () => navigation.navigate("WorkerRegistration"),
     },
   ];
@@ -290,12 +294,69 @@ const GigsScreen = ({ navigation }) => {
     }
   };
 
+  //this code controll the fecthing of data based on network connection
+  const wasOffline = useRef(false);
+
   useEffect(() => {
-    loadUserLocation();
-    setLoadingWorkers(true);
-    loadWorkers(true);
-    fetchLiveGigs(true);
-    loadWorkerVotes();
+    // 1. Define the logic to run when state changes
+    const onNetworkChange = (state) => {
+      // 1. Determine current state
+      const isNowConnected = !!(
+        state.isConnected && state.isInternetReachable !== false
+      );
+
+
+      // 3. THE BRIDGE: Only trigger if we moved from true OFFLINE to true ONLINE
+      if (wasOffline.current === true && isNowConnected === true) {
+        console.log("---------------------------------------");
+        console.log("RECONNECTION DETECTED: AUTO-REFRESHING");
+        console.log("---------------------------------------");
+
+        loadUserLocation();
+        setLoadingWorkers(true);
+        loadWorkers(true);
+        fetchLiveGigs(false);
+        loadWorkerVotes();
+      }
+
+      // 4. SYNC UI
+      setIsOffline(!isNowConnected);
+      setCheckingConnection(false);
+
+      // 5. UPDATE MEMORY LAST: Save the current state for the NEXT event
+      wasOffline.current = !isNowConnected;
+    };
+
+    // 2. Subscribe to NetInfo (it passes the 'state' automatically)
+    const unsubscribeNet = NetInfo.addEventListener(onNetworkChange);
+
+    // 3. Handle AppState (Returning to app)
+    const unsubscribeApp = AppState.addEventListener(
+      "change",
+      async (nextState) => {
+        if (nextState === "active") {
+          const state = await NetInfo.fetch();
+         
+
+          onNetworkChange(state);
+        }
+      },
+    );
+
+    // 4. Initial Load
+    const initializeData = async () => {
+      const state = await NetInfo.fetch();
+      onNetworkChange(state); // Set initial offline/online status
+
+      // Always load data on mount
+      loadUserLocation();
+      setLoadingWorkers(true);
+      loadWorkers(true);
+      fetchLiveGigs(false);
+      loadWorkerVotes();
+    };
+
+    initializeData();
 
     const subscription = subscribeToGigs(() => {
       if (viewMode === "gigs") fetchLiveGigs(false);
@@ -303,21 +364,35 @@ const GigsScreen = ({ navigation }) => {
 
     return () => {
       if (subscription) supabase.removeChannel(subscription);
+      unsubscribeNet();
+      unsubscribeApp.remove();
     };
   }, []);
+
+
+
+  //-------------this code is correct for inial mount  , parked because of network checks
+  // useEffect(() => {
+  //   loadUserLocation();
+  //   setLoadingWorkers(true);
+  //   loadWorkers(true);
+  //   fetchLiveGigs(true);
+  //   loadWorkerVotes();
+
+  //   const subscription = subscribeToGigs(() => {
+  //     if (viewMode === "gigs") fetchLiveGigs(false);
+  //   });
+
+  //   return () => {
+  //     if (subscription) supabase.removeChannel(subscription);
+  //   };
+  // }, []);
 
   useEffect(() => {
     if (viewMode === "gigs") {
       fetchLiveGigs(false);
     }
   }, [gigCategory, debouncedGigSearch]);
-
-  //this view  fetches on change of the views or toggle
-  // useEffect(() => {
-  //   if (viewMode === "gigs") {
-  //     fetchLiveGigs(false);
-  //   }
-  // }, [viewMode, gigCategory, debouncedGigSearch]);
 
   useEffect(() => {
     if (viewMode === "workers") {
@@ -476,8 +551,8 @@ const GigsScreen = ({ navigation }) => {
   };
 
   const loadWorkers = async (isNewSearch = false) => {
-    if (!loadingWorkers) return;
-    setRefreshing(true);
+    // if (!loadingWorkers) return;
+    // setRefreshing(true);
     setLoadingWorkers(true);
     // setLoadingWorkers(false);
 
@@ -494,12 +569,9 @@ const GigsScreen = ({ navigation }) => {
 
     if (!result.error) {
       if (isNewSearch) {
-        setWorkers(result.workers);
         setFilteredWorkers(result.workers);
         setGigHasMore(result.hasMore);
       } else {
-        // block for load more content
-        setWorkers((prev) => [...prev, ...result.workers]);
         setFilteredWorkers((prev) => [...prev, ...result.workers]);
         setGigHasMore(result.hasMore);
       }
@@ -509,18 +581,32 @@ const GigsScreen = ({ navigation }) => {
     }
 
     setRefreshing(false);
+    setLoadingWorkers(false);
+    console.log("-----------------end");
   };
 
   // Fetch logic
 
   const fetchLiveGigs = async (isLoadMore = false) => {
+    // 1. BLOCK: Check network before doing anything else
+    const connected = await isConnected();
+
+    if (!connected) {
+      setIsOffline(true); // Triggers the "No Internet" UI state
+      setLoadingGigs(false);
+      setRefreshing(false);
+      return;
+    }
+
     if (isLoadMore && (!nextCursor.createdAt || loadingGigs)) return;
 
     if (isLoadMore) {
       setLoadingGigs(true);
     } else {
-      setRefreshing(true);
-      // Reset cursor for fresh refresh
+      setJobs([]);
+      setLoadingGigs(true);
+      setIsOffline(false);
+      // setRefreshing(true);
       setNextCursor({ createdAt: null, id: null });
     }
 
@@ -679,6 +765,79 @@ const GigsScreen = ({ navigation }) => {
           </View>
         </View>
       </TouchableOpacity>
+    );
+  };
+
+  const SkeletonJobCard = ({ theme, isDarkMode }) => {
+    const shimmer = React.useRef(new Animated.Value(0)).current;
+
+    useEffect(() => {
+      Animated.loop(
+        Animated.timing(shimmer, {
+          toValue: 1,
+          duration: 1200,
+          useNativeDriver: true,
+        }),
+      ).start();
+    }, []);
+
+    const opacity = shimmer.interpolate({
+      inputRange: [0, 1],
+      outputRange: [0.3, 0.7],
+    });
+
+    const bg = isDarkMode ? "#2a2a2a" : "#e5e5e5";
+
+    const Block = ({ style }) => (
+      <Animated.View
+        style={[{ backgroundColor: bg, opacity, borderRadius: 6 }, style]}
+      />
+    );
+
+    return (
+      <View style={[styles.jobCard, { backgroundColor: theme.colors.card }]}>
+        {/* Image Skeleton */}
+        <Block style={{ width: "100%", height: 180 }} />
+
+        <View style={{ padding: 16 }}>
+          {/* Title + Price */}
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              marginBottom: 10,
+            }}
+          >
+            <Block style={{ width: "60%", height: 18 }} />
+            <Block style={{ width: 60, height: 18 }} />
+          </View>
+
+          {/* Description */}
+          <Block style={{ width: "100%", height: 14, marginBottom: 6 }} />
+          <Block style={{ width: "80%", height: 14, marginBottom: 12 }} />
+
+          {/* Location */}
+          <Block style={{ width: "50%", height: 12, marginBottom: 12 }} />
+
+          {/* Footer */}
+          <View
+            style={{ flexDirection: "row", justifyContent: "space-between" }}
+          >
+            <Block style={{ width: 100, height: 12 }} />
+            <Block style={{ width: 70, height: 12 }} />
+          </View>
+        </View>
+      </View>
+    );
+  };
+
+  const SkeletonList = ({ theme, isDarkMode }) => {
+    return (
+      <View style={{ paddingTop: 16 }}>
+        {[1, 2, 3].map((i) => (
+          <SkeletonJobCard key={i} theme={theme} isDarkMode={isDarkMode} />
+        ))}
+      </View>
     );
   };
 
@@ -923,14 +1082,48 @@ const GigsScreen = ({ navigation }) => {
     );
   };
 
-  const handleToggleWorker = () => {
-    if (viewMode === 'gigs') {
-      setViewMode('workers');
-    } else if (viewMode === 'workers') {
-      setViewMode('gigs');
-    } else {
-      setViewMode('gigs');
-    }
+  // 1. Show NOTHING or a Loader while checking the very first time
+  if (checkingConnection) {
+    return (
+      <View style={styles.centered}>
+        {/* <ActivityIndicator size="large" color={theme.colors.primary} /> */}
+      </View>
+    );
+  }
+
+  //2 offline to tell user to connect
+  if (isOffline) {
+    return (
+      <View
+        style={[
+          styles.offlineContainer,
+          { backgroundColor: theme.colors.background },
+        ]}
+      >
+        <Icons.Ionicons
+          name="cloud-offline-outline"
+          size={64}
+          color={theme.colors.sub_text}
+        />
+        <Text style={[styles.offlineTitle, { color: theme.colors.sub_text }]}>
+          No Internet Connection
+        </Text>
+        <Text
+          style={[styles.offlineSubtitle, { color: theme.colors.sub_text }]}
+        >
+          Check your network settings to see the latest gigs on Pomy.
+        </Text>
+        {/* <TouchableOpacity style={styles.retryButton} onPress={loadGigs}> */}
+        <TouchableOpacity
+          style={[
+            styles.retryButton,
+            { backgroundColor: theme.colors.primary },
+          ]}
+        >
+          <Text style={styles.retryText}>Retry</Text>
+        </TouchableOpacity>
+      </View>
+    );
   }
 
   return (
@@ -1242,7 +1435,7 @@ const GigsScreen = ({ navigation }) => {
                 viewMode === "workers" && styles.toggleButtonTextActive,
               ]}
             >
-              Freelancers ({workers?.length || 0})
+              Freelancers ({filteredWorkers?.length || 0})
             </Text>
           </TouchableOpacity>
         </View>
@@ -1260,22 +1453,45 @@ const GigsScreen = ({ navigation }) => {
           refreshing={refreshing}
           onEndReached={() => fetchLiveGigs(true)}
           onEndReachedThreshold={0.3}
-          ListEmptyComponent={() =>
-            !refreshing && (
-              <View style={styles.emptyContainer}>
-                <Icons.Ionicons name="search-outline" size={50} color="#DDD" />
-                <Text style={styles.emptyTitle}>No Gigs Available</Text>
-                <Text style={styles.emptySubtitle}>
-                  We couldn't find anything in {gigCategory}.
-                </Text>
-              </View>
-            )
-          }
-          ListFooterComponent={() =>
-            loadingGigs && (
-              <Text style={styles.emptySubtitle}>fetching more jobs....</Text>
-            )
-          }
+          ListEmptyComponent={() => {
+            if (loadingGigs) {
+              return <SkeletonList theme={theme} isDarkMode={isDarkMode} />;
+            }
+
+            if (!refreshing && jobs.length === 0) {
+              return (
+                <View style={styles.emptyContainer}>
+                  <Icons.Ionicons
+                    name="search-outline"
+                    size={50}
+                    color="#DDD"
+                  />
+                  <Text style={styles.emptyTitle}>No Gigs Available</Text>
+                  <Text style={styles.emptySubtitle}>
+                    We couldn't find anything in {gigCategory}.
+                  </Text>
+                </View>
+              );
+            }
+
+            return null;
+          }}
+          ListFooterComponent={() => {
+            if (loadingGigs && jobs.length > 0) {
+              return (
+                <View style={{ paddingVertical: 30, alignItems: "center" }}>
+                  <ActivityIndicator
+                    size="small"
+                    color={theme.colors.primary || "#000"}
+                  />
+                  <Text style={[styles.emptySubtitle, { marginTop: 10 }]}>
+                    fetching more jobs....
+                  </Text>
+                </View>
+              );
+            }
+            return <View style={{ height: 40 }} />;
+          }}
           removeClippedSubviews={true}
           initialNumToRender={10}
           maxToRenderPerBatch={10}
@@ -1288,7 +1504,8 @@ const GigsScreen = ({ navigation }) => {
           contentContainerStyle={styles.jobsList}
           showsVerticalScrollIndicator={false}
           onRefresh={() => {
-            setRefreshing(true);
+            setFilteredWorkers([]);
+            // setRefreshing(true);
             setLoadingWorkers(true);
             loadWorkers(true);
           }}
@@ -1299,23 +1516,54 @@ const GigsScreen = ({ navigation }) => {
             loadWorkers(false);
           }}
           onEndReachedThreshold={0.3}
-          ListEmptyComponent={() =>
-            !refreshing && (
-              <View style={styles.emptyContainer}>
-                <Icons.Ionicons name="people-outline" size={60} color="#DDD" />
-                <Text style={styles.emptyTitle}>No Workers Found</Text>
-                <Text style={styles.emptySubtitle}>
-                  Try changing the category or check back later.
-                </Text>
-              </View>
-            )
-          }
+          ListEmptyComponent={() => {
+            // 1. Show skeleton while refreshing
+            // if (refreshing || loadingWorkers) {
+            if (refreshing || loadingWorkers) {
+              return <SkeletonList theme={theme} isDarkMode={isDarkMode} />;
+            }
+
+            // 2. Show empty state only if NOT refreshing and list is empty
+            // Added the "return" keyword here:
+            if (!refreshing && filteredWorkers.length === 0) {
+              return (
+                <View style={styles.emptyContainer}>
+                  <Icons.Ionicons
+                    name="people-outline"
+                    size={60}
+                    color="#DDD"
+                  />
+                  <Text style={styles.emptyTitle}>No Workers Found</Text>
+                  <Text style={styles.emptySubtitle}>
+                    Try changing the category or check back later.
+                  </Text>
+                </View>
+              );
+            }
+
+            return null;
+          }}
           ListFooterComponent={() => {
-            !loadingWorkers && (
-              <Text style={styles.emptySubtitle}>
-                Loading more workers......
-              </Text>
-            );
+            // -!loadingWorkers && (
+            //   <Text style={styles.emptySubtitle}>
+            //     Loading more workers......
+            //   </Text>
+            // );
+
+            if (loadingWorkers && filteredWorkers.length > 0) {
+              return (
+                <View style={{ paddingVertical: 30, alignItems: "center" }}>
+                  <ActivityIndicator
+                    size="small"
+                    color={theme.colors.primary || "#000"}
+                  />
+                  <Text style={[styles.emptySubtitle, { marginTop: 10 }]}>
+                    fetching more workers....
+                  </Text>
+                </View>
+              );
+            }
+            return <View style={{ height: 40 }} />;
           }}
           removeClippedSubviews={true}
           initialNumToRender={10}
@@ -2120,6 +2368,36 @@ const styles = StyleSheet.create({
     // This color makes the pipe separators pop slightly less than the text for better focus
     includeFontPadding: false,
     marginBottom: 14,
+  },
+  // offline codeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee
+  offlineContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+    backgroundColor: "#fff",
+  },
+  offlineTitle: {
+    fontSize: 20,
+    fontWeight: "700",
+    marginTop: 16,
+    color: "#1e293b",
+  },
+  offlineSubtitle: {
+    fontSize: 14,
+    color: "#64748b",
+    textAlign: "center",
+    marginTop: 8,
+    marginBottom: 24,
+  },
+  retryButton: {
+    paddingHorizontal: 32,
+    paddingVertical: 12,
+    borderRadius: 12,
+  },
+  retryText: {
+    color: "#fff",
+    fontWeight: "600",
   },
 });
 
