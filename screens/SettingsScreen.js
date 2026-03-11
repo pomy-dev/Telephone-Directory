@@ -9,6 +9,7 @@ import { TextInput } from "react-native-paper";
 import { Icons } from "../constants/Icons";
 import { AppContext } from "../context/appContext";
 import { AuthContext } from "../context/authProvider";
+import { CustomToast } from "../components/customToast";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Reusable Menu Item Component
@@ -371,6 +372,17 @@ export default function ProfileScreen({ navigation }) {
     }
   }, [user]);
 
+
+
+  const handleLogout = () => {
+    try {
+      logout()
+      CustomToast("Logged out 🚶🏾‍♂️‍➡️", "Sign In to start again")
+    } catch (error) {
+      throw new Error(error)
+    }
+  }
+
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: theme.colors.background }]}
@@ -388,7 +400,7 @@ export default function ProfileScreen({ navigation }) {
         </View>
 
         {/* Logout Button */}
-        <TouchableOpacity onPress={logout} style={styles.logoutButton}>
+        <TouchableOpacity onPress={handleLogout} style={styles.logoutButton}>
           <Icons.AntDesign name="logout" size={20} color="#ef4444" />
           <Text style={[styles.logoutText, { color: "#ef4444" }]}>
             Sign Out

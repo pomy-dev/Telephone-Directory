@@ -57,20 +57,20 @@ export const AuthProvider = ({ children }) => {
       firebaseAuth,
       async (currentUser) => {
         if (currentUser) {
-          // await currentUser.reload()
-          // if (currentUser.emailVerified) {
-          setUser(currentUser);
-          // 2. CREATE OR UPDATE the profile in Supabase
-          await syncUserProfile(currentUser);
-          // App is opening with an existing logged-in user
-          await checkWorkerStatus(currentUser.uid);
-          // } else {
-          //   Alert.alert('Email Unverified!', 'Your email account is unverified. Try to verify it from your account.',
-          //     [
-          //       { text: "Cancel", style: "cancel" },
-          //       { text: "Verify", onPress: async () => { verifyEmail() } }
-          //     ])
-          // }
+          await currentUser.reload()
+          if (currentUser.emailVerified) {
+            setUser(currentUser);
+            // 2. CREATE OR UPDATE the profile in Supabase
+            await syncUserProfile(currentUser);
+            // App is opening with an existing logged-in user
+            await checkWorkerStatus(currentUser.uid);
+          } else {
+            Alert.alert('Email Unverified!', 'Your email account is unverified. Try to verify it from your account.',
+              [
+                { text: "Cancel", style: "cancel" },
+                { text: "Verify", onPress: async () => { verifyEmail() } }
+              ])
+          }
         } else {
           setUser(null);
           setIsWorker(false);
@@ -96,7 +96,7 @@ export const AuthProvider = ({ children }) => {
     const signInResult = await GoogleSignin.signIn();
 
     // Try the new style of google-sign in result, from v13+ of that module
-    idToken = signInResult.data?.idToken;
+    let idToken = signInResult.data?.idToken;
     if (!idToken) {
       // if you are using older versions of google-signin, try old style result
       idToken = signInResult.idToken;
@@ -116,31 +116,9 @@ export const AuthProvider = ({ children }) => {
     return signInWithCredential(getAuth(), googleCredential);
   };
 
-  // const googleLogin = async (connection) => {
-  //   try {
-  //     const credentials = await auth0.webAuth.authorize({
-  //       scope: "openid profile email",
-  //       connection,
-  //       redirectUri: AUTH0_REDIRECT_URI,
-  //     });
-
-  //     // Decode the JWT to get user info
-  //     const decodedUser = jwtDecode(credentials.idToken);
-
-  //     // Store tokens & user info
-  //     setAccessToken(credentials.accessToken);
-  //     setUser(decodedUser);
-
-  //     return credentials;
-  //   } catch (error) {
-  //     console.error(`Social login (${connection}) failed:`, error);
-  //     throw error;
-  //   }
-  // };
-
-  // const verifyEmail = async (user) => {
-  //   await sendEmailVerification(user);
-  // }
+  const verifyEmail = async (user) => {
+    await sendEmailVerification(user);
+  }
 
   const emailSignUp = async (name, email, password) => {
 
@@ -175,17 +153,17 @@ export const AuthProvider = ({ children }) => {
         password,
       );
       const user = userCredential.user;
-      // if (user && user.emailVerified) {
-      //   return user
-      // } else {
-      //   Alert.alert('Email Unverified!', 'Your email account is unverified. Try to verify it from your account.',
-      //     [
-      //       { text: "Cancel", style: "cancel" },
-      //       {
-      //         text: "Verify", onPress: async () => { await verifyEmail(user) }
-      //       }
-      //     ])
-      // }
+      if (user && user.emailVerified) {
+        return user
+      } else {
+        Alert.alert('Email Unverified!', 'Your email account is unverified. Try to verify it from your account.',
+          [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Verify", onPress: async () => { await verifyEmail(user) }
+            }
+          ])
+      }
       return user
     } catch (error) {
       console.error("Login Failed:", error.message);
