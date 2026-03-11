@@ -23,7 +23,7 @@ import { AuthContext } from "../../context/authProvider";
 const { width } = Dimensions.get("window");
 
 export default function TransportationDetailsScreen({ navigation, route }) {
-  const { vehicleData } = route.params
+  const { vehicleData } = route.params;
   const [vehicle, setVehicle] = useState(vehicleData);
   const from = route.params?.from || "direct";
   const { theme, isDarkMode } = React.useContext(AppContext);
@@ -63,12 +63,13 @@ export default function TransportationDetailsScreen({ navigation, route }) {
   }
 
   const handleCall = () => {
-    if ((vehicle.vehicle_type === 'minibus'
-      || vehicle.vehicle_type === 'bus'
-      || vehicle.vehicle_type === 'sprinter'
-      || vehicle.vehicle_type === 'schoolbus'
-      || vehicle.vehicle_type === 'staffbus')
-      && vehicle.vehicle_category === 'public_transport'
+    if (
+      (vehicle.vehicle_type === "minibus" ||
+        vehicle.vehicle_type === "bus" ||
+        vehicle.vehicle_type === "sprinter" ||
+        vehicle.vehicle_type === "schoolbus" ||
+        vehicle.vehicle_type === "staffbus") &&
+      vehicle.vehicle_category === "public_transport"
     ) {
       Linking.openURL(`tel:${vehicle.agent_phone}`);
     } else {
@@ -78,30 +79,35 @@ export default function TransportationDetailsScreen({ navigation, route }) {
 
   const handleWhatsApp = () => {
     try {
-      if ((vehicle.vehicle_type === 'minibus'
-        || vehicle.vehicle_type === 'bus'
-        || vehicle.vehicle_type === 'sprinter'
-        || vehicle.vehicle_type === 'schoolbus'
-        || vehicle.vehicle_type === 'staffbus')
-        && vehicle.vehicle_category === 'public_transport'
+      if (
+        (vehicle.vehicle_type === "minibus" ||
+          vehicle.vehicle_type === "bus" ||
+          vehicle.vehicle_type === "sprinter" ||
+          vehicle.vehicle_type === "schoolbus" ||
+          vehicle.vehicle_type === "staffbus") &&
+        vehicle.vehicle_category === "public_transport"
       ) {
-        Linking.openURL(`whatsapp://send?phone=${vehicle.agent_phone?.replace(/[^0-9]/g, '')}`);
+        Linking.openURL(
+          `whatsapp://send?phone=${vehicle?.agent_phone?.replace(/[^0-9]/g, "")}`,
+        );
       } else {
-        Linking.openURL(`whatsapp://send?phone=${vehicle.owner_info.phone?.replace(/[^0-9]/g, '')}`);
+        Linking.openURL(
+          `whatsapp://send?phone=${vehicle?.owner_info.phone?.replace(/[^0-9]/g, "")}`,
+        );
       }
     } catch (err) {
-      Alert.alert('⚠️', err)
+      Alert.alert("⚠️", err);
     }
-
   };
 
   const handleEmail = () => {
-    if ((vehicle.vehicle_type === 'minibus'
-      || vehicle.vehicle_type === 'bus'
-      || vehicle.vehicle_type === 'sprinter'
-      || vehicle.vehicle_type === 'schoolbus'
-      || vehicle.vehicle_type === 'staffbus')
-      && vehicle.vehicle_category === 'public_transport'
+    if (
+      (vehicle.vehicle_type === "minibus" ||
+        vehicle.vehicle_type === "bus" ||
+        vehicle.vehicle_type === "sprinter" ||
+        vehicle.vehicle_type === "schoolbus" ||
+        vehicle.vehicle_type === "staffbus") &&
+      vehicle.vehicle_category === "public_transport"
     ) {
       Linking.openURL(`mailto:indabukocalculus@gmail.com`);
     } else {
@@ -111,29 +117,33 @@ export default function TransportationDetailsScreen({ navigation, route }) {
 
   const handleSMS = async () => {
     try {
-      const shareMessage = `Hello ${vehicle?.owner_info.name}!\n\n` +
+      const shareMessage =
+        `Hello ${vehicle?.owner_info.name}!\n\n` +
         `--Do Not Edit--
                     [Transport Service: ${vehicle?.registration} - No.${vehicle.id}]\n\n`;
 
-      let smsUrl = Platform.OS === "ios"
-        ? `sms:${vehicle?.agent_phone}&body=${encodeURIComponent(shareMessage)}`
-        : `smsto:${vehicle?.agent_phone}?body=${encodeURIComponent(shareMessage)}`;
+      let smsUrl =
+        Platform.OS === "ios"
+          ? `sms:${vehicle?.agent_phone}&body=${encodeURIComponent(shareMessage)}`
+          : `smsto:${vehicle?.agent_phone}?body=${encodeURIComponent(shareMessage)}`;
 
-      if ((vehicle.vehicle_type === 'minibus'
-        || vehicle.vehicle_type === 'bus'
-        || vehicle.vehicle_type === 'sprinter'
-        || vehicle.vehicle_type === 'schoolbus'
-        || vehicle.vehicle_type === 'staffbus')
-        && vehicle.vehicle_category === 'public_transport'
+      if (
+        (vehicle.vehicle_type === "minibus" ||
+          vehicle.vehicle_type === "bus" ||
+          vehicle.vehicle_type === "sprinter" ||
+          vehicle.vehicle_type === "schoolbus" ||
+          vehicle.vehicle_type === "staffbus") &&
+        vehicle.vehicle_category === "public_transport"
       ) {
-        await Linking.openURL(smsUrl)
+        await Linking.openURL(smsUrl);
       } else {
-        smsUrl = Platform.OS === "ios"
-          ? `sms:${vehicle?.owner_info?.phone}&body=${encodeURIComponent(shareMessage)}`
-          : `smsto:${vehicle?.owner_info?.phone}?body=${encodeURIComponent(shareMessage)}`;
+        smsUrl =
+          Platform.OS === "ios"
+            ? `sms:${vehicle?.owner_info?.phone}&body=${encodeURIComponent(shareMessage)}`
+            : `smsto:${vehicle?.owner_info?.phone}?body=${encodeURIComponent(shareMessage)}`;
 
         await Linking.openURL(smsUrl);
-      };
+      }
     } catch (error) {
       throw new Error(error);
     }
@@ -143,7 +153,7 @@ export default function TransportationDetailsScreen({ navigation, route }) {
     try {
       await Share.share({
         message: `Check out this vehicle for hire: ${vehicle.vehicle_category}\nLocation: ${vehicle.location.address}`,
-        title: vehicle.vehicle_type
+        title: vehicle.vehicle_type,
       });
     } catch (error) {
       console.log("Error sharing:", error);
@@ -163,8 +173,13 @@ export default function TransportationDetailsScreen({ navigation, route }) {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
+    <View
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+    >
+      <StatusBar
+        barStyle={isDarkMode ? "light-content" : "dark-content"}
+        backgroundColor={theme.colors.background}
+      />
       <SecondaryNav title="Fore-Hire Details" />
 
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -226,9 +241,10 @@ export default function TransportationDetailsScreen({ navigation, route }) {
             <View style={styles.headerLeft}>
               <Text style={styles.title}>
                 {vehicle?.vehicle_category
-                  .replace(/_/g, " ").split(" ").map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                  .join(" ") || "Vehicle Details"
-                }
+                  ?.replace(/_/g, " ")
+                  .split(" ")
+                  .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                  .join(" ") || "Vehicle Details"}
               </Text>
               <View style={styles.vehicleInfoRow}>
                 <Text style={styles.makeModel}>
@@ -394,7 +410,7 @@ export default function TransportationDetailsScreen({ navigation, route }) {
                     { color: theme.colors.sub_text },
                   ]}
                 >
-                  {vehicle.operating_days.join(", ")}
+                  {vehicle?.operating_days?.join(", ")}
                 </Text>
               </View>
               <View style={styles.scheduleRow}>
@@ -459,7 +475,7 @@ export default function TransportationDetailsScreen({ navigation, route }) {
                   >
                     {vehicle.owner_info.name}
                   </Text>
-                  {vehicle.vehicle_certifications.license && (
+                  {vehicle?.vehicle_certifications?.license && (
                     <View style={styles.verifiedBadge}>
                       <Ionicons
                         name="checkmark-circle"
@@ -539,7 +555,7 @@ export default function TransportationDetailsScreen({ navigation, route }) {
                   </Text>
                 </View>
               )}
-              {vehicle.vehicle_certifications?.license && (
+              {vehicle?.vehicle_certifications?.license && (
                 <View style={styles.certificationItem}>
                   <Ionicons name="document-text" size={20} color="#10b981" />
                   <Text
