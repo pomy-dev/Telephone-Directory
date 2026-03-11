@@ -18,76 +18,13 @@ import { Icons } from "../../constants/Icons";
 import { AppContext } from "../../context/appContext";
 import SecondaryNav from "../../components/SecondaryNav";
 import { getTransportById } from "../../service/Supabase-Fuctions";
-import App from "../../App";
 import { AuthContext } from "../../context/authProvider";
 
 const { width } = Dimensions.get("window");
 
-const mapTransportData = (raw) => {
-  if (!raw)
-    return {
-      vehicle_images: [],
-      routes: [],
-      vehicle_features: [],
-      owner_info: {},
-      location: {},
-    };
-
-  // 1. Handle JSONB owner_info (Safe Parsing)
-  let owner = raw.owner_info;
-  if (typeof owner === "string") {
-    try {
-      owner = JSON.parse(owner);
-    } catch (e) {
-      owner = {};
-    }
-  }
-
-  // 2. Extract Images (Check for the 'url' property in the objects)
-  const images = (raw.vehicle_images || [])
-    .map((img) => (typeof img === "string" ? img : img?.url))
-    .filter((url) => url); // Remove any undefined/null urls
-
-  // 3. Date formatting
-  const formattedDate = raw.created_at ? raw.created_at.split(" ")[0] : "";
-
-  // 4. Safe Price (handle null)
-  const displayPrice = raw.price ? String(raw.price) : "0";
-
-  return {
-    ...raw,
-    id: raw.id,
-    make: raw.vehicle_make || "",
-    model: raw.vehicle_model || "Vehicle Details",
-    description: raw.description || "No description provided.",
-    price: displayPrice,
-    priceType: raw.price_type || "",
-    vehicle_category: raw.vehicle_category || "",
-    routes: raw.routes,
-    operating_days: raw.operating_days || [],
-    vehicle_images: images || [],
-    vehicle_features: raw.vehicle_features || [],
-    vehicle_certifications: raw.vehicle_certifications || {},
-    // Safe access for location
-    location:
-      typeof raw.location === "string"
-        ? JSON.parse(raw.location)?.address
-        : raw.location?.address || "Location not specified",
-    owner_info: raw.owner_info || {
-      name: "Owner",
-      email: "",
-      phone: "",
-      whatsap: "7897934",
-    },
-    postedDate: formattedDate,
-    rating: raw.rating_average || 0,
-  };
-};
-
 export default function TransportationDetailsScreen({ navigation, route }) {
-  const [vehicle, setVehicle] = useState(
-    mapTransportData(route.params?.vehicle),
-  );
+  const { vehicleData } = route.params
+  const [vehicle, setVehicle] = useState(vehicleData);
   const from = route.params?.from || "direct";
   const { theme, isDarkMode } = React.useContext(AppContext);
   const { user } = React.useContext(AuthContext);
@@ -103,7 +40,7 @@ export default function TransportationDetailsScreen({ navigation, route }) {
 
           if (response.success && response.data) {
             // Map the fresh database results to UI keys
-            setVehicle(mapTransportData(response.data));
+            setVehicle(response.data);
           }
         } catch (err) {
           console.error("Error fetching transport details:", err);
@@ -126,35 +63,80 @@ export default function TransportationDetailsScreen({ navigation, route }) {
   }
 
   const handleCall = () => {
-    Linking.openURL(`tel:${vehicle.agent_phone}`);
+    if ((vehicle.vehicle_type === 'minibus'
+      || vehicle.vehicle_type === 'bus'
+      || vehicle.vehicle_type === 'sprinter'
+      || vehicle.vehicle_type === 'schoolbus'
+      || vehicle.vehicle_type === 'staffbus')
+      && vehicle.vehicle_category === 'public_transport'
+    ) {
+      Linking.openURL(`tel:${vehicle.agent_phone}`);
+    } else {
+      Linking.openURL(`tel:${vehicle.owner_info?.phone}`);
+    }
   };
 
   const handleWhatsApp = () => {
-    // Optional chaining and check if whatsapp exists
-    const whatsappNum = vehicle?.agent_phone;
-
-    if (!whatsappNum) {
-      Alert.alert("Error", "WhatsApp number not provided by owner.");
-      return;
+    try {
+      if ((vehicle.vehicle_type === 'minibus'
+        || vehicle.vehicle_type === 'bus'
+        || vehicle.vehicle_type === 'sprinter'
+        || vehicle.vehicle_type === 'schoolbus'
+        || vehicle.vehicle_type === 'staffbus')
+        && vehicle.vehicle_category === 'public_transport'
+      ) {
+        Linking.openURL(`whatsapp://send?phone=${vehicle.agent_phone?.replace(/[^0-9]/g, '')}`);
+      } else {
+        Linking.openURL(`whatsapp://send?phone=${vehicle.owner_info.phone?.replace(/[^0-9]/g, '')}`);
+      }
+    } catch (err) {
+      Alert.alert('⚠️', err)
     }
 
-    Linking.openURL(
-      `whatsapp://send?phone=${whatsappNum.replace(/[^0-9]/g, "")}`,
-    );
   };
 
   const handleEmail = () => {
-    Linking.openURL(`mailto:${vehicle.owner_info.email}`);
+    if ((vehicle.vehicle_type === 'minibus'
+      || vehicle.vehicle_type === 'bus'
+      || vehicle.vehicle_type === 'sprinter'
+      || vehicle.vehicle_type === 'schoolbus'
+      || vehicle.vehicle_type === 'staffbus')
+      && vehicle.vehicle_category === 'public_transport'
+    ) {
+      Linking.openURL(`mailto:indabukocalculus@gmail.com`);
+    } else {
+      Linking.openURL(`mailto:${vehicle.owner_info?.email}`);
+    }
   };
 
   const handleSMS = async () => {
-    shareMessage = `Hello ${vehicle?.owner_info?.name}!\n\n`;
-    const smsUrl =
-      Platform.OS === "ios"
-        ? `sms:${vehicle?.agent_phone}&body=${encodeURIComponent(shareMessage)}` // iOS uses semicolon
+    try {
+      const shareMessage = `Hello ${vehicle?.owner_info.name}!\n\n` +
+        `--Do Not Edit--
+                    [Transport Service: ${vehicle?.registration} - No.${vehicle.id}]\n\n`;
+
+      let smsUrl = Platform.OS === "ios"
+        ? `sms:${vehicle?.agent_phone}&body=${encodeURIComponent(shareMessage)}`
         : `smsto:${vehicle?.agent_phone}?body=${encodeURIComponent(shareMessage)}`;
-    if (await Linking.canOpenURL(smsUrl)) await Linking.openURL(smsUrl);
-    else throw new Error("SMS client not available");
+
+      if ((vehicle.vehicle_type === 'minibus'
+        || vehicle.vehicle_type === 'bus'
+        || vehicle.vehicle_type === 'sprinter'
+        || vehicle.vehicle_type === 'schoolbus'
+        || vehicle.vehicle_type === 'staffbus')
+        && vehicle.vehicle_category === 'public_transport'
+      ) {
+        await Linking.openURL(smsUrl)
+      } else {
+        smsUrl = Platform.OS === "ios"
+          ? `sms:${vehicle?.owner_info?.phone}&body=${encodeURIComponent(shareMessage)}`
+          : `smsto:${vehicle?.owner_info?.phone}?body=${encodeURIComponent(shareMessage)}`;
+
+        await Linking.openURL(smsUrl);
+      };
+    } catch (error) {
+      throw new Error(error);
+    }
   };
 
   const handleShare = async () => {
@@ -597,7 +579,7 @@ export default function TransportationDetailsScreen({ navigation, route }) {
           ]}
           onPress={handleShare}
         >
-          <Icons.Feather name="share-2" size={20} color="#2563eb" />
+          <Icons.Feather name="share-2" size={20} color="#fff" />
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.bookButton, { backgroundColor: theme.colors.primary }]}

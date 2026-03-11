@@ -78,7 +78,7 @@ const ProfilePreview = ({ form, setGalleryVisible, handleCall, theme }) => {
             style={styles.heroImage}
           />
         ) : (
-          <View style={[styles.heroPlaceholder, {backgroundColor: theme.colors.text }]}>
+          <View style={[styles.heroPlaceholder, { backgroundColor: theme.colors.text }]}>
             <Icons.Ionicons
               name="person-circle-outline"
               size={80}
@@ -89,11 +89,11 @@ const ProfilePreview = ({ form, setGalleryVisible, handleCall, theme }) => {
       </View>
 
       <TouchableOpacity
-        style={[styles.galleryTrigger, {backgroundColor: theme.colors.card, borderColor: theme.colors.card }]}
+        style={[styles.galleryTrigger, { backgroundColor: theme.colors.card, borderColor: theme.colors.card }]}
         onPress={() => setGalleryVisible(true)}
       >
         <Icons.Ionicons name="images" size={20} color={theme.colors.text} />
-        <Text style={[styles.galleryTriggerText,{ color:"#94a3b8"}]}>
+        <Text style={[styles.galleryTriggerText, { color: "#94a3b8" }]}>
           View Portfolio ({form.experience_images?.length || 0})
         </Text>
         <Icons.Ionicons name="chevron-forward" size={16} color="#94a3b8" />
@@ -313,9 +313,9 @@ const ProfileForm = ({
         scrollEventThrottle={16}
       >
         {isWorker && (
-          <View style={[styles.heroSectionContainer,{ backgroundColor: theme.colors.background }]}>
+          <View style={[styles.heroSectionContainer, { backgroundColor: theme.colors.background }]}>
             {/* Left Column: Profile Picture + Gallery */}
-            <View style={[styles.heroLeftColumn,{ backgroundColor: theme.colors.background }]}>
+            <View style={[styles.heroLeftColumn, { backgroundColor: theme.colors.background }]}>
               {/* Profile Picture Section (2/3) */}
               <View style={styles.profilePictureSection}>
                 {form.worker_pp && form.worker_pp.length > 0 ? (
@@ -345,7 +345,7 @@ const ProfileForm = ({
                   contentContainerStyle={styles.galleryScrollContent}
                 >
                   {form.experience_images &&
-                  form.experience_images.length > 0 ? (
+                    form.experience_images.length > 0 ? (
                     form.experience_images.map((img, index) => (
                       // <TouchableOpacity
                       //   key={`gallery-image-${index}`}
@@ -847,12 +847,12 @@ const WorkerRegistration = ({ navigation }) => {
         const newImages = result.assets.map((asset) => asset.uri);
         isGallery
           ? setForm((prev) => ({
-              ...prev,
-              experience_images: [
-                ...(prev.experience_images || []),
-                ...newImages,
-              ],
-            }))
+            ...prev,
+            experience_images: [
+              ...(prev.experience_images || []),
+              ...newImages,
+            ],
+          }))
           : setForm((prev) => ({ ...prev, worker_pp: [...newImages] }));
 
         console.log("Is Gallery. : ", isGallery, "\nUri(s): ", newImages);
@@ -867,7 +867,7 @@ const WorkerRegistration = ({ navigation }) => {
   if (fetching) return <CustomLoader />;
 
   return (
-    <SafeAreaView style={[styles.container, {backgroundColor: theme.colors.background}]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <StatusBar
         barStyle={isDarkMode ? "light-content" : "dark-content"}
         backgroundColor={theme.colors.background}
@@ -876,14 +876,14 @@ const WorkerRegistration = ({ navigation }) => {
         style={[
           styles.headerSafe,
           styles.headerNav,
-          { backgroundColor: theme.colors.background , borderBottomColor: theme.colors.background },
+          { backgroundColor: theme.colors.background, borderBottomColor: theme.colors.background },
         ]}
       >
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icons.Ionicons name="arrow-back" size={24} color={theme.colors.text} />
         </TouchableOpacity>
 
-        <Text style={[styles.headerTitle,{color: theme.colors.text ,}]}>
+        <Text style={[styles.headerTitle, { color: theme.colors.text, }]}>
           {isEditing ? "EDIT PROFILE" : "PROFILE"}
         </Text>
 
@@ -943,12 +943,12 @@ const WorkerRegistration = ({ navigation }) => {
       </KeyboardAvoidingView>
 
       <Modal visible={galleryVisible} animationType="slide">
-        <SafeAreaView style={styles.modalContainer}>
+        <SafeAreaView style={[styles.modalContainer, { backgroundColor: theme.colors.card }]}>
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setGalleryVisible(false)}>
-              <Icons.Ionicons name="close" size={28} />
+              <Icons.Ionicons name="close" size={28} color={theme.colors.text} />
             </TouchableOpacity>
-            <Text style={styles.modalTitle}>Portfolio</Text>
+            <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Portfolio</Text>
             {isEditing ? (
               <TouchableOpacity onPress={pickImage}>
                 <Icons.Ionicons name="add-circle" size={28} color="#10b981" />
@@ -991,72 +991,8 @@ const WorkerRegistration = ({ navigation }) => {
         </SafeAreaView>
       </Modal>
 
-      {/* Image Management Modal */}
-      {/* <Modal visible={manageModalVisible} transparent animationType="fade">
-        <View style={styles.manageModalOverlay}>
-          <View style={styles.manageModalContent}>
-            <View style={styles.manageModalHeader}>
-              <Text style={styles.manageModalTitle}>Manage Image</Text>
-              <TouchableOpacity onPress={() => setManageModalVisible(false)}>
-                <Icons.Ionicons name="close" size={24} color="#64748b" />
-              </TouchableOpacity>
-            </View>
-
-            <Image
-              source={{
-                uri: isDeletingProfile
-                  ? form.worker_pp[0]?.url || form.worker_pp[0]
-                  : form.experience_images[selectedImageIndex]?.url ||
-                    form.experience_images[selectedImageIndex],
-              }}
-              style={styles.manageFullImage}
-              resizeMode="contain"
-            />
-
-            <TouchableOpacity
-              style={styles.deleteImageBtn}
-              onPress={() =>
-                removeImage(selectedImageIndex, !isDeletingProfile)
-              }
-            >
-              <Icons.Ionicons name="trash-outline" size={20} color="#fff" />
-              <Text style={styles.deleteImageBtnText}>Remove from Profile</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal> */}
-
       <Modal visible={manageModalVisible} animationType="slide">
-        <SafeAreaView style={styles.modalContainer}>
-          {/* <View style={styles.modalHeader}>
-            <TouchableOpacity
-              onPress={() => {
-                setManageModalVisible(false);
-                setSelectedIndices([]);
-              }}
-            >
-              <Icons.Ionicons name="close" size={28} color="#000" />
-            </TouchableOpacity>
-            <Text style={styles.modalTitle}>Manage Gallery</Text>
-            // In the Modal Header UI
-            <TouchableOpacity onPress={toggleSelectAll}>
-              <Text style={{ color: "#3b82f6", fontWeight: "700" }}>
-                {selectedIndices.length === form.experience_images.length
-                  ? "Deselect All"
-                  : "Select All"}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={deleteSelectedImages}
-              disabled={selectedIndices.length === 0}
-            >
-              <Icons.Ionicons
-                name="trash"
-                size={26}
-                color={selectedIndices.length > 0 ? "#ef4444" : "#cbd5e1"}
-              />
-            </TouchableOpacity>
-          </View> */}
+        <SafeAreaView style={[styles.modalContainer, { backgroundColor: theme.colors.card }]}>
           <View style={styles.modalHeader}>
             <TouchableOpacity
               onPress={() => {
@@ -1064,14 +1000,14 @@ const WorkerRegistration = ({ navigation }) => {
                 setSelectedIndices([]);
               }}
             >
-              <Icons.Ionicons name="close" size={28} color="#000" />
+              <Icons.Ionicons name="close" size={28} color={theme.colors.text} />
             </TouchableOpacity>
 
-            <Text style={styles.modalTitle}>Manage Gallery</Text>
+            <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Manage Gallery</Text>
 
             {/* Corrected: Comments inside JSX must be wrapped like this */}
             <TouchableOpacity onPress={toggleSelectAll}>
-              <Text style={{ color: "#3b82f6", fontWeight: "700" }}>
+              <Text style={{ color: '#54adf0ff', fontWeight: "700" }}>
                 {selectedIndices.length === form.experience_images.length
                   ? "Deselect All"
                   : "Select All"}
@@ -1133,15 +1069,15 @@ const WorkerRegistration = ({ navigation }) => {
             </View>
           )}
         </SafeAreaView>
-      </Modal>
-    </SafeAreaView>
+      </Modal >
+    </SafeAreaView >
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1,},
+  container: { flex: 1, },
   center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  headerSafe: { borderBottomWidth: 1,},
+  headerSafe: { borderBottomWidth: 1, },
   headerNav: {
     flexDirection: "row",
     alignItems: "center",
@@ -1409,7 +1345,7 @@ const styles = StyleSheet.create({
     color: "#94a3b8",
     marginBottom: 10,
   },
-  bioPreviewText: { fontSize: 15, lineHeight: 22, color: "#475569" },
+  bioPreviewText: { fontSize: 15, lineHeight: 22, color: "#666" },
   bioInputEdit: {
     backgroundColor: "#f8fafc",
     padding: 15,
@@ -1438,7 +1374,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   uploadDocBtnText: { color: "#3b82f6", fontWeight: "800" },
-  docList: { gap: 10 ,},
+  docList: { gap: 10, },
   docItem: {
     flexDirection: "row",
     alignItems: "center",
@@ -1446,8 +1382,8 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 10,
     gap: 10,
-    marginTop:6,
-    marginBottom:10,
+    marginTop: 6,
+    marginBottom: 10,
   },
   docName: { flex: 1, fontSize: 14, fontWeight: "600" },
   skillInputWrapper: { flexDirection: "row", gap: 10, marginBottom: 15 },
@@ -1477,8 +1413,8 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 10,
   },
-  skillText: { fontWeight: "600", color: "#334155" },
-  modalContainer: { flex: 1, backgroundColor: "#fff" },
+  skillText: { fontWeight: "600", color: "#666" },
+  modalContainer: { flex: 1 },
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",

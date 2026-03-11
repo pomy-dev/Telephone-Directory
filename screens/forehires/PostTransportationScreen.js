@@ -1,19 +1,10 @@
 import React, { useState } from 'react';
 import {
-    View,
-    Text,
-    StyleSheet,
-    ScrollView,
-    TouchableOpacity,
-    StatusBar,
-    Platform,
-    TextInput,
-    Image,
-    Dimensions,
-    Alert,
-    ActivityIndicator,
-    KeyboardAvoidingView
+    View, Text, StyleSheet, ScrollView,
+    TouchableOpacity, StatusBar, Platform, Image,
+    Dimensions, Alert, ActivityIndicator, KeyboardAvoidingView
 } from 'react-native';
+import { TextInput } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import { CustomToast } from '../../components/customToast';
 import { addForhire } from '../../service/Supabase-Fuctions';
@@ -200,7 +191,7 @@ export default function PostTransportationScreen({ navigation }) {
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : -80} // tweak if needed
         >
-            <View style={styles.container}>
+            <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
                 <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
                 <View style={{ height: 20 }} />
                 <SecondaryNav
@@ -216,13 +207,13 @@ export default function PostTransportationScreen({ navigation }) {
                     <Text style={styles.progressText}>Step {currentStep} of {TOTAL_STEPS}</Text>
                 </View>
 
-                <Text style={styles.stepTitle}>{getStepTitle()}</Text>
+                <Text style={[styles.stepTitle, { color: theme.colors.sub_text }]}>{getStepTitle()}</Text>
 
                 <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
                     {/* ==================== STEP 1: Photos & Basics ==================== */}
                     {currentStep === 1 && (
                         <View style={styles.step}>
-                            <Text style={styles.sectionTitle}>Vehicle Photos *</Text>
+                            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Vehicle Photos *</Text>
                             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ marginBottom: 16, paddingHorizontal: 10 }}>
                                 {formData.images.map((uri, i) => (
                                     <View key={i} style={styles.imageWrapper}>
@@ -233,7 +224,7 @@ export default function PostTransportationScreen({ navigation }) {
                                     </View>
                                 ))}
                                 {formData.images.length < 10 && (
-                                    <TouchableOpacity style={styles.addImageBtn} onPress={pickImage}>
+                                    <TouchableOpacity style={[styles.addImageBtn, { backgroundColor: theme.colors.card }]} onPress={pickImage}>
                                         {isPickingImg ? <ActivityIndicator color={theme.colors.indicator} size={36} /> : <Ionicons name="camera-outline" size={36} color="#64748b" />}
                                         <Text style={styles.addImageText}>Add Photos</Text>
                                     </TouchableOpacity>
@@ -241,7 +232,7 @@ export default function PostTransportationScreen({ navigation }) {
                             </ScrollView>
                             {errors.images && <Text style={styles.error}>{errors.images}</Text>}
 
-                            <Text style={styles.label}>Vehicle Type *</Text>
+                            <Text style={[styles.label, { color: theme.colors.sub_text }]}>Vehicle Type *</Text>
                             <View style={styles.chipsRow}>
                                 {types.map(t => (
                                     <TouchableOpacity
@@ -257,7 +248,7 @@ export default function PostTransportationScreen({ navigation }) {
                             </View>
                             {errors.type && <Text style={styles.error}>{errors.type}</Text>}
 
-                            <Text style={styles.label}>Category *</Text>
+                            <Text style={[styles.label, { color: theme.colors.sub_text }]}>Category *</Text>
                             <View style={styles.chipsRow}>
                                 {categories.map(c => (
                                     <TouchableOpacity
@@ -273,7 +264,7 @@ export default function PostTransportationScreen({ navigation }) {
                             </View>
                             {errors.category && <Text style={styles.error}>{errors.category}</Text>}
 
-                            <Text style={styles.label}>Is Boarder Crossing</Text>
+                            <Text style={[styles.label, { color: theme.colors.sub_text }]}>Is Boarder Crossing</Text>
                             <View style={styles.certificationGrid}>
                                 <TouchableOpacity
                                     style={[
@@ -285,16 +276,16 @@ export default function PostTransportationScreen({ navigation }) {
                                     <Ionicons
                                         name={formData.crossingBoarder ? 'checkmark-circle' : 'ellipse-outline'}
                                         size={28}
-                                        color={formData.crossingBoarder ? '#10b981' : '#94a3b8'}
+                                        color={formData.crossingBoarder ? theme.colors.indicator : '#94a3b8'}
                                     />
                                     <View style={{ marginLeft: 12 }}>
                                         <Text style={[
                                             styles.certLabel,
-                                            formData.crossingBoarder && styles.certLabelActive
+                                            formData.crossingBoarder && (styles.certLabelActive, { color: theme.colors.indicator })
                                         ]}>
                                             Is vehicle or fore hire crossing boarders?
                                         </Text>
-                                        <Ionicons name='globe-outline' size={18} color={formData.crossingBoarder ? '#10b981' : '#64748b'} />
+                                        <Ionicons name='globe-outline' size={18} color={formData.crossingBoarder ? theme.colors.indicator : '#64748b'} />
                                     </View>
                                 </TouchableOpacity>
                             </View>
@@ -306,26 +297,30 @@ export default function PostTransportationScreen({ navigation }) {
                         <View style={styles.step}>
                             <View style={styles.row}>
                                 <View style={styles.half}>
-                                    <Text style={styles.label}>Make *</Text>
-                                    <TextInput style={[styles.input, errors.make && styles.inputError]} placeholder="Toyota" value={formData.make} onChangeText={v => updateForm('make', v)} />
+                                    <TextInput style={[styles.input, errors.make && styles.inputError, { backgroundColor: isDarkMode ? '#666' : '#fff' }]} label="Car Make *"
+                                        mode='outlined' theme={{ roundness: 12 }}
+                                        value={formData.make} onChangeText={v => updateForm('make', v)} />
                                     {errors.make && <Text style={styles.error}>{errors.make}</Text>}
                                 </View>
                                 <View style={styles.half}>
-                                    <Text style={styles.label}>Model *</Text>
-                                    <TextInput style={[styles.input, errors.model && styles.inputError]} placeholder="Hiace" value={formData.model} onChangeText={v => updateForm('model', v)} />
+                                    <TextInput style={[styles.input, errors.model && styles.inputError, { backgroundColor: isDarkMode ? '#666' : '#fff' }]} label="Model *"
+                                        mode='outlined' theme={{ roundness: 12 }} value={formData.model} onChangeText={v => updateForm('model', v)} />
                                     {errors.model && <Text style={styles.error}>{errors.model}</Text>}
                                 </View>
                             </View>
 
                             <View style={styles.row}>
                                 <View style={styles.half}>
-                                    <Text style={styles.label}>Registration *</Text>
-                                    <TextInput style={[styles.input, errors.registration && styles.inputError]} placeholder="SD 123 AB" value={formData.registration} onChangeText={v => updateForm('registration', v)} />
+                                    <TextInput style={[styles.input, errors.registration && styles.inputError,
+                                    { backgroundColor: isDarkMode ? '#666' : '#fff' }]}
+                                        mode='outlined' theme={{ roundness: 12 }}
+                                        label="Registration No." value={formData.registration} onChangeText={v => updateForm('registration', v)} />
                                     {errors.registration && <Text style={styles.error}>{errors.registration}</Text>}
                                 </View>
                                 <View style={styles.half}>
-                                    <Text style={styles.label}>Seats</Text>
-                                    <TextInput style={styles.input} placeholder="22" value={formData.capacity} keyboardType="numeric" onChangeText={v => updateForm('capacity', v)} />
+                                    <TextInput style={[styles.input, { backgroundColor: isDarkMode ? '#666' : '#fff' }]}
+                                        mode='outlined' theme={{ roundness: 12 }}
+                                        label="Capacity (Seats)" value={formData.capacity} keyboardType="numeric" onChangeText={v => updateForm('capacity', v)} />
                                 </View>
                             </View>
                         </View>
@@ -334,17 +329,17 @@ export default function PostTransportationScreen({ navigation }) {
                     {/* ==================== STEP 3: Description & Features ==================== */}
                     {currentStep === 3 && (
                         <View style={styles.step}>
-                            <Text style={styles.label}>Description *</Text>
                             <TextInput
-                                style={[styles.input, styles.textArea, errors.description && styles.inputError]}
-                                placeholder="Tell customers about your vehicle..."
+                                style={[styles.input, styles.textArea, errors.description && styles.inputError, { backgroundColor: isDarkMode ? '#666' : '#fff' }]}
+                                label="Describe your vehicle & services..."
+                                mode='outlined' theme={{ roundness: 12 }}
                                 value={formData.description}
                                 onChangeText={v => updateForm('description', v)}
                                 multiline
                             />
                             {errors.description && <Text style={styles.error}>{errors.description}</Text>}
 
-                            <Text style={styles.label}>Operating Days *</Text>
+                            <Text style={[styles.label, { color: theme.colors.sub_text }]}>Operating Days *</Text>
                             <View style={styles.chipsRow}>
                                 {daysOfWeek.map(day => (
                                     <TouchableOpacity
@@ -365,16 +360,17 @@ export default function PostTransportationScreen({ navigation }) {
 
                             <View style={styles.row}>
                                 <View style={styles.half}>
-                                    <Text style={styles.label}>Start Time</Text>
-                                    <TextInput style={styles.input} placeholder="08:00" value={formData.operatingStart} onChangeText={v => updateForm('operatingStart', v)} />
+                                    <TextInput style={[styles.input, { backgroundColor: isDarkMode ? '#666' : '#fff' }]} label="Start Time"
+                                        mode='outlined' theme={{ roundness: 12 }}
+                                        value={formData.operatingStart} onChangeText={v => updateForm('operatingStart', v)} />
                                 </View>
                                 <View style={styles.half}>
-                                    <Text style={styles.label}>End Time</Text>
-                                    <TextInput style={styles.input} placeholder="18:00" value={formData.operatingEnd} onChangeText={v => updateForm('operatingEnd', v)} />
+                                    <TextInput style={[styles.input, { backgroundColor: isDarkMode ? '#666' : '#fff' }]} label="End Time"
+                                        mode='outlined' theme={{ roundness: 12 }} value={formData.operatingEnd} onChangeText={v => updateForm('operatingEnd', v)} />
                                 </View>
                             </View>
 
-                            <Text style={styles.label}>Features (Tap to select)</Text>
+                            <Text style={[styles.label, { color: theme.colors.sub_text }]}>Features (Tap to select)</Text>
                             <View style={styles.featuresGrid}>
                                 {commonFeatures.map(f => (
                                     <TouchableOpacity
@@ -395,24 +391,25 @@ export default function PostTransportationScreen({ navigation }) {
                     {/* ==================== STEP 4: Routes & Schedule ==================== */}
                     {currentStep === 4 && (
                         <View style={styles.step}>
-                            <Text style={styles.sectionTitle}>Fixed Routes (Optional)</Text>
+                            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Fixed Routes (Optional)</Text>
                             <Text style={styles.subtitle}>Great for regular trips like Mbabane → Manzini</Text>
 
                             <View style={styles.routeForm}>
                                 <View style={styles.row}>
-                                    <TextInput style={[styles.input, { flex: 1 }]} placeholder="Origin (e.g. Mbabane)" value={currentRoute.origin}
-                                        onChangeText={t => setCurrentRoute(p => ({ ...p, origin: t }))} />
-                                    <TextInput style={[styles.input, { flex: 1, marginLeft: 12 }]} placeholder="Destination (e.g. Johannesburg)"
-                                        value={currentRoute.destination} onChangeText={t => setCurrentRoute(p => ({ ...p, destination: t }))} />
+                                    <TextInput style={[styles.input, { flex: 1, backgroundColor: isDarkMode ? '#666' : '#fff' }]} label="Origin (e.g. Mbabane)" value={currentRoute.origin}
+                                        mode='outlined' theme={{ roundness: 12 }} onChangeText={t => setCurrentRoute(p => ({ ...p, origin: t }))} />
+                                    <TextInput style={[styles.input, { flex: 1, marginLeft: 6, backgroundColor: isDarkMode ? '#666' : '#fff' }]} label="Destination (e.g. Johannesburg)"
+                                        mode='outlined' theme={{ roundness: 12 }} value={currentRoute.destination} onChangeText={t => setCurrentRoute(p => ({ ...p, destination: t }))} />
                                 </View>
                                 <View style={styles.row}>
-                                    <TextInput style={[styles.input, { flex: 1 }]} placeholder="Distance (e.g. 350 km)" value={currentRoute.distance}
-                                        onChangeText={t => setCurrentRoute(p => ({ ...p, distance: t }))} />
-                                    <TextInput style={[styles.input, { flex: 1, marginLeft: 12 }]} placeholder="Duration (4-5 hrs)"
-                                        value={currentRoute.duration} onChangeText={t => setCurrentRoute(p => ({ ...p, duration: t }))} />
+                                    <TextInput style={[styles.input, { flex: 1, backgroundColor: isDarkMode ? '#666' : '#fff' }]} label="Distance (e.g. 350 km)" value={currentRoute.distance}
+                                        mode='outlined' theme={{ roundness: 12 }} onChangeText={t => setCurrentRoute(p => ({ ...p, distance: t }))} />
+                                    <TextInput style={[styles.input, { flex: 1, marginLeft: 12, backgroundColor: isDarkMode ? '#666' : '#fff' }]} placeholder="Duration (4-5 hrs)"
+                                        mode='outlined' theme={{ roundness: 12 }} value={currentRoute.duration} onChangeText={t => setCurrentRoute(p => ({ ...p, duration: t }))} />
                                 </View>
-                                <TextInput style={styles.input} placeholder="Price for this route (optional)" value={currentRoute.price}
-                                    onChangeText={t => setCurrentRoute(p => ({ ...p, price: t }))} keyboardType="numeric" />
+                                <TextInput style={[styles.input, { backgroundColor: isDarkMode ? '#666' : '#fff' }]} label="Price (optional)" mode='outlined' theme={{ roundness: 12 }}
+                                    value={currentRoute.price} onChangeText={t => setCurrentRoute(p => ({ ...p, price: t }))}
+                                    keyboardType="numeric" />
 
                                 <TouchableOpacity style={styles.addBtn} onPress={addRoute}>
                                     <Ionicons name="add-circle" size={22} color="#fff" />
@@ -433,7 +430,7 @@ export default function PostTransportationScreen({ navigation }) {
                             ))}
 
                             {/* Certifications */}
-                            <Text style={[styles.sectionTitle, { marginTop: 32 }]}>Certifications & Safety</Text>
+                            <Text style={[styles.sectionTitle, { marginTop: 32, color: theme.colors.text }]}>Certifications & Safety</Text>
                             <Text style={styles.subtitle}>Boost trust — show customers you're verified</Text>
 
                             <View style={styles.certificationGrid}>
@@ -456,16 +453,16 @@ export default function PostTransportationScreen({ navigation }) {
                                         <Ionicons
                                             name={formData.certifications[item.key] ? 'checkmark-circle' : 'ellipse-outline'}
                                             size={28}
-                                            color={formData.certifications[item.key] ? '#10b981' : '#94a3b8'}
+                                            color={formData.certifications[item.key] ? theme.colors.indicator : '#94a3b8'}
                                         />
                                         <View style={{ marginLeft: 12 }}>
                                             <Text style={[
                                                 styles.certLabel,
-                                                formData.certifications[item.key] && styles.certLabelActive
+                                                formData.certifications[item.key] && (styles.certLabelActive, { color: theme.colors.indicator })
                                             ]}>
                                                 {item.label}
                                             </Text>
-                                            <Ionicons name={item.icon} size={18} color={formData.certifications[item.key] ? '#10b981' : '#64748b'} />
+                                            <Ionicons name={item.icon} size={18} color={formData.certifications[item.key] ? theme.colors.indicator : '#64748b'} />
                                         </View>
                                     </TouchableOpacity>
                                 ))}
@@ -476,7 +473,7 @@ export default function PostTransportationScreen({ navigation }) {
                     {/* ==================== STEP 4: Location & Contact ==================== */}
                     {currentStep === 5 && (
                         <View style={styles.step}>
-                            <Text style={styles.label}>Region *</Text>
+                            <Text style={[styles.label, { color: theme.colors.text }]}>Region *</Text>
                             <View style={styles.chipsRow}>
                                 {mockAreas.map(area => (
                                     <TouchableOpacity
@@ -490,8 +487,8 @@ export default function PostTransportationScreen({ navigation }) {
                             </View>
                             {errors.locationArea && <Text style={styles.error}>{errors.locationArea}</Text>}
 
-                            <Text style={styles.label}>City</Text>
-                            <View style={styles.chipsRow}>
+                            <Text style={[styles.label, { color: theme.colors.text }]}>City</Text>
+                            <View style={[styles.chipsRow, { marginBottom: 20 }]}>
                                 {cities.map(city => (
                                     <TouchableOpacity
                                         key={city}
@@ -503,30 +500,38 @@ export default function PostTransportationScreen({ navigation }) {
                                 ))}
                             </View>
 
-                            <Text style={styles.label}>Full Address (Optional)</Text>
                             <TextInput
-                                style={styles.input}
-                                placeholder="123 Main St, Mbabane"
+                                style={[styles.input, { backgroundColor: isDarkMode ? '#666' : '#fff' }]}
+                                mode='outlined' theme={{ roundness: 12 }}
+                                label="Location/Address"
                                 value={formData.location.address}
                                 onChangeText={v => updateForm('location', { ...formData.location, address: v })}
                             />
 
-                            <Text style={styles.sectionTitle}>Your Contact Info</Text>
-                            <TextInput style={[styles.input, errors.ownerName && styles.inputError]} placeholder="Name or Company *" value={formData.ownerInfo.name} onChangeText={v => updateForm('ownerInfo', { ...formData.ownerInfo, name: v })} />
+                            <TextInput style={[styles.input, errors.ownerName && styles.inputError, { backgroundColor: isDarkMode ? '#666' : '#fff' }]}
+                                label="Name or Company *" mode='outlined' theme={{ roundness: 12 }}
+                                value={formData.ownerInfo.name} onChangeText={v => updateForm('ownerInfo', { ...formData.ownerInfo, name: v })} />
                             {errors.ownerName && <Text style={styles.error}>{errors.ownerName}</Text>}
 
-                            <TextInput style={[styles.input, errors.ownerDriver && styles.inputError]} placeholder="Driver/Operator Name (optional)" value={formData.ownerInfo.driver} onChangeText={v => updateForm('ownerInfo', { ...formData.ownerInfo, driver: v })} />
+                            <TextInput style={[styles.input, errors.ownerDriver && styles.inputError, { backgroundColor: isDarkMode ? '#666' : '#fff' }]} label="Driver/Operator Name (optional)"
+                                mode='outlined' theme={{ roundness: 12 }} value={formData.ownerInfo.driver} onChangeText={v => updateForm('ownerInfo', { ...formData.ownerInfo, driver: v })} />
                             {/* {errors.ownerDriver && <Text style={styles.error}>{errors.ownerDriver}</Text>} */}
 
-                            <TextInput style={[styles.input, errors.ownerPhone && styles.inputError]} placeholder="Phone Number *" value={formData.ownerInfo.phone} keyboardType="phone-pad" onChangeText={v => updateForm('ownerInfo', { ...formData.ownerInfo, phone: v })} />
+                            <TextInput style={[styles.input, errors.ownerPhone && styles.inputError, { backgroundColor: isDarkMode ? '#666' : '#fff' }]}
+                                mode='outlined' theme={{ roundness: 12 }} label="Phone Number *" value={formData.ownerInfo.phone} keyboardType="phone-pad"
+                                onChangeText={v => updateForm('ownerInfo', { ...formData.ownerInfo, phone: v })} />
                             {errors.ownerPhone && <Text style={styles.error}>{errors.ownerPhone}</Text>}
 
-                            <TextInput style={[styles.input, errors.ownerEmail && styles.inputError]} placeholder="Email Address *" value={formData.ownerInfo.email} keyboardType="email-address" autoCapitalize="none" onChangeText={v => updateForm('ownerInfo', { ...formData.ownerInfo, email: v })} />
+                            <TextInput style={[styles.input, errors.ownerEmail && styles.inputError, { backgroundColor: isDarkMode ? '#666' : '#fff' }]}
+                                mode='outlined' theme={{ roundness: 12 }} label="Email Address *" value={formData.ownerInfo.email} keyboardType="email-address" autoCapitalize="none" onChangeText={v => updateForm('ownerInfo', { ...formData.ownerInfo, email: v })} />
                             {errors.ownerEmail && <Text style={styles.error}>{errors.ownerEmail}</Text>}
 
-                            <TextInput style={styles.input} placeholder="WhatsApp (Optional)" value={formData.ownerInfo.whatsapp} keyboardType="phone-pad" onChangeText={v => updateForm('ownerInfo', { ...formData.ownerInfo, whatsapp: v })} />
+                            <TextInput style={[styles.input, { backgroundColor: isDarkMode ? '#666' : '#fff' }]}
+                                mode='outlined' theme={{ roundness: 12 }} label="WhatsApp (Optional)" value={formData.ownerInfo.whatsapp}
+                                keyboardType="phone-pad" onChangeText={v => updateForm('ownerInfo', { ...formData.ownerInfo, whatsapp: v })} />
 
-                            <TextInput style={styles.input} placeholder="Response Time (Within 2 hrs)" value={formData.ownerInfo.responsetime} keyboardType="default" onChangeText={v => updateForm('ownerInfo', { ...formData.ownerInfo, responsetime: v })} />
+                            <TextInput style={[styles.input, { backgroundColor: isDarkMode ? '#666' : '#fff' }]} label="Response Time (Within 2 hrs)"
+                                mode='outlined' theme={{ roundness: 12 }} value={formData.ownerInfo.responsetime} keyboardType="default" onChangeText={v => updateForm('ownerInfo', { ...formData.ownerInfo, responsetime: v })} />
                         </View>
                     )}
 
@@ -577,18 +582,18 @@ export default function PostTransportationScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: '#fff' },
+    container: { flex: 1 },
     progressContainer: { paddingHorizontal: 20, paddingTop: 16 },
     progressBar: { height: 6, backgroundColor: '#e2e8f0', borderRadius: 3, overflow: 'hidden' },
     progressFill: { height: '100%', backgroundColor: '#2563eb', borderRadius: 3 },
     progressText: { textAlign: 'center', marginTop: 8, color: '#64748b', fontSize: 13 },
-    stepTitle: { fontSize: 22, fontWeight: '800', textAlign: 'center', marginVertical: 12, color: '#1e293b' },
+    stepTitle: { fontSize: 22, fontWeight: '800', textAlign: 'center', marginVertical: 12 },
     scrollContent: { paddingHorizontal: 20, paddingBottom: 10 },
     step: { flex: 1 },
 
-    sectionTitle: { fontSize: 17, fontWeight: '700', marginVertical: 16, color: '#1e293b' },
-    label: { fontSize: 15, fontWeight: '600', color: '#475569', marginTop: 12, marginBottom: 8 },
-    input: { backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#e2e8f0', borderRadius: 12, padding: 14, fontSize: 16, marginVertical: 5 },
+    sectionTitle: { fontSize: 17, fontWeight: '700', marginVertical: 16 },
+    label: { fontSize: 15, fontWeight: '600', marginTop: 12, marginBottom: 8 },
+    input: { fontSize: 16, marginVertical: 5 },
     inputError: { borderColor: '#ef4444' },
     textArea: { height: 80, textAlignVertical: 'top' },
     error: { color: '#ef4444', fontSize: 13, marginTop: 6 },
@@ -606,13 +611,13 @@ const styles = StyleSheet.create({
 
     featuresGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginTop: 8 },
     featureChip: { paddingHorizontal: 14, paddingVertical: 8, backgroundColor: '#f8fafc', borderRadius: 20, borderWidth: 1, borderColor: '#e2e8f0' },
-    featureActive: { backgroundColor: '#eff6ff', borderColor: '#2563eb' },
-    featureTextActive: { color: '#2563eb', fontWeight: '600' },
+    featureActive: { backgroundColor: '#eff6ff', borderColor: '#003366' },
+    featureTextActive: { color: '#003366', fontWeight: '600' },
 
     imageWrapper: { position: 'relative', marginRight: 12, paddingTop: 10 },
     previewImage: { width: 140, height: 140, borderRadius: 16 },
     removeBtn: { position: 'absolute', top: -3, right: -5 },
-    addImageBtn: { marginTop: 10, width: 140, height: 140, backgroundColor: '#f8fafc', borderRadius: 16, borderWidth: 2, borderColor: '#e2e8f0', borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center' },
+    addImageBtn: { marginTop: 10, width: 140, height: 140, borderRadius: 16, borderWidth: 2, borderColor: '#e2e8f0', borderStyle: 'dashed', justifyContent: 'center', alignItems: 'center' },
     addImageText: { marginTop: 8, color: '#64748b', fontSize: 13 },
 
     reviewTitle: { fontSize: 20, fontWeight: '700', textAlign: 'center', marginBottom: 20 },
@@ -621,11 +626,11 @@ const styles = StyleSheet.create({
     reviewText: { fontSize: 15, marginVertical: 4, color: '#1e293b' },
     bold: { fontWeight: '700' },
 
-    subtitle: { fontSize: 13, color: '#64748b', marginTop: 4 },
+    subtitle: { fontSize: 13, color: '#888', marginTop: 4 },
     routeForm: { backgroundColor: '#f8fafc', padding: 16, borderRadius: 16, marginVertical: 16 },
     addBtn: {
         flexDirection: 'row',
-        backgroundColor: '#2563eb',
+        backgroundColor: '#003366',
         padding: 14,
         borderRadius: 12,
         justifyContent: 'center',
@@ -663,7 +668,7 @@ const styles = StyleSheet.create({
     },
     certBoxActive: {
         backgroundColor: '#f0fdf4',
-        borderColor: '#10b981',
+        borderColor: '#003366',
     },
     certLabel: {
         fontSize: 15,
@@ -671,7 +676,6 @@ const styles = StyleSheet.create({
         color: '#475569',
     },
     certLabelActive: {
-        color: '#10b981',
         fontWeight: '700',
     },
     emptyText: {

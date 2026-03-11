@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import {
     View,
     Text,
@@ -7,13 +7,15 @@ import {
     TouchableOpacity,
     StatusBar,
     Platform,
-    TextInput,
     Linking,
     Alert,
     ActivityIndicator,
 } from 'react-native';
+import { TextInput } from 'react-native-paper';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Icons } from '../../constants/Icons';
+import { AppContext } from '../../context/appContext';
+import { AuthContext } from '../../context/authProvider';
 import SecondaryNav from '../../components/SecondaryNav';
 
 // ────── Date Picker Helper ──────
@@ -43,6 +45,8 @@ const useDatePicker = () => {
 };
 
 export default function BookTransportationScreen({ navigation, route }) {
+    const { theme, isDarkMode } = useContext(AppContext)
+    const { user } = useContext(AuthContext)
     const { vehicle } = route.params;
     const datePicker = useDatePicker();
 
@@ -93,9 +97,9 @@ export default function BookTransportationScreen({ navigation, route }) {
         if (!formData.bookingTime.trim()) newErrors.bookingTime = 'Booking time is required';
         if (!formData.pickupLocation.trim()) newErrors.pickupLocation = 'Pickup location is required';
         if (!formData.dropoffLocation.trim()) newErrors.dropoffLocation = 'Dropoff location is required';
-        if (!formData.contactName.trim()) newErrors.contactName = 'Contact name is required';
+        // if (!formData.contactName.trim()) newErrors.contactName = 'Contact name is required';
         if (!formData.contactPhone.trim()) newErrors.contactPhone = 'Contact phone is required';
-        if (!formData.contactEmail.trim()) newErrors.contactEmail = 'Email is required';
+        // if (!formData.contactEmail.trim()) newErrors.contactEmail = 'Email is required';
         if (formData.contactEmail && !/\S+@\S+\.\S+/.test(formData.contactEmail)) {
             newErrors.contactEmail = 'Invalid email format';
         }
@@ -131,6 +135,7 @@ export default function BookTransportationScreen({ navigation, route }) {
 
         try {
             setIsSubmitting(true);
+
             const messageLines = [
                 `Hello, I would like to book the following vehicle:`,
                 ``,
@@ -138,15 +143,15 @@ export default function BookTransportationScreen({ navigation, route }) {
                     .split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1))
                     .join(' ')
                 } 
-                    (${vehicle.make} ${vehicle.model}, ${vehicle.year})`,
-                `Price: E ${vehicle.price || '-'}${getPriceLabel(vehicle.priceType) || '-'}`,
+                (${vehicle.vehicle_make} ${vehicle.vehicle_model})`,
+                `No.: ${vehicle.id || '-'}`,
             ];
             if (selectedRoute !== null && vehicle.routes[selectedRoute]) {
                 const route = vehicle.routes[selectedRoute];
                 messageLines.push(`Route: ${route.origin} to ${route.destination} (${route.distance}, ${route.duration}) - E ${route.price}`);
             }
-            messageLines.push(`Booking Date: ${formData.bookingDate}`);
-            messageLines.push(`Booking Time: ${formData.bookingTime}`);
+            messageLines.push(`Need service on: ${formData.bookingDate}`);
+            messageLines.push(`By this Time: ${formData.bookingTime}`);
             messageLines.push(`Pickup Location: ${formData.pickupLocation}`);
             messageLines.push(`Dropoff Location: ${formData.dropoffLocation}`);
             if (formData.numberOfPassengers) {
@@ -157,21 +162,31 @@ export default function BookTransportationScreen({ navigation, route }) {
             }
             messageLines.push(``);
             messageLines.push(`Contact Information:`);
-            messageLines.push(`Name: ${formData.contactName}`);
+            messageLines.push(`Name: ${user?.displayName}`);
             messageLines.push(`Phone: ${formData.contactPhone}`);
-            messageLines.push(`Email: ${formData.contactEmail}`);
+            messageLines.push(`Email: ${user?.email}`);
             const message = messageLines.join('\n');
 
-            const smsUrl = Platform.OS === "ios"
-                ? `sms:${vehicle?.owner_info?.phone}&body=${encodeURIComponent(message)}`
-                : `smsto:${vehicle?.owner_info?.phone}?body=${encodeURIComponent(message)}`;
-            if (await Linking.canOpenURL(smsUrl))
-                await Linking.openURL(smsUrl);
-            else
-                throw new Error('SMS client not available');
+            let smsUrl = Platform.OS === "ios"
+                ? `sms:${vehicle?.agent_phone}&body=${encodeURIComponent(message)}`
+                : `smsto:${vehicle?.agent_phone}?body=${encodeURIComponent(message)}`;
 
+            if ((vehicle.vehicle_type === 'minibus'
+                || vehicle.vehicle_type === 'bus'
+                || vehicle.vehicle_type === 'sprinter'
+                || vehicle.vehicle_type === 'schoolbus'
+                || vehicle.vehicle_type === 'staffbus')
+                && vehicle.vehicle_category === 'public_transport'
+            ) {
+                await Linking.openURL(smsUrl)
+            } else {
+                smsUrl = Platform.OS === "ios"
+                    ? `sms:${vehicle?.owner_info?.phone}&body=${encodeURIComponent(message)}`
+                    : `smsto:${vehicle?.owner_info?.phone}?body=${encodeURIComponent(message)}`;
+                await Linking.openURL(smsUrl);
+            }
         } catch (error) {
-            Alert.alert('Error', 'Failed to open SMS app. Please try again.');
+            Alert.alert('⚠️', error);
         } finally {
             setIsSubmitting(false);
             setFormData({
@@ -189,16 +204,6 @@ export default function BookTransportationScreen({ navigation, route }) {
             setErrors({});
         }
 
-    };
-
-    const getPriceLabel = (priceType) => {
-        const labels = {
-            per_trip: '/trip',
-            per_day: '/day',
-            per_hour: '/hour',
-            per_km: '/km',
-        };
-        return labels[priceType] || '';
     };
 
     const getVehicleTypeIcon = (type) => {
@@ -225,65 +230,52 @@ export default function BookTransportationScreen({ navigation, route }) {
     }
 
     return (
-        <View style={styles.container}>
-            <StatusBar barStyle="dark-content" />
-            <SecondaryNav title="Book For-Hire Now" />
+        <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+            <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
+            <SecondaryNav title={`Book ${vehicle.vehicle_type.toUpperCase()} ${vehicle.vehicle_make} ${vehicle.vehicle_model}`} />
 
             <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollView}>
                 {/* Vehicle Info */}
-                <View style={styles.vehicleInfoCard}>
+                <View style={[styles.vehicleInfoCard, { backgroundColor: theme.colors.card }]}>
                     <View style={{ alignItems: 'center' }}>
                         {(() => {
                             const { IconComponent, iconName } = getVehicleTypeIcon(vehicle.vehicle_type);
-                            return <IconComponent name={iconName} size={68} color="#2563eb" />;
+                            return <IconComponent name={iconName} size={68} color={theme.colors.indicator} />;
                         })()}
                     </View>
-                    <Text style={styles.vehicleInfoTitle}>
+                    <Text style={[styles.vehicleInfoTitle, { color: theme.colors.text }]}>
                         {
                             vehicle.vehicle_category.replace(/_/g, ' ')
                                 .split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1))
                                 .join(' ')
                         }
                     </Text>
-                    <Text style={styles.vehicleInfoSubtitle}>{vehicle.vehicle_make} {vehicle.vehicle_model} • {vehicle.year_made}</Text>
-                    {vehicle.price &&
+                    <Text style={[styles.vehicleInfoSubtitle, { color: theme.colors.text }]}>{vehicle.vehicle_make} {vehicle.vehicle_model} • {vehicle.owner_info?.name}</Text>
+                    {vehicle.vehicle_capacity && (
                         <View style={styles.vehicleInfoRow}>
-                            <Text style={styles.vehicleInfoLabel}>Price:</Text>
-                            <Text style={styles.vehicleInfoValue}>
-                                E {vehicle.price}{getPriceLabel(vehicle.priceType)}
-                            </Text>
-                        </View>
-                    }
-                    {vehicle.Vehicle_capacity && (
-                        <View style={styles.vehicleInfoRow}>
-                            <Text style={styles.vehicleInfoLabel}>Capacity:</Text>
-                            <Text style={styles.vehicleInfoValue}>{vehicle.vehicle_capacity} seats</Text>
-                        </View>
-                    )}
-                    {vehicle.cargo_capacity && (
-                        <View style={styles.vehicleInfoRow}>
-                            <Text style={styles.vehicleInfoLabel}>Cargo Capacity:</Text>
-                            <Text style={styles.vehicleInfoValue}>{vehicle.cargo_capacity} tons</Text>
+                            <Text style={[styles.vehicleInfoLabel, { color: theme.colors.sub_text }]}>Capacity:</Text>
+                            <Text style={[styles.vehicleInfoValue, { color: theme.colors.success }]}>{vehicle.vehicle_capacity} seats</Text>
                         </View>
                     )}
                 </View>
 
                 {/* Routes Selection (if available) */}
                 {vehicle.routes.length > 0 && (
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Select Route (Optional)</Text>
+                    <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
+                        <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Select Route (Optional)</Text>
                         {vehicle.routes.map((route, index) => (
                             <TouchableOpacity
                                 key={index}
-                                style={[styles.routeOption, selectedRoute === index && styles.routeOptionActive]}
+                                style={[styles.routeOption, { backgroundColor: theme.colors.highlight },
+                                selectedRoute === index && styles.routeOptionActive]}
                                 onPress={() => setSelectedRoute(index)}
                             >
                                 <View style={styles.routeOptionContent}>
                                     <View style={styles.routeOptionHeader}>
-                                        <Icons.Ionicons name="location" size={18} color="#2563eb" />
-                                        <Text style={styles.routeOptionOrigin}>{route.origin}</Text>
-                                        <Icons.Ionicons name="arrow-forward" size={16} color="#64748b" />
-                                        <Icons.Ionicons name="location" size={18} color="#10b981" />
+                                        <Icons.Ionicons name="location" size={18} color={theme.colors.indicator} />
+                                        <Text style={[styles.routeOptionOrigin, { color: theme.colors.indicator }]}>{route.origin}</Text>
+                                        <Icons.Ionicons name="arrow-forward" size={16} color="#cccc" />
+                                        <Icons.Ionicons name="location" size={18} color="#b94e10ff" />
                                         <Text style={styles.routeOptionDestination}>{route.destination}</Text>
                                     </View>
                                     <View style={styles.routeOptionDetails}>
@@ -291,11 +283,11 @@ export default function BookTransportationScreen({ navigation, route }) {
                                         <Text style={styles.routeOptionDetail}>•</Text>
                                         <Text style={styles.routeOptionDetail}>{route.duration}</Text>
                                         <Text style={styles.routeOptionDetail}>•</Text>
-                                        <Text style={styles.routeOptionPrice}>E {route.price}</Text>
+                                        <Text style={[styles.routeOptionPrice, { color: theme.colors.success, }]}>E {route.price}</Text>
                                     </View>
                                 </View>
                                 {selectedRoute === index && (
-                                    <Icons.Ionicons name="checkmark-circle" size={24} color="#10b981" />
+                                    <Icons.Ionicons name="checkmark-circle" size={24} color="#003366" />
                                 )}
                             </TouchableOpacity>
                         ))}
@@ -303,19 +295,19 @@ export default function BookTransportationScreen({ navigation, route }) {
                 )}
 
                 {/* Booking Details */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Booking Details</Text>
+                <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
+                    <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Booking Details</Text>
 
                     <View style={styles.detailsRow}>
                         <View style={[styles.inputGroup, { flex: 1 }]}>
-                            <Text style={styles.label}>
-                                Booking Date * <Text style={styles.required}>({vehicle.operating_days?.join(', ')})</Text>
+                            <Text style={[styles.label, { color: theme.colors.sub_text }]}>
+                                Retrieval Date * <Text style={styles.required}>({vehicle.operating_days?.join(', ')})</Text>
                             </Text>
                             <TouchableOpacity
-                                style={[styles.input, errors.bookingDate && styles.inputError]}
+                                style={[styles.input, { backgroundColor: isDarkMode ? '#666' : '#fff', borderWidth: 1, borderColor: '#dddd', padding: 12 }, errors.bookingDate && styles.inputError]}
                                 onPress={datePicker.showDatePicker}
                             >
-                                <Text style={{ color: formData.bookingDate ? '#000' : '#94a3b8', fontSize: 15 }}>
+                                <Text style={{ color: formData.bookingDate ? theme.colors.sub_text : '#94a3b8', fontSize: 15 }}>
                                     {formData.bookingDate || 'YYYY-MM-DD'}
                                 </Text>
                             </TouchableOpacity>
@@ -348,25 +340,24 @@ export default function BookTransportationScreen({ navigation, route }) {
                         )}
 
                         <View style={[styles.inputGroup, { flex: 1 }]}>
-                            <Text style={styles.label}>
-                                Booking Time * <Text style={styles.required}>({vehicle.operating_start} - {vehicle.operating_end})</Text>
+                            <Text style={[styles.label, { color: theme.colors.sub_text }]}>
+                                Retrieval Time * <Text style={styles.required}>({vehicle.operating_start} - {vehicle.operating_end})</Text>
                             </Text>
                             <TextInput
-                                style={[styles.input, errors.bookingTime && styles.inputError]}
-                                placeholder="HH:MM"
+                                style={[styles.input, { color: theme.colors.sub_text, backgroundColor: isDarkMode ? '#666' : '#fff' }, errors.bookingTime && styles.inputError]}
+                                label="HH:MM" mode='outlined' theme={{ roundness: 12 }}
                                 value={formData.bookingTime}
                                 onChangeText={(value) => handleInputChange('bookingTime', value)}
-                                placeholderTextColor="#94a3b8"
                             />
                             {errors.bookingTime && <Text style={styles.errorText}>{errors.bookingTime}</Text>}
                         </View>
                     </View>
 
                     <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Pickup Location *</Text>
+                        <Text style={[styles.label, { color: theme.colors.sub_text }]}>Pickup Location *</Text>
                         <TextInput
-                            style={[styles.input, errors.pickupLocation && styles.inputError]}
-                            placeholder="Enter pickup address"
+                            style={[styles.input, { backgroundColor: isDarkMode ? '#666' : '#fff' }, errors.pickupLocation && styles.inputError]}
+                            label="Enter pickup address" mode='outlined' theme={{ roundness: 12 }}
                             value={formData.pickupLocation}
                             onChangeText={(value) => handleInputChange('pickupLocation', value)}
                             placeholderTextColor="#94a3b8"
@@ -375,10 +366,10 @@ export default function BookTransportationScreen({ navigation, route }) {
                     </View>
 
                     <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Dropoff Location *</Text>
+                        <Text style={[styles.label, { color: theme.colors.sub_text }]}>Dropoff Location *</Text>
                         <TextInput
-                            style={[styles.input, errors.dropoffLocation && styles.inputError]}
-                            placeholder="Enter dropoff address"
+                            style={[styles.input, { backgroundColor: isDarkMode ? '#666' : '#fff' }, errors.dropoffLocation && styles.inputError]}
+                            label="Enter dropoff address" mode='outlined' theme={{ roundness: 12 }}
                             value={formData.dropoffLocation}
                             onChangeText={(value) => handleInputChange('dropoffLocation', value)}
                             placeholderTextColor="#94a3b8"
@@ -388,83 +379,56 @@ export default function BookTransportationScreen({ navigation, route }) {
 
                     {vehicle?.vehicle_capacity && (
                         <View style={styles.inputGroup}>
-                            <Text style={styles.label}>Number of Passengers</Text>
+                            <Text style={[styles.label, { color: theme.colors.sub_text }]}>Number of Passengers</Text>
                             <TextInput
-                                style={styles.input}
-                                placeholder={`Max ${vehicle?.vehicle_capacity} passengers`}
+                                style={[styles.input, { backgroundColor: isDarkMode ? '#666' : '#fff' }]}
+                                label={`Max ${vehicle?.vehicle_capacity} passengers`}
+                                mode='outlined' theme={{ roundness: 12 }}
                                 value={formData.numberOfPassengers}
                                 onChangeText={(value) => handleInputChange('numberOfPassengers', value)}
                                 keyboardType="numeric"
-                                placeholderTextColor="#94a3b8"
                             />
                         </View>
                     )}
 
                     <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Special Requests</Text>
+                        <Text style={[styles.label, { color: theme.colors.sub_text }]}>Special Requests</Text>
                         <TextInput
-                            style={[styles.input, styles.textArea]}
-                            placeholder="Any special requirements or requests..."
+                            style={[styles.input, { backgroundColor: isDarkMode ? '#666' : '#fff' }, styles.textArea]}
+                            label="Any special requirements or requests..."
+                            mode='outlined' theme={{ roundness: 12 }}
                             value={formData.specialRequests}
                             onChangeText={(value) => handleInputChange('specialRequests', value)}
                             multiline
                             numberOfLines={3}
-                            placeholderTextColor="#94a3b8"
                         />
                     </View>
                 </View>
 
                 {/* Contact Information */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Your Contact Information</Text>
+                <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
+                    <Text style={[styles.sectionTitle, { color: theme.colors.sub_text }]}>Your Contact Information</Text>
 
                     <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Full Name *</Text>
+                        <Text style={[styles.label, { color: theme.colors.sub_text }]}>Phone *</Text>
                         <TextInput
-                            style={[styles.input, errors.contactName && styles.inputError]}
-                            placeholder="Enter your full name"
-                            value={formData.contactName}
-                            onChangeText={(value) => handleInputChange('contactName', value)}
-                            placeholderTextColor="#94a3b8"
-                        />
-                        {errors.contactName && <Text style={styles.errorText}>{errors.contactName}</Text>}
-                    </View>
-
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Phone *</Text>
-                        <TextInput
-                            style={[styles.input, errors.contactPhone && styles.inputError]}
-                            placeholder="+268 2404 1234"
+                            style={[styles.input, { backgroundColor: isDarkMode ? '#666' : '#fff' }, errors.contactPhone && styles.inputError]}
+                            label="+268 2404 1234" mode='outlined' theme={{ roundness: 12 }}
                             value={formData.contactPhone}
                             onChangeText={(value) => handleInputChange('contactPhone', value)}
                             keyboardType="phone-pad"
-                            placeholderTextColor="#94a3b8"
                         />
                         {errors.contactPhone && <Text style={styles.errorText}>{errors.contactPhone}</Text>}
-                    </View>
-
-                    <View style={styles.inputGroup}>
-                        <Text style={styles.label}>Email *</Text>
-                        <TextInput
-                            style={[styles.input, errors.contactEmail && styles.inputError]}
-                            placeholder="your.email@example.com"
-                            value={formData.contactEmail}
-                            onChangeText={(value) => handleInputChange('contactEmail', value)}
-                            keyboardType="email-address"
-                            autoCapitalize="none"
-                            placeholderTextColor="#94a3b8"
-                        />
-                        {errors.contactEmail && <Text style={styles.errorText}>{errors.contactEmail}</Text>}
                     </View>
                 </View>
 
                 {/* Booking Summary */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Booking Summary</Text>
-                    <View style={styles.summaryContainer}>
+                <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
+                    <Text style={[styles.sectionTitle, { color: theme.colors.sub_text }]}>Booking Summary</Text>
+                    <View style={[styles.summaryContainer, { backgroundColor: isDarkMode ? '#666' : '#fff' }]}>
                         <View style={styles.summaryRow}>
-                            <Text style={styles.summaryLabel}>Vehicle:</Text>
-                            <Text style={styles.summaryValue}>
+                            <Text style={[styles.summaryLabel, { color: theme.colors.sub_text }]}>Vehicle:</Text>
+                            <Text style={[styles.summaryValue, { color: theme.colors.sub_text }]}>
                                 {
                                     vehicle.vehicle_category.replace(/_/g, ' ')
                                         .split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1))
@@ -472,33 +436,24 @@ export default function BookTransportationScreen({ navigation, route }) {
                                 }
                             </Text>
                         </View>
-                        {
-                            vehicle.price &&
-                            <View style={styles.summaryRow}>
-                                <Text style={styles.summaryLabel}>Price:</Text>
-                                <Text style={styles.summaryValue}>
-                                    E {vehicle.price}{getPriceLabel(vehicle.priceType)}
-                                </Text>
-                            </View>
-                        }
                         {selectedRoute !== null && vehicle.routes[selectedRoute] && (
                             <View style={styles.summaryRow}>
-                                <Text style={styles.summaryLabel}>Route:</Text>
-                                <Text style={styles.summaryValue}>
+                                <Text style={[styles.summaryLabel, { color: theme.colors.sub_text }]}>Route:</Text>
+                                <Text style={[styles.summaryValue, { color: theme.colors.sub_text }]}>
                                     {vehicle.routes[selectedRoute].origin} → {vehicle.routes[selectedRoute].destination}
                                 </Text>
                             </View>
                         )}
                         {formData.bookingDate && (
                             <View style={styles.summaryRow}>
-                                <Text style={styles.summaryLabel}>Date:</Text>
-                                <Text style={styles.summaryValue}>{formData.bookingDate}</Text>
+                                <Text style={[styles.summaryLabel, { color: theme.colors.sub_text }]}>Date:</Text>
+                                <Text style={[styles.summaryValue, { color: theme.colors.sub_text }]}>{formData.bookingDate}</Text>
                             </View>
                         )}
                         {formData.bookingTime && (
                             <View style={styles.summaryRow}>
-                                <Text style={styles.summaryLabel}>Time:</Text>
-                                <Text style={styles.summaryValue}>{formData.bookingTime}</Text>
+                                <Text style={[styles.summaryLabel, { color: theme.colors.sub_text }]}>Time:</Text>
+                                <Text style={[styles.summaryValue, { color: theme.colors.sub_text }]}>{formData.bookingTime}</Text>
                             </View>
                         )}
                     </View>
@@ -508,7 +463,7 @@ export default function BookTransportationScreen({ navigation, route }) {
             </ScrollView>
 
             {/* Submit Button */}
-            <View style={styles.footer}>
+            <View style={[styles.footer]}>
                 <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} disabled={isSubmitting}>
                     <Text style={styles.submitButtonText}>Send via SMS</Text>
                     {isSubmitting ?
@@ -524,7 +479,6 @@ export default function BookTransportationScreen({ navigation, route }) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f8fafc',
         paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
     },
     scrollView: {
@@ -540,7 +494,6 @@ const styles = StyleSheet.create({
         color: '#64748b',
     },
     vehicleInfoCard: {
-        backgroundColor: '#fff',
         padding: 20,
         borderBottomLeftRadius: 20,
         borderBottomRightRadius: 20,
@@ -553,17 +506,15 @@ const styles = StyleSheet.create({
     vehicleInfoTitle: {
         fontSize: 18,
         fontWeight: '700',
-        color: '#000',
         marginBottom: 8,
     },
     vehicleInfoSubtitle: {
         fontSize: 14,
-        color: '#64748b',
         marginBottom: 12,
     },
     vehicleInfoRow: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
+        justifyContent: 'space-around',
         marginBottom: 8,
     },
     vehicleInfoLabel: {
@@ -573,10 +524,8 @@ const styles = StyleSheet.create({
     vehicleInfoValue: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#10b981',
     },
     section: {
-        backgroundColor: '#fff',
         marginHorizontal: 10,
         marginTop: 20,
         paddingVertical: 20,
@@ -591,13 +540,11 @@ const styles = StyleSheet.create({
     sectionTitle: {
         fontSize: 18,
         fontWeight: '700',
-        color: '#000',
         marginBottom: 16,
     },
     routeOption: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: '#f8fafc',
         borderWidth: 2,
         borderColor: '#e2e8f0',
         borderRadius: 12,
@@ -606,8 +553,8 @@ const styles = StyleSheet.create({
         gap: 12,
     },
     routeOptionActive: {
-        borderColor: '#2563eb',
-        backgroundColor: '#eff6ff',
+        borderColor: '#003366',
+        backgroundColor: '#666',
     },
     routeOptionContent: {
         flex: 1,
@@ -620,13 +567,12 @@ const styles = StyleSheet.create({
     },
     routeOptionOrigin: {
         fontSize: 14,
-        fontWeight: '600',
-        color: '#2563eb',
+        fontWeight: '600'
     },
     routeOptionDestination: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#10b981',
+        color: '#b4683dff',
     },
     routeOptionDetails: {
         flexDirection: 'row',
@@ -635,12 +581,11 @@ const styles = StyleSheet.create({
     },
     routeOptionDetail: {
         fontSize: 12,
-        color: '#64748b',
+        color: '#cccc',
     },
     routeOptionPrice: {
         fontSize: 13,
         fontWeight: '600',
-        color: '#10b981',
     },
     detailsRow: {
         flexDirection: 'row',
@@ -652,7 +597,6 @@ const styles = StyleSheet.create({
     label: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#334155',
         marginBottom: 8,
     },
     required: {
@@ -661,13 +605,8 @@ const styles = StyleSheet.create({
         color: '#64748b',
     },
     input: {
-        backgroundColor: '#f8fafc',
-        borderWidth: 1,
-        borderColor: '#e2e8f0',
         borderRadius: 10,
-        padding: 14,
         fontSize: 15,
-        color: '#000',
     },
     inputError: {
         borderColor: '#ef4444',
@@ -682,7 +621,6 @@ const styles = StyleSheet.create({
         color: '#ef4444',
     },
     summaryContainer: {
-        backgroundColor: '#f8fafc',
         borderRadius: 12,
         padding: 16,
         gap: 12,
@@ -694,7 +632,6 @@ const styles = StyleSheet.create({
     summaryLabel: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#475569',
     },
     summaryValue: {
         fontSize: 14,
@@ -707,12 +644,10 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
         marginBottom: 40,
         marginHorizontal: 10,
-        backgroundColor: '#fff',
-        borderTopWidth: 1,
-        borderTopColor: '#e2e8f0',
+        borderTopWidth: 1
     },
     submitButton: {
-        backgroundColor: '#2563eb',
+        backgroundColor: '#003366',
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',

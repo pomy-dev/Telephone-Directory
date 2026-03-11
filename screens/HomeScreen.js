@@ -5,7 +5,7 @@ import {
   FlatList, ScrollView, Dimensions
 } from "react-native"
 import { useFocusEffect } from '@react-navigation/native';
-import React, { useEffect, useState,useCallback ,useRef} from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import * as Notifications from 'expo-notifications';
 import { Badge } from "react-native-paper";
 import TopNav from "../components/TopNav"
@@ -20,15 +20,13 @@ import { fetchOpenGigsCount, subscribeToGigs } from "../service/Supabase-Fuction
 
 export default function HomeScreen({ navigation }) {
   const { theme, isDarkMode, notifications, notificationsEnabled } = React.useContext(AppContext)
-  const { logout } = React.useContext(AuthContext)
+  const { user, logout } = React.useContext(AuthContext)
   const [nots, setNots] = useState(null);
   const [greetingText, setGreetingText] = useState("");
   const [gigsCount, setGigsCount] = useState(0);
   const [startingText, setStartingText] = useState("");
   const [islogingOut, setIsLoggingOut] = useState(false)
   const adsRef = useRef(null);
-
-  
 
   const scheduleNotification = async (title, body, data = {}) => {
     if (!notificationsEnabled) return;
@@ -154,7 +152,6 @@ export default function HomeScreen({ navigation }) {
     };
   }, []);
 
-
   // This runs every time the user navigates TO this screen
   useFocusEffect(
     useCallback(() => {
@@ -162,13 +159,11 @@ export default function HomeScreen({ navigation }) {
       if (adsRef.current) {
         adsRef.current.refreshRecommendations();
       }
-      
+
       // You can also refresh your gig counts here if needed
-      return () => {};
-    }, []) 
+      return () => { };
+    }, [])
   );
-
-
 
   const renderService = ({ item }) => (
     <TouchableOpacity style={[styles.serviceItem]} activeOpacity={0.7} onPress={() => { navigation.navigate(item.screen) }}>
@@ -235,7 +230,7 @@ export default function HomeScreen({ navigation }) {
           />
         </View>
 
-        <PersonalizedAdsSection ref={adsRef}/>
+        <PersonalizedAdsSection ref={adsRef} />
         {<View style={{ height: 100 }} />}
       </ScrollView>
     </SafeAreaView>

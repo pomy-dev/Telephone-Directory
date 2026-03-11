@@ -117,9 +117,9 @@ const calculateDistance = (lat1, lon1, lat2, lon2) => {
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
+    Math.cos((lat2 * Math.PI) / 180) *
+    Math.sin(dLon / 2) *
+    Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   const distance = R * c;
   return distance;
@@ -510,10 +510,10 @@ const GigsScreen = ({ navigation }) => {
       prev.map((w) =>
         w.id === workerId
           ? {
-              ...w,
-              likes: Math.max((w.likes || 0) + likeChange, 0),
-              dislikes: Math.max((w.dislikes || 0) + dislikeChange, 0),
-            }
+            ...w,
+            likes: Math.max((w.likes || 0) + likeChange, 0),
+            dislikes: Math.max((w.dislikes || 0) + dislikeChange, 0),
+          }
           : w,
       ),
     );
@@ -662,7 +662,7 @@ const GigsScreen = ({ navigation }) => {
         logUserActivity(user.uid, item.id, "pomy_gigs");
       }
       // ----------------------
-      navigation.navigate("JobDetailScreen", { job: item });
+      navigation.navigate("JobDetailScreen", { jobData: item });
     };
 
     return (
@@ -717,7 +717,7 @@ const GigsScreen = ({ navigation }) => {
             >
               {item.title}
             </Text>
-            <Text style={styles.jobPrice}>R{item.price}</Text>
+            <Text style={[styles.jobPrice, { color: theme.colors.success }]}>E{item.price}</Text>
           </View>
 
           {hasImage ? (
@@ -736,13 +736,13 @@ const GigsScreen = ({ navigation }) => {
 
           <View style={styles.jobFooter}>
             <View style={styles.locationContainer}>
-              <Icons.Ionicons name="location-outline" size={14} color="#666" />
+              <Icons.Ionicons name="location-outline" size={14} color={theme.colors.indicator} />
               <Text style={styles.locationText} numberOfLines={1}>
                 {item.location}
               </Text>
             </View>
             {item.distance && (
-              <Text style={styles.distanceText}>
+              <Text style={{ color: theme.colors.sub_text }}>
                 {item.distance.toFixed(1)} km
               </Text>
             )}
@@ -1127,14 +1127,8 @@ const GigsScreen = ({ navigation }) => {
   }
 
   return (
-    <SafeAreaView
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
-      edges={["top"]}
-    >
-      <StatusBar
-        barStyle={isDarkMode ? "light-content" : "dark-content"}
-        backgroundColor={theme.colors.background}
-      />
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={["top"]}>
+      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
 
       {/* Custom Modern Header */}
       <View style={styles.customHeader}>
@@ -1152,7 +1146,7 @@ const GigsScreen = ({ navigation }) => {
           <View
             style={[
               styles.searchBar,
-              { backgroundColor: theme.colors.sub_card },
+              { backgroundColor: isDarkMode ? '#94a3b8' : theme.colors.sub_card },
             ]}
           >
             <Icons.Ionicons
@@ -1169,26 +1163,26 @@ const GigsScreen = ({ navigation }) => {
             </TouchableOpacity>
             {((viewMode === "gigs" && gigSearch.length > 0) ||
               (viewMode === "workers" && workerSearch.length > 0)) && (
-              <TouchableOpacity
-                style={{
-                  position: "absolute",
-                  right: 20,
-                  paddingHorizontal: 5,
-                  paddingVertical: 3,
-                  backgroundColor: "#f0f4ff",
-                  borderRadius: 10,
-                }}
-                onPress={() => {
-                  viewMode === "gigs" ? setGigSearch("") : setWorkerSearch("");
-                }}
-              >
-                <Icons.Ionicons
-                  name="close"
-                  size={18}
-                  color={theme.colors.sub_text}
-                />
-              </TouchableOpacity>
-            )}
+                <TouchableOpacity
+                  style={{
+                    position: "absolute",
+                    right: 20,
+                    paddingHorizontal: 5,
+                    paddingVertical: 3,
+                    backgroundColor: "#f0f4ff",
+                    borderRadius: 10,
+                  }}
+                  onPress={() => {
+                    viewMode === "gigs" ? setGigSearch("") : setWorkerSearch("");
+                  }}
+                >
+                  <Icons.Ionicons
+                    name="close"
+                    size={18}
+                    color={theme.colors.sub_text}
+                  />
+                </TouchableOpacity>
+              )}
           </View>
         </View>
 
@@ -1212,7 +1206,7 @@ const GigsScreen = ({ navigation }) => {
           <Animated.View
             style={[
               styles.sheetContainer,
-              { backgroundColor: theme.colors.card },
+              { backgroundColor: isDarkMode ? '#3c3c3cff' : theme.colors.card },
               {
                 transform: [
                   {
@@ -1233,7 +1227,6 @@ const GigsScreen = ({ navigation }) => {
               behavior={Platform.OS === "ios" ? "padding" : "height"}
               keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 80}
             >
-              <View style={styles.sheetHandle} />
               <View style={styles.sheetHeader}>
                 <Text
                   style={{
@@ -1249,8 +1242,8 @@ const GigsScreen = ({ navigation }) => {
                     viewMode === "gigs"
                       ? setGigSearch("")
                       : () => {
-                          setWorkerSearch("");
-                        };
+                        setWorkerSearch("");
+                      };
                   }}
                 >
                   <Text
@@ -1264,36 +1257,23 @@ const GigsScreen = ({ navigation }) => {
               <View style={{ paddingHorizontal: 14, paddingTop: 8 }}>
                 <View
                   style={[
-                    // styles.searchBar2,
-                    { backgroundColor: theme.colors.sub_card },
+                    styles.searchBar2,
+                    { backgroundColor: isDarkMode ? '#94a3b8' : theme.colors.sub_card },
                   ]}
                 >
+                  <Icons.Ionicons name="search" size={20} color={theme.colors.sub_text} />
                   <TextInput
-                    style={[
-                      // styles.sheetInput,
-                      {
-                        color: theme.colors.text,
-                        backgroundColor: theme.colors.sub_card,
-                      },
-                    ]}
-                    // 1. Force wrap to new line
-                    multiline={true}
-                    // 2. Limit the characters (Optional)
+                    style={[styles.searchInput2, { color: theme.colors.text }]}
+                    numberOfLines={1}
                     maxLength={70}
-                    placeholder="Search by name, profession, expertise or skill"
+                    placeholder="Search by name, profession, expertise/skill"
                     placeholderTextColor={theme.colors.sub_text}
                     value={viewMode === "gigs" ? gigSearch : workerSearch}
                     onChangeText={(text) =>
-                      viewMode === "gigs"
-                        ? setGigSearch(text)
-                        : setWorkerSearch(text)
+                      viewMode === "gigs" ? setGigSearch(text) : setWorkerSearch(text)
                     }
-                    blurOnSubmit={true}
                     returnKeyType="search"
-                    onSubmitEditing={() => {
-                      loadWorkers(true);
-                      setSheetVisible(false);
-                    }}
+                    onSubmitEditing={() => { loadWorkers(true); setSheetVisible(false); }}
                   />
                 </View>
 
@@ -1308,9 +1288,9 @@ const GigsScreen = ({ navigation }) => {
                         styles.categoryButton,
                         viewMode === "gigs"
                           ? gigCategory === cat.id &&
-                            styles.categoryButtonActive
+                          styles.categoryButtonActive
                           : workerCategory === cat.id &&
-                            styles.categoryButtonActive,
+                          styles.categoryButtonActive,
                       ]}
                       onPress={() => {
                         viewMode === "gigs"
@@ -1337,9 +1317,9 @@ const GigsScreen = ({ navigation }) => {
                           styles.categoryText,
                           viewMode === "gigs"
                             ? gigCategory === cat.id &&
-                              styles.categoryTextActive
+                            styles.categoryTextActive
                             : workerCategory === cat.id &&
-                              styles.categoryTextActive,
+                            styles.categoryTextActive,
                         ]}
                       >
                         {cat.name}
@@ -1348,6 +1328,7 @@ const GigsScreen = ({ navigation }) => {
                   ))}
                 </ScrollView>
               </View>
+              <View style={styles.sheetHandle} />
             </KeyboardAvoidingView>
           </Animated.View>
         </Animated.View>
@@ -1358,82 +1339,78 @@ const GigsScreen = ({ navigation }) => {
         <View style={styles.selectedCategoryRow}>
           {viewMode === "gigs"
             ? gigCategory !== "all" && (
-                <View
+              <View
+                style={[
+                  styles.selectedCategoryPill,
+                  { backgroundColor: theme.colors.sub_card },
+                ]}
+              >
+                <Text
                   style={[
-                    styles.selectedCategoryPill,
-                    { backgroundColor: theme.colors.sub_card },
+                    styles.selectedCategoryText,
+                    { color: theme.colors.text },
                   ]}
+                  numberOfLines={1}
                 >
-                  <Text
-                    style={[
-                      styles.selectedCategoryText,
-                      { color: theme.colors.text },
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {gigCategory}
-                  </Text>
-                </View>
-              )
+                  {gigCategory}
+                </Text>
+              </View>
+            )
             : workerCategory !== "all" && (
-                <View
+              <View
+                style={[
+                  styles.selectedCategoryPill,
+                  { backgroundColor: theme.colors.sub_card },
+                ]}
+              >
+                <Text
                   style={[
-                    styles.selectedCategoryPill,
-                    { backgroundColor: theme.colors.sub_card },
+                    styles.selectedCategoryText,
+                    { color: theme.colors.text },
                   ]}
+                  numberOfLines={1}
                 >
-                  <Text
-                    style={[
-                      styles.selectedCategoryText,
-                      { color: theme.colors.text },
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {workerCategory}
-                  </Text>
-                </View>
-              )}
+                  {workerCategory}
+                </Text>
+              </View>
+            )}
           {viewMode === "gigs"
             ? gigCategory !== "all" && (
-                <TouchableOpacity
-                  onPress={() => setGigCategory("all")}
-                  style={styles.clearButton}
-                >
-                  <Icons.Ionicons
-                    name="close-circle"
-                    size={20}
-                    color={theme.colors.sub_text}
-                  />
-                </TouchableOpacity>
-              )
+              <TouchableOpacity
+                onPress={() => setGigCategory("all")}
+                style={styles.clearButton}
+              >
+                <Icons.Ionicons
+                  name="close-circle"
+                  size={20}
+                  color={theme.colors.sub_text}
+                />
+              </TouchableOpacity>
+            )
             : workerCategory !== "all" && (
-                <TouchableOpacity
-                  onPress={() => setWorkerCategory("all")}
-                  style={styles.clearButton}
-                >
-                  <Icons.Ionicons
-                    name="close-circle"
-                    size={20}
-                    color={theme.colors.sub_text}
-                  />
-                </TouchableOpacity>
-              )}
+              <TouchableOpacity
+                onPress={() => setWorkerCategory("all")}
+                style={styles.clearButton}
+              >
+                <Icons.Ionicons
+                  name="close-circle"
+                  size={20}
+                  color={theme.colors.sub_text}
+                />
+              </TouchableOpacity>
+            )}
         </View>
 
         {/* ─── TOGGLE BUTTONS ─── */}
         <View
-          style={[
-            styles.toggleContainer,
-            { backgroundColor: theme.colors.card },
-          ]}
+          style={[styles.toggleContainer, { backgroundColor: theme.colors.card }]}
         >
           <TouchableOpacity
             style={[
               styles.toggleButton,
-              { backgroundColor: theme.colors.card },
-              viewMode === "gigs" && styles.toggleButtonActive,
+              { backgroundColor: viewMode === "gigs" ? theme.colors.card2 : 'transparent' },
             ]}
-            onPress={() => setViewMode("gigs")}
+            onPress={handleToggleWorker}
           >
             <Text
               style={[
@@ -1448,9 +1425,9 @@ const GigsScreen = ({ navigation }) => {
           <TouchableOpacity
             style={[
               styles.toggleButton,
-              viewMode === "workers" && styles.toggleButtonActive,
+              { backgroundColor: viewMode === "workers" ? theme.colors.card2 : 'transparent' },
             ]}
-            onPress={() => setViewMode("workers")}
+            onPress={handleToggleWorker}
           >
             <Text
               style={[
@@ -1696,13 +1673,16 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   searchBar2: {
-    // flexDirection: "row",
-    // alignItems: "flex-start",
-    borderRadius: 30,
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 70,
     paddingHorizontal: 12,
-    minHeight: 44,
-    gap: 8,
-    // overflow: "hidden",
+    height: height * 0.07,
+    gap: 8, paddingRight: 20
+  },
+  searchInput2: {
+    position: 'absolute',
+    left: 35, top: 0, right: 0, bottom: 0
   },
   searchInput: {
     // flex: 1,
@@ -1722,7 +1702,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     marginTop: 12,
-    paddingBottom: 30,
+    paddingBottom: 20,
   },
   categoryButton: {
     flexDirection: "row",
@@ -1802,7 +1782,6 @@ const styles = StyleSheet.create({
   jobPrice: {
     fontSize: 18,
     fontWeight: "700",
-    color: "#10b981",
   },
   jobDescription: {
     fontSize: 14,
@@ -1830,13 +1809,10 @@ const styles = StyleSheet.create({
     alignItems: "center",
     borderRadius: 50,
   },
-  toggleButtonActive: {
-    backgroundColor: "#000",
-  },
   toggleButtonText: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#555",
+    color: "#666",
   },
   toggleButtonTextActive: {
     color: "#fff",
@@ -2154,7 +2130,7 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 16,
     borderBottomRightRadius: 16,
     paddingTop: 28,
-    minHeight: height * 0.8,
+    minHeight: height * 0.65,
   },
   sheetHandle: {
     width: 40,

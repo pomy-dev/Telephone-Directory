@@ -17,6 +17,7 @@ import SecondaryNav from "../../components/SecondaryNav";
 import { AppContext } from "../../context/appContext";
 import { AuthContext } from "../../context/authProvider";
 import { Icons } from "../../constants/Icons";
+import Carousel from "react-native-reanimated-carousel";
 import {
   logUserActivity,
   getWorkerProfileClient,
@@ -33,7 +34,7 @@ const WorkerProfileScreen = ({ route }) => {
   const { theme, isDarkMode } = React.useContext(AppContext);
   const [loading, setLoading] = useState(!route.params?.worker);
 
-  React.useEffect(() => {}, []);
+  React.useEffect(() => { }, []);
 
   React.useEffect(() => {
     const fetchWorkerData = async () => {
@@ -125,7 +126,7 @@ const WorkerProfileScreen = ({ route }) => {
   const hasSkills = worker.skills && worker.skills.length > 0;
 
   return (
-    <SafeAreaView   style={[styles.container, { backgroundColor: theme.colors.background }]}  edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
       <StatusBar
         barStyle={isDarkMode ? "light-content" : "dark-content"}
         backgroundColor={theme.colors.background}
@@ -139,19 +140,13 @@ const WorkerProfileScreen = ({ route }) => {
       >
         {/* SMART HERO SECTION: Only renders if images exist */}
         {hasImages && (
-          <ScrollView
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-          >
-            {worker.experience_images.map((img, idx) => (
-              <Image
-                key={idx}
-                source={{ uri: img.url || img }}
-                style={styles.heroImage}
-              />
-            ))}
-          </ScrollView>
+          <Carousel
+            loop={worker.experience_images?.length > 1} width={width} height={200} autoPlay={worker.experience_images.length > 1}
+            data={worker.experience_images} scrollAnimationDuration={5000}
+            renderItem={({ item }) => (
+              <Image source={{ uri: item.url || item }} style={styles.heroImage} />
+            )}
+          />
         )}
 
         <View style={styles.profileInfoContainer}>
@@ -175,18 +170,18 @@ const WorkerProfileScreen = ({ route }) => {
               )}
             </View>
             <View style={styles.nameGroup}>
-              <Text style={styles.workerName}>{worker.name}</Text>
+              <Text style={[styles.workerName, { color: theme.colors.text }]}>{worker.name}</Text>
               <View style={styles.locationRow}>
                 <Icons.Ionicons
                   name="location-sharp"
                   size={14}
-                  color="#10b981"
+                  color={theme.colors.indicator}
                 />
-                <Text  style={[styles.locationText, { color: theme.colors.text }]} >{locationString}</Text>
+                <Text style={[styles.locationText, { color: theme.colors.text }]} >{locationString}</Text>
               </View>
             </View>
             <View style={styles.statsBadge}>
-              <Icons.Ionicons name="thumbs-up" size={16} color="#10b981" />
+              <Icons.Ionicons name="thumbs-up" size={16} color={theme.colors.indicator} />
               <Text style={styles.statsText}>{worker.likes}</Text>
             </View>
           </View>
@@ -195,7 +190,7 @@ const WorkerProfileScreen = ({ route }) => {
           <View style={styles.socialContainer}>
             {worker.contact_options?.whatsapp && (
               <TouchableOpacity
-                style={[styles.socialIconBtn, {backgroundColor: theme.colors.sub_card }]}
+                style={[styles.socialIconBtn, { backgroundColor: '#f0f4ff' }]}
                 onPress={handleWhatsApp}
               >
                 <Icons.Ionicons
@@ -208,8 +203,8 @@ const WorkerProfileScreen = ({ route }) => {
 
             {worker.contact_options?.email && (
               <TouchableOpacity
-                
-                style={[styles.socialIconBtn, {backgroundColor: theme.colors.sub_card }]}
+
+                style={[styles.socialIconBtn, { backgroundColor: '#f0f4ff' }]}
                 onPress={handleEmail}
               >
                 <Icons.Ionicons name="mail" size={22} color="#EA4335" />
@@ -218,7 +213,7 @@ const WorkerProfileScreen = ({ route }) => {
 
             {worker.contact_options?.facebook && (
               <TouchableOpacity
-                style={[styles.socialIconBtn, {backgroundColor: theme.colors.sub_card }]}
+                style={[styles.socialIconBtn, { backgroundColor: '#f0f4ff' }]}
                 onPress={() => handleSocial("facebook")}
               >
                 <Icons.Ionicons
@@ -231,7 +226,7 @@ const WorkerProfileScreen = ({ route }) => {
 
             {worker.contact_options?.instagram && (
               <TouchableOpacity
-                style={[styles.socialIconBtn, {backgroundColor: theme.colors.sub_card }]}
+                style={[styles.socialIconBtn, { backgroundColor: '#f0f4ff' }]}
                 onPress={() => handleSocial("instagram")}
               >
                 <Icons.Ionicons
@@ -246,8 +241,8 @@ const WorkerProfileScreen = ({ route }) => {
           <View style={styles.divider} />
 
           {/* ABOUT / BIO */}
-          <Text style={[styles.sectionTitle, { color: theme.colors.text }] }>About the Professional</Text>
-          <Text style={[styles.bioText, { color: theme.colors.text }] } >
+          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>About the Professional</Text>
+          <Text style={[styles.bioText, { color: theme.colors.text }]} >
             {worker.bio ||
               "No detailed biography provided. This professional is verified and ready for work."}
           </Text>
@@ -255,7 +250,7 @@ const WorkerProfileScreen = ({ route }) => {
           {/* SERVICES LIST */}
           {hasSkills && (
             <>
-              <Text style={[styles.sectionTitle, { marginTop: 24 ,color: theme.colors.text }]} >
+              <Text style={[styles.sectionTitle, { marginTop: 24, color: theme.colors.text }]} >
                 Services Offered
               </Text>
               <View style={styles.skillsList}>
@@ -264,7 +259,7 @@ const WorkerProfileScreen = ({ route }) => {
                     <View style={styles.skillNumberContainer}>
                       <Text style={styles.skillNumber}  >{index + 1}.</Text>
                     </View>
-                    <Text style={[styles.skillValue, {color: theme.colors.text }]}>{skill}</Text>
+                    <Text style={[styles.skillValue, { color: theme.colors.text }]}>{skill}</Text>
                   </View>
                 ))}
               </View>
@@ -272,9 +267,9 @@ const WorkerProfileScreen = ({ route }) => {
           )}
 
           {/* TRUST BOX */}
-          <View  style={[styles.trustBox, {backgroundColor: theme.colors.sub_card }]}>
+          <View style={[styles.trustBox, { backgroundColor: isDarkMode ? 'rgba(0,0,0,0.5)' : theme.colors.sub_card }]}>
             <Icons.Ionicons name="shield-checkmark" size={20} color="#10b981" />
-            <Text style={styles.trustText}>
+            <Text style={[styles.trustText, { color: '#666' }]}>
               Always meet in public places and never pay upfront for services.
             </Text>
           </View>
@@ -282,16 +277,16 @@ const WorkerProfileScreen = ({ route }) => {
       </ScrollView>
 
       {/* FIXED BOTTOM ACTION BAR - Moved outside ScrollView, removed absolute positioning */}
-      <View style={[styles.bottomBar, {backgroundColor: theme.colors.sub_card ,  borderTopColor: theme.colors.sub_card,}]}>
+      <View style={[styles.bottomBar, { backgroundColor: theme.colors.sub_card, borderTopColor: theme.colors.sub_card, }]}>
         <TouchableOpacity
           style={styles.messageBtn}
           onPress={() => Linking.openURL(`sms:${worker.phone}`)}
         >
-          <Icons.Ionicons name="mail-outline" size={24} color="#000" />
+          <Icons.Ionicons name="mail-outline" size={24} color="#d40606ff" />
         </TouchableOpacity>
-        <TouchableOpacity  style={[styles.callBtn, {backgroundColor: theme.colors.card }]} onPress={handleCall}>
-          <Text  style={[styles.callBtnText, { color: theme.colors.text }] }>CONTACT NOW</Text>
-          <Icons.Ionicons name="call" size={18} style={[{ color: theme.colors.text }] }  />
+        <TouchableOpacity style={[styles.callBtn, { backgroundColor: theme.colors.card }]} onPress={handleCall}>
+          <Text style={[styles.callBtnText, { color: theme.colors.text }]}>CONTACT NOW</Text>
+          <Icons.Ionicons name="call" size={18} style={[{ color: theme.colors.text }]} />
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -301,7 +296,7 @@ const WorkerProfileScreen = ({ route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  
+
   },
   headerNav: {
     flexDirection: "row",
@@ -366,7 +361,6 @@ const styles = StyleSheet.create({
   workerName: {
     fontSize: 24,
     fontWeight: "900",
-    color: "#000",
     letterSpacing: -0.5,
   },
   locationRow: {
@@ -452,7 +446,6 @@ const styles = StyleSheet.create({
   trustText: {
     flex: 1,
     fontSize: 12,
-    color: "#64748b",
     lineHeight: 18,
     fontWeight: "500",
   },
@@ -462,14 +455,14 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: Platform.OS === "ios" ? 30 : 60,
     borderTopWidth: 1,
-   
+
     gap: 12,
   },
   messageBtn: {
     width: 58,
     height: 58,
     borderWidth: 1,
-    borderColor: "#000",
+    borderColor: "#666",
     justifyContent: "center",
     alignItems: "center",
     borderRadius: 6,

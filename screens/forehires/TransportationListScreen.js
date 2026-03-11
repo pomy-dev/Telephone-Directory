@@ -16,18 +16,17 @@ import {
     Animated,
     ActivityIndicator,
 } from 'react-native';
-import { TextInput as RnTextInput } from 'react-native-paper';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Icons } from '../../constants/Icons';
 import {
-    BottomSheetModal,
-    BottomSheetModalProvider,
-    BottomSheetView,
-    BottomSheetBackdrop
+    BottomSheetModal, BottomSheetModalProvider, BottomSheetView, BottomSheetBackdrop
 } from '@gorhom/bottom-sheet';
 import { CustomToast } from '../../components/customToast';
 import { AppContext } from "../../context/appContext"
-import { getForHireTransport, updateVehicleLike, submitVehicleRating, submitVehicleComment, logUserActivity } from '../../service/Supabase-Fuctions';
+import {
+    getForHireTransport, updateVehicleLike, submitVehicleRating,
+    logUserActivity
+} from '../../service/Supabase-Fuctions';
 import { checkNetworkConnectivity } from '../../service/checkNetwork';
 import CustomLoader from '../../components/customLoader';
 import SecondaryNav from '../../components/SecondaryNav';
@@ -79,7 +78,7 @@ RatingBottomSheet.displayName = 'RatingBottomSheet';
 
 // ────── Sort/Filter Bottom Sheet Modal ──────
 const SortFilterBottomSheet = React.forwardRef(
-    ({ theme, sortByCategory, setSortByCategory, sortByBorderCrossing, setSortByBorderCrossing, isVisible, onClose }, ref) => {
+    ({ isDarkMode, theme, sortByCategory, setSortByCategory, sortByBorderCrossing, setSortByBorderCrossing, isVisible, onClose }, ref) => {
         const slideAnim = useRef(new Animated.Value(400)).current;
         const categories = ['All', 'Public Transport', 'Cargo', 'Passenger', 'Luxury'];
 
@@ -117,7 +116,7 @@ const SortFilterBottomSheet = React.forwardRef(
                 <Animated.View
                     style={[
                         sortFilterModalStyles.container,
-                        { transform: [{ translateY: slideAnim }], backgroundColor: theme.colors.card }
+                        { transform: [{ translateY: slideAnim }], backgroundColor: isDarkMode ? '#666' : '#fff' }
                     ]}
                 >
                     {/* Drag Handle */}
@@ -129,7 +128,7 @@ const SortFilterBottomSheet = React.forwardRef(
                     <View style={sortFilterModalStyles.header}>
                         <Text style={[sortFilterModalStyles.title, { color: theme.colors.text }]}>Filter & Sort</Text>
                         <TouchableOpacity onPress={onClose}>
-                            <Text style={[sortFilterModalStyles.closeButton, { color: theme.colors.text }]}>✕</Text>
+                            <Text style={[sortFilterModalStyles.closeButton, { color: theme.colors.sub_text }]}>✕</Text>
                         </TouchableOpacity>
                     </View>
 
@@ -144,7 +143,7 @@ const SortFilterBottomSheet = React.forwardRef(
                     >
                         {/* Category Section */}
                         <View style={sortFilterModalStyles.section}>
-                            <Text style={sortFilterModalStyles.sectionTitle}>Category</Text>
+                            <Text style={[sortFilterModalStyles.sectionTitle, { color: theme.colors.sub_text }]}>Category</Text>
                             <ScrollView
                                 horizontal
                                 showsHorizontalScrollIndicator={false}
@@ -174,7 +173,7 @@ const SortFilterBottomSheet = React.forwardRef(
 
                         {/* Border Crossing Section */}
                         <View style={sortFilterModalStyles.section}>
-                            <Text style={sortFilterModalStyles.sectionTitle}>Border Crossing</Text>
+                            <Text style={[sortFilterModalStyles.sectionTitle, { color: theme.colors.sub_text }]}>Border Crossing</Text>
                             <View style={sortFilterModalStyles.borderOptions}>
                                 {['All', 'Yes', 'No'].map(opt => (
                                     <TouchableOpacity
@@ -239,7 +238,6 @@ const sortFilterModalStyles = StyleSheet.create({
         bottom: 0,
         left: 0,
         right: 0,
-        backgroundColor: '#fff',
         borderTopLeftRadius: 24,
         borderTopRightRadius: 24,
         maxHeight: '80%',
@@ -272,13 +270,14 @@ const sortFilterModalStyles = StyleSheet.create({
         color: '#1e293b',
     },
     closeButton: {
-        fontSize: 28,
+        fontSize: 20,
         color: '#64748b',
-        fontWeight: '300',
+        fontWeight: '600',
     },
     divider: {
         height: 1,
-        backgroundColor: '#e2e8f0',
+        backgroundColor: '#cbd5e1',
+        marginHorizontal: 10
     },
     scrollContainer: {
         flexGrow: 0,
@@ -291,7 +290,6 @@ const sortFilterModalStyles = StyleSheet.create({
     sectionTitle: {
         fontSize: 16,
         fontWeight: '700',
-        color: '#475569',
         marginBottom: 14,
         letterSpacing: 0.3,
     },
@@ -310,8 +308,8 @@ const sortFilterModalStyles = StyleSheet.create({
         borderColor: '#e2e8f0',
     },
     chipActive: {
-        backgroundColor: '#2563eb',
-        borderColor: '#2563eb',
+        backgroundColor: '#003366',
+        borderColor: '#003366',
     },
     chipText: {
         fontSize: 14,
@@ -335,8 +333,8 @@ const sortFilterModalStyles = StyleSheet.create({
         borderColor: '#e2e8f0',
     },
     borderChipActive: {
-        backgroundColor: '#2563eb',
-        borderColor: '#2563eb',
+        backgroundColor: '#003366',
+        borderColor: '#003366',
     },
     borderChipText: {
         fontSize: 14,
@@ -350,10 +348,10 @@ const sortFilterModalStyles = StyleSheet.create({
         paddingHorizontal: 24,
         paddingVertical: 20,
         borderTopWidth: 1,
-        borderTopColor: '#e2e8f0',
+        borderTopColor: '#cbd5e1',
     },
     applyButton: {
-        backgroundColor: '#2563eb',
+        backgroundColor: '#003366',
         paddingVertical: 15,
         borderRadius: 12,
         alignItems: 'center',
@@ -589,31 +587,75 @@ export default function TransportationListScreen({ navigation }) {
     };
 
     const handleCall = (vehicle) => {
-        Linking.openURL(`tel:${vehicle.agent_phone}`);
+        if ((vehicle.vehicle_type === 'minibus'
+            || vehicle.vehicle_type === 'bus'
+            || vehicle.vehicle_type === 'sprinter'
+            || vehicle.vehicle_type === 'schoolbus'
+            || vehicle.vehicle_type === 'staffbus')
+            && vehicle.vehicle_category === 'public_transport'
+        ) {
+            Linking.openURL(`tel:${vehicle.agent_phone}`);
+        } else {
+            Linking.openURL(`tel:${vehicle.owner_info?.phone}`);
+        }
     };
 
     const handleWhatsApp = (vehicle) => {
-        Linking.openURL(`whatsapp://send?phone=${vehicle.owner_info.whatsapp.replace(/[^0-9]/g, '')}`);
+        if ((vehicle.vehicle_type === 'minibus'
+            || vehicle.vehicle_type === 'bus'
+            || vehicle.vehicle_type === 'sprinter'
+            || vehicle.vehicle_type === 'schoolbus'
+            || vehicle.vehicle_type === 'staffbus')
+            && vehicle.vehicle_category === 'public_transport'
+        ) {
+            Linking.openURL(`whatsapp://send?phone=${vehicle.agent_phone?.replace(/[^0-9]/g, '')}`);
+        } else {
+            Linking.openURL(`whatsapp://send?phone=${vehicle.owner_info.phone?.replace(/[^0-9]/g, '')}`);
+        }
     };
 
-    const handleEmail = () => {
-        Linking.openURL(`mailto:indabukocalculus@gmail.com`);
+    const handleEmail = (vehicle) => {
+        if ((vehicle.vehicle_type === 'minibus'
+            || vehicle.vehicle_type === 'bus'
+            || vehicle.vehicle_type === 'sprinter'
+            || vehicle.vehicle_type === 'schoolbus'
+            || vehicle.vehicle_type === 'staffbus')
+            && vehicle.vehicle_category === 'public_transport'
+        ) {
+            Linking.openURL(`mailto:indabukocalculus@gmail.com`);
+        } else {
+            Linking.openURL(`mailto:${vehicle.owner_info?.email}`);
+        }
     };
 
     const handleSMS = async (vehicle) => {
-        const shareMessage = `Hello ${vehicle?.owner_info.name}!\n\n`;
-        const smsUrl = Platform.OS === "ios"
-            ? `sms:${vehicle?.agent_phone}&body=${encodeURIComponent(shareMessage)}` // iOS uses semicolon
-            : `smsto:${vehicle?.agent_phone}?body=${encodeURIComponent(shareMessage)}`;
-        if (await Linking.canOpenURL(smsUrl)) {
-            await Linking.openURL(smsUrl);
-            console.log('Preparing to send SMS to:', vehicle?.owner_info?.phone);
+        try {
+            const shareMessage = `Hello ${vehicle?.owner_info.name}!\n\n` +
+                `--Do Not Edit--
+                [Transport Service: ${vehicle?.registration} - No.${vehicle.id}]\n\n`;
+
+            let smsUrl = Platform.OS === "ios"
+                ? `sms:${vehicle?.agent_phone}&body=${encodeURIComponent(shareMessage)}`
+                : `smsto:${vehicle?.agent_phone}?body=${encodeURIComponent(shareMessage)}`;
+
+            if ((vehicle.vehicle_type === 'minibus'
+                || vehicle.vehicle_type === 'bus'
+                || vehicle.vehicle_type === 'sprinter'
+                || vehicle.vehicle_type === 'schoolbus'
+                || vehicle.vehicle_type === 'staffbus')
+                && vehicle.vehicle_category === 'public_transport'
+            ) {
+                await Linking.openURL(smsUrl)
+            } else {
+                smsUrl = Platform.OS === "ios"
+                    ? `sms:${vehicle?.owner_info?.phone}&body=${encodeURIComponent(shareMessage)}`
+                    : `smsto:${vehicle?.owner_info?.phone}?body=${encodeURIComponent(shareMessage)}`;
+
+                await Linking.openURL(smsUrl);
+            };
+        } catch (error) {
+            throw new Error(error);
         }
-        else {
-            console.log('SMS client not available for URL:', smsUrl);
-            throw new Error('SMS client not available');
-        }
-        console.log('After sending SMS');
     };
 
     // ────── Helper Labels ──────
@@ -646,7 +688,7 @@ export default function TransportationListScreen({ navigation }) {
                     if (user) {
                         logUserActivity(user.uid, vehicle.id, 'pomy_forhire_transport');
                     }
-                    navigation.navigate('TransDetailsScreen', { vehicle: vehicle })
+                    navigation.navigate('TransDetailsScreen', { vehicleData: vehicle })
                 }}
             >
                 {/* Background Image */}
@@ -773,9 +815,7 @@ export default function TransportationListScreen({ navigation }) {
             <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
                 <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
                 <View style={{ height: 20 }} />
-                <SecondaryNav title="Transport For Hire" rightIcon="options-outline"
-                    onRightPress={() => setSortFilterModalVisible(true)}
-                />
+                <SecondaryNav title="Transport For Hire" rightIcon="options-outline" onRightPress={() => setSortFilterModalVisible(true)} />
 
                 {(sortByCategory !== 'All' || sortByBorderCrossing !== 'All') && (
                     <View style={styles.activeFiltersBar}>
@@ -854,11 +894,11 @@ export default function TransportationListScreen({ navigation }) {
                 </View>
 
                 <TouchableOpacity
-                    style={[styles.postBtn, { backgroundColor: theme.colors.sub_card }]}
+                    style={[styles.postBtn, { backgroundColor: theme.colors.card2 }]}
                     onPress={() => navigation.navigate('PostTransportationScreen')}
                 >
-                    <Icons.Ionicons name="add-circle-outline" size={20} color={theme.colors.sub_text} />
-                    <Text style={[styles.postBtnText, { color: theme.colors.sub_text }]}>Post Vehicle</Text>
+                    <Icons.Ionicons name="add-circle-outline" size={20} color='#fff' />
+                    <Text style={[styles.postBtnText, { color: '#fff' }]}>Post Vehicle</Text>
                 </TouchableOpacity>
 
                 {isConnected === null || loading ? (
@@ -867,9 +907,8 @@ export default function TransportationListScreen({ navigation }) {
                     <View style={styles.center}>
                         <Icons.Feather name="wifi-off" size={50} color="#94a3b8" />
                         <Text style={{ color: '#94a3b8', fontSize: 16, marginTop: 10 }}>No internet connection</Text>
-                        <TouchableOpacity onPress={handleRefresh}
-                            style={{ marginVertical: 15, borderRadius: 50, borderWidth: 1, borderColor: theme.colors.border, elevation: 2 }}>
-                            <Text style={{ fontSize: 20, fontWeight: 400, color: theme.colors.indicator }}>Reload</Text>
+                        <TouchableOpacity onPress={handleRefresh} style={styles.reloadBnt}>
+                            <Text style={{ fontSize: 16, fontWeight: 400, color: theme.colors.indicator }}>Reload</Text>
                         </TouchableOpacity>
                     </View>
                 ) : filteredVehicles.length === 0 ? (
@@ -917,6 +956,7 @@ export default function TransportationListScreen({ navigation }) {
 
                 <SortFilterBottomSheet
                     theme={theme}
+                    isDarkMode={isDarkMode}
                     sortByCategory={sortByCategory}
                     setSortByCategory={setSortByCategory}
                     sortByBorderCrossing={sortByBorderCrossing}
@@ -1132,7 +1172,10 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 50,
     },
-
+    reloadBnt: {
+        marginVertical: 15, borderRadius: 50, borderWidth: 1, borderColor: '#68b2fcff',
+        paddingHorizontal: 20, paddingVertical: 10
+    },
     postBtn: {
         flexDirection: 'row',
         alignItems: 'center',

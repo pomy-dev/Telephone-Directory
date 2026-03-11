@@ -175,7 +175,7 @@ export default function LoginScreen({ navigation }) {
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
           {/* Logo */}
           <View style={styles.logoContainer}>
-            <Image source={Images.logo} style={styles.logo} resizeMode="contain" />
+            <Image source={Images.appLogo} style={styles.logo} resizeMode="contain" />
           </View>
 
           {/* Title */}
@@ -204,12 +204,12 @@ export default function LoginScreen({ navigation }) {
 
           <View style={styles.dividerContainer}>
             <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
-            <Text style={[styles.orText, { color: theme.colors.textSecondary }]}>OR</Text>
+            <Text style={[styles.orText, { color: theme.colors.sub_text }]}>OR</Text>
             <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
           </View>
 
           {/* Login Mode Switch */}
-          <View style={styles.modeSwitch}>
+          {/* <View style={styles.modeSwitch}>
             <TouchableOpacity
               style={[styles.modeBtn, loginMode === 'email' && styles.modeBtnActive]}
               onPress={() => setLoginMode('email')}
@@ -227,7 +227,7 @@ export default function LoginScreen({ navigation }) {
                 Phone
               </Text>
             </TouchableOpacity>
-          </View>
+          </View> */}
 
           {/* Inputs */}
           {loginMode === 'email' ? (
@@ -299,9 +299,9 @@ export default function LoginScreen({ navigation }) {
             style={styles.signupLink}
             onPress={() => navigation?.navigate('Signup')}
           >
-            <Text style={[styles.signupText, { color: theme.colors.textSecondary }]}>
+            <Text style={[styles.signupText, { color: theme.colors.sub_text }]}>
               Don't have an account?{' '}
-              <Text style={{ color: theme.colors.primary, fontWeight: '600' }}>Sign Up</Text>
+              <Text style={{ color: theme.colors.indicator, fontWeight: '600' }}>Sign Up</Text>
             </Text>
           </TouchableOpacity>
         </ScrollView>

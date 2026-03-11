@@ -1,19 +1,19 @@
 "use client"
 
-import React, { useState, useEffect } from "react"
+import React, { useState, useEffect, useContext } from "react"
 import {
     View,
     Text,
     StyleSheet,
     ScrollView,
-    TextInput,
     TouchableOpacity,
     Alert,
     Image,
-    Platform,
-    StatusBar,
+    Platform, Dimensions,
+    StatusBar, KeyboardAvoidingView,
     ActivityIndicator,
 } from "react-native"
+import { TextInput } from "react-native-paper";
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from "@expo/vector-icons"
 import * as Location from "expo-location"
@@ -21,12 +21,14 @@ import { CustomToast } from "../../components/customToast";
 import SecondaryNav from "../../components/SecondaryNav"
 import { AuthContext } from "../../context/authProvider";
 import { submitGig } from "../../service/Supabase-Fuctions";
-import { supabase } from '../../service/Supabase-Client';
+import { AppContext } from "../../context/appContext";
 
 const CATEGORIES = ["Moving", "Cleaning", "Groundsman", "LandScaping", "Delivery", "Gardening", "Pet Care", "Tech"]
 const STEPS = ["Job Details", "Description", "Photos", "Contacts"]
+const { width, height } = Dimensions.get('window')
 
 const PostGigScreen = ({ navigation }) => {
+    const { theme, isDarkMode } = useContext(AppContext)
     const { user } = React.useContext(AuthContext)
     const [step, setStep] = useState(0)
 
@@ -164,7 +166,7 @@ const PostGigScreen = ({ navigation }) => {
                 description,
                 category,
                 price: Number(price),
-                postedBy: { name: user?.displayName.trim(), phone: phone?.trim(), email: user?.email.trim(), user_id: user?.uid},
+                postedBy: { name: user?.displayName.trim(), phone: phone?.trim(), email: user?.email.trim(), user_id: user?.uid },
                 locationSpot: location || { latitude: "", longitude: "" },
                 requirements,
                 photos: images,
@@ -201,31 +203,33 @@ const PostGigScreen = ({ navigation }) => {
             case 0:
                 return (
                     <>
-                        <Text style={styles.label}>Job Title *</Text>
+                        <Text style={[styles.label, { color: theme.colors.text }]}>Job Title *</Text>
                         <TextInput
-                            style={styles.input}
-                            placeholder="e.g., Help Moving Furniture"
+                            style={[styles.input, { backgroundColor: isDarkMode ? "#666" : "#fafafa" }]}
+                            label="e.g., Help Moving Furniture"
+                            mode="outlined"
+                            theme={{ roundness: 12 }}
                             value={title}
                             onChangeText={setTitle}
-                            placeholderTextColor="#999"
                         />
                         {errors.title && <Text style={styles.errorText}>{errors.title}</Text>}
 
                         {/* add and remove requirements */}
-                        <Text style={[styles.label, { marginTop: 28 }]}>Requirements (optional)</Text>
+                        <Text style={[styles.label, { marginTop: 28, color: theme.colors.text }]}>Requirements (optional)</Text>
                         <Text style={styles.helperText}>
                             List specific needs (e.g., "Need own bakkie", "Must arrive before 10am", "2 strong helpers")
                         </Text>
 
                         <View style={styles.requirementInputRow}>
                             <TextInput
-                                style={[styles.input, { flex: 1, marginRight: 12 }]}
-                                placeholder="Add a requirement..."
+                                style={[styles.input, { backgroundColor: isDarkMode ? "#666" : "#fafafa", flex: 1, marginRight: 12 }]}
+                                label="Add a requirement..."
+                                mode="outlined"
+                                theme={{ roundness: 12 }}
                                 value={newRequirement}
                                 onChangeText={setNewRequirement}
                                 onSubmitEditing={addRequirement}
                                 returnKeyType="done"
-                                placeholderTextColor="#999"
                             />
                             <TouchableOpacity
                                 style={[
@@ -260,20 +264,21 @@ const PostGigScreen = ({ navigation }) => {
             case 1:
                 return (
                     <>
-                        <Text style={styles.label}>Description *</Text>
+                        <Text style={[styles.label, { color: theme.colors.text }]}>Description *</Text>
                         <TextInput
-                            style={[styles.input, styles.textArea]}
-                            placeholder="Describe what you need help with, include details..."
+                            style={[styles.input, styles.textArea, { backgroundColor: isDarkMode ? "#666" : "#fafafa" }]}
+                            label="Put description of Job..."
+                            theme={{ roundness: 12 }}
+                            mode="outlined"
                             value={description}
                             onChangeText={setDescription}
                             multiline
                             numberOfLines={6}
                             textAlignVertical="top"
-                            placeholderTextColor="#999"
                         />
                         {errors.description && <Text style={styles.errorText}>{errors.description}</Text>}
 
-                        <Text style={[styles.label, { marginTop: 24 }]}>Category *</Text>
+                        <Text style={[styles.label, { marginTop: 24, color: theme.colors.text }]}>Category *</Text>
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriesScroll}>
                             {CATEGORIES.map((cat) => (
                                 <TouchableOpacity
@@ -289,16 +294,17 @@ const PostGigScreen = ({ navigation }) => {
                         </ScrollView>
                         {errors.category && <Text style={styles.errorText}>{errors.category}</Text>}
 
-                        <Text style={[styles.label, { marginTop: 16 }]}>Budget (R) *</Text>
+                        <Text style={[styles.label, { marginTop: 16, color: theme.colors.text }]}>Budget (R) *</Text>
                         <View style={styles.priceInputContainer}>
-                            <Text style={styles.currencySymbol}>R</Text>
+                            <Text style={styles.currencySymbol}>E</Text>
                             <TextInput
-                                style={styles.priceInput}
-                                placeholder="0"
+                                style={[styles.priceInput, { backgroundColor: isDarkMode ? '#666' : '#fff' }]}
+                                label="0"
+                                theme={{ roundness: 12 }}
+                                mode="outlined"
                                 value={price}
                                 onChangeText={setPrice}
                                 keyboardType="numeric"
-                                placeholderTextColor="#999"
                             />
                         </View>
                         {errors.price && <Text style={styles.errorText}>{errors.price}</Text>}
@@ -389,40 +395,44 @@ const PostGigScreen = ({ navigation }) => {
             case 3:
                 return (
                     <>
-                        <Text style={styles.label}>Phone Number *</Text>
+                        <Text style={[styles.label, { color: theme.colors.text }]}>Phone Number *</Text>
                         <TextInput
-                            style={styles.input}
-                            placeholder="e.g. +268 1234 5678"
+                            style={[styles.input, { backgroundColor: isDarkMode ? '#666' : '#fff' }]}
+                            label="e.g. +268 1234 5678"
+                            mode="outlined"
+                            theme={{ roundness: 12 }}
                             value={phone}
                             onChangeText={setPhone}
                             keyboardType="phone-pad"
-                            placeholderTextColor="#999"
                         />
                         {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
 
-                        <Text style={[styles.label, { marginTop: 24 }]}>Local Address *</Text>
+                        <Text style={[styles.label, { marginTop: 24, color: theme.colors.text }]}>Local Address *</Text>
                         <TextInput
-                            style={styles.input}
-                            placeholder="e.g. Manzini nearby"
+                            style={[styles.input, { backgroundColor: isDarkMode ? '#666' : '#fff' }]}
+                            label="e.g. Manzini nearby"
+                            mode="outlined"
+                            theme={{ roundness: 12 }}
                             value={location.address}
                             onChangeText={(text) => setLocation(prev => ({ ...prev, address: text }))}
                             keyboardType="default"
-                            placeholderTextColor="#999"
                         />
                         {errors.location && <Text style={styles.errorText}>{errors.location}</Text>}
 
                         <View style={styles.locationSection}>
-                            <Text style={styles.label}>Location Co-ordinates</Text>
+                            <Text style={[styles.label, { color: theme.colors.text }]}>Location Co-ordinates</Text>
                             {locationLoading ? (
-                                <ActivityIndicator size="small" color="#000" />
-                            ) : location ? (
-                                <Text style={styles.locationText}>
+                                <ActivityIndicator size="small" color={theme.colors.indicator} />
+                            ) : (location.latitude !== '' && location.longitude !== '') ? (
+                                <Text style={[styles.locationText, { color: theme.colors.sub_text }]}>
                                     {location.latitude}, {location.longitude}
                                 </Text>
                             ) : (
-                                <Text style={styles.locationText}>Not fetched yet</Text>
+                                <Text style={[styles.locationText, { color: theme.colors.sub_text }]}>Not fetched yet</Text>
                             )}
-                            <TouchableOpacity onPress={fetchCurrentLocation} disabled={locationLoading}>
+                            <TouchableOpacity onPress={fetchCurrentLocation}
+                                style={styles.locationBtn}
+                                disabled={locationLoading}>
                                 <Text style={styles.retryText}>Get/Refresh co-ordinates</Text>
                             </TouchableOpacity>
                         </View>
@@ -442,11 +452,12 @@ const PostGigScreen = ({ navigation }) => {
     }
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+            <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
             <SecondaryNav title="Post a Gig" onBackPress={() => navigation.goBack()} />
 
             {/* Progress Stepper */}
-            <View style={styles.stepper}>
+            <View style={[styles.stepper, { backgroundColor: theme.colors.card }]}>
                 {STEPS.map((s, index) => (
                     <View key={s} style={styles.stepItem}>
                         <View style={[styles.stepCircle, index <= step && styles.stepCircleActive]}>
@@ -454,26 +465,29 @@ const PostGigScreen = ({ navigation }) => {
                                 {index + 1}
                             </Text>
                         </View>
-                        <Text style={[styles.stepLabel, index <= step && styles.stepLabelActive]}>{s}</Text>
+                        <Text style={[styles.stepLabel, index <= step && (styles.stepLabelActive, { color: isDarkMode ? '#fff' : "#000", })]}>{s}</Text>
                     </View>
                 ))}
             </View>
 
-            <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-                <View style={styles.form}>
-                    {renderStepContent()}
-                </View>
-            </ScrollView>
 
-            <View style={styles.footer}>
+            <KeyboardAvoidingView style={styles.form}
+                behavior={Platform.OS === "ios" ? "padding" : "height"}
+            >
+                <ScrollView showsVerticalScrollIndicator={false}>
+                    {renderStepContent()}
+                </ScrollView>
+            </KeyboardAvoidingView>
+
+            <View style={[styles.footer, { backgroundColor: theme.colors.card }]}>
                 <View style={styles.buttonRow}>
                     {step > 0 && (
                         <TouchableOpacity style={styles.backButton} onPress={prevStep}>
-                            <Text style={styles.backButtonText}>Back</Text>
+                            <Text style={[styles.backButtonText, { color: theme.colors.text }]}>Back</Text>
                         </TouchableOpacity>
                     )}
 
-                    <TouchableOpacity style={styles.nextButton} onPress={nextStep} disabled={isSubmiting}>
+                    <TouchableOpacity style={[styles.nextButton, { backgroundColor: theme.colors.primary }]} onPress={nextStep} disabled={isSubmiting}>
                         <Text style={styles.nextButtonText}>
                             {step === STEPS.length - 1 ? "Post Gig" : "Next"}
                         </Text>
@@ -486,9 +500,9 @@ const PostGigScreen = ({ navigation }) => {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: "#fff", paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 30 },
-    content: { flex: 1 },
-    form: { padding: 20 },
+    container: { flex: 1, paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 30 },
+    // content: { flex: 1 },
+    form: { flex: 1, padding: 20 },
 
     stepper: {
         flexDirection: "row",
@@ -503,53 +517,49 @@ const styles = StyleSheet.create({
         width: 32,
         height: 32,
         borderRadius: 16,
-        backgroundColor: "#e0e0e0",
+        backgroundColor: "#dddd",
         justifyContent: "center",
         alignItems: "center",
         marginBottom: 6,
     },
-    stepCircleActive: { backgroundColor: "#000" },
+    stepCircleActive: { backgroundColor: "#003366" },
     stepNumber: { color: "#666", fontWeight: "600" },
     stepNumberActive: { color: "#fff" },
     stepLabel: { fontSize: 12, color: "#666", textAlign: "center" },
-    stepLabelActive: { color: "#000", fontWeight: "600" },
+    stepLabelActive: { fontWeight: "600" },
 
-    label: { fontSize: 16, fontWeight: "600", color: "#000", marginBottom: 8 },
+    label: { fontSize: 16, fontWeight: "600", marginBottom: 8 },
     input: {
-        borderWidth: 1,
-        borderColor: "#d0d0d0",
-        borderRadius: 12,
-        paddingHorizontal: 16,
-        paddingVertical: 14,
+        paddingHorizontal: 5,
         fontSize: 16,
-        backgroundColor: "#fafafa",
     },
-    textArea: { height: 140, paddingTop: 14 },
+    textArea: { minHeight: 100, paddingTop: 14 },
     categoriesScroll: { marginTop: 8 },
     categoryChip: {
         paddingHorizontal: 18,
-        paddingVertical: 12,
+        paddingVertical: 8,
         borderRadius: 24,
-        backgroundColor: "#f5f5f5",
+        backgroundColor: "#f0f4ff",
         marginRight: 12,
         borderWidth: 1,
-        borderColor: "#e0e0e0",
+        borderColor: "#f0f4ff",
     },
-    categoryChipActive: { backgroundColor: "#000", borderColor: "#000" },
+    categoryChipActive: { backgroundColor: "#003366", borderColor: "#003366" },
     categoryChipText: { fontSize: 15, fontWeight: "500", color: "#555" },
     categoryChipTextActive: { color: "#fff" },
 
     priceInputContainer: {
         flexDirection: "row",
         alignItems: "center",
+        justifyContent: 'space-between',
         borderWidth: 1,
         borderColor: "#d0d0d0",
         borderRadius: 12,
-        paddingHorizontal: 16,
-        backgroundColor: "#fafafa",
+        paddingLeft: 16,
+        backgroundColor: "#ccc",
     },
     currencySymbol: { fontSize: 20, fontWeight: "700", color: "#000", marginRight: 10 },
-    priceInput: { flex: 1, paddingVertical: 14, fontSize: 18 },
+    priceInput: { flex: 1, fontSize: 18 },
 
     imageButton: {
         flexDirection: "row",
@@ -566,8 +576,12 @@ const styles = StyleSheet.create({
     imageButtonText: { fontSize: 16, fontWeight: "500", color: "#555" },
 
     locationSection: { marginTop: 20, marginBottom: 16 },
-    locationText: { fontSize: 16, color: "#333", marginVertical: 8 },
-    retryText: { color: "#3b82f6", fontWeight: "500", marginTop: 4 },
+    locationText: { fontSize: 16, marginVertical: 8 },
+    retryText: { color: "#3b82f6", fontWeight: "500" },
+    locationBtn: {
+        width: width * 0.5, alignItems: 'center', justifyContent: 'center',
+        paddingHorizontal: 10, paddingVertical: 5, borderRadius: 70, backgroundColor: '#f0f4ff'
+    },
 
     infoBox: {
         flexDirection: "row",
@@ -582,7 +596,7 @@ const styles = StyleSheet.create({
 
     helperText: {
         fontSize: 13,
-        color: "#666",
+        color: "#ddd",
         marginBottom: 12,
         lineHeight: 18,
     },
@@ -715,7 +729,6 @@ const styles = StyleSheet.create({
         paddingVertical: 5,
         borderTopWidth: 1,
         borderTopColor: "#f0f0f0",
-        backgroundColor: "#fff",
         marginBottom: Platform.OS === "android" ? StatusBar.currentHeight + 20 : 0,
     },
     buttonRow: { flexDirection: "row", gap: 12 },
@@ -727,12 +740,11 @@ const styles = StyleSheet.create({
         borderColor: "#d0d0d0",
         alignItems: "center",
     },
-    backButtonText: { fontSize: 16, fontWeight: "600", color: "#333" },
+    backButtonText: { fontSize: 16, fontWeight: "600" },
     nextButton: {
         flex: 2,
         flexDirection: "row",
         justifyContent: "center",
-        backgroundColor: "#000",
         paddingVertical: 16,
         borderRadius: 12,
         alignItems: "center",
