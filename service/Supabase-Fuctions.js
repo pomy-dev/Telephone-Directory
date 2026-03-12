@@ -832,20 +832,33 @@ export async function deleteMyApplication(appId, userEmail) {
   }
 }
 
+
 /**
- * Fetches personalized recommendations using the Supabase RPC
+ * Fetches recommendations. If personalized fails (new user), fetches random ones.
  */
-export async function getPersonalizedRecommendations(userId, excludeIds = []) {
+export async function getPersonalizedRecommendations(userId, limit = 10) {
   try {
+    // 1. Attempt personalized recommendations
     const { data, error } = await supabase.rpc("get_recommendations_for_user", {
       p_user_id: userId,
-      // p_exclude_ids: excludeIds,
-      p_limit: 10,
+      p_limit: limit,
     });
 
-    if (error) throw error;
+    // If there is data, return it
+    if (!error && data && data.length > 0) {
+      return { success: true, data, type: 'personalized' };
+    }
 
-    return { success: true, data };
+    // 2. FALLBACK: If personalized returns empty (new user) or error, fetch random
+    
+    const { data: randomData, error: randomError } = await supabase.rpc("get_random_recommendations", {
+      p_limit: limit,
+    });
+
+    if (randomError) throw randomError;
+
+    return { success: true, data: randomData, type: 'random' };
+
   } catch (error) {
     console.error("Recommendation Error:", error.message);
     return { success: false, data: [] };
