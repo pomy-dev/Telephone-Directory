@@ -220,7 +220,7 @@ export default function HomeScreen({ navigation }) {
           <Text style={styles.startingText}>{startingText}</Text>
         </View>
 
-        <View style={[styles.servicesSection, { backgroundColor: theme.colors.card }]}>
+        <View style={[styles.servicesSection, { backgroundColor: theme.colors.background }]}>
           <FlatList
             data={services}
             renderItem={renderService}
@@ -272,12 +272,12 @@ const styles = StyleSheet.create({
   },
   serviceItem: {
     alignItems: "center",
-    width: 76,
+    // width: 76,
     marginVertical: 8,
   },
   serviceIconContainer: {
-    width: 65,
-    height: 65,
+    width: 150,
+    height: 150,
     borderRadius: 20,
     borderWidth: 1,
     alignItems: "center",
@@ -293,6 +293,8 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     borderRadius: 20,
+    // height:120,
+    // width:120,
   },
   serviceText: {
     fontSize: 12,

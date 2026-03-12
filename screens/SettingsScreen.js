@@ -1,9 +1,20 @@
 import React, { useState } from "react";
 import {
-  View, Text, StyleSheet, TouchableOpacity, ScrollView, Modal, ImageBackground,
-  Platform, Switch, Linking, ActivityIndicator, Alert, Image
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  Modal,
+  ImageBackground,
+  Platform,
+  Switch,
+  Linking,
+  ActivityIndicator,
+  Alert,
+  Image,
 } from "react-native";
-import * as ImagePicker from 'expo-image-picker';
+import * as ImagePicker from "expo-image-picker";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { TextInput } from "react-native-paper";
 import { Icons } from "../constants/Icons";
@@ -106,8 +117,8 @@ const PreferenceItem = ({
           trackColor={{ false: "#cbd5e1", true: "#3b82f6" }}
           thumbColor={
             (item.title === "Dark Mode" && isDarkMode) ||
-              (item.title === "Is Online" && isOnline) ||
-              (item.title === "Notifications" && isNotifications)
+            (item.title === "Is Online" && isOnline) ||
+            (item.title === "Notifications" && isNotifications)
               ? "#1e40af"
               : "#f1f5f9"
           }
@@ -184,35 +195,56 @@ export default function ProfileScreen({ navigation }) {
     confirmPassword: "",
   });
 
-  // Check for existing timer on load
+  // Calculate granular time remaining
+  const today = new Date();
+  const diffInMs = requestDate ? today - requestDate : 0;
+
+  // Total time required is 5 days (5 * 24 * 60 * 60 * 1000 ms)
+  const fiveDaysInMs = 5 * 24 * 60 * 60 * 1000;
+  const remainingMs = Math.max(0, fiveDaysInMs - diffInMs);
+
+  // Granular countdown
+  const dLeft = Math.floor(remainingMs / (1000 * 60 * 60 * 24));
+  const hLeft = Math.floor((remainingMs / (1000 * 60 * 60)) % 24);
+  const mLeft = Math.floor((remainingMs / (1000 * 60)) % 60);
+
+  // Update your existing variables
+  const daysDiff = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
+  const canDeleteNow = diffInMs >= fiveDaysInMs;
+
+  // 3. The missing startTimer function
+  const startTimer = async () => {
+    try {
+      const now = new Date().toISOString();
+      // Save to local storage so it persists if the app closes
+      await AsyncStorage.setItem(`deletion_timer_${user?.uid}`, now);
+      // Update local state to trigger UI change
+      setRequestDate(new Date(now));
+    } catch (error) {
+      console.error("Error starting deletion timer:", error);
+      Alert.alert("Error", "Could not start the cooling-off period.");
+    }
+  };
+
+  // 4. Helper to cancel if user changes their mind
+  const cancelTimer = async () => {
+    await AsyncStorage.removeItem(`deletion_timer_${user?.uid}`);
+    setRequestDate(null);
+  };
+
   React.useEffect(() => {
     const checkTimer = async () => {
-      const storedDate = await AsyncStorage.getItem(
-        `deletion_timer_${user?.uid}`,
-      );
-      if (storedDate) setRequestDate(new Date(storedDate));
+      if (user?.uid) {
+        const storedDate = await AsyncStorage.getItem(
+          `deletion_timer_${user?.uid}`,
+        );
+        if (storedDate) {
+          setRequestDate(new Date(storedDate));
+        }
+      }
     };
     checkTimer();
   }, [user]);
-
-  // Calculate days remaining
-  const today = new Date();
-  const daysDiff = requestDate
-    ? Math.floor((today - requestDate) / (1000 * 60 * 60 * 24))
-    : 0;
-  const canDeleteNow = daysDiff >= 5;
-  const daysLeft = 5 - daysDiff;
-
-  const startTimer = async () => {
-    const now = new Date().toISOString();
-    await AsyncStorage.setItem(`deletion_timer_${user?.uid}`, now);
-    setRequestDate(new Date(now));
-  };
-
-  // const cancelTimer = async () => {
-  //   await AsyncStorage.removeItem(`deletion_timer_${user?.uid}`);
-  //   setRequestDate(null);
-  // };
 
   const handleSave = async () => {
     setLoading(true);
@@ -257,8 +289,8 @@ export default function ProfileScreen({ navigation }) {
 
   const handleUpdatePhoto = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== 'granted') {
-      Alert.alert('Permission Needed', 'Please allow access to your photos.');
+    if (status !== "granted") {
+      Alert.alert("Permission Needed", "Please allow access to your photos.");
       return;
     }
 
@@ -267,30 +299,30 @@ export default function ProfileScreen({ navigation }) {
     }
 
     try {
-      setIsPicking(true)
+      setIsPicking(true);
       const result = await ImagePicker.launchImageLibraryAsync({
         allowsEditing: true,
-        aspect: [4, 3], quality: 0.8,
-        mediaTypes: ['images']
+        aspect: [4, 3],
+        quality: 0.8,
+        mediaTypes: ["images"],
       });
 
       if (!result.canceled) {
-        const newImgs = result.assets.map(a => a.uri);
+        const newImgs = result.assets.map((a) => a.uri);
         if (!newImgs[0] && typeof newImgs[0] !== "string") {
           throw new Error("Valid photo URL is required");
         }
 
-        setImage(newImgs[0])
+        setImage(newImgs[0]);
         await user.updateProfile({ photoURL: newImgs[0].trim() });
       }
-
     } catch (e) {
-      console.log(e.message)
-      throw new Error(e.message)
+      console.log(e.message);
+      throw new Error(e.message);
     } finally {
-      setIsPicking(false)
+      setIsPicking(false);
     }
-  }
+  };
 
   const handleModalSave = async () => {
     setLoading(true);
@@ -351,17 +383,6 @@ export default function ProfileScreen({ navigation }) {
     }
   };
 
-  // Check for existing timer on load
-  React.useEffect(() => {
-    const checkTimer = async () => {
-      const storedDate = await AsyncStorage.getItem(
-        `deletion_timer_${user?.uid}`,
-      );
-      if (storedDate) setRequestDate(new Date(storedDate));
-    };
-    checkTimer();
-  }, [user]);
-
   React.useEffect(() => {
     if (user) {
       setFormData((prev) => ({
@@ -374,12 +395,12 @@ export default function ProfileScreen({ navigation }) {
 
   const handleLogout = () => {
     try {
-      logout()
-      CustomToast("Logged out 🚶🏾‍♂️‍➡️", "Sign In to start again")
+      logout();
+      CustomToast("Logged out 🚶🏾‍♂️‍➡️", "Sign In to start again");
     } catch (error) {
-      throw new Error(error)
+      throw new Error(error);
     }
-  }
+  };
 
   return (
     <SafeAreaView
@@ -387,9 +408,20 @@ export default function ProfileScreen({ navigation }) {
     >
       {/* Header */}
       <View style={styles.header}>
-        <View style={{ flexDirection: 'row', justifyContent: 'flex-start', alignItems: 'center', gap: 16 }}>
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "flex-start",
+            alignItems: "center",
+            gap: 16,
+          }}
+        >
           <TouchableOpacity onPress={() => navigation.goBack()}>
-            <Icons.Ionicons name="arrow-back" size={24} color={theme.colors.text} />
+            <Icons.Ionicons
+              name="arrow-back"
+              size={24}
+              color={theme.colors.text}
+            />
           </TouchableOpacity>
           {/* Profile text */}
           <Text style={[styles.title, { color: theme.colors.text }]}>
@@ -418,16 +450,34 @@ export default function ProfileScreen({ navigation }) {
           <View style={styles.heroContent}>
             <View style={styles.avatarContainer}>
               <View style={styles.avatar}>
-                {(user.photoURL || image) ? (
-                  <Image source={{ uri: user.photoURL || image }} style={{ position: 'relative', objectFit: 'cover', width: '100%', height: '100%', borderRadius: 50 }} />
+                {user.photoURL || image ? (
+                  <Image
+                    source={{ uri: user.photoURL || image }}
+                    style={{
+                      position: "relative",
+                      objectFit: "cover",
+                      width: "100%",
+                      height: "100%",
+                      borderRadius: 50,
+                    }}
+                  />
                 ) : (
                   <Icons.Ionicons name="person" size={48} color="#fff" />
                 )}
               </View>
-              <TouchableOpacity onPress={handleUpdatePhoto} style={styles.onlineIndicator} >
-                {isPicking ?
+              <TouchableOpacity
+                onPress={handleUpdatePhoto}
+                style={styles.onlineIndicator}
+              >
+                {isPicking ? (
                   <ActivityIndicator size={16} color={theme.colors.indicator} />
-                  : <Icons.Ionicons name="camera-reverse-sharp" color={theme.colors.indicator} size={16} />}
+                ) : (
+                  <Icons.Ionicons
+                    name="camera-reverse-sharp"
+                    color={theme.colors.indicator}
+                    size={16}
+                  />
+                )}
               </TouchableOpacity>
             </View>
 
@@ -505,7 +555,7 @@ export default function ProfileScreen({ navigation }) {
 
             <View style={{ marginTop: 10 }}>
               {/* CHANGE EMAIL */}
-              <TouchableOpacity
+              {/* <TouchableOpacity
                 activeOpacity={0.85}
                 style={[
                   styles.settingActionButton,
@@ -544,7 +594,7 @@ export default function ProfileScreen({ navigation }) {
                   size={18}
                   color={theme.colors.sub_text}
                 />
-              </TouchableOpacity>
+              </TouchableOpacity> */}
 
               {/* CHANGE PASSWORD */}
               <TouchableOpacity
@@ -696,7 +746,7 @@ export default function ProfileScreen({ navigation }) {
                 name="chevron-right"
                 size={20}
                 color={theme.colors.sub_text}
-              // style={{ opacity: 0.3 }}
+                // style={{ opacity: 0.3 }}
               />
             </TouchableOpacity>
           </>
@@ -727,7 +777,7 @@ export default function ProfileScreen({ navigation }) {
             style={[
               styles.modalContainer,
               {
-                backgroundColor: theme.colors.card,
+                backgroundColor: theme.colors.background,
                 borderWidth: 1,
                 borderColor: theme.colors.border,
               },
@@ -737,13 +787,13 @@ export default function ProfileScreen({ navigation }) {
             <View style={{ alignItems: "center", marginBottom: 15 }}>
               <Icons.Ionicons
                 name="warning-outline"
-                size={48}
+                size={28}
                 color="#FF3B30"
               />
               <Text
                 style={[
                   styles.modalTitle,
-                  { color: theme.colors.text, marginTop: 10, marginBottom: 0 },
+                  { color: theme.colors.text, marginTop: 5, marginBottom: 0 },
                 ]}
               >
                 Delete Account
@@ -751,71 +801,10 @@ export default function ProfileScreen({ navigation }) {
             </View>
 
             {/* STEP 1 — No deletion requested yet */}
+            {/* STEP 1 — No deletion requested yet */}
             {!requestDate && (
               <>
-                <Text
-                  style={{
-                    color: theme.colors.text,
-                    fontSize: 16,
-                    fontWeight: "700",
-                    marginBottom: 10,
-                  }}
-                >
-                  What happens if you delete?
-                </Text>
-
-                <View style={{ marginBottom: 20 }}>
-                  {[
-                    "All your posted gigs will be removed.",
-                    "Your worker profile & applications will vanish.",
-                    "This action is permanent and cannot be undone.",
-                  ].map((text, i) => (
-                    <View
-                      key={i}
-                      style={{
-                        flexDirection: "row",
-                        marginBottom: 5,
-                        paddingRight: 10,
-                      }}
-                    >
-                      <Icons.Entypo
-                        name="dot-single"
-                        size={20}
-                        color={theme.colors.text}
-                      />
-                      <Text
-                        style={{
-                          color: theme.colors.text,
-                          opacity: 0.8,
-                          fontSize: 14,
-                        }}
-                      >
-                        {text}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-
-                <View
-                  style={{
-                    backgroundColor: isDarkMode ? "#332100" : "#FFF9E6",
-                    padding: 12,
-                    borderRadius: 10,
-                    marginBottom: 20,
-                  }}
-                >
-                  <Text
-                    style={{
-                      color: isDarkMode ? "#FFD60A" : "#856404",
-                      fontSize: 13,
-                      fontWeight: "600",
-                    }}
-                  >
-                    🛡️ Security Policy: A 5-day cooling-off period is required
-                    before permanent deletion.
-                  </Text>
-                </View>
-
+                {/* ... Your existing "What happens if you delete" code ... */}
                 <TouchableOpacity
                   onPress={startTimer}
                   style={[styles.saveBtn, { backgroundColor: "#FF9500" }]}
@@ -827,10 +816,10 @@ export default function ProfileScreen({ navigation }) {
               </>
             )}
 
-            {/* STEP 2 — Timer Running */}
-            {requestDate && canDeleteNow && (
+            {/* STEP 2 — Timer Running (FIXED CONDITION) */}
+            {requestDate && !canDeleteNow && (
               <>
-                <View style={{ alignItems: "center", marginVertical: 20 }}>
+                <View style={{ alignItems: "center", marginVertical: 5 }}>
                   <Text
                     style={{
                       color: theme.colors.text,
@@ -840,38 +829,182 @@ export default function ProfileScreen({ navigation }) {
                   >
                     Day {daysDiff + 1} of 5
                   </Text>
-
-                  <View
-                    style={{
-                      width: "100%",
-                      height: 8,
-                      backgroundColor: theme.colors.border,
-                      borderRadius: 4,
-                      marginTop: 15,
-                    }}
-                  >
-                    <View
-                      style={{
-                        width: `${Math.min(((daysDiff + 1) / 5) * 100, 100)}%`,
-                        height: 8,
-                        backgroundColor: "#FF9500",
-                        borderRadius: 4,
-                      }}
-                    />
-                  </View>
                 </View>
 
-                <Text
+                {/* DEBUG CLOCK */}
+                <View
                   style={{
-                    color: theme.colors.text,
-                    textAlign: "center",
+                    backgroundColor: isDarkMode ? "#333" : "#f0f0f0",
+                    padding: 10,
+                    borderRadius: 10,
                     marginBottom: 20,
-                    opacity: 0.8,
                   }}
                 >
-                  Your account is scheduled for deletion. Return in {daysLeft}{" "}
-                  days to finalize deletion.
-                </Text>
+                  <Text
+                    style={{
+                      color: theme.colors.text,
+                      textAlign: "center",
+                      fontSize: 12,
+                      opacity: 0.6,
+                    }}
+                  >
+                    Time Remaining:
+                  </Text>
+                  <Text
+                    style={{
+                      color: "#FF9500",
+                      textAlign: "center",
+                      fontSize: 20,
+                      fontWeight: "bold",
+                    }}
+                  >
+                    {dLeft}d : {hLeft}h : {mLeft}m
+                  </Text>
+                </View>
+
+                <View style={{ marginBottom: 20 }}>
+                  <ScrollView
+                    style={{
+                      maxHeight: 250, // Set your desired fixed height here
+                      backgroundColor: isDarkMode
+                        ? "rgba(255,255,255,0.05)"
+                        : "#f9f9f9",
+                    }}
+                    showsVerticalScrollIndicator={true}
+                    nestedScrollEnabled={true} // Important for scrolling inside a Modal
+                  >
+                    {/* The "What Happens" Section */}
+                    <View style={{}}>
+                      <Text
+                        style={{
+                          color: theme.colors.text,
+                          fontWeight: "800",
+                          fontSize: 16,
+                          marginBottom: 8,
+                        }}
+                      >
+                        Loss of Personal Data & Identity
+                      </Text>
+                      <Text
+                        style={{
+                          color: theme.colors.text,
+                          fontSize: 14,
+                          lineHeight: 20,
+                          opacity: 0.9,
+                        }}
+                      >
+                        By proceeding, you are requesting the{" "}
+                        <Text style={{ fontWeight: "bold" }}>
+                          permanent destruction
+                        </Text>{" "}
+                        of your account. This is not a "deactivation"—it is a
+                        total wipe. You will lose:
+                      </Text>
+
+                      <View style={{ marginTop: 10 }}>
+                        {[
+                          "Your verified worker profile and all earned ratings.",
+                          "Your entire history of completed gigs and payments.",
+                          "Access to any active job applications or messages.",
+                        ].map((bullet, i) => (
+                          <View
+                            key={i}
+                            style={{
+                              flexDirection: "row",
+                              marginTop: 4,
+                              paddingRight: 10,
+                            }}
+                          >
+                            <Text
+                              style={{
+                                color: theme.colors.text,
+                                marginRight: 8,
+                              }}
+                            >
+                              •
+                            </Text>
+                            <Text
+                              style={{
+                                color: theme.colors.text,
+                                fontSize: 13,
+                                opacity: 0.8,
+                              }}
+                            >
+                              {bullet}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    </View>
+
+                    {/* The "Why the 5 Days" Section */}
+                    <View>
+                      <Text
+                        style={{
+                          color: theme.colors.text,
+                          fontWeight: "700",
+                          fontSize: 15,
+                          marginBottom: 6,
+                        }}
+                      >
+                        The 5-Day Cooling-Off Period
+                      </Text>
+                      <Text
+                        style={{
+                          color: theme.colors.text,
+                          fontSize: 14,
+                          lineHeight: 20,
+                          opacity: 0.8,
+                        }}
+                      >
+                        We enforce a 5-day wait because account deletion is{" "}
+                        <Text style={{ fontWeight: "bold" }}>irreversible</Text>
+                        . Our system cannot restore data once it is purged.
+                      </Text>
+                      <Text
+                        style={{
+                          color: theme.colors.text,
+                          fontSize: 14,
+                          lineHeight: 20,
+                          marginTop: 10,
+                          opacity: 0.8,
+                        }}
+                      >
+                        This period acts as a security buffer. If someone else
+                        gained access to your device, this delay gives you time
+                        to notice the request and cancel it before your data is
+                        lost forever.
+                      </Text>
+                    </View>
+                  </ScrollView>
+
+                  <Text
+                    style={{
+                      color: theme.colors.text,
+                      fontSize: 12,
+                      textAlign: "center",
+                      marginTop: 15,
+                      fontStyle: "italic",
+                      opacity: 0.5,
+                    }}
+                  >
+                    Note: You must manually return after 5 days to confirm with
+                    your password.
+                  </Text>
+                </View>
+
+                <TouchableOpacity
+                  onPress={async () => {
+                    await AsyncStorage.removeItem(
+                      `deletion_timer_${user?.uid}`,
+                    );
+                    setRequestDate(null);
+                  }}
+                >
+                  <Text style={{ color: "#007AFF", textAlign: "center" }}>
+                    Cancel Request
+                  </Text>
+                </TouchableOpacity>
               </>
             )}
 
@@ -888,7 +1021,6 @@ export default function ProfileScreen({ navigation }) {
                 >
                   Final confirmation required
                 </Text>
-
                 <TextInput
                   style={[
                     styles.input,
@@ -899,28 +1031,13 @@ export default function ProfileScreen({ navigation }) {
                       color: theme.colors.text,
                     },
                   ]}
-                  placeholder="Enter your current password"
-                  placeholderTextColor="#999"
+                  placeholder="Enter password"
                   secureTextEntry
                   value={deletePassword}
                   onChangeText={setDeletePassword}
                 />
-
                 <TouchableOpacity
-                  onPress={async () => {
-                    try {
-                      await handleDeleteAccount(deletePassword);
-                      setDeletePassword("");
-                      setDeleteModalVisible(false);
-
-                      Alert.alert("Deleted", "Your account has been removed.");
-                    } catch (err) {
-                      Alert.alert(
-                        "Error",
-                        "Could not delete account. Check your password.",
-                      );
-                    }
-                  }}
+                  onPress={() => handleDeleteAccount(deletePassword)}
                   style={[styles.saveBtn, { backgroundColor: "#FF3B30" }]}
                 >
                   <Text style={styles.saveBtnText}>
@@ -932,7 +1049,14 @@ export default function ProfileScreen({ navigation }) {
 
             {/* Close Button */}
             <TouchableOpacity
-              onPress={() => setDeleteModalVisible(false)}
+              onPress={() => {
+                // code to test the delet and  by set the dat bak by 6 days
+                // const mockDate = new Date();
+                // mockDate.setDate(mockDate.getDate() - 6); // Set date to 6 days ago
+                // setRequestDate(mockDate);
+
+                setDeleteModalVisible(false);
+              }}
               style={{ marginTop: 20, padding: 10 }}
             >
               <Text
@@ -1207,9 +1331,10 @@ const styles = StyleSheet.create({
     right: 4,
     borderRadius: 20,
     borderWidth: 2,
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderColor: "#fff",
-    alignItems: 'center', justifyContent: 'center'
+    alignItems: "center",
+    justifyContent: "center",
   },
   profileInfo: {
     flex: 1,
@@ -1365,7 +1490,7 @@ const styles = StyleSheet.create({
   dangerZoneLine: {
     height: 1,
     backgroundColor: "#f0f0f0",
-    marginTop: 30
+    marginTop: 30,
   },
   logoutButton: {
     flexDirection: "row",
