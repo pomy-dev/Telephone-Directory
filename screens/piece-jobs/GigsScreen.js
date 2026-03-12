@@ -210,7 +210,7 @@ const GigsScreen = ({ navigation }) => {
   const [nextCursor, setNextCursor] = useState({ createdAt: null, id: null });
   const [viewMode, setViewMode] = useState("gigs");
   const [searchQuery, setSearchQuery] = useState("");
-  const [fabOpen, setFabOpen] = useState(false);
+  const [fabOpen] = useState(false);
   const fabRotation = React.useRef(new Animated.Value(0)).current;
   const [sheetVisible, setSheetVisible] = useState(false);
   const sheetAnim = React.useRef(new Animated.Value(0)).current;
@@ -336,7 +336,7 @@ const GigsScreen = ({ navigation }) => {
       async (nextState) => {
         if (nextState === "active") {
           const state = await NetInfo.fetch();
-         
+
 
           onNetworkChange(state);
         }
@@ -368,8 +368,6 @@ const GigsScreen = ({ navigation }) => {
       unsubscribeApp.remove();
     };
   }, []);
-
-
 
   //-------------this code is correct for inial mount  , parked because of network checks
   // useEffect(() => {
@@ -519,13 +517,8 @@ const GigsScreen = ({ navigation }) => {
     );
   };
 
-  const toggleFAB = () => {
-    const toValue = fabOpen ? 0 : 1;
-    Animated.spring(fabRotation, {
-      toValue,
-      useNativeDriver: true,
-    }).start();
-    setFabOpen(!fabOpen);
+  const handlePostGig = () => {
+    navigation.navigate('PostJobScreen');
   };
 
   const toggleSheet = (open) => {
@@ -584,8 +577,6 @@ const GigsScreen = ({ navigation }) => {
     setLoadingWorkers(false);
     console.log("-----------------end");
   };
-
-  // Fetch logic
 
   const fetchLiveGigs = async (isLoadMore = false) => {
     // 1. BLOCK: Check network before doing anything else
@@ -1410,7 +1401,7 @@ const GigsScreen = ({ navigation }) => {
               styles.toggleButton,
               { backgroundColor: viewMode === "gigs" ? theme.colors.card2 : 'transparent' },
             ]}
-           onPress={() => setViewMode("gigs")}
+            onPress={() => setViewMode("gigs")}
           >
             <Text
               style={[
@@ -1573,65 +1564,6 @@ const GigsScreen = ({ navigation }) => {
 
       {/* FLOATING ACTION BUTTON */}
       <View style={styles.fabContainer}>
-        {/* Secondary Buttons */}
-        {fabOpen && (
-          <>
-            <Animated.View
-              style={[
-                styles.secondaryFabButton,
-                {
-                  opacity: new Animated.Value(1),
-                  transform: [{ translateY: new Animated.Value(0) }],
-                },
-              ]}
-            >
-              <TouchableOpacity
-                style={[styles.secondaryFab, { backgroundColor: "#10b981" }]}
-                onPress={() => {
-                  toggleFAB();
-                  navigation.navigate("PostJobScreen");
-                }}
-              >
-                <Icons.Ionicons
-                  name="construct-outline"
-                  size={20}
-                  color="#fff"
-                />
-              </TouchableOpacity>
-            </Animated.View>
-
-            <Animated.View
-              style={[
-                styles.secondaryFabButton,
-                {
-                  opacity: new Animated.Value(1),
-                  transform: [
-                    {
-                      translateY: new Animated.Value(0),
-                    },
-                  ],
-                },
-              ]}
-            >
-              <TouchableOpacity
-                style={[styles.secondaryFab, { backgroundColor: "#3b82f6" }]}
-                onPress={() => {
-                  toggleFAB();
-                  navigation.navigate("WorkerRegistration");
-                }}
-              >
-                <Icons.MaterialCommunityIcons
-                  name={
-                    isWorker ? "account-hard-hat" : "briefcase-account-outline"
-                  }
-                  size={20}
-                  color="#fff"
-                />
-              </TouchableOpacity>
-            </Animated.View>
-          </>
-        )}
-
         {/* Main FAB */}
         <Animated.View
           style={{
@@ -1650,7 +1582,7 @@ const GigsScreen = ({ navigation }) => {
               styles.mainFab,
               { backgroundColor: theme.colors.indicator },
             ]}
-            onPress={toggleFAB}
+            onPress={handlePostGig}
           >
             <Icons.AntDesign name="plus" size={24} color="#fff" />
           </TouchableOpacity>

@@ -1,9 +1,7 @@
 import Clipboard from '@react-native-clipboard/clipboard';
 import { Linking, Platform, Share, Alert } from "react-native";
 import { CustomToast } from "../components/customToast";
-import { fetchAllCompaniesOffline } from "../service/getApi";
-import SynonymsSearch from '../constants/synonymMap';
-import { Images } from '../constants/Images';
+// import SynonymsSearch from '../constants/synonymMap';
 
 export async function handleShareVia(method, business, selectedItem) {
   const deepLink = `https://industrylines.netlify.app/views/business-detail.html?id=${business._id}`; // Fallback URL
@@ -224,15 +222,15 @@ export async function handleBusinessPress(business, navigation, setSelectedBronz
 };
 
 // Ensure getSynonyms uses the new synonymMap
-export const getSynonyms = (term) => {
-  const lowerTerm = term.toLowerCase();
-  return Object.keys(SynonymsSearch).reduce((acc, key) => {
-    if (lowerTerm.includes(key) || SynonymsSearch[key].some((syn) => lowerTerm.includes(syn))) {
-      return [...acc, key, ...SynonymsSearch[key]];
-    }
-    return acc;
-  }, [lowerTerm]);
-};
+// export const getSynonyms = (term) => {
+//   const lowerTerm = term.toLowerCase();
+//   return Object.keys(SynonymsSearch).reduce((acc, key) => {
+//     if (lowerTerm.includes(key) || SynonymsSearch[key].some((syn) => lowerTerm.includes(syn))) {
+//       return [...acc, key, ...SynonymsSearch[key]];
+//     }
+//     return acc;
+//   }, [lowerTerm]);
+// };
 
 export async function filterAllBusinesses(query = "", companies) {
   try {

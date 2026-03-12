@@ -20,7 +20,7 @@ import { fetchOpenGigsCount, subscribeToGigs } from "../service/Supabase-Fuction
 
 export default function HomeScreen({ navigation }) {
   const { theme, isDarkMode, notifications, notificationsEnabled } = React.useContext(AppContext)
-  const { user, logout } = React.useContext(AuthContext)
+  const { logout } = React.useContext(AuthContext)
   const [nots, setNots] = useState(null);
   const [greetingText, setGreetingText] = useState("");
   const [gigsCount, setGigsCount] = useState(0);
@@ -84,8 +84,6 @@ export default function HomeScreen({ navigation }) {
   const services = [
     { id: "1", screen: "GigsScreen", name: "Quick Jobs", image: Images.piecejob },
     { id: "2", screen: "TransportationListScreen", name: "For-Hires", image: Images.forhire },
-    { id: "3", screen: "LoanAssist", name: "Smart Financing", image: Images.Loans },
-    { id: "8", screen: "DirectoryScreen", name: "Telephone Directory", image: Images.Phonebook },
   ]
 
   useEffect(() => {
@@ -270,7 +268,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   gridRow: {
-    justifyContent: "space-between",
+    justifyContent: "space-evenly",
   },
   serviceItem: {
     alignItems: "center",
