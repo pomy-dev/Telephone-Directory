@@ -57,7 +57,7 @@ export const AuthProvider = ({ children }) => {
       firebaseAuth,
       async (currentUser) => {
         if (currentUser) {
-          await currentUser.reload()
+          // await currentUser.reload()
           if (currentUser.emailVerified) {
             setUser(currentUser);
             // 2. CREATE OR UPDATE the profile in Supabase
