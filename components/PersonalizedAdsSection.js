@@ -170,7 +170,7 @@ const PersonalizedAdsSection = forwardRef((props, ref) => {
         category: "Recommended",
       };
       navigation.navigate("JobDetailScreen", {
-        job: jobPayload,
+        jobData: jobPayload,
         from: "recommendation",
       });
     } else if (ad.item_type === "pomy_workers") {
@@ -190,8 +190,8 @@ const PersonalizedAdsSection = forwardRef((props, ref) => {
           phone: "",
         },
       };
-      navigation.navigate("TransportationDetailsScreen", {
-        vehicle: vehiclePayload,
+      navigation.navigate("TransDetailsScreen", {
+        vehicleData: vehiclePayload,
         from: "recommendation",
       });
     }

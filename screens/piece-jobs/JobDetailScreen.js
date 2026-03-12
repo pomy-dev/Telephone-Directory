@@ -1,6 +1,18 @@
 import {
-  View, Text, StyleSheet, ScrollView, Image, Modal, Alert, ActivityIndicator,
-  TouchableOpacity, StatusBar, Platform, Linking, Dimensions, Share,
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Image,
+  Modal,
+  Alert,
+  ActivityIndicator,
+  TouchableOpacity,
+  StatusBar,
+  Platform,
+  Linking,
+  Dimensions,
+  Share,
 } from "react-native";
 import { TextInput } from "react-native-paper";
 import { Icons } from "../../constants/Icons";
@@ -10,7 +22,11 @@ import * as DocumentPicker from "expo-document-picker";
 import SecondaryNav from "../../components/SecondaryNav";
 import { CustomToast } from "../../components/customToast";
 import { AuthContext } from "../../context/authProvider";
-import { applyForGig, logUserActivity, getGigById } from "../../service/Supabase-Fuctions";
+import {
+  applyForGig,
+  logUserActivity,
+  getGigById,
+} from "../../service/Supabase-Fuctions";
 import { AppContext } from "../../context/appContext";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -19,19 +35,27 @@ const mapJobData = (rawJob) => {
 
   // Handle the 'postedby' JSON field from Supabase
   let postedByData = rawJob.postedby;
-  if (typeof postedByData === 'string') {
-    try { postedByData = JSON.parse(postedByData); } catch (e) { postedByData = {}; }
+  if (typeof postedByData === "string") {
+    try {
+      postedByData = JSON.parse(postedByData);
+    } catch (e) {
+      postedByData = {};
+    }
   }
 
   // Handle the 'job_location' JSON field
   let locationData = rawJob.job_location;
-  if (typeof locationData === 'string') {
-    try { locationData = JSON.parse(locationData); } catch (e) { locationData = {}; }
+  if (typeof locationData === "string") {
+    try {
+      locationData = JSON.parse(locationData);
+    } catch (e) {
+      locationData = {};
+    }
   }
 
   // DATE FORMATTING LOGIC
   const rawDate = rawJob.created_at;
-  console.log(rawJob.created_at)
+  console.log(rawJob.created_at);
   const formattedDate = new Date(rawDate).toLocaleDateString(); // Result: "2026-02-03"
 
   return {
@@ -44,21 +68,23 @@ const mapJobData = (rawJob) => {
     // Map job_requirements to requirements
     requirements: rawJob.job_requirements || rawJob.requirements || [],
     // Map job_images to images (extracting URLs if they are objects)
-    images: (rawJob.job_images || rawJob.images || []).map(img =>
-      typeof img === 'string' ? img : img.url
+    images: (rawJob.job_images || rawJob.images || []).map((img) =>
+      typeof img === "string" ? img : img.url,
     ),
-    location: locationData?.address || rawJob.location || "Location not specified",
-    postedBy: postedByData || rawJob.postedBy || { name: 'Poster', email: '', phone: '' },
+    location:
+      locationData?.address || rawJob.location || "Location not specified",
+    postedBy: postedByData ||
+      rawJob.postedBy || { name: "Poster", email: "", phone: "" },
     postedTime: formattedDate,
-    applications: rawJob.application_count || 0
+    applications: rawJob.application_count || 0,
   };
 };
 
 const JobDetailScreen = ({ route, navigation }) => {
   const { theme, isDarkMode } = React.useContext(AppContext);
   const { user } = React.useContext(AuthContext);
-  const { jobData } = route.params
-  const [job, setJob] = useState(jobData);
+  const { jobData } = route.params;
+  const [job, setJob] = useState(jobData ? mapJobData(jobData) : []);
   const from = route.params?.from || "direct";
 
   // 4. Update the user check to be safe (postedBy will now always exist)
@@ -82,12 +108,13 @@ const JobDetailScreen = ({ route, navigation }) => {
   React.useEffect(() => {
     const fetchFreshData = async () => {
       // Check if we need to fetch full details (e.g., from recommendation)
-      if (from === "recommendation" && job?.id) {
+      if (from === "recommendation" && jobData) {
         try {
-          const { data, error } = await getGigById(job.id);
+     
+          const { data, error } = await getGigById(jobData.id);
           if (data) {
             // Update state with the fully mapped database record
-            setJob(data);
+            setJob(mapJobData(data));
           }
         } catch (err) {
           console.error("Error fetching full job details:", err);
@@ -156,7 +183,7 @@ const JobDetailScreen = ({ route, navigation }) => {
         jobId: job.id,
         user: {
           name: user.displayName,
-          email: user.email,
+          email: user?.email,
           phone: phone?.trim(),
           user_id: user?.uid,
         },
@@ -167,13 +194,12 @@ const JobDetailScreen = ({ route, navigation }) => {
       const response = await applyForGig(applicationData);
 
       if (response.success) {
-        logUserActivity(user.uid, job.id, 'pomy_gigs_application');
+        logUserActivity(user.uid, job.id, "pomy_gigs_application");
         CustomToast(
           "Success!👍",
           "Your application has been successfully submitted.",
         );
-      }
-      else throw new Error("Application submission failed");
+      } else throw new Error("Application submission failed");
     } catch (err) {
       console.log(err);
       CustomToast("Failed!", err.message);
@@ -202,10 +228,12 @@ const JobDetailScreen = ({ route, navigation }) => {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, }} edges={['top']}>
-
+    <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
       <View style={styles.container}>
-        <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
+        <StatusBar
+          barStyle={isDarkMode ? "light-content" : "dark-content"}
+          backgroundColor={theme.colors.background}
+        />
         <SecondaryNav
           title="Job Details"
           rightIcon="share-social-outline"
@@ -218,19 +246,29 @@ const JobDetailScreen = ({ route, navigation }) => {
             /* SHOW CAROUSEL IF IMAGES EXIST */
             <View style={{ height: 200 }}>
               <Carousel
-                loop width={width} height={200} autoPlay={true}
-                data={job.images} scrollAnimationDuration={2000}
+                loop
+                width={width}
+                height={200}
+                autoPlay={true}
+                data={job.images}
+                scrollAnimationDuration={2000}
                 renderItem={({ item }) => (
                   <Image source={{ uri: item }} style={styles.image} />
                 )}
               />
             </View>
-          ) : (<View></View>)}
+          ) : (
+            <View></View>
+          )}
 
           <View style={styles.detailsContainer}>
             <View style={styles.header}>
-              <Text style={[styles.title, { color: theme.colors.text }]}>{job.title}</Text>
-              <Text style={[styles.price, { color: theme.colors.success }]}>E{job.price}</Text>
+              <Text style={[styles.title, { color: theme.colors.text }]}>
+                {job.title}
+              </Text>
+              <Text style={[styles.price, { color: theme.colors.success }]}>
+                E{job.price}
+              </Text>
             </View>
 
             <View
@@ -244,8 +282,10 @@ const JobDetailScreen = ({ route, navigation }) => {
                 <Text style={styles.categoryText}>{job.category}</Text>
               </View>
 
-              {user.email === job.postedBy.email && (
-                <Text style={[styles.metaText]}>Candidates Applied:{job.applications}</Text>
+              {user?.email === job.postedBy?.email && (
+                <Text style={[styles.metaText]}>
+                  Candidates Applied:{job.applications}
+                </Text>
               )}
             </View>
 
@@ -264,29 +304,47 @@ const JobDetailScreen = ({ route, navigation }) => {
 
             <View style={styles.locationRow}>
               <Icons.Ionicons name="location" size={20} color="#ef4444" />
-              <Text style={[styles.locationText, { color: theme.colors.sub_text }]}>{job.location}</Text>
+              <Text
+                style={[styles.locationText, { color: theme.colors.sub_text }]}
+              >
+                {job.location}
+              </Text>
               {job.distance && (
-                <Text style={styles.distanceText}>({job.distance.toFixed(1)} km away)</Text>
+                <Text style={styles.distanceText}>
+                  ({job.distance.toFixed(1)} km away)
+                </Text>
               )}
             </View>
 
             <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Description</Text>
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+                Description
+              </Text>
               <Text style={styles.description}>{job.description}</Text>
             </View>
 
             <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Requirements</Text>
+              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+                Requirements
+              </Text>
               {job.requirements?.length > 0 ? (
                 job.requirements.map((requirement, index) => (
                   <View key={index} style={styles.requirementItem}>
-                    <Icons.Ionicons name="checkmark-circle" size={20} color="#10b981" />
+                    <Icons.Ionicons
+                      name="checkmark-circle"
+                      size={20}
+                      color="#10b981"
+                    />
                     <Text style={styles.requirementText}>{requirement}</Text>
                   </View>
                 ))
               ) : (
                 <View style={styles.requirementEmpty}>
-                  <Icons.Ionicons name="alert-circle" size={20} color="#ef4444" />
+                  <Icons.Ionicons
+                    name="alert-circle"
+                    size={20}
+                    color="#ef4444"
+                  />
                   <Text style={styles.requirementText}>
                     No specific requirements listed.
                   </Text>
@@ -294,14 +352,18 @@ const JobDetailScreen = ({ route, navigation }) => {
               )}
             </View>
 
-            {user.email === job?.postedBy?.email && (
+            {user?.email === job?.postedBy?.email && (
               <View style={{ height: 30 }} />
             )}
 
-            {user.email !== job?.postedBy?.email && (
+            {user?.email !== job?.postedBy?.email && (
               <>
                 <View style={styles.section}>
-                  <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Connect Via</Text>
+                  <Text
+                    style={[styles.sectionTitle, { color: theme.colors.text }]}
+                  >
+                    Connect Via
+                  </Text>
 
                   <TouchableOpacity
                     onPress={handleCall}
@@ -310,7 +372,11 @@ const JobDetailScreen = ({ route, navigation }) => {
                       { backgroundColor: theme.colors.indicator },
                     ]}
                   >
-                    <Icons.Ionicons name="call-outline" size={20} color="#fff" />
+                    <Icons.Ionicons
+                      name="call-outline"
+                      size={20}
+                      color="#fff"
+                    />
                     <Text style={styles.contactButtonText}>
                       Call {job.postedBy?.name}
                     </Text>
@@ -327,11 +393,24 @@ const JobDetailScreen = ({ route, navigation }) => {
                       onPress={handleSMS}
                       style={[
                         styles.contactButtonSecondary,
-                        { borderColor: theme.colors.disabled, flex: 1, backgroundColor: isDarkMode ? '#666' : '#fff' },
+                        {
+                          borderColor: theme.colors.disabled,
+                          flex: 1,
+                          backgroundColor: isDarkMode ? "#666" : "#fff",
+                        },
                       ]}
                     >
-                      <Icons.Ionicons name="chatbubble-outline" size={20} color="#4381f3ff" />
-                      <Text style={[styles.contactButtonTextSecondary, { color: theme.colors.text }]}>
+                      <Icons.Ionicons
+                        name="chatbubble-outline"
+                        size={20}
+                        color="#4381f3ff"
+                      />
+                      <Text
+                        style={[
+                          styles.contactButtonTextSecondary,
+                          { color: theme.colors.text },
+                        ]}
+                      >
                         Send Message
                       </Text>
                     </TouchableOpacity>
@@ -339,11 +418,24 @@ const JobDetailScreen = ({ route, navigation }) => {
                       onPress={handleEmail}
                       style={[
                         styles.contactButtonSecondary,
-                        { borderColor: theme.colors.disabled, flex: 1, backgroundColor: isDarkMode ? '#666' : '#fff' },
+                        {
+                          borderColor: theme.colors.disabled,
+                          flex: 1,
+                          backgroundColor: isDarkMode ? "#666" : "#fff",
+                        },
                       ]}
                     >
-                      <Icons.Ionicons name="mail-outline" size={20} color="#fb2121ff" />
-                      <Text style={[styles.contactButtonTextSecondary, { color: theme.colors.text }]}>
+                      <Icons.Ionicons
+                        name="mail-outline"
+                        size={20}
+                        color="#fb2121ff"
+                      />
+                      <Text
+                        style={[
+                          styles.contactButtonTextSecondary,
+                          { color: theme.colors.text },
+                        ]}
+                      >
                         Send Email
                       </Text>
                     </TouchableOpacity>
@@ -354,7 +446,7 @@ const JobDetailScreen = ({ route, navigation }) => {
           </View>
         </ScrollView>
 
-        {user.email !== job?.postedBy?.email && (
+        {user?.email !== job?.postedBy?.email && (
           <View
             style={[
               styles.footer,
@@ -387,21 +479,36 @@ const JobDetailScreen = ({ route, navigation }) => {
               style={styles.modalBackdrop}
               onPress={() => setModalVisible(false)}
             />
-            <View style={[styles.modalContent, { backgroundColor: isDarkMode ? '#4b4a4aff' : '#fff' }]}>
+            <View
+              style={[
+                styles.modalContent,
+                { backgroundColor: isDarkMode ? "#4b4a4aff" : "#fff" },
+              ]}
+            >
               <View style={styles.sheetHandle} />
-              <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Apply for this Gig</Text>
+              <Text style={[styles.modalTitle, { color: theme.colors.text }]}>
+                Apply for this Gig
+              </Text>
               <TextInput
                 label="Phone Number"
                 mode="outlined"
                 theme={{ roundness: 12 }}
                 value={phone}
                 onChangeText={setPhone}
-                style={[styles.input, { backgroundColor: isDarkMode ? '#666' : '#fff' }]}
+                style={[
+                  styles.input,
+                  { backgroundColor: isDarkMode ? "#666" : "#fff" },
+                ]}
                 keyboardType="phone-pad"
               />
 
               <View
-                style={{ flexDirection: "row", alignItems: "center", justifyContent: 'center', gap: 10 }}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 10,
+                }}
               >
                 <TextInput
                   label="Add Expertise"
@@ -409,7 +516,10 @@ const JobDetailScreen = ({ route, navigation }) => {
                   theme={{ roundness: 12 }}
                   value={expertiseInput}
                   onChangeText={setExpertiseInput}
-                  style={[styles.input, { flex: 2, backgroundColor: isDarkMode ? '#666' : '#fff' }]}
+                  style={[
+                    styles.input,
+                    { flex: 2, backgroundColor: isDarkMode ? "#666" : "#fff" },
+                  ]}
                 />
                 <TouchableOpacity
                   onPress={() => {
@@ -420,13 +530,23 @@ const JobDetailScreen = ({ route, navigation }) => {
                   }}
                   style={[styles.addButton, { flex: 1 }]}
                 >
-                  <Icons.Ionicons name="add-circle-outline" size={20} color="#fff" />
+                  <Icons.Ionicons
+                    name="add-circle-outline"
+                    size={20}
+                    color="#fff"
+                  />
                 </TouchableOpacity>
               </View>
 
               <ScrollView style={styles.expertisesList}>
                 {expertises.map((exp, index) => (
-                  <Text key={index} style={[styles.expertiseItem, { color: theme.colors.sub_text }]}>
+                  <Text
+                    key={index}
+                    style={[
+                      styles.expertiseItem,
+                      { color: theme.colors.sub_text },
+                    ]}
+                  >
                     ✔️{exp}
                   </Text>
                 ))}
@@ -434,9 +554,16 @@ const JobDetailScreen = ({ route, navigation }) => {
 
               <TouchableOpacity
                 onPress={pickDocuments}
-                style={[styles.attachButton, { backgroundColor: theme.colors.card2 }]}
+                style={[
+                  styles.attachButton,
+                  { backgroundColor: theme.colors.card2 },
+                ]}
               >
-                <Icons.Ionicons name='attach-outline' color={'#fff'} size={24} />
+                <Icons.Ionicons
+                  name="attach-outline"
+                  color={"#fff"}
+                  size={24}
+                />
                 <Text style={styles.attachButtonText}>Attach Documents</Text>
               </TouchableOpacity>
               <ScrollView style={styles.attachmentsList}>
@@ -457,7 +584,9 @@ const JobDetailScreen = ({ route, navigation }) => {
                     )}
                     <TouchableOpacity
                       onPress={() =>
-                        setAttachments(attachments.filter((_, i) => i !== index))
+                        setAttachments(
+                          attachments.filter((_, i) => i !== index),
+                        )
                       }
                     >
                       <Icons.Ionicons name="close" size={20} color="red" />
@@ -470,7 +599,7 @@ const JobDetailScreen = ({ route, navigation }) => {
                 onPress={handleSubmit}
                 style={styles.submitButton}
               >
-                <Icons.Feather name='send' color={'#fff'} size={24} />
+                <Icons.Feather name="send" color={"#fff"} size={24} />
                 <Text style={styles.submitButtonText}>Submit Application</Text>
                 {isSubmitting && (
                   <ActivityIndicator
@@ -485,7 +614,6 @@ const JobDetailScreen = ({ route, navigation }) => {
         </Modal>
       </View>
     </SafeAreaView>
-
   );
 };
 
@@ -621,7 +749,7 @@ const styles = StyleSheet.create({
   },
   contactButtonTextSecondary: {
     fontSize: 16,
-    fontWeight: "600"
+    fontWeight: "600",
   },
   footer: {
     paddingHorizontal: 16,
@@ -693,8 +821,8 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   attachButton: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     padding: 10,
     borderRadius: 5,
     alignItems: "center",

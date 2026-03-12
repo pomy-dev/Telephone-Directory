@@ -1241,7 +1241,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     alignSelf: "flex-end",
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingVertical: 5,
     borderRadius: 100,
     gap: 6,
   },

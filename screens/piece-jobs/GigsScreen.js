@@ -250,7 +250,7 @@ const GigsScreen = ({ navigation }) => {
 
   const moreItems = [
     {
-      title: "Post Gig",
+      title: "Create Job Post",
       icon: "Ionicons",
       iconName: "construct-outline",
       onPress: () => navigation.navigate("PostJobScreen"),
