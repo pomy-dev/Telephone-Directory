@@ -2,7 +2,7 @@
 
 import {
   StyleSheet, Text, View, TouchableOpacity, TextInput, StatusBar,
-  Modal, Pressable, Keyboard, TouchableWithoutFeedback, Platform
+  Keyboard, Platform
 } from "react-native"
 import React, { useState, useEffect } from "react"
 import AsyncStorage from "@react-native-async-storage/async-storage"
@@ -11,6 +11,7 @@ import { Icons } from '../constants/Icons'
 import { AppContext } from "../context/appContext"
 import { Badge } from 'react-native-paper';
 import { LoaderKitView } from 'react-native-loader-kit';
+import CustomBottomSheet from './customBottomSheet'
 
 export default function TopNav({ onCartPress, onSearch, onNotificationPress, onLogout, notificationCount = 0 }) {
   const { theme, isDarkMode } = React.useContext(AppContext)
@@ -18,6 +19,7 @@ export default function TopNav({ onCartPress, onSearch, onNotificationPress, onL
   const [modalVisible, setModalVisible] = useState(false)
   const [tempLocation, setTempLocation] = useState("")
   const [isFindingLocation, setIsFindingLocation] = useState(false);
+
 
   useEffect(() => {
     loadLocation()
@@ -68,11 +70,6 @@ export default function TopNav({ onCartPress, onSearch, onNotificationPress, onL
     setModalVisible(true)
   }
 
-  const handleSearchPress = () => {
-    Keyboard.dismiss()
-    onSearch?.()
-  }
-
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
@@ -106,79 +103,70 @@ export default function TopNav({ onCartPress, onSearch, onNotificationPress, onL
         </>
       </View>
 
-      {/* Modal for Updating Location */}
-      <Modal
-        animationType="slide"
-        transparent={true}
+      <CustomBottomSheet
         visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
+        onClose={() => setModalVisible(false)}
+        snapPoints={[45]}                    // or [35, 65, 90] if you want multiple snaps
+        backgroundColor={isDarkMode ? "#666" : "#fff"}
+        handleColor={isDarkMode ? "#888" : "#E6E7EA"}
       >
-        <TouchableWithoutFeedback
-          onPress={() => {
-            Keyboard.dismiss()
-            setModalVisible(false)
-          }}
+        <View style={styles.modalHeader}>
+          <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Update Location</Text>
+        </View>
+
+        <View style={[styles.inputContainer, { borderColor: theme.colors.border || '#E5E5EA' }]}>
+          <Icons.Ionicons name="location-outline" size={20} color={theme.colors.sub_text} style={{ marginRight: 10 }} />
+          <TextInput
+            style={[styles.modalInput, { color: theme.colors.sub_text }]}
+            placeholder="Enter your address"
+            value={tempLocation}
+            onChangeText={setTempLocation}
+            placeholderTextColor="#8E8E93"
+            // autoFocus
+            returnKeyType="done"
+            onSubmitEditing={() => saveLocation(tempLocation)}
+          />
+        </View>
+
+        <TouchableOpacity
+          style={[
+            styles.currentLocationButton,
+            { backgroundColor: theme.colors.surface || '#f0f4ff' },
+          ]}
+          onPress={getCurrentLocation}
+          disabled={isFindingLocation}
         >
-          <View style={styles.modalOverlay}>
-            <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
-              <View style={[styles.modalCard, { backgroundColor: isDarkMode ? '#666' : '#fff' }]}>
-                <View style={styles.sheetHandle} />
-                <View style={styles.modalHeader}>
-                  <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Update Location</Text>
-                  <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeButton}>
-                    <Icons.Ionicons name="close" size={24} color={theme.colors.sub_text} />
-                  </TouchableOpacity>
-                </View>
+          <Icons.Ionicons name="navigate" size={20} color={theme.colors.indicator} style={{ marginRight: 8 }} />
+          {isFindingLocation ? (
+            <LoaderKitView
+              style={{ width: 50, height: 30 }}
+              name={'BallBeat'}
+              animationSpeedMultiplier={1.0}
+              color={theme.colors.indicator}
+            />
+          ) : (
+            <Text style={[styles.currentLocationText, { color: theme.colors.indicator }]}>
+              Use current location
+            </Text>
+          )}
+        </TouchableOpacity>
 
-                <View style={styles.inputContainer}>
-                  <Icons.Ionicons name="location-outline" size={20} color={theme.colors.sub_text} style={{ marginRight: 10 }} />
-                  <TextInput
-                    style={[styles.modalInput, { color: theme.colors.sub_text }]}
-                    placeholder="Enter your address"
-                    value={tempLocation}
-                    onChangeText={setTempLocation}
-                    placeholderTextColor="#8E8E93"
-                    autoFocus
-                    returnKeyType="done"
-                    onSubmitEditing={() => saveLocation(tempLocation)}
-                  />
-                </View>
+        <View style={styles.modalActions}>
+          <TouchableOpacity
+            style={[styles.modalButton, styles.cancelButton]}
+            onPress={() => { }}
+          >
+            <Text style={styles.cancelText}>Cancel</Text>
+          </TouchableOpacity>
 
-                <TouchableOpacity style={styles.currentLocationButton} onPress={getCurrentLocation} activeOpacity={0.7}>
-                  <Icons.Ionicons name="navigate" size={20} color={theme.colors.indicator} style={{ marginRight: 8 }} />
-                  {isFindingLocation ?
-                    <LoaderKitView
-                      style={{ width: 50, height: 30 }}
-                      name={'BallBeat'}
-                      animationSpeedMultiplier={1.0}
-                      color={theme.colors.indicator}
-                    />
-                    : <Text style={[styles.currentLocationText, { color: theme.colors.indicator }]}>Use current location</Text>
-                  }
-                </TouchableOpacity>
-
-                <View style={styles.modalActions}>
-                  <Pressable
-                    style={[styles.modalButton, styles.cancelButton]}
-                    onPress={() => setModalVisible(false)}
-                    android_ripple={{ color: "#E5E5EA" }}
-                  >
-                    <Text style={styles.cancelText}>Cancel</Text>
-                  </Pressable>
-
-                  <Pressable
-                    style={[styles.modalButton, { backgroundColor: theme.colors.indicator }]}
-                    onPress={() => saveLocation(tempLocation)}
-                    android_ripple={{ color: "#000" }}
-                  >
-                    <Text style={[styles.saveText, { color: '#fff' }]}>Confirm</Text>
-                  </Pressable>
-                </View>
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback >
-      </Modal>
+          <TouchableOpacity
+            style={[styles.modalButton, { backgroundColor: theme.colors.indicator }]}
+            onPress={() => saveLocation(tempLocation)}
+          >
+            <Text style={[styles.saveText, { color: '#fff' }]}>Confirm</Text>
+          </TouchableOpacity>
+        </View>
+      </CustomBottomSheet>
     </View >
   )
 }
@@ -245,11 +233,6 @@ const styles = StyleSheet.create({
   searchPlaceholder: {
     color: "#8E8E93",
     fontSize: 15,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "flex-end",
   },
   modalCard: {
     borderTopLeftRadius: 24,

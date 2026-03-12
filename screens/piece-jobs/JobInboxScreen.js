@@ -25,6 +25,7 @@ import { CustomToast } from "../../components/customToast";
 import {
   getMyAppliedGigs,
   getGigApplicants,
+  getApplication,
   updateApplicationStatus,
   approveGigApplication,
   deleteMyApplication
@@ -35,7 +36,7 @@ import CustomLoader from "../../components/customLoader";
 
 const JobInboxScreen = ({ route, navigation }) => {
   const insets = useSafeAreaInsets();
-  const { gigSelection, gigId } = route.params
+  const { gigSelection, gigId, appId } = route.params
   const [applicants, setApplicants] = useState([]);
   const [loading, setLoading] = useState(true);
   const { user } = React.useContext(AuthContext);
@@ -88,7 +89,9 @@ const JobInboxScreen = ({ route, navigation }) => {
     try {
       setLoading(true);
 
-      const res = gigSelection === 'applied' ? await getMyAppliedGigs(user.email) : await getGigApplicants(gigId);
+      const res = gigSelection === 'applied'
+        ? await getMyAppliedGigs(user.email) : gigSelection === 'notif'
+          ? await getApplication(appId) : await getGigApplicants(gigId);
 
       if (res.success) {
         setApplicants(res.data);

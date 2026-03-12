@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import {
   View,
   Text,
@@ -185,11 +185,9 @@ const GigsScreen = ({ navigation }) => {
   const [isOffline, setIsOffline] = useState(false);
   const { user, isWorker } = React.useContext(AuthContext);
   const { theme, isDarkMode } = React.useContext(AppContext);
-  const [selectedCategory, setSelectedCategory] = useState("all");
   const [userLocation, setUserLocation] = useState(null);
   const [jobs, setJobs] = useState([]);
   const [workerVotes, setWorkerVotes] = useState({});
-  const [isWorkerMode, setIsWorkerMode] = useState(false);
   const [lastVisible, setLastVisible] = useState(null);
   const [filteredWorkers, setFilteredWorkers] = useState([]);
   const [loadingWorkers, setLoadingWorkers] = useState(true);
@@ -209,8 +207,6 @@ const GigsScreen = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [nextCursor, setNextCursor] = useState({ createdAt: null, id: null });
   const [viewMode, setViewMode] = useState("gigs");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [fabOpen] = useState(false);
   const fabRotation = React.useRef(new Animated.Value(0)).current;
   const [sheetVisible, setSheetVisible] = useState(false);
   const sheetAnim = React.useRef(new Animated.Value(0)).current;
@@ -260,7 +256,7 @@ const GigsScreen = ({ navigation }) => {
       icon: "FontAwesome6",
       iconName: "list-check",
       onPress: () =>
-        navigation.navigate("JobInbox", { gigSelection: "applied" }),
+        navigation.navigate("JobInbox", { gigSelection: "applied", gigId: null, appId: null }),
     },
     {
       title: "My Posted Gigs",
@@ -1122,69 +1118,69 @@ const GigsScreen = ({ navigation }) => {
       <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
 
       {/* Custom Modern Header */}
-      <View style={styles.customHeader}>
-        {/* Back Btn */}
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Icons.Ionicons
-            name="arrow-back"
-            size={28}
-            color={theme.colors.text}
-          />
-        </TouchableOpacity>
-
-        {/* SEARCH BAR */}
-        <View style={{ backgroundColor: theme.colors.background }}>
-          <View
-            style={[
-              styles.searchBar,
-              { backgroundColor: isDarkMode ? '#94a3b8' : theme.colors.sub_card },
-            ]}
-          >
+        <View style={styles.customHeader}>
+          {/* Back Btn */}
+          <TouchableOpacity onPress={() => navigation.goBack()}>
             <Icons.Ionicons
-              name="search"
-              size={18}
-              color={theme.colors.sub_text}
+              name="arrow-back"
+              size={28}
+              color={theme.colors.text}
             />
-            <TouchableOpacity onPress={() => toggleSheet(true)}>
-              <Text style={[styles.searchInput, { color: theme.colors.text }]}>
-                {viewMode === "gigs"
-                  ? "search for gigs..."
-                  : "search for workers..."}
-              </Text>
-            </TouchableOpacity>
-            {((viewMode === "gigs" && gigSearch.length > 0) ||
-              (viewMode === "workers" && workerSearch.length > 0)) && (
-                <TouchableOpacity
-                  style={{
-                    position: "absolute",
-                    right: 20,
-                    paddingHorizontal: 5,
-                    paddingVertical: 3,
-                    backgroundColor: "#f0f4ff",
-                    borderRadius: 10,
-                  }}
-                  onPress={() => {
-                    viewMode === "gigs" ? setGigSearch("") : setWorkerSearch("");
-                  }}
-                >
-                  <Icons.Ionicons
-                    name="close"
-                    size={18}
-                    color={theme.colors.sub_text}
-                  />
-                </TouchableOpacity>
-              )}
+          </TouchableOpacity>
+
+          {/* SEARCH BAR */}
+          <View style={{ backgroundColor: theme.colors.background }}>
+            <View
+              style={[
+                styles.searchBar,
+                { backgroundColor: isDarkMode ? '#94a3b8' : theme.colors.sub_card },
+              ]}
+            >
+              <Icons.Ionicons
+                name="search"
+                size={18}
+                color={theme.colors.sub_text}
+              />
+              <TouchableOpacity onPress={() => toggleSheet(true)}>
+                <Text style={[styles.searchInput, { color: theme.colors.text }]}>
+                  {viewMode === "gigs"
+                    ? "search for gigs..."
+                    : "search for workers..."}
+                </Text>
+              </TouchableOpacity>
+              {((viewMode === "gigs" && gigSearch.length > 0) ||
+                (viewMode === "workers" && workerSearch.length > 0)) && (
+                  <TouchableOpacity
+                    style={{
+                      position: "absolute",
+                      right: 20,
+                      paddingHorizontal: 5,
+                      paddingVertical: 3,
+                      backgroundColor: "#f0f4ff",
+                      borderRadius: 10,
+                    }}
+                    onPress={() => {
+                      viewMode === "gigs" ? setGigSearch("") : setWorkerSearch("");
+                    }}
+                  >
+                    <Icons.Ionicons
+                      name="close"
+                      size={18}
+                      color={theme.colors.sub_text}
+                    />
+                  </TouchableOpacity>
+                )}
+            </View>
           </View>
+
+          {/* Options Handle */}
+          <Pressable onPress={() => toggleSheet(true)}>
+            <Icons.Ionicons name="options" size={30} color={theme.colors.text} />
+          </Pressable>
+
+          {/* More Handle */}
+          <MoreDropdown items={moreItems} />
         </View>
-
-        {/* Options Handle */}
-        <Pressable onPress={() => toggleSheet(true)}>
-          <Icons.Ionicons name="options" size={30} color={theme.colors.text} />
-        </Pressable>
-
-        {/* More Handle */}
-        <MoreDropdown items={moreItems} />
-      </View>
 
       {/* BOTTOM SHEET FOR CATEGORIES / WORKER FILTER */}
       {sheetVisible && (

@@ -1,20 +1,9 @@
 import React, { useState, useEffect, useRef, useContext } from "react";
 import {
-  View,
-  Text,
-  FlatList,
-  StyleSheet,
-  TouchableOpacity,
-  Image,
-  useWindowDimensions,
-  Modal,
+  View, Text, FlatList, StyleSheet, TouchableOpacity, Image, useWindowDimensions
 } from "react-native";
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppContext } from "../../context/appContext";
 import { AuthContext } from "../../context/authProvider";
-import { CustomToast } from "../../components/customToast";
-import { approveApplication } from "../../service/Supabase-Fuctions";
-import * as WebBrowser from 'expo-web-browser';
 import { Icons } from "../../constants/Icons";
 
 const NotificationListScreen = ({ navigation, route }) => {
@@ -23,11 +12,7 @@ const NotificationListScreen = ({ navigation, route }) => {
   const listRef = useRef(null);
   const { width } = useWindowDimensions();
   const { params } = route.params;
-  const [error, setError] = useState(null);
   const [layoutMode, setLayoutMode] = useState("list");
-  const [selectedNotification, setSelectedNotification] = useState(null);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [isApproving, setIsApproving] = useState(false);
   const [filterType, setFilterType] = useState('all'); // all | company | application | employer
 
   // initialize selectedNotificationId
@@ -44,11 +29,7 @@ const NotificationListScreen = ({ navigation, route }) => {
   });
 
   useEffect(() => {
-    // const selectedNotificationId = params.notificationId || null;
-
     if (selectedNotificationId && notifications.length > 0 && listRef.current) {
-      // determine index in the currently filtered data set so scrolling still works when filter applied
-      console.log('Selected ID: ', selectedNotificationId)
       const index = filteredNotifications.findIndex(
         (n) => n.application_id === selectedNotificationId || n._id === selectedNotificationId
       );
@@ -59,8 +40,7 @@ const NotificationListScreen = ({ navigation, route }) => {
   }, [selectedNotificationId, notifications, filterType]);
 
   const handleNotificationPress = (item) => {
-    setSelectedNotification(item);
-    setModalVisible(true);
+    navigation.navigate("JobInbox", { gigSelection: "notif", gigId: null, appId: item.application_id })
   };
 
   const renderCategoryIcon = (category) => {
@@ -261,181 +241,6 @@ const NotificationListScreen = ({ navigation, route }) => {
     );
   };
 
-  const handleApprove = async (application) => {
-    if (!application || (!application.application_id && !application._id)) return;
-    try {
-      setIsApproving(true);
-      const response = await approveApplication(application.application_id || application._id);
-
-      if (response?.success) {
-        console.log('Application approved successfully:', response.data);
-
-        CustomToast("Application Approved", `You have approved application ${application.application_id || application._id}.`);
-        // Store the approved applications as an array in AsyncStorage for later reference
-        AsyncStorage.getItem('approvedApplications')
-          .then((data) => {
-            const approvedApps = data ? JSON.parse(data) : [];
-            approvedApps.push(response.data);
-            AsyncStorage.setItem('approvedApplications', JSON.stringify(approvedApps));
-          })
-          .catch((err) => console.log('Error storing approved application:', err));
-      } else {
-        setError("Failed to approve application. Please try again.");
-      }
-    } catch (error) {
-      console.log('Error approving application:', error);
-      setError("An error occurred while approving the application. Please try again.");
-    } finally {
-      setIsApproving(false);
-      setModalVisible(false);
-    }
-  };
-
-  const renderModalContent = () => {
-    if (!selectedNotification) return null;
-
-    const isCompany = selectedNotification._type === 'company';
-
-    return (
-      <View
-        style={[
-          styles.modalContainer,
-          { backgroundColor: theme.colors.background },
-        ]}
-      >
-        {/* Header with close button and optional approve button */}
-        <View
-          style={[styles.modalHeader, { backgroundColor: theme.colors.card }]}
-        >
-          <Text style={[styles.modalTitle, { color: theme.colors.text }]}>
-            {selectedNotification?.title || selectedNotification?.job_title || "Notification Details"}
-          </Text>
-          {/* type badge */}
-          {selectedNotification?._type && (
-            <Text
-              style={{
-                position: 'absolute',
-                right: 60,
-                top: 16,
-                fontSize: 12,
-                color: theme.colors.sub_text,
-              }}
-            >
-              {selectedNotification._type.toUpperCase()}
-            </Text>
-          )}
-
-          {!isCompany && selectedNotification._type === 'employer' && (
-            <TouchableOpacity
-              style={[styles.approveButton, { backgroundColor: theme.colors.primary }]}
-              onPress={() => handleApprove(selectedNotification)}
-            >
-              <Text style={{ color: "#fff", fontWeight: "bold" }}>Approve</Text>
-            </TouchableOpacity>
-          )}
-
-          <TouchableOpacity
-            onPress={() => setModalVisible(false)}
-            style={styles.closeButton}
-          >
-            <Icons.Ionicons name="close" size={24} color={theme.colors.text} />
-          </TouchableOpacity>
-        </View>
-
-        {/* Content */}
-        <View style={styles.modalContent}>
-          {selectedNotification?.company?.logo && (
-            <View style={styles.modalLogoContainer}>
-              <Image
-                source={{ uri: selectedNotification.company.logo }}
-                style={styles.modalCompanyLogo}
-                resizeMode="contain"
-              />
-            </View>
-          )}
-
-          <Text style={[styles.modalMessage, { color: theme.colors.text }]}>
-            {selectedNotification?.message || selectedNotification?.job_description || "No additional details available."}
-          </Text>
-
-          <View style={styles.modalCategoryContainer}>
-            {renderCategoryIcon(selectedNotification?.category)}
-            <Text
-              style={[styles.modalCategoryText, { color: theme.colors.text }]}
-            >
-              {`Category: ${selectedNotification?.category || selectedNotification?.job_category || "General"}`}
-            </Text>
-          </View>
-
-          {selectedNotification?.company?.company_name &&
-            <Text style={[styles.modalCompanyInfo, { color: theme.colors.text }]}>\
-              {selectedNotification?.company?.company_name} •{" "}
-              {selectedNotification?.company?.company_type}
-            </Text>
-          }
-
-          {/* list skills (application-specific) */}
-          {!isCompany && selectedNotification?.skill_set && (
-            <View style={{ flexDirection: "row", flexWrap: "wrap", marginBottom: 12 }}>
-              <Text style={[styles.modalCategoryText, { color: theme.colors.text, marginBottom: 8 }]}>Skills:</Text>
-
-              {selectedNotification?.skill_set?.map((skill, index) => (
-                <View
-                  key={index}
-                  style={{
-                    backgroundColor: "#F8F4FF",
-                    paddingHorizontal: 8,
-                    paddingVertical: 4,
-                    borderRadius: 12,
-                    marginRight: 8,
-                    marginBottom: 8,
-                  }}
-                >
-                  <Text style={{ color: theme.colors.sub_text, fontSize: 12 }}>{skill}</Text>
-                </View>
-              ))}
-            </View>
-          )}
-
-          {/* attachments (application-specific) */}
-          {!isCompany && selectedNotification?.attachments?.length > 0 && (
-            <View style={{ marginBottom: 12 }}>
-              <Text style={[styles.modalCategoryText, { color: theme.colors.text }]}>Attachments:</Text>
-              {selectedNotification.attachments.map((file, index) => (
-                <TouchableOpacity
-                  key={index}
-                  onPress={() => {
-                    if (file.url) {
-                      WebBrowser.openBrowserAsync(file.url);
-                    }
-                  }}
-                  style={{
-                    flexDirection: "row",
-                    alignItems: "center",
-                    padding: 8,
-                    borderWidth: 1,
-                    borderColor: theme.colors.disabled,
-                    borderRadius: 8,
-                    marginTop: 8,
-                  }}
-                >
-                  <Icons.MaterialIcons name="attach-file" size={20} color={theme.colors.text} />
-                  <Text style={{ marginLeft: 8, color: theme.colors.text }}>
-                    {file.name || `Attachment ${index + 1}`}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          )}
-
-          <Text style={[styles.modalTime, { color: theme.colors.text }]}>
-            {new Date(selectedNotification?.startDate || selectedNotification?.applied_at).toLocaleString()}
-          </Text>
-        </View>
-      </View>
-    );
-  };
-
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]} >
 
@@ -483,10 +288,6 @@ const NotificationListScreen = ({ navigation, route }) => {
         ))}
       </View>
 
-      {error && (
-        <Text style={[styles.errorText, { color: "#b34141" }]}>{error}</Text>
-      )}
-
       {filteredNotifications.length === 0 ? (
         <Text style={[styles.noNotifications, { color: theme.colors.text }]}>
           No notifications
@@ -496,14 +297,13 @@ const NotificationListScreen = ({ navigation, route }) => {
           ref={listRef}
           data={filteredNotifications}
           renderItem={renderNotification}
-          keyExtractor={(item, index) => `${item.application_id}-${index}`}
-          // keyExtractor={(item) => item._id} 
+          keyExtractor={(item, index) => `${index}`}
           getItemLayout={
             (data, index) => ({
               length: 80,
               offset: 80 * index,
               index,
-            }) // Replace 80 with your item height
+            })
           }
           key={layoutMode}
           numColumns={layoutMode === "grid" ? 2 : 1}
@@ -511,34 +311,6 @@ const NotificationListScreen = ({ navigation, route }) => {
           contentContainerStyle={styles.list}
         />
       )}
-
-      {/* Modal */}
-      <Modal
-        visible={modalVisible}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <TouchableOpacity
-            style={styles.modalOverlayTouchable}
-            activeOpacity={1}
-            onPress={() => setModalVisible(false)}
-          >
-            <View style={styles.modalSpacer} />
-          </TouchableOpacity>
-          <View style={[styles.modalWrapper, { width: width * 0.9 }]}>
-            {renderModalContent()}
-          </View>
-          <TouchableOpacity
-            style={styles.modalOverlayTouchable}
-            activeOpacity={1}
-            onPress={() => setModalVisible(false)}
-          >
-            <View style={styles.modalSpacer} />
-          </TouchableOpacity>
-        </View>
-      </Modal>
     </View>
   );
 };

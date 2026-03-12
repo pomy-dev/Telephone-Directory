@@ -72,7 +72,7 @@ const MyPostedGigsScreen = ({ navigation }) => {
     <TouchableOpacity
       style={[styles.gigCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.card }]}
       activeOpacity={0.7}
-      onPress={() => navigation.navigate("JobInbox", { gigSelection: 'candidates', gigId: item.id, gigTitle: item.job_title })}
+      onPress={() => navigation.navigate("JobInbox", { gigSelection: 'candidates', gigId: item.id, appId: null })}
       onLongPress={() => showOptionsMenu(item)} // Long press to delete/edit
     >
       <View style={styles.cardContent}>

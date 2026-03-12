@@ -9,6 +9,7 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Provider as PaperProvider } from "react-native-paper";
 import * as Notifications from "expo-notifications";
 import { RealmProvider } from "@realm/react";
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
@@ -316,8 +317,8 @@ function AppContent() {
         {!isAppReady ? (
           <SplashScreen onConnectionSuccess={() => setIsAppReady(true)} />
         ) : (
-          <>
-            <GestureHandlerRootView style={{ flex: 1 }}>
+          <GestureHandlerRootView style={{ flex: 1 }}>
+            <BottomSheetModalProvider>
               <PaperProvider theme={theme}>
                 <BasketProvider>
                   <NavigationContainer ref={navigationRef} theme={theme}>
@@ -479,8 +480,8 @@ function AppContent() {
                 </BasketProvider>
               </PaperProvider>
               <Toast config={toastConfig} />
-            </GestureHandlerRootView>
-          </>
+            </BottomSheetModalProvider>
+          </GestureHandlerRootView>
         )}
       </RealmProvider>
     </SafeAreaProvider>

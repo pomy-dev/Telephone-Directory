@@ -330,6 +330,21 @@ export async function getGigApplicants(gigId) {
   }
 }
 
+export async function getApplication(notId) {
+  try {
+    const { data, error } = await supabase
+      .from("pomy_gig_application_summary") // Updated to your new table name
+      .select("*")
+      .eq("application_id", notId)
+
+    if (error) throw error;
+    return { success: true, data };
+  } catch (error) {
+    console.error("Error fetching applicants:", error.message);
+    return { success: false, error: error.message };
+  }
+}
+
 /**
  * Register a new worker with the updated schema including skills array
  * @param {Object} workerData - The worker profile information
@@ -742,7 +757,6 @@ export async function applyForGig(formData) {
 
 /** fetch gigs applied for */
 export async function getMyAppliedGigs(userEmail) {
-  console.log("Fetching applied gigs for user:", userEmail);
   try {
     const { data, error } = await supabase.rpc(
       "get_gigs_i_applied_for",
@@ -759,7 +773,6 @@ export async function getMyAppliedGigs(userEmail) {
 }
 
 export async function getMyAppliedGigsThatApproved(userEmail) {
-  console.log("Fetching applied gigs for user:", userEmail);
   try {
     const { data, error } = await supabase.rpc(
       "get_user_related_gigs",
