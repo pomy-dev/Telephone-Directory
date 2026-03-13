@@ -6,7 +6,6 @@ import Animated, {
   useSharedValue, useAnimatedStyle, withSpring,
   interpolate, Extrapolation, runOnJS,
 } from "react-native-reanimated";
-import { AppContext } from "../context/appContext";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 
 export default function CustomBottomSheet({
@@ -19,7 +18,6 @@ export default function CustomBottomSheet({
   handleColor = "#E6E7EA",
   enablePanDownToClose = true,
 }) {
-  const { theme, isDarkMode } = useContext(AppContext)
   const { height: SCREEN_HEIGHT } = useWindowDimensions();
 
   // ── Shared values for smooth UI-thread animation ─────────────────────
@@ -71,6 +69,8 @@ export default function CustomBottomSheet({
 
   // ── Pan Gesture (draggable everywhere on the sheet) ───────────────────
   const panGesture = Gesture.Pan()
+    .activeOffsetY([-15, 15])
+    .failOffsetX([-20, 20])
     .onBegin(() => {
       "worklet";
       startY.value = translateY.value;

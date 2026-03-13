@@ -47,63 +47,70 @@ export const uploadImages = async (path, subpath, files = []) => {
 
   const uploaded = [];
   for (const file of files) {
-    try {
-      // === 1. Extract file info ===
-      const fileName = `img_${Date.now()}`;
+    if (file?.url?.startsWith('https://')) {
+      uploaded.push(file);
+      continue;
+    } else {
+      try {
+        // === 1. Extract file info ===
+        const fileName = `img_${Date.now()}`;
 
-      // === 1. Read file as Base64 ===
-      const base64 = await FileSystem.readAsStringAsync(file, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
+        const imageFile = file?.uri;
 
-      // === 2. Convert Base64 → Uint8Array (binary) ===
-      const binaryString = atob(base64);
-      const len = binaryString.length;
-      const bytes = new Uint8Array(len);
-      for (let i = 0; i < len; i++) {
-        bytes[i] = binaryString.charCodeAt(i);
-      }
-
-      // === 3. Detect MIME type & extension ===
-      let mimeType = 'image/jpeg';
-
-      // === 4. Upload to Supabase Storage ===
-      const { data, error } = await supabase.storage
-        .from(path)
-        .upload(`${subpath}/${fileName}`, bytes, {
-          contentType: mimeType,
-          upsert: false,
+        // === 1. Read file as Base64 ===
+        const base64 = await FileSystem.readAsStringAsync(imageFile, {
+          encoding: FileSystem.EncodingType.Base64,
         });
 
-      if (error) {
-        console.warn('Upload error:', error);
-        continue;
+        // === 2. Convert Base64 → Uint8Array (binary) ===
+        const binaryString = atob(base64);
+        const len = binaryString.length;
+        const bytes = new Uint8Array(len);
+        for (let i = 0; i < len; i++) {
+          bytes[i] = binaryString.charCodeAt(i);
+        }
+
+        // === 3. Detect MIME type & extension ===
+        let mimeType = 'image/jpeg';
+
+        // === 4. Upload to Supabase Storage ===
+        const { data, error } = await supabase.storage
+          .from(path)
+          .upload(`${subpath}/${fileName}`, bytes, {
+            contentType: mimeType,
+            upsert: false,
+          });
+
+        if (error) {
+          console.warn('Upload error:', error);
+          continue;
+        }
+
+        // === 5. Get public URL ===
+        const { data: urlData } = supabase.storage
+          .from(path)
+          .getPublicUrl(data?.path);
+
+        const publicUrl = urlData.publicUrl;
+
+        // === 6. Determine display type ===
+        const type = mimeType.startsWith('image/') ? 'image' :
+          mimeType.startsWith('video/') ? 'video' :
+            'document';
+
+        // === 7. Push clean metadata ===
+        uploaded.push({
+          url: publicUrl,
+          name: fileName,
+          type,
+          size: bytes.byteLength,
+          mimeType,
+          path: data?.path,
+        });
+
+      } catch (err) {
+        console.warn('Upload failed:', err);
       }
-
-      // === 5. Get public URL ===
-      const { data: urlData } = supabase.storage
-        .from(path)
-        .getPublicUrl(data?.path);
-
-      const publicUrl = urlData.publicUrl;
-
-      // === 6. Determine display type ===
-      const type = mimeType.startsWith('image/') ? 'image' :
-        mimeType.startsWith('video/') ? 'video' :
-          'document';
-
-      // === 7. Push clean metadata ===
-      uploaded.push({
-        url: publicUrl,
-        name: fileName,
-        type,
-        size: bytes.byteLength,
-        mimeType,
-        path: data?.path,
-      });
-
-    } catch (err) {
-      console.warn('Upload failed:', err);
     }
   }
 

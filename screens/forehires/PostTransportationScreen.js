@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     View, Text, StyleSheet, ScrollView,
     TouchableOpacity, StatusBar, Platform, Image,
     Dimensions, Alert, ActivityIndicator, KeyboardAvoidingView
 } from 'react-native';
+import { getTransportById } from "../../service/Supabase-Fuctions";
 import { TextInput } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import { CustomToast } from '../../components/customToast';
-import { addForhire } from '../../service/Supabase-Fuctions';
+import { addForhire, editForhire } from '../../service/Supabase-Fuctions';
 import { AppContext } from "../../context/appContext"
 import * as ImagePicker from 'expo-image-picker';
 import SecondaryNav from '../../components/SecondaryNav';
@@ -15,30 +16,46 @@ import { mockAreas } from '../../utils/mockData';
 
 const TOTAL_STEPS = 6;
 
-const { height, width } = Dimensions.get('window');
+const { height } = Dimensions.get('window');
 
-export default function PostTransportationScreen({ navigation }) {
+export default function PostTransportationScreen({ navigation, route }) {
     const { theme, isDarkMode } = React.useContext(AppContext)
+    const { vehicleInfo, isEdit } = route.params
     const [currentStep, setCurrentStep] = useState(1);
 
     const [formData, setFormData] = useState({
-        type: '',
-        category: '',
-        make: '',
-        model: '',
-        registration: '',
-        capacity: '',
-        description: '',
-        crossingBoarder: false,
-        operatingStart: '08:00',
-        operatingEnd: '18:00',
-        operatingDays: [],
-        routes: [],
-        features: [],
-        location: { area: '', city: '', address: '' },
-        certifications: { insurance: false, license: false, borderCrossing: false },
-        ownerInfo: { name: '', driver: '', phone: '', email: '', whatsapp: '', responsetime: '' },
-        images: [],
+        type: vehicleInfo?.vehicle_type || '',
+        category: vehicleInfo?.vehicle_category || '',
+        make: vehicleInfo?.vehicle_make || '',
+        model: vehicleInfo?.vehicle_model || '',
+        registration: vehicleInfo?.registration || '',
+        capacity: vehicleInfo?.vehicle_capacity || '',
+        description: vehicleInfo?.description || '',
+        crossingBoarder: vehicleInfo?.boarder_crossing || false,
+        operatingStart: vehicleInfo?.operating_start || '08:00',
+        operatingEnd: vehicleInfo?.operating_end || '18:00',
+        operatingDays: vehicleInfo?.operating_days || [],
+        routes: vehicleInfo?.routes || [],
+        features: vehicleInfo?.vehicle_features || [],
+        location: {
+            area: vehicleInfo?.location?.area || '',
+            city: vehicleInfo?.location?.city || '',
+            address: vehicleInfo?.location?.address || ''
+        },
+        certifications: {
+            insurance: vehicleInfo?.vehicle_certifications?.insurance || false,
+            license: vehicleInfo?.vehicle_certifications?.license || false,
+            borderCrossing: vehicleInfo?.vehicle_certifications?.borderCrossing || false
+        },
+        ownerInfo: {
+            name: vehicleInfo?.owner_info?.name || '',
+            driver: vehicleInfo?.owner_info?.driver || '',
+            phone: vehicleInfo?.owner_info?.phone || '',
+            email: vehicleInfo?.owner_info?.email || '',
+            whatsapp: vehicleInfo?.owner_info?.whatsapp || '',
+            responsetime: vehicleInfo?.owner_info?.responsetime || ''
+        },
+        images: vehicleInfo?.vehicle_images || [],
     });
 
     const [currentRoute, setCurrentRoute] = useState({ origin: '', destination: '', distance: '', duration: '', price: '' });
@@ -46,11 +63,14 @@ export default function PostTransportationScreen({ navigation }) {
     const [isPickingImg, setIsPickingImg] = useState(false);
     const [isSubmiting, setIsSubmiting] = useState(false);
 
-    const types = ['minibus', 'bus', 'van', 'truck', 'suv', 'motorcycle', 'car', 'sprinter', 'tractor', 'tower', 'schoolbus', 'staffbus', 'trailer'];
+    const types = [
+        'minibus', 'bus', 'van', 'truck', 'suv', 'motorcycle', 'car',
+        'sprinter', 'tractor', 'tower', 'schoolbus', 'staffbus', 'trailer'
+    ];
     const categories = ['public_transport', 'cargo', 'passenger', 'luxury'];
     const cities = [
-        'Mbabane', 'Manzini', 'Ezulwini', 'Nhlangano', 'Siteki', 'Big Bend',
-        'Malkerns', 'Mhlume', 'Hluti', 'Simunye', 'Piggs Peak', 'Lobamba', 'Lavumisa'
+        'Mbabane', 'Manzini', 'Ezulwini', 'Nhlangano', 'Siteki', 'Big Bend', 'Malkerns',
+        'Mhlume', 'Hluti', 'Simunye', 'Piggs Peak', 'Lobamba', 'Lavumisa'
     ];
     const daysOfWeek = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
     const commonFeatures = [
@@ -84,8 +104,8 @@ export default function PostTransportationScreen({ navigation }) {
 
 
             if (!result.canceled) {
-                const newImages = result.assets.map(a => a.uri);
-                updateForm('images', [...formData.images, ...newImages].slice(0, 10));
+                const newImages = result.assets.map(a => a);
+                updateForm('images', [...formData.images, ...newImages]);
             }
         } catch (err) {
             Alert.alert('Error', err.message)
@@ -158,7 +178,7 @@ export default function PostTransportationScreen({ navigation }) {
     const handleSubmit = async () => {
         try {
             setIsSubmiting(true)
-            const result = await addForhire(formData)
+            const result = isEdit ? await editForhire(vehicleInfo.id, formData) : await addForhire(formData)
             result && CustomToast('Saved', 'Vehicle Details saved successfully.')
         } catch (err) {
             Alert.alert('Error!', err.message);
@@ -216,9 +236,9 @@ export default function PostTransportationScreen({ navigation }) {
                         <View style={styles.step}>
                             <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>Vehicle Photos *</Text>
                             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ marginBottom: 16, paddingHorizontal: 10 }}>
-                                {formData.images.map((uri, i) => (
+                                {formData.images.map((img, i) => (
                                     <View key={i} style={styles.imageWrapper}>
-                                        <Image source={{ uri }} style={styles.previewImage} />
+                                        <Image source={{ uri: img.url || img.uri || img }} style={styles.previewImage} />
                                         <TouchableOpacity style={styles.removeBtn} onPress={() => removeImage(i)}>
                                             <Ionicons name="close-circle" size={26} color="#ef4444" />
                                         </TouchableOpacity>
@@ -541,8 +561,8 @@ export default function PostTransportationScreen({ navigation }) {
                         <View style={styles.step}>
                             <View style={styles.reviewCard}>
                                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
-                                    {formData.images.map((uri, i) => (
-                                        <Image key={i} source={{ uri }} style={styles.reviewImage} />
+                                    {formData.images.map((img, i) => (
+                                        <Image key={i} source={{ uri: img.uri || img.url || img }} style={styles.reviewImage} />
                                     ))}
                                 </ScrollView>
 

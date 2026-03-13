@@ -172,15 +172,14 @@ export default function TransportationDetailsScreen({ navigation, route }) {
     ]);
   };
 
+  const handleEditVehicle = () => {
+    navigation.navigate('PostTransportationScreen', { vehicleInfo: vehicle, isEdit: true })
+  }
+
   return (
-    <View
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
-    >
-      <StatusBar
-        barStyle={isDarkMode ? "light-content" : "dark-content"}
-        backgroundColor={theme.colors.background}
-      />
-      <SecondaryNav title="Fore-Hire Details" />
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
+      <SecondaryNav title={`${vehicle?.vehicle_make} ${vehicle.vehicle_type?.toUpperCase()}`} onRightPress={handleEditVehicle} rightIcon={'pencil-outline'} />
 
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Image Carousel */}
@@ -250,10 +249,10 @@ export default function TransportationDetailsScreen({ navigation, route }) {
                 <Text style={styles.makeModel}>
                   {vehicle.vehicle_make} {vehicle.model}
                 </Text>
-                {/* {vehicle.owner_info?.driver && <Text style={styles.year}>• {vehicle.owner_info?.driver}</Text>} */}
                 <Text style={styles.registration}>
                   • {vehicle.registration}
                 </Text>
+                {vehicle.owner_info?.driver && <Text style={styles.year}>• {vehicle.owner_info?.driver}</Text>}
               </View>
               <View style={styles.locationRow}>
                 <Ionicons name="location" size={16} color="#64748b" />

@@ -31,9 +31,10 @@ import { checkNetworkConnectivity } from '../../service/checkNetwork';
 import CustomLoader from '../../components/customLoader';
 import SecondaryNav from '../../components/SecondaryNav';
 import { AuthContext } from "../../context/authProvider";
+import CustomBottomSheet from '../../components/customBottomSheet';
 
 // ────── Rating Bottom Sheet ──────
-const RatingBottomSheet = React.forwardRef(({ theme, onSubmit, onDismiss,
+const RatingBottomSheet = React.forwardRef(({ theme, isDarkMode, onSubmit, onDismiss,
     renderBackdrop, isSubmitting }, ref) => {
     const [rating, setRating] = useState(0);
     return (
@@ -47,7 +48,7 @@ const RatingBottomSheet = React.forwardRef(({ theme, onSubmit, onDismiss,
             // backgroundComponent={theme.colors.card}
             enablePanDownToClose
         >
-            <BottomSheetView style={[ratingSheetStyles.container, { backgroundColor: theme.colors.card }]}>
+            <BottomSheetView style={[ratingSheetStyles.container, { backgroundColor: isDarkMode ? '#666' : '#fff' }]}>
                 <Text style={[ratingSheetStyles.title, { color: theme.colors.text }]}>Rate This Vehicle</Text>
                 <View style={ratingSheetStyles.stars}>
                     {[1, 2, 3, 4, 5].map((star) => (
@@ -62,7 +63,7 @@ const RatingBottomSheet = React.forwardRef(({ theme, onSubmit, onDismiss,
                 </View>
 
                 <TouchableOpacity
-                    style={ratingSheetStyles.submitButton}
+                    style={[ratingSheetStyles.submitButton, { backgroundColor: theme.colors.indicator }]}
                     onPress={() => {
                         onSubmit(rating);
                         ref.current?.close();
@@ -79,134 +80,98 @@ RatingBottomSheet.displayName = 'RatingBottomSheet';
 // ────── Sort/Filter Bottom Sheet Modal ──────
 const SortFilterBottomSheet = React.forwardRef(
     ({ isDarkMode, theme, sortByCategory, setSortByCategory, sortByBorderCrossing, setSortByBorderCrossing, isVisible, onClose }, ref) => {
-        const slideAnim = useRef(new Animated.Value(400)).current;
         const categories = ['All', 'Public Transport', 'Cargo', 'Passenger', 'Luxury'];
 
-        useEffect(() => {
-            if (isVisible) {
-                Animated.timing(slideAnim, {
-                    toValue: 0,
-                    duration: 300,
-                    useNativeDriver: true,
-                }).start();
-            } else {
-                Animated.timing(slideAnim, {
-                    toValue: 400,
-                    duration: 300,
-                    useNativeDriver: true,
-                }).start();
-            }
-        }, [isVisible]);
-
         return (
-            <Modal
+            <CustomBottomSheet
                 visible={isVisible}
-                transparent
-                animationType="none"
-                onRequestClose={onClose}
+                onClose={() => { }}
+                snapPoints={[65]}                    // or [35, 65, 90] if you want multiple snaps
+                backgroundColor={isDarkMode ? "#666" : "#fff"}
+                handleColor={isDarkMode ? "#888" : "#E6E7EA"}
             >
-                {/* Backdrop */}
-                <TouchableOpacity
-                    style={[sortFilterModalStyles.backdrop, { backgroundColor: 'rgba(0,0,0,0.5)' }]}
-                    activeOpacity={1}
-                    onPress={onClose}
-                />
+                {/* Header */}
+                <View style={sortFilterModalStyles.header}>
+                    <Text style={[sortFilterModalStyles.title, { color: theme.colors.text }]}>Filter & Sort</Text>
+                </View>
 
-                {/* Animated Bottom Sheet */}
-                <Animated.View
-                    style={[
-                        sortFilterModalStyles.container,
-                        { transform: [{ translateY: slideAnim }], backgroundColor: isDarkMode ? '#666' : '#fff' }
-                    ]}
-                >
-                    {/* Drag Handle */}
-                    <View style={sortFilterModalStyles.dragHandleContainer}>
-                        <View style={sortFilterModalStyles.dragHandle} />
-                    </View>
-
-                    {/* Header */}
-                    <View style={sortFilterModalStyles.header}>
-                        <Text style={[sortFilterModalStyles.title, { color: theme.colors.text }]}>Filter & Sort</Text>
-                        <TouchableOpacity onPress={onClose}>
-                            <Text style={[sortFilterModalStyles.closeButton, { color: theme.colors.sub_text }]}>✕</Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    {/* Divider */}
-                    <View style={sortFilterModalStyles.divider} />
-
-                    {/* Scrollable Content */}
+                {/* Category Section */}
+                <View style={sortFilterModalStyles.section}>
+                    <Text style={[sortFilterModalStyles.sectionTitle, { color: theme.colors.sub_text }]}>Category</Text>
                     <ScrollView
-                        style={sortFilterModalStyles.scrollContainer}
-                        showsVerticalScrollIndicator={false}
-                        scrollEnabled={true}
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={sortFilterModalStyles.chipContainer}
+                        bounces={true}
+                        nestedScrollEnabled={true}
                     >
-                        {/* Category Section */}
-                        <View style={sortFilterModalStyles.section}>
-                            <Text style={[sortFilterModalStyles.sectionTitle, { color: theme.colors.sub_text }]}>Category</Text>
-                            <ScrollView
-                                horizontal
-                                showsHorizontalScrollIndicator={false}
-                                contentContainerStyle={sortFilterModalStyles.chipContainer}
-                                bounces={true}
-                                nestedScrollEnabled={true}
+                        {categories.map(cat => (
+                            <TouchableOpacity
+                                key={cat}
+                                style={[
+                                    sortFilterModalStyles.chip,
+                                    sortByCategory === cat && sortFilterModalStyles.chipActive
+                                ]}
+                                onPress={() => setSortByCategory(cat)}
                             >
-                                {categories.map(cat => (
-                                    <TouchableOpacity
-                                        key={cat}
-                                        style={[
-                                            sortFilterModalStyles.chip,
-                                            sortByCategory === cat && sortFilterModalStyles.chipActive
-                                        ]}
-                                        onPress={() => setSortByCategory(cat)}
-                                    >
-                                        <Text style={[
-                                            sortFilterModalStyles.chipText,
-                                            sortByCategory === cat && sortFilterModalStyles.chipTextActive
-                                        ]}>
-                                            {cat}
-                                        </Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </ScrollView>
-                        </View>
-
-                        {/* Border Crossing Section */}
-                        <View style={sortFilterModalStyles.section}>
-                            <Text style={[sortFilterModalStyles.sectionTitle, { color: theme.colors.sub_text }]}>Border Crossing</Text>
-                            <View style={sortFilterModalStyles.borderOptions}>
-                                {['All', 'Yes', 'No'].map(opt => (
-                                    <TouchableOpacity
-                                        key={opt}
-                                        style={[
-                                            sortFilterModalStyles.borderChip,
-                                            sortByBorderCrossing === opt && sortFilterModalStyles.borderChipActive
-                                        ]}
-                                        onPress={() => setSortByBorderCrossing(opt)}
-                                    >
-                                        <Text style={[
-                                            sortFilterModalStyles.borderChipText,
-                                            sortByBorderCrossing === opt && sortFilterModalStyles.borderChipTextActive
-                                        ]}>
-                                            {opt}
-                                        </Text>
-                                    </TouchableOpacity>
-                                ))}
-                            </View>
-                        </View>
+                                <Text style={[
+                                    sortFilterModalStyles.chipText,
+                                    sortByCategory === cat && sortFilterModalStyles.chipTextActive
+                                ]}>
+                                    {cat}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
                     </ScrollView>
+                </View>
 
-                    {/* Footer Action */}
-                    <View style={sortFilterModalStyles.footer}>
-                        <TouchableOpacity
-                            style={sortFilterModalStyles.applyButton}
-                            onPress={onClose}
-                        >
-                            <Text style={sortFilterModalStyles.applyButtonText}>Apply Filters</Text>
-                        </TouchableOpacity>
+                {/* Border Crossing Section */}
+                <View style={sortFilterModalStyles.section}>
+                    <Text style={[sortFilterModalStyles.sectionTitle, { color: theme.colors.sub_text }]}>Border Crossing</Text>
+                    <View style={sortFilterModalStyles.borderOptions}>
+                        {['All', 'Yes', 'No'].map(opt => (
+                            <TouchableOpacity
+                                key={opt}
+                                style={[
+                                    sortFilterModalStyles.borderChip,
+                                    sortByBorderCrossing === opt && sortFilterModalStyles.borderChipActive
+                                ]}
+                                onPress={() => setSortByBorderCrossing(opt)}
+                            >
+                                <Text style={[
+                                    sortFilterModalStyles.borderChipText,
+                                    sortByBorderCrossing === opt && sortFilterModalStyles.borderChipTextActive
+                                ]}>
+                                    {opt}
+                                </Text>
+                            </TouchableOpacity>
+                        ))}
                     </View>
-                </Animated.View>
-            </Modal>
+                </View>
+
+                {/* Footer Action */}
+                <View style={sortFilterModalStyles.footer}>
+                    <TouchableOpacity
+                        style={sortFilterModalStyles.applyButton}
+                        onPress={onClose}
+                    >
+                        <Text style={sortFilterModalStyles.applyButtonText}>Apply Filters</Text>
+                    </TouchableOpacity>
+                </View>
+            </CustomBottomSheet>
+            // <Modal
+            //     visible={isVisible}
+            //     transparent
+            //     animationType="none"
+            //     onRequestClose={onClose}
+            // >
+            //     {/* Backdrop */}
+            //     <TouchableOpacity
+            //         style={[sortFilterModalStyles.backdrop, { backgroundColor: 'rgba(0,0,0,0.5)' }]}
+            //         activeOpacity={1}
+            //         onPress={onClose}
+            //     />
+            // </Modal>
         );
     }
 );
@@ -217,7 +182,6 @@ const ratingSheetStyles = StyleSheet.create({
     title: { fontSize: 20, fontWeight: '700', marginBottom: 24, color: '#1e293b' },
     stars: { flexDirection: 'row', gap: 12, marginBottom: 32 },
     submitButton: {
-        backgroundColor: '#2563eb',
         paddingHorizontal: 32,
         paddingVertical: 14,
         borderRadius: 16,
@@ -226,53 +190,17 @@ const ratingSheetStyles = StyleSheet.create({
 });
 
 const sortFilterModalStyles = StyleSheet.create({
-    backdrop: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-    },
-    container: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        borderTopLeftRadius: 24,
-        borderTopRightRadius: 24,
-        maxHeight: '80%',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-        elevation: 10,
-    },
-    dragHandleContainer: {
-        alignItems: 'center',
-        paddingVertical: 12,
-    },
-    dragHandle: {
-        width: 40,
-        height: 4,
-        borderRadius: 2,
-        backgroundColor: '#cbd5e1',
-    },
+
     header: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
+        justifyContent: 'flex-start',
         alignItems: 'center',
-        paddingHorizontal: 24,
+        // paddingHorizontal: 24,
         paddingVertical: 16,
     },
     title: {
         fontSize: 24,
         fontWeight: '800',
-        color: '#1e293b',
-    },
-    closeButton: {
-        fontSize: 20,
-        color: '#64748b',
-        fontWeight: '600',
     },
     divider: {
         height: 1,
@@ -284,8 +212,7 @@ const sortFilterModalStyles = StyleSheet.create({
         maxHeight: 300,
     },
     section: {
-        paddingHorizontal: 12,
-        paddingVertical: 20,
+        paddingVertical: 10,
     },
     sectionTitle: {
         fontSize: 16,
@@ -692,7 +619,7 @@ export default function TransportationListScreen({ navigation }) {
                 }}
             >
                 {/* Background Image */}
-                <Image source={{ uri: vehicle?.vehicle_images[0]?.url }} style={styles.vehicleImage} />
+                <Image source={{ uri: vehicle?.vehicle_images[0]?.url || vehicle?.vehicle_images[0] }} style={styles.vehicleImage} />
 
                 {/* Overlay Content */}
                 <View style={styles.overlayContent}>
@@ -895,7 +822,7 @@ export default function TransportationListScreen({ navigation }) {
 
                 <TouchableOpacity
                     style={[styles.postBtn, { backgroundColor: theme.colors.card2 }]}
-                    onPress={() => navigation.navigate('PostTransportationScreen')}
+                    onPress={() => navigation.navigate('PostTransportationScreen', { vehicleInfo: null, isEdit: false })}
                 >
                     <Icons.Ionicons name="add-circle-outline" size={20} color='#fff' />
                     <Text style={[styles.postBtnText, { color: '#fff' }]}>Post Vehicle</Text>
@@ -948,6 +875,7 @@ export default function TransportationListScreen({ navigation }) {
                 <RatingBottomSheet
                     ref={ratingSheetRef}
                     theme={theme}
+                    isDarkMode={isDarkMode}
                     isSubmitting={isSubmit}
                     onSubmit={submitRating}
                     onDismiss={() => setRatingVehicleId(null)}
@@ -1182,7 +1110,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         paddingHorizontal: 16,
         marginHorizontal: 16,
-        marginBottom:5,
+        marginBottom: 5,
         paddingVertical: 10,
         borderRadius: 30,
         gap: 6
