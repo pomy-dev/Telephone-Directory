@@ -118,7 +118,7 @@ export async function addForhire(formData) {
     p_location: formData?.location,
     p_certifications: formData?.certifications,
     p_owner_info: formData?.ownerInfo,
-    p_images: await uploadImages("for_hires", "vehicles", formData.images),
+    p_images: await uploadImages("for_hires", "vehicles", images),
   });
 
   if (error) console.error("RPC failed:", error);
@@ -352,21 +352,6 @@ export async function getGigApplicants(gigId) {
       .select("*")
       .eq("job_id", gigId) // Matching your job_id column
       .order("created_at", { ascending: false });
-
-    if (error) throw error;
-    return { success: true, data };
-  } catch (error) {
-    console.error("Error fetching applicants:", error.message);
-    return { success: false, error: error.message };
-  }
-}
-
-export async function getApplication(notId) {
-  try {
-    const { data, error } = await supabase
-      .from("pomy_gig_application_summary") // Updated to your new table name
-      .select("*")
-      .eq("application_id", notId)
 
     if (error) throw error;
     return { success: true, data };
@@ -787,6 +772,7 @@ export async function applyForGig(formData) {
 
 /** fetch gigs applied for */
 export async function getMyAppliedGigs(userEmail) {
+  console.log("Fetching applied gigs for user:", userEmail);
   try {
     const { data, error } = await supabase.rpc(
       "get_gigs_i_applied_for",
@@ -803,6 +789,7 @@ export async function getMyAppliedGigs(userEmail) {
 }
 
 export async function getMyAppliedGigsThatApproved(userEmail) {
+  console.log("Fetching applied gigs for user:", userEmail);
   try {
     const { data, error } = await supabase.rpc(
       "get_user_related_gigs",
@@ -893,7 +880,7 @@ export async function getPersonalizedRecommendations(userId, limit = 10) {
     }
 
     // 2. FALLBACK: If personalized returns empty (new user) or error, fetch random
-
+    
     const { data: randomData, error: randomError } = await supabase.rpc("get_random_recommendations", {
       p_limit: limit,
     });
