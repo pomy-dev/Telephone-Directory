@@ -146,7 +146,7 @@ export default function TopNav({ onCartPress, onSearch, onNotificationPress, onL
             />
           ) : (
             <Text style={[styles.currentLocationText, { color: theme.colors.indicator }]}>
-              Use current location
+              Get current location
             </Text>
           )}
         </TouchableOpacity>
@@ -154,7 +154,8 @@ export default function TopNav({ onCartPress, onSearch, onNotificationPress, onL
         <View style={styles.modalActions}>
           <TouchableOpacity
             style={[styles.modalButton, styles.cancelButton]}
-            onPress={() => { }}
+            // onPress={() => { }}
+            onPress={() => setModalVisible(false)}  
           >
             <Text style={styles.cancelText}>Cancel</Text>
           </TouchableOpacity>

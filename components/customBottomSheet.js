@@ -1,12 +1,24 @@
 import React, { useEffect, useMemo, useCallback, useContext } from "react";
 import {
-  Modal, View, StyleSheet, useWindowDimensions, Keyboard, Platform,
+  Modal,
+  View,
+  StyleSheet,
+  useWindowDimensions,
+  Keyboard,
+  Platform,
+  TouchableOpacity,
 } from "react-native";
 import Animated, {
-  useSharedValue, useAnimatedStyle, withSpring,
-  interpolate, Extrapolation, runOnJS,
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  interpolate,
+  Extrapolation,
+  runOnJS,
+  withTiming,
 } from "react-native-reanimated";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function CustomBottomSheet({
   visible,
@@ -19,6 +31,29 @@ export default function CustomBottomSheet({
   enablePanDownToClose = true,
 }) {
   const { height: SCREEN_HEIGHT } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const keyboardHeight = useSharedValue(0);
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener("keyboardDidShow", (e) => {
+      // keyboardHeight.value = e.endCoordinates.height;
+      keyboardHeight.value = withTiming(e.endCoordinates.height, {
+        duration: 250,
+      });
+    });
+
+    const hideSub = Keyboard.addListener("keyboardDidHide", () => {
+      // keyboardHeight.value = 0;
+      keyboardHeight.value = withTiming(0, {
+        duration: 250,
+      });
+    });
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   // ── Shared values for smooth UI-thread animation ─────────────────────
   const translateY = useSharedValue(SCREEN_HEIGHT);
@@ -46,7 +81,10 @@ export default function CustomBottomSheet({
   // ── Open / Close animation when visible prop changes ─────────────────
   useEffect(() => {
     if (visible) {
-      const target = snapPositions[initialSnapIndex] ?? snapPositions[0] ?? SCREEN_HEIGHT * 0.55;
+      const target =
+        snapPositions[initialSnapIndex] ??
+        snapPositions[0] ??
+        SCREEN_HEIGHT * 0.55;
       translateY.value = withSpring(target, {
         damping: 50,
         stiffness: 300,
@@ -83,10 +121,7 @@ export default function CustomBottomSheet({
       const next = startY.value + event.translationY;
 
       // allow slight over-drag
-      translateY.value = Math.max(
-        minSnap - 80,
-        Math.min(maxSnap + 50, next)
-      );
+      translateY.value = Math.max(minSnap - 80, Math.min(maxSnap + 50, next));
     })
     .onEnd((event) => {
       "worklet";
@@ -99,7 +134,11 @@ export default function CustomBottomSheet({
 
       let target = maxSnap;
 
-      if (enablePanDownToClose && velocity > 700 && current > SCREEN_HEIGHT * 0.45) {
+      if (
+        enablePanDownToClose &&
+        velocity > 700 &&
+        current > SCREEN_HEIGHT * 0.45
+      ) {
         target = maxSnap;
       } else {
         let closest = maxSnap;
@@ -138,16 +177,26 @@ export default function CustomBottomSheet({
     });
 
   // ── Animated styles ─────────────────────────────────────────────────────
-  const sheetStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }],
-  }));
+
+
+  const sheetStyle = useAnimatedStyle(() => {
+  const adjustedY = translateY.value - keyboardHeight.value;
+
+  return {
+    transform: [
+      {
+        translateY: Math.max(adjustedY, minSnapShared.value),
+      },
+    ],
+  };
+});
 
   const backdropStyle = useAnimatedStyle(() => ({
     opacity: interpolate(
       translateY.value,
       [minSnapShared.value, screenHShared.value],
       [0.65, 0],
-      Extrapolation.CLAMP
+      Extrapolation.CLAMP,
     ),
   }));
 
@@ -155,13 +204,17 @@ export default function CustomBottomSheet({
   const handleBackdropPress = useCallback(() => {
     if (!enablePanDownToClose) return;
 
-    translateY.value = withSpring(SCREEN_HEIGHT, { damping: 40, stiffness: 280 }, (finished) => {
-      'worklet';
-      if (finished) {
-        runOnJS(handleClose)();
-        runOnJS(handleDismissKeyboard)();
-      }
-    });
+    translateY.value = withSpring(
+      SCREEN_HEIGHT,
+      { damping: 40, stiffness: 280 },
+      (finished) => {
+        "worklet";
+        if (finished) {
+          runOnJS(handleClose)();
+          runOnJS(handleDismissKeyboard)();
+        }
+      },
+    );
   }, [enablePanDownToClose, onClose]);
 
   return (
@@ -175,17 +228,33 @@ export default function CustomBottomSheet({
       <View style={styles.root}>
         {/* Backdrop */}
         <Animated.View style={[styles.backdrop, backdropStyle]} />
-        <View style={styles.backdropTouchableArea} onTouchStart={handleBackdropPress} />
+        {/* <View style={styles.backdropTouchableArea} onTouchStart={handleBackdropPress} /> */}
+        <TouchableOpacity
+          activeOpacity={1}
+          style={StyleSheet.absoluteFill}
+          onPress={handleBackdropPress}
+        >
+          <Animated.View style={[styles.backdrop, backdropStyle]} />
+        </TouchableOpacity>
 
         {/* Draggable Sheet */}
         <GestureDetector gesture={panGesture}>
           <Animated.View
             style={[
               styles.sheet,
+              {
+                height: SCREEN_HEIGHT,
+                paddingBottom: insets.bottom,
+              },
               sheetStyle,
               { backgroundColor, paddingHorizontal: 16 },
               Platform.select({
-                ios: { shadowColor: "#000", shadowOffset: { width: 0, height: -4 }, shadowOpacity: 0.12, shadowRadius: 12 },
+                ios: {
+                  shadowColor: "#000",
+                  shadowOffset: { width: 0, height: -4 },
+                  shadowOpacity: 0.12,
+                  shadowRadius: 12,
+                },
                 android: { elevation: 12 },
               }),
             ]}
@@ -212,16 +281,12 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     backgroundColor: "#000",
   },
-  backdropTouchableArea: {
-    ...StyleSheet.absoluteFillObject,
-    zIndex: 1,
-  },
   sheet: {
     position: "absolute",
     left: 0,
     right: 0,
     bottom: 0,
-    height: "100%", // full height so we can drag freely
+    // height: "100%", // full height so we can drag freely
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     overflow: "hidden",

@@ -98,8 +98,6 @@ export async function searchAllFlyerItems() {
 export async function addForhire(formData) {
   if (!formData) return;
 
-  const images = formData.images?.map(img => img.uri);
-
   const { data, error } = await supabase.rpc("save_forehire_listing", {
     p_type: formData?.type,
     p_agent_phone: '+26876957019',
@@ -120,38 +118,7 @@ export async function addForhire(formData) {
     p_location: formData?.location,
     p_certifications: formData?.certifications,
     p_owner_info: formData?.ownerInfo,
-    p_images: await uploadImages("for_hires", "vehicles", images),
-  });
-
-  if (error) console.error("RPC failed:", error);
-  return data;
-}
-
-export async function editForhire(id, formData) {
-  if (!id) throw new Error('vehicle token could not be determined!!');
-
-  const { data, error } = await supabase.rpc("update_forehire_listing", {
-    p_id: id,
-    p_type: formData?.type,
-    p_agent_phone: '+26876957019',
-    p_category: formData?.category,
-    p_make: formData?.make,
-    p_model: formData?.model,
-    p_boarder_crossing: formData.crossingBoarder,
-    p_registration: formData?.registration,
-    p_price: formData?.price,
-    p_price_type: formData?.priceType,
-    p_capacity: formData?.capacity,
-    p_description: formData?.description,
-    p_operating_start: formData?.operatingStart,
-    p_operating_end: formData?.operatingEnd,
-    p_operating_days: formData?.operatingDays,
-    p_routes: formData?.routes,
-    p_features: formData?.features,
-    p_location: formData?.location,
-    p_certifications: formData?.certifications,
-    p_owner_info: formData?.ownerInfo,
-    p_images: await uploadImages("for_hires", "vehicles", formData.images),
+    p_images: await uploadImages("for_hires", "vehicles", formData?.images),
   });
 
   if (error) console.error("RPC failed:", error);
@@ -354,21 +321,6 @@ export async function getGigApplicants(gigId) {
       .select("*")
       .eq("job_id", gigId) // Matching your job_id column
       .order("created_at", { ascending: false });
-
-    if (error) throw error;
-    return { success: true, data };
-  } catch (error) {
-    console.error("Error fetching applicants:", error.message);
-    return { success: false, error: error.message };
-  }
-}
-
-export async function getApplication(notId) {
-  try {
-    const { data, error } = await supabase
-      .from("pomy_gig_application_summary") // Updated to your new table name
-      .select("*")
-      .eq("application_id", notId)
 
     if (error) throw error;
     return { success: true, data };
@@ -790,6 +742,7 @@ export async function applyForGig(formData) {
 
 /** fetch gigs applied for */
 export async function getMyAppliedGigs(userEmail) {
+  console.log("Fetching applied gigs for user:", userEmail);
   try {
     const { data, error } = await supabase.rpc(
       "get_gigs_i_applied_for",
@@ -806,6 +759,7 @@ export async function getMyAppliedGigs(userEmail) {
 }
 
 export async function getMyAppliedGigsThatApproved(userEmail) {
+  console.log("Fetching applied gigs for user:", userEmail);
   try {
     const { data, error } = await supabase.rpc(
       "get_user_related_gigs",
@@ -896,7 +850,7 @@ export async function getPersonalizedRecommendations(userId, limit = 10) {
     }
 
     // 2. FALLBACK: If personalized returns empty (new user) or error, fetch random
-
+    
     const { data: randomData, error: randomError } = await supabase.rpc("get_random_recommendations", {
       p_limit: limit,
     });
