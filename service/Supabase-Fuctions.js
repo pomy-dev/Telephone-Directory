@@ -118,7 +118,7 @@ export async function addForhire(formData) {
     p_location: formData?.location,
     p_certifications: formData?.certifications,
     p_owner_info: formData?.ownerInfo,
-    p_images: await uploadImages("for_hires", "vehicles", images),
+    p_images: await uploadImages("for_hires", "vehicles", formData.images),
   });
 
   if (error) console.error("RPC failed:", error);
@@ -880,7 +880,7 @@ export async function getPersonalizedRecommendations(userId, limit = 10) {
     }
 
     // 2. FALLBACK: If personalized returns empty (new user) or error, fetch random
-    
+
     const { data: randomData, error: randomError } = await supabase.rpc("get_random_recommendations", {
       p_limit: limit,
     });
