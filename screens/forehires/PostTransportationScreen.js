@@ -4,12 +4,12 @@ import {
     TouchableOpacity, StatusBar, Platform, Image,
     Dimensions, Alert, ActivityIndicator, KeyboardAvoidingView
 } from 'react-native';
-import { getTransportById } from "../../service/Supabase-Fuctions";
 import { TextInput } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import { CustomToast } from '../../components/customToast';
 import { addForhire, editForhire } from '../../service/Supabase-Fuctions';
-import { AppContext } from "../../context/appContext"
+import { AppContext } from "../../context/appContext";
+import { AuthContext } from '../../context/authProvider';
 import * as ImagePicker from 'expo-image-picker';
 import SecondaryNav from '../../components/SecondaryNav';
 import { mockAreas } from '../../utils/mockData';
@@ -20,6 +20,7 @@ const { height } = Dimensions.get('window');
 
 export default function PostTransportationScreen({ navigation, route }) {
     const { theme, isDarkMode } = React.useContext(AppContext)
+    const { user } = React.useContext(AuthContext)
     const { vehicleInfo, isEdit } = route.params
     const [currentStep, setCurrentStep] = useState(1);
 
@@ -51,7 +52,7 @@ export default function PostTransportationScreen({ navigation, route }) {
             name: vehicleInfo?.owner_info?.name || '',
             driver: vehicleInfo?.owner_info?.driver || '',
             phone: vehicleInfo?.owner_info?.phone || '',
-            email: vehicleInfo?.owner_info?.email || '',
+            email: user.email || '',
             whatsapp: vehicleInfo?.owner_info?.whatsapp || '',
             responsetime: vehicleInfo?.owner_info?.responsetime || ''
         },
@@ -148,9 +149,8 @@ export default function PostTransportationScreen({ navigation, route }) {
             if (!formData.location.area) newErrors.locationArea = 'Area required';
             if (!formData.ownerInfo.name.trim()) newErrors.ownerName = 'Company name required';
             if (!formData.ownerInfo.phone.trim()) newErrors.ownerPhone = 'Phone required';
-            if (!formData.ownerInfo.email.trim()) newErrors.ownerEmail = 'Email required';
             if (formData.ownerInfo.email && !/\S+@\S+\.\S+/.test(formData.ownerInfo.email))
-                newErrors.ownerEmail = 'Invalid email';
+                newErrors.ownerEmail = '⚠️ Invalid email consider login!';
         }
 
         setErrors(newErrors);
@@ -188,7 +188,12 @@ export default function PostTransportationScreen({ navigation, route }) {
                 type: '', category: '', make: '', model: '', registration: '', capacity: '', description: '',
                 certifications: { insurance: false, license: false, borderCrossing: false }, features: [],
                 location: { address: '', area: '', city: '' }, operatingDays: [], operatingEnd: '18:00',
-                operatingStart: '08:00', routes: [], ownerInfo: {}, images: [],
+                operatingStart: '08:00', routes: [], ownerInfo: {
+                    name: '', driver: '', phone: '',
+                    email: user.email, whatsapp: '',
+                    responsetime: ''
+                },
+                images: [],
             })
             setCurrentStep(1)
         }
@@ -531,7 +536,8 @@ export default function PostTransportationScreen({ navigation, route }) {
 
                             <TextInput style={[styles.input, errors.ownerName && styles.inputError, { backgroundColor: isDarkMode ? '#666' : '#fff' }]}
                                 label="Name or Company *" mode='outlined' theme={{ roundness: 12 }}
-                                value={formData.ownerInfo.name} onChangeText={v => updateForm('ownerInfo', { ...formData.ownerInfo, name: v })} />
+                                value={formData.ownerInfo.name}
+                                onChangeText={v => updateForm('ownerInfo', { ...formData.ownerInfo, name: v })} />
                             {errors.ownerName && <Text style={styles.error}>{errors.ownerName}</Text>}
 
                             <TextInput style={[styles.input, errors.ownerDriver && styles.inputError, { backgroundColor: isDarkMode ? '#666' : '#fff' }]} label="Driver/Operator Name (optional)"
@@ -539,13 +545,17 @@ export default function PostTransportationScreen({ navigation, route }) {
                             {/* {errors.ownerDriver && <Text style={styles.error}>{errors.ownerDriver}</Text>} */}
 
                             <TextInput style={[styles.input, errors.ownerPhone && styles.inputError, { backgroundColor: isDarkMode ? '#666' : '#fff' }]}
-                                mode='outlined' theme={{ roundness: 12 }} label="Phone Number *" value={formData.ownerInfo.phone} keyboardType="phone-pad"
+                                mode='outlined' theme={{ roundness: 12 }} label="Phone Number *"
+                                value={formData.ownerInfo.phone} keyboardType="phone-pad"
                                 onChangeText={v => updateForm('ownerInfo', { ...formData.ownerInfo, phone: v })} />
                             {errors.ownerPhone && <Text style={styles.error}>{errors.ownerPhone}</Text>}
 
-                            <TextInput style={[styles.input, errors.ownerEmail && styles.inputError, { backgroundColor: isDarkMode ? '#666' : '#fff' }]}
-                                mode='outlined' theme={{ roundness: 12 }} label="Email Address *" value={formData.ownerInfo.email} keyboardType="email-address" autoCapitalize="none" onChangeText={v => updateForm('ownerInfo', { ...formData.ownerInfo, email: v })} />
-                            {errors.ownerEmail && <Text style={styles.error}>{errors.ownerEmail}</Text>}
+                            {/* <TextInput style={[styles.input, errors.ownerEmail && styles.inputError, { backgroundColor: isDarkMode ? '#666' : '#fff' }]}
+                                mode='outlined' theme={{ roundness: 12 }} label="Email Address *"
+                                value={formData.ownerInfo.email} keyboardType="email-address" autoCapitalize="none"
+                                onChangeText={v => updateForm('ownerInfo', { ...formData.ownerInfo, email: v })}
+                            />
+                            {errors.ownerEmail && <Text style={styles.error}>{errors.ownerEmail}</Text>} */}
 
                             <TextInput style={[styles.input, { backgroundColor: isDarkMode ? '#666' : '#fff' }]}
                                 mode='outlined' theme={{ roundness: 12 }} label="WhatsApp (Optional)" value={formData.ownerInfo.whatsapp}

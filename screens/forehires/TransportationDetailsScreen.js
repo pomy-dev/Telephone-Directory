@@ -173,13 +173,15 @@ export default function TransportationDetailsScreen({ navigation, route }) {
   };
 
   const handleEditVehicle = () => {
-    navigation.navigate('PostTransportationScreen', { vehicleInfo: vehicle, isEdit: true })
+    user.email.trim() === vehicle.owner_info?.email?.trim() &&
+      navigation.navigate('PostTransportationScreen', { vehicleInfo: vehicle, isEdit: true })
   }
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
-      <SecondaryNav title={`${vehicle?.vehicle_make} ${vehicle.vehicle_type?.toUpperCase()}`} onRightPress={handleEditVehicle} rightIcon={'pencil-outline'} />
+      <SecondaryNav title={`${vehicle?.vehicle_make} ${vehicle.vehicle_type?.toUpperCase()}`} onRightPress={handleEditVehicle}
+        rightIcon={user.email.trim() === vehicle.owner_info?.email?.trim() && 'pencil-outline'} />
 
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Image Carousel */}
@@ -221,17 +223,6 @@ export default function TransportationDetailsScreen({ navigation, route }) {
               <Text style={styles.borderBadgeText}>Cross Border</Text>
             </View>
           )}
-
-          <TouchableOpacity
-            style={styles.bookmarkButton}
-            onPress={() => setIsBookmarked(!isBookmarked)}
-          >
-            <Ionicons
-              name={isBookmarked ? "heart" : "heart-outline"}
-              size={24}
-              color={isBookmarked ? "#2563eb" : "#fff"}
-            />
-          </TouchableOpacity>
         </View>
 
         <View style={styles.contentContainer}>
@@ -654,7 +645,7 @@ const styles = StyleSheet.create({
   borderBadge: {
     position: "absolute",
     top: 16,
-    right: 60,
+    right: 20,
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#10b981",

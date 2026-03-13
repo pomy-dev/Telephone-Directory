@@ -98,8 +98,6 @@ export async function searchAllFlyerItems() {
 export async function addForhire(formData) {
   if (!formData) return;
 
-  const images = formData.images?.map(img => img.uri);
-
   const { data, error } = await supabase.rpc("save_forehire_listing", {
     p_type: formData?.type,
     p_agent_phone: '+26876957019',
@@ -120,7 +118,7 @@ export async function addForhire(formData) {
     p_location: formData?.location,
     p_certifications: formData?.certifications,
     p_owner_info: formData?.ownerInfo,
-    p_images: await uploadImages("for_hires", "vehicles", images),
+    p_images: await uploadImages("for_hires", "vehicles", formData.images),
   });
 
   if (error) console.error("RPC failed:", error);
@@ -563,7 +561,7 @@ export async function updateWorkerProfile(uid, updateData) {
 
     const isLocalFile = (item) => {
       if (!item) return false;
-      if (typeof item === "string") return item.startsWith("file://");
+      // if (typeof item === "string") return item.startsWith("file://");
       if (typeof item === "object")
         return !!(item.uri && String(item.uri).startsWith("file://"));
       return false;
@@ -571,7 +569,7 @@ export async function updateWorkerProfile(uid, updateData) {
 
     const isRemoteUrl = (item) => {
       if (!item) return false;
-      if (typeof item === "string") return item.startsWith("https");
+      // if (typeof item === "string") return item.startsWith("https");
       if (typeof item === "object")
         return !!(item.url && String(item.url).startsWith("https"));
       return false;
@@ -581,7 +579,7 @@ export async function updateWorkerProfile(uid, updateData) {
     const existingPP = workerProfile?.filter((item) => !isLocalFile(item));
     const toUploadPP = workerProfile
       ?.filter(isLocalFile)
-      .map((i) => (typeof i === "string" ? i : { uri: i }));
+      .map((i) => i);
 
     if (toUploadPP.length > 0) {
       const uploadedPP = await uploadImages(
@@ -598,11 +596,11 @@ export async function updateWorkerProfile(uid, updateData) {
     // Keep existing remote URLs and append newly uploaded ones
     const existingPortfolioUrls = portfolioImgs
       ?.filter(isRemoteUrl)
-      .map((i) => (typeof i === "string" ? i : i.url));
+      .map((i) => i);
 
     const toUploadPortfolio = portfolioImgs
       ?.filter(isLocalFile)
-      .map((i) => (typeof i === "string" ? i : i.uri));
+      .map((i) => i);
 
     if (toUploadPortfolio.length > 0) {
       const uploadedPortfolio = await uploadImages(
@@ -611,9 +609,8 @@ export async function updateWorkerProfile(uid, updateData) {
         toUploadPortfolio,
       );
       // Append newly uploaded images to existing remote URLs
-      const uploadedUrls = uploadedPortfolio.map((img) =>
-        typeof img === "object" ? img : img.url,
-      );
+      const uploadedUrls = uploadedPortfolio.map((img) => img);
+
       portfolioImgs = [...(existingPortfolioUrls || []), ...uploadedUrls];
     } else {
       portfolioImgs = existingPortfolioUrls || [];
@@ -641,7 +638,7 @@ export async function updateWorkerProfile(uid, updateData) {
       documents = existingDocs || [];
     }
 
-    console.log("Portfolio Img: ", portfolioImgs);
+    // console.log("Portfolio Img: ", portfolioImgs);
 
     const payload = {
       ...updateData,
