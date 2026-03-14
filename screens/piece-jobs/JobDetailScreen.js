@@ -244,23 +244,14 @@ const JobDetailScreen = ({ route, navigation }) => {
   };
 
   const addSkill = () => {
-    let minNum = 65;
-    try {
-      if (expertiseInput.trim()) {
-        minNum = + 2
-        setSheetMinHeight(`${minNum}%`)
-        setExpertises([...expertises, expertiseInput.trim()]);
-      }
-    } catch (error) {
-      throw new Error(error.message)
-    } finally {
-      setExpertiseInput("");
-    }
+    if (!expertiseInput.trim()) return;
+    setExpertises([...expertises, expertiseInput.trim()]);
+    setExpertiseInput("");
   }
 
   return (
     <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
-      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.container}>
+      <View behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.container}>
         <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
         <SecondaryNav title="Job Details" rightIcon="share-social-outline" onRightPress={handleShareJob} onBackPress={() => navigation.goBack()} />
 
@@ -494,11 +485,21 @@ const JobDetailScreen = ({ route, navigation }) => {
         <BottomSheetModal
           ref={ref}
           index={0}
-          snapPoints={['40%', `${sheetMinHieght}`]}
+          snapPoints={['40%', '50%', '60%', '70%', '80%', '90%']}
+          enableDynamicSizing={true}
+          maxDynamicContentSize={Dimensions.get('window').height * 0.95}
           backdropComponent={renderBackdrop}
-          onDismiss={() => ref.current?.dismiss()}
-          backgroundStyle={theme.colors.card}
+          onDismiss={() => {
+            setPhone("");
+            setExpertises([]);
+            setAttachments([]);
+          }}
+          backgroundStyle={{ backgroundColor: isDarkMode ? '#666' : '#fff' }}
           enablePanDownToClose
+          keyboardBehavior={Platform.OS === 'ios' ? 'extend' : 'interactive'}
+          android_keyboardInputMode="adjustResize"
+          enableContentPanningGesture={true}
+          enableHandlePanningGesture={true}
         >
           <BottomSheetView style={[styles.modalContent, { backgroundColor: isDarkMode ? '#666' : '#fff' }]}>
             <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Apply for this Gig</Text>
@@ -511,9 +512,10 @@ const JobDetailScreen = ({ route, navigation }) => {
               onChangeText={setPhone}
               style={[
                 styles.input,
-                { backgroundColor: isDarkMode ? "#666" : "#fff" },
+                { color: theme.colors.text, backgroundColor: isDarkMode ? "#AAA" : "#fff" },
               ]}
               keyboardType="phone-pad"
+              onSubmitEditing={addSkill}
             />
 
             <View
@@ -532,12 +534,13 @@ const JobDetailScreen = ({ route, navigation }) => {
                 onChangeText={setExpertiseInput}
                 style={[
                   styles.input,
-                  { flex: 2, backgroundColor: isDarkMode ? "#666" : "#fff" },
+                  { flex: 2, color: theme.colors.text, backgroundColor: isDarkMode ? "#AAA" : "#fff" },
                 ]}
               />
               <TouchableOpacity
                 onPress={addSkill}
-                style={[styles.addButton, { flex: 1 }]}
+                style={[styles.addButton, { opacity: expertiseInput.trim() ? 1 : 0.5 }]}
+                disabled={!expertiseInput.trim()}
               >
                 <Icons.Ionicons
                   name="add-circle-outline"
@@ -547,19 +550,40 @@ const JobDetailScreen = ({ route, navigation }) => {
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={styles.expertisesList}>
-              {expertises.map((exp, index) => (
-                <Text
-                  key={index}
-                  style={[
-                    styles.expertiseItem,
-                    { color: theme.colors.sub_text },
-                  ]}
-                >
-                  ✔️{exp}
-                </Text>
-              ))}
-            </ScrollView>
+            {/* Skills list – removable chips */}
+            {expertises.length > 0 && (
+              <BottomSheetScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{
+                  paddingVertical: 12, gap: 5,
+                  flexDirection: 'row', flexWrap: 'wrap'
+                }}
+                style={{ maxHeight: 100 }}
+              >
+                {expertises.map((exp, index) => (
+                  <View
+                    key={index}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      backgroundColor: theme.colors.card2 || '#333',
+                      paddingHorizontal: 14,
+                      paddingVertical: 8,
+                      borderRadius: 20,
+                      gap: 8,
+                    }}
+                  >
+                    <Text style={{ color: '#fff', fontSize: 14 }}>{exp}</Text>
+                    <TouchableOpacity
+                      onPress={() => setExpertises(prev => prev.filter((_, i) => i !== index))}
+                      hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                    >
+                      <Icons.Ionicons name="close-circle" size={20} color="#ff5555" />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </BottomSheetScrollView>
+            )}
 
             <TouchableOpacity
               onPress={pickDocuments}
@@ -576,34 +600,46 @@ const JobDetailScreen = ({ route, navigation }) => {
               <Text style={styles.attachButtonText}>Attach Documents</Text>
             </TouchableOpacity>
 
-            <ScrollView style={styles.attachmentsList}>
-              {attachments.map((att, index) => (
-                <View key={index} style={styles.attachmentItem}>
-                  {att.mimeType && att.mimeType.startsWith("image/") ? (
-                    <Image
-                      source={{ uri: att.uri }}
-                      style={styles.attachmentImage}
-                    />
-                  ) : (
-                    <View style={styles.attachmentFile}>
-                      <Text style={styles.attachmentName}>{att.name}</Text>
-                      <Text style={styles.attachmentSize}>
-                        {att.size ? (att.size / 1024).toFixed(1) + " KB" : ""}
-                      </Text>
-                    </View>
-                  )}
-                  <TouchableOpacity
-                    onPress={() =>
-                      setAttachments(
-                        attachments.filter((_, i) => i !== index),
-                      )
-                    }
+            {/* Attachments list – removable */}
+            {attachments.length > 0 && (
+              <BottomSheetScrollView
+                style={{ maxHeight: 180, marginTop: 12 }}
+                contentContainerStyle={{ paddingBottom: 16 }}
+              >
+                {attachments.map((att, index) => (
+                  <View
+                    key={index}
+                    style={{
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      backgroundColor: isDarkMode ? '#444' : '#f9f9f9',
+                      padding: 12,
+                      borderRadius: 12,
+                      marginBottom: 8,
+                      gap: 12,
+                    }}
                   >
-                    <Icons.Ionicons name="close" size={20} color="red" />
-                  </TouchableOpacity>
-                </View>
-              ))}
-            </ScrollView>
+                    {att.mimeType?.startsWith("image/") ? (
+                      <Image source={{ uri: att.uri }} style={{ width: 60, height: 60, borderRadius: 8 }} />
+                    ) : (
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontWeight: '600', color: theme.colors.text }}>{att.name}</Text>
+                        <Text style={{ fontSize: 12, color: '#888' }}>
+                          {(att.size / 1024).toFixed(1)} KB
+                        </Text>
+                      </View>
+                    )}
+
+                    <TouchableOpacity
+                      onPress={() => setAttachments(prev => prev.filter((_, i) => i !== index))}
+                      hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
+                    >
+                      <Icons.Ionicons name="close-circle-sharp" size={28} color="#ff4444" />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </BottomSheetScrollView>
+            )}
 
             <TouchableOpacity
               onPress={handleSubmit}
@@ -621,152 +657,7 @@ const JobDetailScreen = ({ route, navigation }) => {
             </TouchableOpacity>
           </BottomSheetView>
         </BottomSheetModal>
-
-        {/* <Modal
-          animationType="slide"
-          transparent={true}
-          visible={modalVisible}
-          onRequestClose={() => setModalVisible(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <TouchableOpacity
-              style={styles.modalBackdrop}
-              onPress={() => setModalVisible(false)}
-            />
-            <View
-              style={[
-                styles.modalContent,
-                { backgroundColor: isDarkMode ? "#4b4a4aff" : "#fff" },
-              ]}
-            >
-              <View style={styles.sheetHandle} />
-              <Text style={[styles.modalTitle, { color: theme.colors.text }]}>
-                Apply for this Gig
-              </Text>
-              <TextInput
-                label="Phone Number"
-                mode="outlined"
-                theme={{ roundness: 12 }}
-                value={phone}
-                onChangeText={setPhone}
-                style={[
-                  styles.input,
-                  { backgroundColor: isDarkMode ? "#666" : "#fff" },
-                ]}
-                keyboardType="phone-pad"
-              />
-
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: 10,
-                }}
-              >
-                <TextInput
-                  label="Add Expertise"
-                  mode="outlined"
-                  theme={{ roundness: 12 }}
-                  value={expertiseInput}
-                  onChangeText={setExpertiseInput}
-                  style={[
-                    styles.input,
-                    { flex: 2, backgroundColor: isDarkMode ? "#666" : "#fff" },
-                  ]}
-                />
-                <TouchableOpacity
-                  onPress={() => {
-                    if (expertiseInput.trim()) {
-                      setExpertises([...expertises, expertiseInput.trim()]);
-                      setExpertiseInput("");
-                    }
-                  }}
-                  style={[styles.addButton, { flex: 1 }]}
-                >
-                  <Icons.Ionicons
-                    name="add-circle-outline"
-                    size={20}
-                    color="#fff"
-                  />
-                </TouchableOpacity>
-              </View>
-
-              <ScrollView style={styles.expertisesList}>
-                {expertises.map((exp, index) => (
-                  <Text
-                    key={index}
-                    style={[
-                      styles.expertiseItem,
-                      { color: theme.colors.sub_text },
-                    ]}
-                  >
-                    ✔️{exp}
-                  </Text>
-                ))}
-              </ScrollView>
-
-              <TouchableOpacity
-                onPress={pickDocuments}
-                style={[
-                  styles.attachButton,
-                  { backgroundColor: theme.colors.card2 },
-                ]}
-              >
-                <Icons.Ionicons
-                  name="attach-outline"
-                  color={"#fff"}
-                  size={24}
-                />
-                <Text style={styles.attachButtonText}>Attach Documents</Text>
-              </TouchableOpacity>
-              <ScrollView style={styles.attachmentsList}>
-                {attachments.map((att, index) => (
-                  <View key={index} style={styles.attachmentItem}>
-                    {att.mimeType && att.mimeType.startsWith("image/") ? (
-                      <Image
-                        source={{ uri: att.uri }}
-                        style={styles.attachmentImage}
-                      />
-                    ) : (
-                      <View style={styles.attachmentFile}>
-                        <Text style={styles.attachmentName}>{att.name}</Text>
-                        <Text style={styles.attachmentSize}>
-                          {att.size ? (att.size / 1024).toFixed(1) + " KB" : ""}
-                        </Text>
-                      </View>
-                    )}
-                    <TouchableOpacity
-                      onPress={() =>
-                        setAttachments(
-                          attachments.filter((_, i) => i !== index),
-                        )
-                      }
-                    >
-                      <Icons.Ionicons name="close" size={20} color="red" />
-                    </TouchableOpacity>
-                  </View>
-                ))}
-              </ScrollView>
-
-              <TouchableOpacity
-                onPress={handleSubmit}
-                style={styles.submitButton}
-              >
-                <Icons.Feather name="send" color={"#fff"} size={24} />
-                <Text style={styles.submitButtonText}>Submit Application</Text>
-                {isSubmitting && (
-                  <ActivityIndicator
-                    size={15}
-                    color="#fff"
-                    style={{ marginLeft: 10 }}
-                  />
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal> */}
-      </KeyboardAvoidingView>
+      </View>
     </SafeAreaView>
   );
 };
@@ -925,24 +816,8 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
     margin: 0,
   },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: "flex-end",
-    backgroundColor: "rgba(0,0,0,0.5)",
-  },
-  modalBackdrop: {
-    flex: 1,
-  },
-  sheetHandle: {
-    width: 40,
-    height: 6,
-    backgroundColor: "#E6E7EA",
-    borderRadius: 6,
-    alignSelf: "center",
-    marginBottom: 8,
-  },
   modalContent: {
-    padding: 20,
+    paddingHorizontal: 10,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
   },
@@ -958,6 +833,7 @@ const styles = StyleSheet.create({
   addButton: {
     backgroundColor: "#003366",
     paddingVertical: 14,
+    paddingHorizontal: 12,
     borderRadius: 12,
     alignItems: "center",
     // marginBottom: 10,

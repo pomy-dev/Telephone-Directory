@@ -373,6 +373,21 @@ export async function getGigApplicants(gigId) {
   }
 }
 
+export async function getApplication(appId) {
+  try {
+    const { data, error } = await supabase
+      .from("pomy_gig_application_summary") // Updated to your new table name
+      .select("*")
+      .eq("application_id", appId)
+
+    if (error) throw error;
+    return { success: true, data };
+  } catch (error) {
+    console.error("Error fetching applicants:", error.message);
+    return { success: false, error: error.message };
+  }
+}
+
 /**
  * Register a new worker with the updated schema including skills array
  * @param {Object} workerData - The worker profile information
@@ -972,9 +987,9 @@ export const submitFeedback = async (firebaseUid, rating, message) => {
   const { data, error } = await supabase
     .from('app_feedback')
     .insert([
-      { 
+      {
         user_id: firebaseUid, // This is the Firebase user.uid
-        rating: rating, 
+        rating: rating,
         message: message,
         app_version: '1.0.0' // Hardcode or use expo-constants
       }

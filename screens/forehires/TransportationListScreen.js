@@ -86,10 +86,10 @@ const SortFilterBottomSheet = React.forwardRef(
             <BottomSheetModal
                 ref={ref}
                 index={0}
-                snapPoints={['40%', '65%']}
+                snapPoints={['40%', '55%']}
                 backdropComponent={renderBackdrop}
+                backgroundStyle={{ backgroundColor: isDarkMode ? '#666' : '#fff' }}
                 onDismiss={onClose}
-                backgroundStyle={theme.colors.card}
                 enablePanDownToClose
             >
                 <BottomSheetView style={[sortFilterModalStyles.container, { backgroundColor: isDarkMode ? '#666' : '#fff' }]}>
@@ -100,7 +100,7 @@ const SortFilterBottomSheet = React.forwardRef(
                             style={[sortFilterModalStyles.applyButton]}
                             onPress={onClose}
                         >
-                            <Text style={[sortFilterModalStyles.applyButtonText, { color: theme.colors.text }]}>Apply Filters</Text>
+                            <Text style={[sortFilterModalStyles.applyButtonText]}>Apply Filters</Text>
                         </TouchableOpacity>
                     </View>
 
