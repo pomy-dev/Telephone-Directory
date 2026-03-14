@@ -85,8 +85,8 @@ const SortFilterBottomSheet = React.forwardRef(
         return (
             <CustomBottomSheet
                 visible={isVisible}
-                onClose={() => { }}
-                snapPoints={[65]}                    // or [35, 65, 90] if you want multiple snaps
+                onClose={onClose}
+                snapPoints={[60]}                    // or [35, 65, 90] if you want multiple snaps
                 backgroundColor={isDarkMode ? "#666" : "#fff"}
                 handleColor={isDarkMode ? "#888" : "#E6E7EA"}
             >

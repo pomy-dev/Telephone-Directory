@@ -74,7 +74,7 @@ const ProfilePreview = ({ form, setGalleryVisible, handleCall, theme }) => {
       <View style={styles.heroContainer}>
         {form.worker_pp && form.worker_pp.length > 0 ? (
           <Image
-            source={{ uri: form.worker_pp[0]?.url || form.worker_pp[0] }}
+            source={{ uri: form.worker_pp[0]?.url || form.worker_pp[0].uri }}
             style={styles.heroImage}
           />
         ) : (
@@ -246,13 +246,9 @@ const ProfileForm = ({
   removeSkill,
   pickDocument,
   removeDocument,
-  setGalleryVisible,
   pickImage,
   isWorker,
-  setSelectedImageIndex,
-  setIsDeletingProfile,
   setManageModalVisible,
-  setSelectedIndices,
   theme
 }) => {
   const [showScrollTop, setShowScrollTop] = useState(false);
@@ -321,7 +317,7 @@ const ProfileForm = ({
                 {form.worker_pp && form.worker_pp.length > 0 ? (
                   <Image
                     source={{
-                      uri: form.worker_pp[0]?.url || form.worker_pp[0],
+                      uri: form.worker_pp[0]?.url || form.worker_pp[0]?.uri,
                     }}
                     style={styles.profilePictureImage}
                   />
@@ -337,7 +333,6 @@ const ProfileForm = ({
               </View>
 
               {/* Gallery Section (1/3) */}
-
               <View style={styles.galleryPreviewSection}>
                 <ScrollView
                   horizontal
@@ -347,22 +342,13 @@ const ProfileForm = ({
                   {form.experience_images &&
                     form.experience_images.length > 0 ? (
                     form.experience_images.map((img, index) => (
-                      // <TouchableOpacity
-                      //   key={`gallery-image-${index}`}
-                      //   style={styles.profilePictureSection}
-                      //   onPress={() => {
-                      //     setSelectedImageIndex(index);
-                      //     setIsDeletingProfile(false);
-                      //     setManageModalVisible(true);
-                      //   }}
-                      // >
                       <TouchableOpacity
                         key={`gallery-${index}`}
                         onPress={() => setManageModalVisible(true)} // Open the multi-select modal
                       >
                         <Image
                           key={index}
-                          source={{ uri: img?.url || img }}
+                          source={{ uri: img?.url || img?.uri }}
                           style={styles.galleryThumbnail}
                         />
                       </TouchableOpacity>
@@ -844,7 +830,8 @@ const WorkerRegistration = ({ navigation }) => {
         quality: 0.7,
       });
       if (!result.canceled) {
-        const newImages = result.assets.map((asset) => asset.uri);
+        const newImages = result.assets.map((asset) => asset);
+        console.log(newImages);
         isGallery
           ? setForm((prev) => ({
             ...prev,
@@ -854,8 +841,6 @@ const WorkerRegistration = ({ navigation }) => {
             ],
           }))
           : setForm((prev) => ({ ...prev, worker_pp: [...newImages] }));
-
-        console.log("Is Gallery. : ", isGallery, "\nUri(s): ", newImages);
       }
     } catch (err) {
       console.error(err.message);
@@ -964,7 +949,7 @@ const WorkerRegistration = ({ navigation }) => {
             renderItem={({ item, index }) => (
               <View style={styles.modalItem}>
                 <Image
-                  source={{ uri: item?.url || item }}
+                  source={{ uri: item?.url || item?.uri }}
                   style={styles.modalImage}
                 />
                 {index === 0 && (
@@ -1038,7 +1023,7 @@ const WorkerRegistration = ({ navigation }) => {
                   onPress={() => toggleSelection(index)}
                 >
                   <Image
-                    source={{ uri: item?.url || item }}
+                    source={{ uri: item?.url || item?.uri }}
                     style={styles.manageImage}
                   />
                   <View

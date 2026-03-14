@@ -118,7 +118,38 @@ export async function addForhire(formData) {
     p_location: formData?.location,
     p_certifications: formData?.certifications,
     p_owner_info: formData?.ownerInfo,
-    p_images: await uploadImages("for_hires", "vehicles", formData?.images),
+    p_images: await uploadImages("for_hires", "vehicles", formData.images),
+  });
+
+  if (error) console.error("RPC failed:", error);
+  return data;
+}
+
+export async function editForhire(id, formData) {
+  if (!id) throw new Error('vehicle token could not be determined!!');
+
+  const { data, error } = await supabase.rpc("update_forehire_listing", {
+    p_id: id,
+    p_type: formData?.type,
+    p_agent_phone: '+26876957019',
+    p_category: formData?.category,
+    p_make: formData?.make,
+    p_model: formData?.model,
+    p_boarder_crossing: formData.crossingBoarder,
+    p_registration: formData?.registration,
+    p_price: formData?.price,
+    p_price_type: formData?.priceType,
+    p_capacity: formData?.capacity,
+    p_description: formData?.description,
+    p_operating_start: formData?.operatingStart,
+    p_operating_end: formData?.operatingEnd,
+    p_operating_days: formData?.operatingDays,
+    p_routes: formData?.routes,
+    p_features: formData?.features,
+    p_location: formData?.location,
+    p_certifications: formData?.certifications,
+    p_owner_info: formData?.ownerInfo,
+    p_images: await uploadImages("for_hires", "vehicles", formData.images),
   });
 
   if (error) console.error("RPC failed:", error);
@@ -515,7 +546,7 @@ export async function updateWorkerProfile(uid, updateData) {
 
     const isLocalFile = (item) => {
       if (!item) return false;
-      if (typeof item === "string") return item.startsWith("file://");
+      // if (typeof item === "string") return item.startsWith("file://");
       if (typeof item === "object")
         return !!(item.uri && String(item.uri).startsWith("file://"));
       return false;
@@ -523,7 +554,7 @@ export async function updateWorkerProfile(uid, updateData) {
 
     const isRemoteUrl = (item) => {
       if (!item) return false;
-      if (typeof item === "string") return item.startsWith("https");
+      // if (typeof item === "string") return item.startsWith("https");
       if (typeof item === "object")
         return !!(item.url && String(item.url).startsWith("https"));
       return false;
@@ -533,7 +564,7 @@ export async function updateWorkerProfile(uid, updateData) {
     const existingPP = workerProfile?.filter((item) => !isLocalFile(item));
     const toUploadPP = workerProfile
       ?.filter(isLocalFile)
-      .map((i) => (typeof i === "string" ? i : { uri: i }));
+      .map((i) => i);
 
     if (toUploadPP.length > 0) {
       const uploadedPP = await uploadImages(
@@ -550,11 +581,11 @@ export async function updateWorkerProfile(uid, updateData) {
     // Keep existing remote URLs and append newly uploaded ones
     const existingPortfolioUrls = portfolioImgs
       ?.filter(isRemoteUrl)
-      .map((i) => (typeof i === "string" ? i : i.url));
+      .map((i) => i);
 
     const toUploadPortfolio = portfolioImgs
       ?.filter(isLocalFile)
-      .map((i) => (typeof i === "string" ? i : i.uri));
+      .map((i) => i);
 
     if (toUploadPortfolio.length > 0) {
       const uploadedPortfolio = await uploadImages(
@@ -563,9 +594,8 @@ export async function updateWorkerProfile(uid, updateData) {
         toUploadPortfolio,
       );
       // Append newly uploaded images to existing remote URLs
-      const uploadedUrls = uploadedPortfolio.map((img) =>
-        typeof img === "object" ? img : img.url,
-      );
+      const uploadedUrls = uploadedPortfolio.map((img) => img);
+
       portfolioImgs = [...(existingPortfolioUrls || []), ...uploadedUrls];
     } else {
       portfolioImgs = existingPortfolioUrls || [];
@@ -593,7 +623,7 @@ export async function updateWorkerProfile(uid, updateData) {
       documents = existingDocs || [];
     }
 
-    console.log("Portfolio Img: ", portfolioImgs);
+    // console.log("Portfolio Img: ", portfolioImgs);
 
     const payload = {
       ...updateData,
@@ -850,7 +880,7 @@ export async function getPersonalizedRecommendations(userId, limit = 10) {
     }
 
     // 2. FALLBACK: If personalized returns empty (new user) or error, fetch random
-    
+
     const { data: randomData, error: randomError } = await supabase.rpc("get_random_recommendations", {
       p_limit: limit,
     });
