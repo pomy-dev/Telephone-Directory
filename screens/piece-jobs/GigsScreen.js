@@ -541,11 +541,7 @@ const GigsScreen = ({ navigation }) => {
   };
 
   const loadWorkers = async (isNewSearch = false) => {
-    // if (!loadingWorkers) return;
-    // setRefreshing(true);
     setLoadingWorkers(true);
-    // setLoadingWorkers(false);
-
     const currentCursor = isNewSearch ? null : lastVisible;
 
     const result = await fetchPomyWorkers({
@@ -1531,12 +1527,6 @@ const GigsScreen = ({ navigation }) => {
             return null;
           }}
           ListFooterComponent={() => {
-            // -!loadingWorkers && (
-            //   <Text style={styles.emptySubtitle}>
-            //     Loading more workers......
-            //   </Text>
-            // );
-
             if (loadingWorkers && filteredWorkers.length > 0) {
               return (
                 <View style={{ paddingVertical: 30, alignItems: "center" }}>

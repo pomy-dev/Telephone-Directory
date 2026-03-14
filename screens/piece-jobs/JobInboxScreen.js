@@ -216,12 +216,6 @@ const JobInboxScreen = ({ route, navigation }) => {
     );
   };
 
-  if (Platform.OS === 'android') {
-    if (UIManager.setLayoutAnimationEnabledExperimental) {
-      UIManager.setLayoutAnimationEnabledExperimental(true);
-    }
-  }
-
   // Helper function for status colors
   const getStatusColor = (status) => {
     switch (status?.toLowerCase()) {
