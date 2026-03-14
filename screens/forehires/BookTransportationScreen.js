@@ -643,7 +643,6 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
         marginBottom: 40,
         marginHorizontal: 10,
-        borderTopWidth: 1
     },
     submitButton: {
         backgroundColor: '#003366',

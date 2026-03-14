@@ -13,10 +13,14 @@ import {
   Linking,
   Dimensions,
   Share,
+  KeyboardAvoidingView,
 } from "react-native";
+import {
+  BottomSheetModal, BottomSheetScrollView, BottomSheetView, BottomSheetBackdrop
+} from '@gorhom/bottom-sheet';
 import { TextInput } from "react-native-paper";
 import { Icons } from "../../constants/Icons";
-import React, { useState } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import Carousel from "react-native-reanimated-carousel";
 import * as DocumentPicker from "expo-document-picker";
 import SecondaryNav from "../../components/SecondaryNav";
@@ -101,16 +105,23 @@ const JobDetailScreen = ({ route, navigation }) => {
   const [expertiseInput, setExpertiseInput] = useState("");
   const [expertises, setExpertises] = useState([]);
   const [attachments, setAttachments] = useState([]);
+  const [sheetMinHieght, setSheetMinHeight] = useState('60%')
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { width } = Dimensions.get("window");
+
+  const ref = useRef(null);
+
+  const renderBackdrop = useCallback(props => (
+    <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.5} />
+  ), []);
 
   React.useEffect(() => {
     const fetchFreshData = async () => {
       // Check if we need to fetch full details (e.g., from recommendation)
       if (from === "recommendation" && jobData) {
         try {
-     
+
           const { data, error } = await getGigById(jobData.id);
           if (data) {
             // Update state with the fully mapped database record
@@ -124,6 +135,10 @@ const JobDetailScreen = ({ route, navigation }) => {
 
     fetchFreshData();
   }, [job?.id, from]);
+
+  const openSheet = () => {
+    ref.current?.present();
+  };
 
   const handleCall = () => {
     Linking.openURL(`tel:${job?.postedBy?.phone}`);
@@ -210,6 +225,7 @@ const JobDetailScreen = ({ route, navigation }) => {
       setPhone("");
       setExpertises([]);
       setAttachments([]);
+      setSheetMinHeight(0)
     }
   };
 
@@ -227,19 +243,26 @@ const JobDetailScreen = ({ route, navigation }) => {
       .catch((error) => console.log("Error sharing:", error));
   };
 
+  const addSkill = () => {
+    let minNum = 65;
+    try {
+      if (expertiseInput.trim()) {
+        minNum = + 2
+        setSheetMinHeight(`${minNum}%`)
+        setExpertises([...expertises, expertiseInput.trim()]);
+      }
+    } catch (error) {
+      throw new Error(error.message)
+    } finally {
+      setExpertiseInput("");
+    }
+  }
+
   return (
     <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
-      <View style={styles.container}>
-        <StatusBar
-          barStyle={isDarkMode ? "light-content" : "dark-content"}
-          backgroundColor={theme.colors.background}
-        />
-        <SecondaryNav
-          title="Job Details"
-          rightIcon="share-social-outline"
-          onRightPress={handleShareJob}
-          onBackPress={() => navigation.goBack()}
-        />
+      <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.container}>
+        <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
+        <SecondaryNav title="Job Details" rightIcon="share-social-outline" onRightPress={handleShareJob} onBackPress={() => navigation.goBack()} />
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           {hasImages ? (
@@ -461,14 +484,145 @@ const JobDetailScreen = ({ route, navigation }) => {
                 styles.applyButton,
                 { backgroundColor: theme.colors.primary },
               ]}
-              onPress={() => setModalVisible(true)}
+              onPress={openSheet}
             >
               <Text style={styles.applyButtonText}>Apply for this Gig</Text>
             </TouchableOpacity>
           </View>
         )}
 
-        <Modal
+        <BottomSheetModal
+          ref={ref}
+          index={0}
+          snapPoints={['40%', `${sheetMinHieght}`]}
+          backdropComponent={renderBackdrop}
+          onDismiss={() => ref.current?.dismiss()}
+          backgroundStyle={theme.colors.card}
+          enablePanDownToClose
+        >
+          <BottomSheetView style={[styles.modalContent, { backgroundColor: isDarkMode ? '#666' : '#fff' }]}>
+            <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Apply for this Gig</Text>
+
+            <TextInput
+              label="Phone Number"
+              mode="outlined"
+              theme={{ roundness: 12 }}
+              value={phone}
+              onChangeText={setPhone}
+              style={[
+                styles.input,
+                { backgroundColor: isDarkMode ? "#666" : "#fff" },
+              ]}
+              keyboardType="phone-pad"
+            />
+
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 10,
+              }}
+            >
+              <TextInput
+                label="Add Expertise"
+                mode="outlined"
+                theme={{ roundness: 12 }}
+                value={expertiseInput}
+                onChangeText={setExpertiseInput}
+                style={[
+                  styles.input,
+                  { flex: 2, backgroundColor: isDarkMode ? "#666" : "#fff" },
+                ]}
+              />
+              <TouchableOpacity
+                onPress={addSkill}
+                style={[styles.addButton, { flex: 1 }]}
+              >
+                <Icons.Ionicons
+                  name="add-circle-outline"
+                  size={20}
+                  color="#fff"
+                />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.expertisesList}>
+              {expertises.map((exp, index) => (
+                <Text
+                  key={index}
+                  style={[
+                    styles.expertiseItem,
+                    { color: theme.colors.sub_text },
+                  ]}
+                >
+                  ✔️{exp}
+                </Text>
+              ))}
+            </ScrollView>
+
+            <TouchableOpacity
+              onPress={pickDocuments}
+              style={[
+                styles.attachButton,
+                { backgroundColor: theme.colors.card2 },
+              ]}
+            >
+              <Icons.Ionicons
+                name="attach-outline"
+                color={"#fff"}
+                size={24}
+              />
+              <Text style={styles.attachButtonText}>Attach Documents</Text>
+            </TouchableOpacity>
+
+            <ScrollView style={styles.attachmentsList}>
+              {attachments.map((att, index) => (
+                <View key={index} style={styles.attachmentItem}>
+                  {att.mimeType && att.mimeType.startsWith("image/") ? (
+                    <Image
+                      source={{ uri: att.uri }}
+                      style={styles.attachmentImage}
+                    />
+                  ) : (
+                    <View style={styles.attachmentFile}>
+                      <Text style={styles.attachmentName}>{att.name}</Text>
+                      <Text style={styles.attachmentSize}>
+                        {att.size ? (att.size / 1024).toFixed(1) + " KB" : ""}
+                      </Text>
+                    </View>
+                  )}
+                  <TouchableOpacity
+                    onPress={() =>
+                      setAttachments(
+                        attachments.filter((_, i) => i !== index),
+                      )
+                    }
+                  >
+                    <Icons.Ionicons name="close" size={20} color="red" />
+                  </TouchableOpacity>
+                </View>
+              ))}
+            </ScrollView>
+
+            <TouchableOpacity
+              onPress={handleSubmit}
+              style={styles.submitButton}
+            >
+              <Icons.Feather name="send" color={"#fff"} size={24} />
+              <Text style={styles.submitButtonText}>Submit Application</Text>
+              {isSubmitting && (
+                <ActivityIndicator
+                  size={15}
+                  color="#fff"
+                  style={{ marginLeft: 10 }}
+                />
+              )}
+            </TouchableOpacity>
+          </BottomSheetView>
+        </BottomSheetModal>
+
+        {/* <Modal
           animationType="slide"
           transparent={true}
           visible={modalVisible}
@@ -611,8 +765,8 @@ const JobDetailScreen = ({ route, navigation }) => {
               </TouchableOpacity>
             </View>
           </View>
-        </Modal>
-      </View>
+        </Modal> */}
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 };

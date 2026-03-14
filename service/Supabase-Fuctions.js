@@ -1,5 +1,6 @@
 import { supabase } from "./Supabase-Client";
 import { UploadImage, uploadImages, uploadAttachments } from "../service/uploadFiles";
+import { CustomToast } from "../components/customToast";
 
 export async function subscribeRealtime() {
   const channel = supabase
@@ -154,6 +155,17 @@ export async function editForhire(id, formData) {
 
   if (error) console.error("RPC failed:", error);
   return data;
+}
+
+export async function deleteForhire(vehicle, vehicleId) {
+  const { error } = await supabase
+    .from('pomy_forhire_transport')
+    .delete()
+    .eq('id', vehicleId)
+
+  if (error) throw new Error(error.message);
+
+  CustomToast('Successfully Removed', `${vehicle.vehicle_make} ${vehicle.vehicle_model} got unlisted.`);
 }
 
 export async function getForHireTransport() {

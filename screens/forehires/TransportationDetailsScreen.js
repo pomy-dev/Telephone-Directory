@@ -17,8 +17,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { Icons } from "../../constants/Icons";
 import { AppContext } from "../../context/appContext";
 import SecondaryNav from "../../components/SecondaryNav";
-import { getTransportById } from "../../service/Supabase-Fuctions";
+import { getTransportById, deleteForhire } from "../../service/Supabase-Fuctions";
 import { AuthContext } from "../../context/authProvider";
+import { CustomToast } from "../../components/customToast";
 
 const { width } = Dimensions.get("window");
 
@@ -29,7 +30,7 @@ export default function TransportationDetailsScreen({ navigation, route }) {
   const { theme, isDarkMode } = React.useContext(AppContext);
   const { user } = React.useContext(AuthContext);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [isError, setIsError] = useState(false);
 
   useEffect(() => {
     const getFullDetails = async () => {
@@ -175,6 +176,22 @@ export default function TransportationDetailsScreen({ navigation, route }) {
   const handleEditVehicle = () => {
     user.email.trim() === vehicle.owner_info?.email?.trim() &&
       navigation.navigate('PostTransportationScreen', { vehicleInfo: vehicle, isEdit: true })
+  }
+
+  const handleRemoveVehicle = (vehicleId) => {
+    if (!vehicleId) return CustomToast('Error!', 'Vehicle Id could not be determined.');
+    try {
+      Alert.alert('⚠️ Detele', 'Are you sure that you want to remove this vehicle from Business Link enlistment?', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Remove', style: 'destructive', onPress: () => deleteForhire(vehicle, vehicleId) }
+      ])
+    } catch (error) {
+      setIsError(true)
+      CustomToast('Error!', error.message)
+      throw new Error(error.message);
+    } finally {
+      !isError && navigation.goBack();
+    }
   }
 
   return (
@@ -525,9 +542,7 @@ export default function TransportationDetailsScreen({ navigation, route }) {
           </View>
 
           {/* Certifications */}
-          <View
-            style={[styles.section, { backgroundColor: theme.colors.card }]}
-          >
+          <View style={[styles.section, { backgroundColor: theme.colors.card }]}>
             <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
               Certifications
             </Text>
@@ -573,6 +588,17 @@ export default function TransportationDetailsScreen({ navigation, route }) {
               )}
             </View>
           </View>
+
+          {user.email.trim() === vehicle.owner_info?.email?.trim() &&
+            <>
+              <View style={{ height: 1, backgroundColor: '#AAAAAA' }} />
+
+              <TouchableOpacity onPress={() => handleRemoveVehicle(vehicle?.id)} style={[styles.removeBtn, { borderColor: theme.colors.notification }]}>
+                <Icons.MaterialCommunityIcons name="delete-empty-outline" size={24} color={theme.colors.notification} />
+                <Text style={{ fontSize: 20, fontWeight: 600, color: theme.colors.notification }}>Remove</Text>
+              </TouchableOpacity>
+            </>
+          }
         </View>
       </ScrollView>
 
@@ -974,6 +1000,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#475569",
     fontWeight: "500",
+  },
+  removeBtn: {
+    borderRadius: 10, borderWidth: 1,
+    backgroundColor: 'rgba(253, 3, 3, 0.2)',
+    flexDirection: 'row', gap: 10, alignItems: 'center',
+    justifyContent: 'center', paddingVertical: 10, marginVertical: 20
   },
   statsContainer: {
     flexDirection: "row",
