@@ -15,6 +15,7 @@ import { AuthContext } from "../context/authProvider";
 import { AppContext } from "../context/appContext";
 import { supabase } from "../service/Supabase-Client";
 import { Icons } from "../constants/Icons";
+import NetInfo from "@react-native-community/netinfo";
 
 const FEEDBACK_STORAGE_KEY = "@pomy_feedback_timer";
 let manualOpenTrigger = null;
@@ -33,7 +34,15 @@ export const FeedbackSystem = () => {
 
   // Define the manual trigger
   useEffect(() => {
-    manualOpenTrigger = () => setIsVisible(true);
+    manualOpenTrigger = async () => {
+      const state = await NetInfo.fetch();
+      if (state.isConnected) {
+        setIsVisible(true);
+      } else {
+        // Optional: Show a toast or alert saying "Internet required for feedback"
+        console.log("Feedback blocked: No internet");
+      }
+    };
     return () => {
       manualOpenTrigger = null;
     };
@@ -41,6 +50,12 @@ export const FeedbackSystem = () => {
 
   useEffect(() => {
     const checkShouldShow = async () => {
+      const network = await NetInfo.fetch();
+      if (!network.isConnected) {
+        console.log("Feedback Timer: Skipping check, user is offline.");
+        return;
+      }
+
       // Only prompt if a user is logged in
       if (!user) return;
 
@@ -61,7 +76,9 @@ export const FeedbackSystem = () => {
       //   }
     };
 
-    checkShouldShow();
+    // Delay the auto-popup so it doesn't hit them immediately on app open
+    const timer = setTimeout(checkShouldShow, 60000);
+    return () => clearTimeout(timer);
   }, [user]);
 
   const handleSubmit = async () => {
@@ -69,6 +86,16 @@ export const FeedbackSystem = () => {
       Alert.alert(
         "Rating Required",
         "Please tap a star to rate your experience.",
+      );
+      return;
+    }
+
+    // Check network before trying to hit Supabase
+    const state = await NetInfo.fetch();
+    if (!state.isConnected) {
+      Alert.alert(
+        "Offline",
+        "Please check your internet connection and try again.",
       );
       return;
     }
@@ -91,11 +118,12 @@ export const FeedbackSystem = () => {
       Alert.alert("Thank You!", "Your feedback helps us make Pomy better.");
       setIsVisible(false);
     } catch (error) {
-      console.error("Feedback error:", error);
+      console.error("Feedback retry later");
       Alert.alert(
         "Error",
         "We couldn't save your feedback. Please try again later.",
       );
+      setIsVisible(false);
     } finally {
       setLoading(false);
     }
@@ -120,7 +148,7 @@ export const FeedbackSystem = () => {
           ]}
         >
           <Text style={[styles.title, { color: theme.colors.text }]}>
-            Enjoying Pomy?
+            Enjoying Service?
           </Text>
           <Text style={styles.subtitle}>Help us improve your experience!</Text>
 

@@ -1,4 +1,11 @@
-import React, { useState, useEffect, useRef, useContext, forwardRef, useImperativeHandle } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useContext,
+  forwardRef,
+  useImperativeHandle,
+} from "react";
 import {
   View,
   Text,
@@ -17,6 +24,7 @@ import {
   logUserActivity,
 } from "../service/Supabase-Fuctions";
 import { Ionicons } from "@expo/vector-icons";
+import NetInfo from "@react-native-community/netinfo";
 
 const { width } = Dimensions.get("window");
 const CARD_WIDTH = width * 0.72;
@@ -87,17 +95,24 @@ const AdCard = ({ ad, onPress, onView, theme }) => {
 
         <View style={styles.cardFooter}>
           <View>
-            {ad.price ? (<>
-              <Text style={[styles.priceLabel, { color: theme.colors.sub_text }]}>
-                Starting from
-              </Text>
-              <Text style={[styles.priceText, { color: theme.colors.text }]}>
-                {ad.price ? `E${ad.price}` : "Quote"}
-              </Text>
-            </>) : (<>
-              <Text style={[styles.priceText, { color: theme.colors.text }]}>
-              </Text>
-            </>)}
+            {ad.price ? (
+              <>
+                <Text
+                  style={[styles.priceLabel, { color: theme.colors.sub_text }]}
+                >
+                  Starting from
+                </Text>
+                <Text style={[styles.priceText, { color: theme.colors.text }]}>
+                  {ad.price ? `E${ad.price}` : "Quote"}
+                </Text>
+              </>
+            ) : (
+              <>
+                <Text
+                  style={[styles.priceText, { color: theme.colors.text }]}
+                ></Text>
+              </>
+            )}
           </View>
           <View
             style={[
@@ -115,6 +130,7 @@ const AdCard = ({ ad, onPress, onView, theme }) => {
 
 const PersonalizedAdsSection = forwardRef((props, ref) => {
   const navigation = useNavigation();
+  const [isOffline, setIsOffline] = useState(false);
   const { theme } = useContext(AppContext);
   const { user } = useContext(AuthContext);
   const [personalizedAds, setPersonalizedAds] = useState([]);
@@ -126,7 +142,7 @@ const PersonalizedAdsSection = forwardRef((props, ref) => {
       if (user?.uid) {
         getRag();
       }
-    }
+    },
   }));
 
   useEffect(() => {
@@ -136,6 +152,20 @@ const PersonalizedAdsSection = forwardRef((props, ref) => {
   }, [user]);
 
   const getRag = async () => {
+    // 1. Check network before fetching
+    const state = await NetInfo.fetch();
+    if (!state.isConnected) {
+      setIsOffline(true);
+      setLoading(false);
+      return;
+    }
+
+    setIsOffline(false);
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
       const result = await getPersonalizedRecommendations(user.uid);
@@ -224,7 +254,7 @@ const PersonalizedAdsSection = forwardRef((props, ref) => {
             ad={ad}
             theme={theme}
             onPress={handleAdClick}
-            onView={(id) => { }}
+            onView={(id) => {}}
           />
         ))}
       </ScrollView>
