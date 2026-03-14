@@ -290,6 +290,22 @@ export async function fetchOpenGigsCount() {
 }
 
 /**
+ * Shuffles an array in place using the Fisher-Yates algorithm.
+ */
+const shuffleArray = (array) => {
+  if (array?.length > 0 ) {
+    
+    const shuffled = [...array]; // Create a copy to avoid mutating the original
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  }
+  return [];
+};
+
+/**
  * Fetches gigs with support for filtering and cursor-based pagination
  */
 export async function getPomyGigs(filters = {}) {
@@ -320,9 +336,11 @@ export async function getPomyGigs(filters = {}) {
 
     if (error) throw error;
 
+    const resultData = data || [];
     return {
       success: true,
-      data: data || [], // Ensure data is at least an empty array, never null
+      // Apply shuffle here if requested
+      data:  shuffleArray(resultData),
     };
   } catch (error) {
     console.error("Error fetching gigs:", error);
@@ -505,7 +523,7 @@ export const fetchPomyWorkers = async ({
     const hasMore = data.length > 0 ? data[0].has_more : false;
 
     return {
-      workers: data,
+      workers: shuffleArray(data),
       hasMore,
       lastVisible:
         data.length > 0
