@@ -29,10 +29,12 @@ import {
   fetchOpenGigsCount,
   subscribeToGigs,
 } from "../service/Supabase-Fuctions";
+import NetInfo from "@react-native-community/netinfo";
 
 import { triggerFeedbackManual } from "../components/FeedbackSystem";
 
 export default function HomeScreen({ navigation }) {
+  const [isOffline, setIsOffline] = useState(false);
   const { theme, isDarkMode, notifications, notificationsEnabled } =
     React.useContext(AppContext);
   const { logout } = React.useContext(AuthContext);
@@ -42,6 +44,15 @@ export default function HomeScreen({ navigation }) {
   const [startingText, setStartingText] = useState("");
   const [islogingOut, setIsLoggingOut] = useState(false);
   const adsRef = useRef(null);
+
+  // network listener (To tell user to connect to a network)
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      setIsOffline(!state.isConnected);
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const scheduleNotification = async (title, body, data = {}) => {
     if (!notificationsEnabled) return;
@@ -265,6 +276,40 @@ export default function HomeScreen({ navigation }) {
     }
   };
 
+    if (isOffline) {
+      return (
+        <View
+          style={[
+            styles.offlineContainer,
+            { backgroundColor: theme.colors.background },
+          ]}
+        >
+          <Icons.Ionicons
+            name="cloud-offline-outline"
+            size={64}
+            color={theme.colors.sub_text}
+          />
+          <Text style={[styles.offlineTitle, { color: theme.colors.sub_text }]}>
+            No Internet Connection
+          </Text>
+          <Text
+            style={[styles.offlineSubtitle, { color: theme.colors.sub_text }]}
+          >
+            Check your network settings to see the latest gigs on Pomy.
+          </Text>
+          {/* <TouchableOpacity style={styles.retryButton} onPress={loadGigs}> */}
+          <TouchableOpacity
+            style={[
+              styles.retryButton,
+              { backgroundColor: theme.colors.primary },
+            ]}
+          >
+            <Text style={[styles.retryText, { color: theme.colors.sub_text }]}>Retry</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
   return (
     <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
       <StatusBar
@@ -328,7 +373,7 @@ export default function HomeScreen({ navigation }) {
               <Text
                 style={[styles.feedbackTitle, { color: theme.colors.text }]}
               >
-               Give Feedback About service
+                Give Feedback About service
               </Text>
               <Text style={styles.feedbackSubtitle}>
                 Tap to share your thoughts with the team
@@ -439,5 +484,44 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#64748b",
     marginTop: 2,
+  },
+  // Add these to your existing styles object
+  offlineContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  offlineContent: {
+    alignItems: "center",
+    width: "100%",
+  },
+  offlineTitle: {
+    fontSize: 24,
+    fontWeight: "800",
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  offlineText: {
+    fontSize: 16,
+    textAlign: "center",
+    lineHeight: 24,
+    marginBottom: 30,
+    paddingHorizontal: 20,
+  },
+  retryButton: {
+    paddingHorizontal: 30,
+    paddingVertical: 15,
+    borderRadius: 12,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  retryButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "700",
   },
 });
