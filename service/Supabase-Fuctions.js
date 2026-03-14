@@ -920,3 +920,24 @@ export async function syncUserProfile(firebaseUser) {
     return { success: false, error: error.message };
   }
 }
+
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
+//this is the service for collection the user feed back  about the application : 
+export const submitFeedback = async (firebaseUid, rating, message) => {
+  const { data, error } = await supabase
+    .from('app_feedback')
+    .insert([
+      { 
+        user_id: firebaseUid, // This is the Firebase user.uid
+        rating: rating, 
+        message: message,
+        app_version: '1.0.0' // Hardcode or use expo-constants
+      }
+    ]);
+
+  if (error) throw error;
+  return data;
+};

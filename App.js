@@ -2,17 +2,25 @@
 import "react-native-gesture-handler";
 import React, { useContext, useState, useEffect } from "react";
 import { View, Text, StyleSheet, StatusBar, Platform } from "react-native";
-import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-context";
-import { NavigationContainer, useNavigationContainerRef } from "@react-navigation/native";
+import {
+  SafeAreaProvider,
+  useSafeAreaInsets,
+} from "react-native-safe-area-context";
+import {
+  NavigationContainer,
+  useNavigationContainerRef,
+} from "@react-navigation/native";
 import Toast from "react-native-toast-message";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Provider as PaperProvider } from "react-native-paper";
 import * as Notifications from "expo-notifications";
 import { RealmProvider } from "@realm/react";
-import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
+import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 
+// this is feed back form for the app for data collection
+import { FeedbackSystem } from "./components/FeedbackSystem";
 // Basket Provider
 import { BasketProvider } from "./context/basketContext";
 
@@ -50,7 +58,7 @@ import BookTransportationScreen from "./screens/forehires/BookTransportationScre
 import SplashScreen from "./screens/SplashScreen";
 
 // Notification screen
-import NotificationListScreen from './screens/notifications/NotificationList';
+import NotificationListScreen from "./screens/notifications/NotificationList";
 
 // App Context
 import { AppContext, AppProvider } from "./context/appContext";
@@ -234,11 +242,12 @@ function AppContent() {
       const notificationData = {
         id:
           notification.request.content.data?.notificationId ||
-          notification._id || Date.now().toString(),
+          notification._id ||
+          Date.now().toString(),
         title: notification.request.content.title,
         body: notification.request.content.body,
         data: notification.request.content.data,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
 
       // console.log('Notification ID ', notificationData.id)
@@ -353,10 +362,7 @@ function AppContent() {
                           /> */}
 
                           {/* Home Screen */}
-                          <Stack.Screen
-                            name="Home"
-                            component={HomeScreen}
-                          />
+                          <Stack.Screen name="Home" component={HomeScreen} />
 
                           <Stack.Screen
                             name="Settings"
@@ -476,6 +482,9 @@ function AppContent() {
                       )}
                     </Stack.Navigator>
                     <StatusBar style={isDarkMode ? "light" : "dark"} />
+
+                    {/*this is the feed back form to collect data from the user */}
+                    <FeedbackSystem />
                   </NavigationContainer>
                 </BasketProvider>
               </PaperProvider>
