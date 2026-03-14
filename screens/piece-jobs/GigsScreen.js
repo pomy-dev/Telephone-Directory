@@ -500,7 +500,8 @@ const GigsScreen = ({ navigation }) => {
     await AsyncStorage.setItem("workerVotes", JSON.stringify(updatedVotes));
 
     // Optimistic UI update
-    setWorkers((prev) =>
+    // setWorkers((prev) =>
+    setFilteredWorkers((prev) =>
       prev.map((w) =>
         w.id === workerId
           ? {
@@ -571,7 +572,6 @@ const GigsScreen = ({ navigation }) => {
 
     setRefreshing(false);
     setLoadingWorkers(false);
-    console.log("-----------------end");
   };
 
   const fetchLiveGigs = async (isLoadMore = false) => {
@@ -1061,8 +1061,8 @@ const GigsScreen = ({ navigation }) => {
             style={styles.blackActionBtn}
             onPress={() => Linking.openURL(`tel:${item.phone}`)}
           >
-            <Text style={styles.actionBtnText}>Connect</Text>
-            <Icons.Ionicons name="arrow-forward" size={14} color="#10b981" />
+            <Icons.Ionicons name="call" size={16} color="#10b981"/>
+            <Text style={styles.actionBtnText}>Call</Text>
           </TouchableOpacity>
         </View>
       </TouchableOpacity>
@@ -2272,9 +2272,10 @@ const styles = StyleSheet.create({
   },
   actionBtnText: {
     color: "#fff",
-    fontSize: 12,
+    fontSize: 14,
     fontWeight: "900",
     marginRight: 6,
+    marginLeft: 6,
   },
   skillsContainer: {
     paddingHorizontal: 12,
