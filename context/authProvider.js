@@ -57,19 +57,19 @@ export const AuthProvider = ({ children }) => {
       firebaseAuth,
       async (currentUser) => {
         if (currentUser) {
-          if (currentUser.emailVerified) {
-            setUser(currentUser);
-            // 2. CREATE OR UPDATE the profile in Supabase
-            await syncUserProfile(currentUser);
-            // App is opening with an existing logged-in user
-            await checkWorkerStatus(currentUser.uid);
-          } else {
-            Alert.alert('Email Unverified!', 'Your email account is unverified. Try to verify it from your account.',
-              [
-                { text: "Cancel", style: "cancel" },
-                { text: "Verify", onPress: async () => { verifyEmail() } }
-              ])
-          }
+          // if (currentUser.emailVerified) {
+          setUser(currentUser);
+          // 2. CREATE OR UPDATE the profile in Supabase
+          await syncUserProfile(currentUser);
+          // App is opening with an existing logged-in user
+          await checkWorkerStatus(currentUser.uid);
+          // } else {
+          //   Alert.alert('Email Unverified!', 'Your email account is unverified. Try to verify it from your account.',
+          //     [
+          //       { text: "Cancel", style: "cancel" },
+          //       { text: "Verify", onPress: async () => { verifyEmail() } }
+          //     ])
+          // }
         } else {
           setUser(null);
           setIsWorker(false);
@@ -115,9 +115,9 @@ export const AuthProvider = ({ children }) => {
     return signInWithCredential(getAuth(), googleCredential);
   };
 
-  const verifyEmail = async (user) => {
-    await sendEmailVerification(user);
-  }
+  // const verifyEmail = async (user) => {
+  //   await sendEmailVerification(user);
+  // }
 
   const emailSignUp = async (name, email, password) => {
 
@@ -152,17 +152,17 @@ export const AuthProvider = ({ children }) => {
         password,
       );
       const user = userCredential.user;
-      if (user && user.emailVerified) {
-        return user
-      } else {
-        Alert.alert('Email Unverified!', 'Your email account is unverified. Try to verify it from your account.',
-          [
-            { text: "Cancel", style: "cancel" },
-            {
-              text: "Verify", onPress: async () => { await verifyEmail(user) }
-            }
-          ])
-      }
+      // if (user && user.emailVerified) {
+      //   return user
+      // } else {
+      //   Alert.alert('Email Unverified!', 'Your email account is unverified. Try to verify it from your account.',
+      //     [
+      //       { text: "Cancel", style: "cancel" },
+      //       {
+      //         text: "Verify", onPress: async () => { await verifyEmail(user) }
+      //       }
+      //     ])
+      // }
       return user
     } catch (error) {
       console.error("Login Failed:", error.message);
