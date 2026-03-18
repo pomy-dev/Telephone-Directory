@@ -78,28 +78,26 @@ export default function HomeScreen({ navigation }) {
     notifications.forEach((notif, index) => {
       setTimeout(() => {
         // Notification title & body
-        const title = `${
-          notif._type === "employer"
-            ? "New Application Received"
-            : notif._type === "application"
-              ? "👍Your Candidature succeeded!"
-              : notif.title
-        }`;
-        const body = `${
-          notif._type === "employer"
-            ? notif.applicant_details?.name +
-              " applied for " +
-              notif.job_title +
-              "job. Check his credentials for approval."
-            : notif._type === "application"
-              ? "Your application for " +
-                notif.job_title +
-                " posted by " +
-                notif.posted_by?.name +
-                " was successful. Connect with him/her via" +
-                notif.posted_by?.phone
-              : notif.message
-        }`;
+        const title = `${notif._type === "employer"
+          ? "New Application Received"
+          : notif._type === "application"
+            ? "👍Your Candidature succeeded!"
+            : notif.title
+          }`;
+        const body = `${notif._type === "employer"
+          ? notif.applicant_details?.name +
+          " applied for " +
+          notif.job_title +
+          "job. Check his credentials for approval."
+          : notif._type === "application"
+            ? "Your application for " +
+            notif.job_title +
+            " posted by " +
+            notif.posted_by?.name +
+            " was successful. Connect with him/her via" +
+            notif.posted_by?.phone
+            : notif.message
+          }`;
 
         // Extra data for deep linking or later use
         const data = {
@@ -132,6 +130,12 @@ export default function HomeScreen({ navigation }) {
       screen: "TransportationListScreen",
       name: "For-Hires",
       image: Images.forhire,
+    },
+    {
+      id: "3",
+      screen: "LoanAssist",
+      name: "Smart Financing",
+      image: Images.loans,
     },
   ];
 
@@ -207,7 +211,7 @@ export default function HomeScreen({ navigation }) {
       }
 
       // You can also refresh your gig counts here if needed
-      return () => {};
+      return () => { };
     }, []),
   );
 
@@ -276,46 +280,43 @@ export default function HomeScreen({ navigation }) {
     }
   };
 
-    if (isOffline) {
-      return (
-        <View
+  if (isOffline) {
+    return (
+      <View
+        style={[
+          styles.offlineContainer,
+          { backgroundColor: theme.colors.background },
+        ]}
+      >
+        <Icons.Ionicons
+          name="cloud-offline-outline"
+          size={64}
+          color={theme.colors.sub_text}
+        />
+        <Text style={[styles.offlineTitle, { color: theme.colors.sub_text }]}>
+          No Internet Connection
+        </Text>
+        <Text
+          style={[styles.offlineSubtitle, { color: theme.colors.sub_text }]}
+        >
+          Check your network settings to see the latest gigs on Pomy.
+        </Text>
+        {/* <TouchableOpacity style={styles.retryButton} onPress={loadGigs}> */}
+        <TouchableOpacity
           style={[
-            styles.offlineContainer,
-            { backgroundColor: theme.colors.background },
+            styles.retryButton,
+            { backgroundColor: theme.colors.primary },
           ]}
         >
-          <Icons.Ionicons
-            name="cloud-offline-outline"
-            size={64}
-            color={theme.colors.sub_text}
-          />
-          <Text style={[styles.offlineTitle, { color: theme.colors.sub_text }]}>
-            No Internet Connection
-          </Text>
-          <Text
-            style={[styles.offlineSubtitle, { color: theme.colors.sub_text }]}
-          >
-            Check your network settings to see the latest gigs on Pomy.
-          </Text>
-          {/* <TouchableOpacity style={styles.retryButton} onPress={loadGigs}> */}
-          <TouchableOpacity
-            style={[
-              styles.retryButton,
-              { backgroundColor: theme.colors.primary },
-            ]}
-          >
-            <Text style={[styles.retryText, { color: theme.colors.sub_text }]}>Retry</Text>
-          </TouchableOpacity>
-        </View>
-      );
-    }
+          <Text style={[styles.retryText, { color: theme.colors.sub_text }]}>Retry</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
-      <StatusBar
-        barStyle={isDarkMode ? "light-content" : "dark-content"}
-        backgroundColor={theme.colors.background}
-      />
+      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
 
       {islogingOut && <CustomLoader />}
 
@@ -425,8 +426,8 @@ const styles = StyleSheet.create({
     marginVertical: 8,
   },
   serviceIconContainer: {
-    width: 150,
-    height: 150,
+    width: 100,
+    height: 100,
     borderRadius: 20,
     borderWidth: 1,
     alignItems: "center",
@@ -442,8 +443,6 @@ const styles = StyleSheet.create({
     width: "100%",
     height: "100%",
     borderRadius: 20,
-    // height:120,
-    // width:120,
   },
   serviceText: {
     fontSize: 12,
