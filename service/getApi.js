@@ -1,7 +1,6 @@
 import React from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useQuery } from '@realm/react';
-import { getAppliedGigs } from "./Supabase-Fuctions";
 import { API_BASE_URL } from "../config/env";
 
 export const addUser = async (userData) => {
