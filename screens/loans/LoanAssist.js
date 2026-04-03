@@ -209,6 +209,23 @@ export default function FinancialHubScreen({ navigation }) {
   const bannerOpacity = useRef(new Animated.Value(1)).current;
   const bannerTranslate = useRef(new Animated.Value(0)).current;
 
+
+  // Bottom-sheet / filter state
+  const [bottomSheetVisible, setBottomSheetVisible] = useState(false);
+  const bottomSheetY = useRef(new Animated.Value(500)).current; // offscreen by default
+  const [filters, setFilters] = useState(null);
+  const [isFilter, setIsFilter] = useState(false);
+  const [form, setForm] = useState({
+    category: "All",
+    productType: "",
+    nameOrCompany: "",
+    minInterest: "",
+    maxInterest: "",
+    minTerm: "",
+    maxTerm: "",
+    otherDetails: "",
+  });
+
   useEffect(() => {
     // animate height (needs nativeDriver: false) and fade/translate (can use native driver)
     Animated.parallel([
@@ -229,22 +246,6 @@ export default function FinancialHubScreen({ navigation }) {
       }),
     ]).start();
   }, [isBannersVisible]);
-
-  // Bottom-sheet / filter state
-  const [bottomSheetVisible, setBottomSheetVisible] = useState(false);
-  const bottomSheetY = useRef(new Animated.Value(500)).current; // offscreen by default
-  const [filters, setFilters] = useState(null);
-  const [isFilter, setIsFilter] = useState(false);
-  const [form, setForm] = useState({
-    category: "All",
-    productType: "",
-    nameOrCompany: "",
-    minInterest: "",
-    maxInterest: "",
-    minTerm: "",
-    maxTerm: "",
-    otherDetails: "",
-  });
 
   useEffect(() => {
     Animated.timing(bottomSheetY, {
@@ -703,7 +704,7 @@ export default function FinancialHubScreen({ navigation }) {
         </View>
 
         {/* AI button btn for navigating to chat screen */}
-        <TouchableOpacity style={[styles.AIbtn]} onPress={() => navigation.navigate('Askai', { context: null, dealType: null })}>
+        <TouchableOpacity style={[styles.AIbtn]} onPress={() => navigation.navigate('Chatbot', { context: null, dealType: null })}>
           <Icons.MaterialCommunityIcons name="face-agent" size={28} color="#1E40AF" />
           <Text style={{ fontSize: 20, fontWeight: 200, color: theme.colors.indicator }}>Ask AI</Text>
         </TouchableOpacity>
@@ -735,19 +736,22 @@ export default function FinancialHubScreen({ navigation }) {
       </Animated.View>
 
       {/* Tab Bar */}
-      <View style={styles.tabBar}>
-        {(["Loans", "Insurance", "Investments"]).map(tab => (
-          <TouchableOpacity
-            key={tab}
-            style={[styles.tabItem, activeTab === tab && styles.tabItemActive]}
-            onPress={() => { setActiveTab(tab); setSearchQuery(""); setSelectedLoans([]); }}
-          >
-            <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
-              {tab === "Loans" ? "Loans" : tab === "Insurance" ? "Insurance" : "Investments"}
-            </Text>
-          </TouchableOpacity>
-        ))}
+      <View>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabBar}>
+          {(["Loans", "Savings", "Insurance", "Investments"]).map(tab => (
+            <TouchableOpacity
+              key={tab}
+              style={[styles.tabItem, activeTab === tab && styles.tabItemActive]}
+              onPress={() => { setActiveTab(tab); setSearchQuery(""); setSelectedLoans([]); }}
+            >
+              <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
+                {tab === "Loans" ? "Loans" : tab === "Savings" ? "Savings" : tab === "Insurance" ? "Insurance" : "Investments"}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
       </View>
+
     </>
   );
 
@@ -756,7 +760,7 @@ export default function FinancialHubScreen({ navigation }) {
       {/* Section Title + Compare Button */}
       <View style={styles.headerRow}>
         <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-          {activeTab === "Loans" ? "Loan Providers" : activeTab === "Insurance" ? "Insurance Policies" : "Investment Parties"}
+          {activeTab === "Loans" ? "Loan Providers" : activeTab === "Savings" ? "Savings Account" : activeTab === "Insurance" ? "Insurance Policies" : "Investment Parties"}
         </Text>
         {/* refresh screen */}
         {isFilter &&
@@ -882,8 +886,14 @@ export default function FinancialHubScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   // Tab Bar
-  tabBar: { flexDirection: "row", paddingVertical: 12, paddingHorizontal: 16, justifyContent: 'space-between', gap: 10 },
-  tabItem: { flex: 1, alignItems: "center", paddingVertical: 8, borderRadius: 30, backgroundColor: "#F2F2F7" },
+  tabBar: {
+    flexDirection: "row", paddingVertical: 12,
+    paddingHorizontal: 16, gap: 10,
+  },
+  tabItem: {
+    flex: 1, alignItems: "center", paddingVertical: 8,
+    borderRadius: 30, backgroundColor: "#F2F2F7", paddingHorizontal: 10
+  },
   tabItemActive: { backgroundColor: "#111827" },
   tabText: { fontSize: 15, fontWeight: "600", color: "#aaabaeff" },
   tabTextActive: { color: "#FFFFFF" },

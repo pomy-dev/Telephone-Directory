@@ -195,7 +195,7 @@ export default function LoginScreen({ navigation }) {
           >
             <Image source={Images.google} style={styles.googleIcon} />
             {isGoogleConnecting ?
-              <LoaderKitView name='BallBeat' style={{ width: 50, height: 50 }}
+              <LoaderKitView name='BallBeat' style={{ width: 30, height: 30 }}
                 color={theme.colors.indicator} animationSpeedMultiplier={1.0}
               />
               : <Text style={[styles.googleText, { color: theme.colors.text }]}>Continue with Google</Text>

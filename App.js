@@ -26,7 +26,7 @@ import { BasketProvider } from "./context/basketContext";
 
 // loan assist
 import LoanAssist from "./screens/loans/LoanAssist";
-import AIAgent from "./screens/loans/AgentChat";
+import Chatbot from "./screens/loans/Chatbot";
 import LoanDetails from "./screens/loans/LoanDetails";
 import LoanCompare from "./screens/loans/LoanCompare";
 import LoanCalculator from "./screens/loans/LoanCalculator";
@@ -463,7 +463,7 @@ function AppContent() {
                             name="LoanAssist"
                             component={LoanAssist}
                           />
-                          <Stack.Screen name="Askai" component={AIAgent} />
+                          <Stack.Screen name="Chatbot" component={Chatbot} />
 
                           <Stack.Screen
                             name="LoanDetails"

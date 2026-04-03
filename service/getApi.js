@@ -3,6 +3,27 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useQuery } from '@realm/react';
 import { API_BASE_URL } from "../config/env";
 
+// ==================== Sacco Functions ==================== //
+export const fetchSaccos = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/saccos`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+    if (!response.ok) {
+      throw new Error("Network response was not ok " + response.statusText);
+    }
+    const data = await response.json();
+    return data.saccos;
+  } catch (error) {
+    console.error("Error fetching saccos:", error);
+    throw error;
+  }
+};
+
+// ==================== User Profile Management ==================== //
 export const addUser = async (userData) => {
   try {
     const response = await fetch(`${API_BASE_URL}/api/add-profile`, {
@@ -86,81 +107,7 @@ export const deleteUserProfile = async (id) => {
   }
 };
 
-export const addVendor = async (vendorData) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/add-vendor`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(vendorData),
-    });
-    if (!response.ok) {
-      console.error(response.arrayBuffer);
-      throw new Error(response.status);
-    }
-    const data = await response.json();
-    console.log(data.message);
-    return data;
-  } catch (error) {
-    console.error("Error adding vendor:", error);
-    throw error;
-  }
-};
-
-export const addVendorStock = async (stockData) => {
-  try {
-    const response = await fetch(`${API_BASE_URL}/api/add-stock`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(stockData),
-    });
-    if (!response.ok) {
-      console.error('==============\n');
-      console.error(response.arrayBuffer);
-      throw new Error(response.status);
-    }
-    const data = await response.json();
-    console.log(data.message);
-    return data;
-  } catch (error) {
-    console.error("Error adding stock:", error);
-    throw error;
-  }
-}
-
-export const getVendorsAndStock = async (page = 1, limit = 10) => {
-  try {
-    const vendors = await fetch(
-      `${API_BASE_URL}/api/vendors?page=${page}&limit=${limit}&stock=count`,
-      { method: "GET" }
-    );
-
-    if (!vendors.ok) throw new Error(vendors.status);
-    return await vendors.json();
-  } catch (error) {
-    console.error("Error fetching vendors:", error);
-    throw error;
-  }
-}
-
-export const getVendorProfile = async (vendorId) => {
-  try {
-    const response = await fetch(
-      `${API_BASE_URL}/api/vendors/${vendorId}/stock`,
-      { method: "GET" }
-    );
-
-    if (!response.ok) throw new Error(response.status);
-    return await response.json();
-  } catch (error) {
-    console.error("Error fetching stock:", error);
-    throw error;
-  }
-};
-
+// ==================== Company & Publications & Promotions ==================== //
 export const fetchAllCompanies = async (realm) => {
   try {
     let allCompanies = [];
@@ -241,7 +188,6 @@ export const fetchAllCompaniesOffline = async (companies) => {
   }
 };
 
-// to check out
 export const fetchCompaniesWithAge = async () => {
   try {
     const storedCompanies = await AsyncStorage.getItem("companies");
@@ -551,7 +497,6 @@ export const fetchNotifications = async () => {
   }
 };
 
-// Helper function to load offline data
 export const loadOfflineData = async (companies) => {
   try {
     const data = await fetchAllCompaniesOffline(companies);

@@ -437,7 +437,7 @@ export default function FinancialDetailsScreen({ route, navigation }) {
 
       {/* Floating AI Agent FAB */}
       <TouchableOpacity style={styles.fab} onPress={() =>
-        navigation.navigate("Askai", { context: item, dealType: getDealType() })}
+        navigation.navigate("Chatbot", { context: item, dealType: getDealType() })}
         activeOpacity={0.9}
       >
         <Icons.MaterialCommunityIcons name="face-agent" size={30} color="#FFFFFF" />

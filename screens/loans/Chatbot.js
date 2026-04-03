@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect, useContext } from "react";
 import {
   View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, KeyboardAvoidingView,
-  Platform, ActivityIndicator, SafeAreaView, Dimensions, Keyboard, StatusBar
+  Platform, ActivityIndicator, Dimensions, Keyboard, StatusBar
 } from "react-native";
+import { SafeAreaFrameContext } from "react-native-safe-area-context";
 import { API_BASE_URL } from "../../config/env";
 import { AppContext } from "../../context/appContext";
 import { Icons } from "../../constants/Icons";
@@ -92,7 +93,7 @@ const LoadingBubble = () => (
   </View>
 );
 
-export default function AIAgent({ navigation, route }) {
+export default function Chatbot({ navigation, route }) {
   const { theme, isDarkMode } = useContext(AppContext);
   const { user } = useContext(AuthContext);
   const { context, dealType } = route.params;
@@ -147,15 +148,15 @@ export default function AIAgent({ navigation, route }) {
   }, [messages, isLoading]);
 
   const introText = dealType !== null ? `Hello again, I am your AI agent guider for assisting you with the opted ${dealType} of the ${context?.productType}.
-    You can chat with me in writing about the opted financial product you may want advise on, and I will respond within my scope of data 
-    that has been provided to me. Know that I may ask you questions as well to give you tailored advise for your specific needs I do not
-    keep records of our convesations, or share them else where. Enjoy.
-  `:
+      You can chat with me in writing about the opted financial product you may want advise on, and I will respond within my scope of data 
+      that has been provided to me. Know that I may ask you questions as well to give you tailored advise for your specific needs I do not
+      keep records of our convesations, or share them else where. Enjoy.
+    `:
     `Hello again, I am your AI agent guider for assisting you with guidance on loans, investments as well as insurance policies.
-    You can chat with me in writing about the opted financial product you may want advise on, and I will respond within my scope of data 
-    that has been provided to me. Know that I may ask you questions as well to give you tailored advise for your specific needs I do not
-    keep records of our convesations, or share them else where. Enjoy.
-  `;
+      You can chat with me in writing about the opted financial product you may want advise on, and I will respond within my scope of data 
+      that has been provided to me. Know that I may ask you questions as well to give you tailored advise for your specific needs I do not
+      keep records of our convesations, or share them else where. Enjoy.
+    `;
 
   const speak = async () => {
     try {
@@ -308,7 +309,7 @@ export default function AIAgent({ navigation, route }) {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <SafeAreaFrameContext style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
       <WhatsAppPatternFallback />
 
@@ -365,7 +366,7 @@ export default function AIAgent({ navigation, route }) {
                 styles.textInput,
                 { height: Math.max(50, Math.min(inputHeight, 120)) },
               ]}
-              placeholder="Type message / query..."
+              placeholder="Type here..."
               placeholderTextColor="#999"
               value={inputText}
               onChangeText={setInputText}
@@ -388,8 +389,8 @@ export default function AIAgent({ navigation, route }) {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaView>
-  );
+    </SafeAreaFrameContext>
+  )
 }
 
 const styles = StyleSheet.create({
