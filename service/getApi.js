@@ -6,7 +6,7 @@ import { API_BASE_URL } from "../config/env";
 // ==================== Sacco Functions ==================== //
 export const fetchSaccos = async () => {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/saccos`, {
+    const response = await fetch(`${API_BASE_URL}/api/get-saccos-products`, {
       method: "GET",
       headers: {
         "Content-Type": "application/json",
@@ -16,7 +16,7 @@ export const fetchSaccos = async () => {
       throw new Error("Network response was not ok " + response.statusText);
     }
     const data = await response.json();
-    return data.saccos;
+    return data;
   } catch (error) {
     console.error("Error fetching saccos:", error);
     throw error;

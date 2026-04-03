@@ -12,6 +12,8 @@ import { Icons } from "../../constants/Icons";
 import { Images } from '../../constants/Images';
 import { AppContext } from "../../context/appContext";
 import FinancialBanner from "../../components/customBanner";
+import { fetchSaccos } from "../../service/getApi";
+import CustomLoader from "../../components/customLoader";
 
 const { width } = Dimensions.get("window");
 const isTablet = width >= 768;
@@ -197,7 +199,12 @@ const QuickCalcModal = ({ visible, loan, onClose, navigation }) => {
 // === MAIN SCREEN ===
 export default function FinancialHubScreen({ navigation }) {
   const { theme } = React.useContext(AppContext)
+  const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("Loans");
+  const [loanData, setLoanData] = useState([]);
+  const [savingsData, setSavingsData] = useState([]);
+  const [insuranceData, setInsuranceData] = useState([]);
+  const [investmentData, setInvestmentData] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedLoans, setSelectedLoans] = useState([]);
   const [quickCalcLoan, setQuickCalcLoan] = useState(null);
@@ -208,7 +215,6 @@ export default function FinancialHubScreen({ navigation }) {
   const bannerHeight = useRef(new Animated.Value(190)).current;
   const bannerOpacity = useRef(new Animated.Value(1)).current;
   const bannerTranslate = useRef(new Animated.Value(0)).current;
-
 
   // Bottom-sheet / filter state
   const [bottomSheetVisible, setBottomSheetVisible] = useState(false);
@@ -259,14 +265,51 @@ export default function FinancialHubScreen({ navigation }) {
     });
   }, [bottomSheetVisible]);
 
+  // fetch saccos on mount (for future use)
+  useEffect(() => {
+    const loadSaccos = async () => {
+      try {
+        const saccos = await fetchSaccos();
+        // =================== filter by category ======================== //
+        // select loans
+        const loans = saccos.filter(s => s.category && s.category.toLowerCase() === "loans");
+        setLoanData(loans);
+        console.log("Loans loaded:", loans.length);
+
+        // select insurance
+        const insurance = saccos.filter(s => s.category && s.category.toLowerCase() === "insurance");
+        setInsuranceData(insurance);
+        console.log("Insurance loaded:", insurance.length);
+
+        // select investments
+        const investments = saccos.filter(s => s.category && s.category.toLowerCase() === "investments");
+        setInvestmentData(investments);
+        console.log("Investments loaded:", investments.length);
+
+        // select savings
+        const savings = saccos.filter(s => s.category && s.category.toLowerCase() === "savings");
+        setSavingsData(savings);
+        console.log("Savings loaded:", savings.length);
+
+        // console.log("Saccos loaded:", saccos.length);
+      } catch (err) {
+        console.log("Failed to load saccos:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadSaccos();
+  }, []);
+
   const openBottomSheet = () => setBottomSheetVisible(true);
   const closeBottomSheet = () => setBottomSheetVisible(false);
 
   const getFilteredAndSearchedData = () => {
     // Start from current tab
     let data = activeTab === "Loans" ? loanData :
-      activeTab === "Insurance" ? insuranceData :
-        activeTab === "Investments" ? investmentData : [];
+      activeTab === "Savings" ? savingsData :
+        activeTab === "Insurance" ? insuranceData :
+          activeTab === "Investments" ? investmentData : [];
 
     // 1. Bottom sheet category override (optional — only if user really wants to switch)
     if (filters?.category && filters.category !== "All") {
@@ -781,6 +824,8 @@ export default function FinancialHubScreen({ navigation }) {
       <View style={{ height: 25 }} />
 
       {Header()}
+
+      {isLoading && (<CustomLoader />)}
 
       <View style={{ backgroundColor: theme.colors.card, borderTopRightRadius: 20, borderTopLeftRadius: 20, flex: 1 }}>
         <FlatList
