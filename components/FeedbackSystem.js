@@ -115,7 +115,7 @@ export const FeedbackSystem = () => {
 
       // Set timer so we don't ask again for a long time
       await AsyncStorage.setItem(FEEDBACK_STORAGE_KEY, Date.now().toString());
-      Alert.alert("Thank You!", "Your feedback helps us make Pomy better.");
+      Alert.alert("Thank You!", "Your feedback helps us make your experience better.");
       setIsVisible(false);
     } catch (error) {
       console.error("Feedback retry later");
