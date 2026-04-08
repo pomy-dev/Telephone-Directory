@@ -2,10 +2,11 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity, Image, TextInput,
+  View, Text, StyleSheet, FlatList, TouchableOpacity, Image, ImageBackground, TextInput,
   Dimensions, Animated, Modal, Pressable, ActivityIndicator, ScrollView,
   KeyboardAvoidingView, Platform
 } from "react-native";
+import { LinearGradient } from 'expo-linear-gradient';
 import Carousel from "react-native-reanimated-carousel";
 import * as Speech from 'expo-speech';
 import { Icons } from "../../constants/Icons";
@@ -19,26 +20,63 @@ const { width } = Dimensions.get("window");
 const isTablet = width >= 768;
 
 // === DATA ===
-const loanData = [
-  { id: "1", bank: "Nedbank Eswatini", logo: require("../../assets/banks/bank1.jpeg"), type: "Personal Loan", category: 'loan', rate: "9.5%", max: "E150,000", term: "Up to 60 months", featured: true, description: "Flexible personal loans.", processingTime: "24 hours", location: { lat: -26.3275, long: 31.1420 }, likes: 120, reviews: 45 },
-  { id: "2", bank: "Standard Bank", logo: require("../../assets/banks/bank2.png"), type: "Home Loan", category: 'loan', rate: "8.25%", max: "E2,500,000", term: "Up to 20 years", featured: true, description: "Build or buy your dream home.", processingTime: "3–5 days", location: { lat: -26.3050, long: 31.1365 }, likes: 200, reviews: 60 },
-  { id: "3", bank: "FNB Eswatini", logo: require("../../assets/banks/bank3.jpeg"), type: "Business Loan", category: 'loan', rate: "11.0%", max: "E500,000", term: "Up to 84 months", featured: false, description: "Grow your business.", processingTime: "48 hours", location: { lat: -26.3180, long: 31.1450 }, likes: 150, reviews: 30 },
-  { id: "4", bank: "Eswatini Bank", logo: require("../../assets/banks/bank1.jpeg"), type: "Vehicle Finance", category: 'loan', rate: "10.2%", max: "E300,000", term: "Up to 72 months", featured: false, description: "Drive away today.", processingTime: "24 hours", location: { lat: -26.3200, long: 31.1500 }, likes: 80, reviews: 20 },
-  { id: "5", bank: "Swazi MTN MoMo", logo: require("../../assets/banks/bank2.png"), type: "Micro Loan", category: 'loan', rate: "15.0%", max: "E5,000", term: "30 days", featured: false, description: "Instant cash via phone.", processingTime: "5 mins", location: { lat: -26.3300, long: 31.1400 }, likes: 300, reviews: 75 },
-];
-
-const insuranceData = [
-  { id: "i1", company: "Swaziland Insurance", logo: require("../../assets/banks/bank2.png"), type: "Medical Aid", category: 'insurance', cover: "Up to E500k", premium: "From E420/pm", featured: true, location: { lat: -26.3275, long: 31.1420 }, likes: 180, reviews: 50 },
-  { id: "i2", company: "Old Mutual", logo: require("../../assets/banks/bank1.jpeg"), type: "Life Cover", category: 'insurance', cover: "E1M+", premium: "From E280/pm", featured: true, location: { lat: -26.3050, long: 31.1365 }, likes: 220, reviews: 65 },
-  { id: "i3", company: "Liberty Eswatini", logo: require("../../assets/banks/bank3.jpeg"), type: "Funeral Plan", category: 'insurance', cover: "E50,000", premium: "E95/pm", featured: false, location: { lat: -26.3180, long: 31.1450 }, likes: 140, reviews: 40 },
-  { id: "i4", company: "Momentum", logo: require("../../assets/banks/bank2.png"), type: "Car Insurance", category: 'insurance', cover: "Comprehensive", premium: "From E650/pm", featured: false, location: { lat: -26.3200, long: 31.1500 }, likes: 160, reviews: 55 },
-];
-
-const investmentData = [
-  { id: "v1", company: "Eswatini Stock Exchange", logo: require("../../assets/banks/bank2.png"), type: "Shares & ETFs", category: 'investment', min: "E1,000", returns: "8–15% p.a.", featured: true, location: { lat: -26.3275, long: 31.1420 }, likes: 190, reviews: 48 },
-  { id: "v2", company: "Nedbank Wealth", logo: require("../../assets/banks/bank3.jpeg"), type: "Unit Trusts", category: 'investment', min: "E5,000", returns: "7–12% p.a.", featured: true, location: { lat: -26.3050, long: 31.1365 }, likes: 210, reviews: 52 },
-  { id: "v3", company: "Stanlib Eswatini", logo: require("../../assets/banks/bank1.jpeg"), type: "Fixed Deposits", category: 'investment', min: "E10,000", returns: "9.2% p.a.", featured: false, location: { lat: -26.3180, long: 31.1450 }, likes: 130, reviews: 35 },
-  { id: "v4", company: "Allan Gray", logo: require("../../assets/banks/bank3.jpeg"), type: "Offshore Funds", category: 'investment', min: "E50,000", returns: "10–18% p.a.", featured: false, location: { lat: -26.3200, long: 31.1500 }, likes: 170, reviews: 60 },
+const savingsDataUn = [
+  {
+    id: "s1", bank: "Standard Bank Eswatini",
+    logo: require("../../assets/banks/bank2.png"),
+    type: "Premium Savings Account", category: 'savings',
+    interestRate: "5.2%", minBalance: "E1,000",
+    monthlyFee: "E0", featured: true,
+    accountType: "Fixed",
+    description: "Earn interest on your savings with no hidden charges.",
+    processingTime: "Instant",
+    location: { lat: -26.3275, long: 31.1420 },
+    likes: 250, reviews: 85,
+    companyName: "Standard Bank",
+    company: { companyName: "Standard Bank" }
+  },
+  {
+    id: "s2", bank: "Nedbank Eswatini",
+    logo: require("../../assets/banks/bank1.jpeg"),
+    type: "Youth Savings Account", category: 'savings',
+    interestRate: "6.0%", minBalance: "E500",
+    monthlyFee: "E0", featured: true,
+    accountType: "Variable",
+    description: "Special account for young savers with higher returns.",
+    processingTime: "Instant",
+    location: { lat: -26.3050, long: 31.1365 },
+    likes: 180, reviews: 62,
+    companyName: "Nedbank",
+    company: { companyName: "Nedbank" }
+  },
+  {
+    id: "s3", bank: "FNB Eswatini",
+    logo: require("../../assets/banks/bank3.jpeg"),
+    type: "Goal Savings Account", category: 'savings',
+    interestRate: "4.8%", minBalance: "E2,000",
+    monthlyFee: "E0", featured: false,
+    accountType: "Variable",
+    description: "Set savings goals and earn interest while building your fund.",
+    processingTime: "Instant",
+    location: { lat: -26.3180, long: 31.1450 },
+    likes: 140, reviews: 48,
+    companyName: "FNB",
+    company: { companyName: "FNB" }
+  },
+  {
+    id: "s4", bank: "Swazi Bank",
+    logo: require("../../assets/banks/bank2.png"),
+    type: "Fixed Deposit Account", category: 'savings',
+    interestRate: "7.5%", minBalance: "E5,000",
+    monthlyFee: "E0", featured: false,
+    accountType: "Fixed",
+    description: "Lock your funds for guaranteed returns with higher interest rates.",
+    processingTime: "1-2 days",
+    location: { lat: -26.3200, long: 31.1500 },
+    likes: 200, reviews: 71,
+    companyName: "Swazi Bank",
+    company: { companyName: "Swazi Bank" }
+  },
 ];
 
 const bannerPromos = [
@@ -128,45 +166,29 @@ const bannerPromos = [
   }
 ];
 
-// === REUSABLE LOGO WITH FALLBACK ===
-const BankLogo = ({ source, name, size = 48, large = false }) => {
-  const [error, setError] = React.useState(false);
-  const initials = name.split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase();
-
-  if (error) {
-    return (
-      <View style={{ width: size, height: size, borderRadius: large ? size / 2 : 8, backgroundColor: "#E5E7EB", justifyContent: "center", alignItems: "center" }}>
-        <Text style={{ fontSize: size * 0.35, fontWeight: "700", color: "#4B5563" }}>{initials || "?"}</Text>
-      </View>
-    );
-  }
-
-  return (
-    <Image
-      source={source}
-      style={{ width: size, height: size, resizeMode: "contain", borderRadius: large ? size / 2 : 8 }}
-      onError={() => setError(true)}
-    />
-  );
-};
-
 // === QUICK EMI MODAL (Loans only) ===
-const QuickCalcModal = ({ visible, loan, onClose, navigation }) => {
+const QuickCalcModal = ({ visible, product, onClose, navigation }) => {
   const slideAnim = useRef(new Animated.Value(300)).current;
 
   React.useEffect(() => {
-    Animated.timing(slideAnim, { toValue: visible ? 0 : 300, duration: 300, useNativeDriver: true }).start();
+    Animated.timing(slideAnim,
+      {
+        toValue: visible ? 0 : 300,
+        duration: 300,
+        useNativeDriver: true
+      }
+    ).start();
   }, [visible]);
 
-  if (!loan) return null;
+  if (!product) return null;
 
-  const cleanAmount = (s) => parseFloat(s.replace(/[^0-9.]/g, "")) || 0;
-  const cleanRate = (s) => parseFloat(s.replace("%", "")) / 12 / 100;
-  const cleanTerm = (s) => parseInt(s.match(/\d+/)?.[0]) || 0;
+  const cleanAmount = (s) => parseFloat(s) || 0;
+  const cleanRate = (s) => parseFloat(s) / 12 / 100;
+  const cleanTerm = (s) => parseInt(s) || 0;
 
-  const P = cleanAmount(loan.max);
-  const r = cleanRate(loan.rate);
-  const n = cleanTerm(loan.term);
+  const P = cleanAmount(product?.maxAmount);
+  const r = cleanRate(product?.interestRateApr);
+  const n = cleanTerm(product?.maxDurationMonths);
   const emi = P && r && n ? (P * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1) : 0;
 
   const format = (v) => `E${v.toLocaleString("en-SZ", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -180,8 +202,8 @@ const QuickCalcModal = ({ visible, loan, onClose, navigation }) => {
             <TouchableOpacity onPress={onClose}><Icons.Ionicons name="close" size={24} color="#6B7280" /></TouchableOpacity>
           </View>
           <View style={styles.modalBody}>
-            <Text style={styles.modalLabel}>Bank: {loan.bank}</Text>
-            <Text style={styles.modalLabel}>Max: {loan.max} | Rate: {loan.rate} | Term: {loan.term}</Text>
+            <Text style={styles.modalLabel}>Company: {product?.company?.companyName}</Text>
+            <Text style={styles.modalLabel}>Max: {product?.maxAmount} | Interest Rate: {product.interestRateApr}% | Term: {product.maxDurationMonths} months</Text>
             <View style={styles.emiResult}>
               <Text style={styles.emiLabel}>Monthly Repayment</Text>
               <Text style={styles.emiValue}>{emi > 0 ? format(emi) : "N/A"}</Text>
@@ -274,22 +296,18 @@ export default function FinancialHubScreen({ navigation }) {
         // select loans
         const loans = saccos.filter(s => s.category && s.category.toLowerCase() === "loans");
         setLoanData(loans);
-        console.log("Loans loaded:", loans.length);
 
         // select insurance
         const insurance = saccos.filter(s => s.category && s.category.toLowerCase() === "insurance");
         setInsuranceData(insurance);
-        console.log("Insurance loaded:", insurance.length);
 
         // select investments
         const investments = saccos.filter(s => s.category && s.category.toLowerCase() === "investments");
         setInvestmentData(investments);
-        console.log("Investments loaded:", investments.length);
 
         // select savings
         const savings = saccos.filter(s => s.category && s.category.toLowerCase() === "savings");
-        setSavingsData(savings);
-        console.log("Savings loaded:", savings.length);
+        setSavingsData(savingsDataUn);
 
         // console.log("Saccos loaded:", saccos.length);
       } catch (err) {
@@ -544,25 +562,59 @@ export default function FinancialHubScreen({ navigation }) {
   // });
 
   // Render Cards
-  const renderLoanCard = ({ item }) => {
+  const renderCard = ({ item }) => {
+    // Determine background image source
+    const bgSource = item.logo ||
+      (typeof item.logo === 'number' ? item.logo :
+        { uri: item.company?.logoFile?.url || item.company?.logoDataUrl });
+
+    // For savings: show Fixed / Variable
+    const accountType = activeTab === "Savings"
+      ? (item.accountType || (item.type?.toLowerCase().includes("fixed") ? "Fixed Deposit" : "Variable Savings"))
+      : null;
+
     return (
       <TouchableOpacity
-        style={[styles.loanCard, { backgroundColor: theme.colors.background, borderColor: theme.colors.border }]}
+        style={[styles.loanCard, { backgroundColor: theme.colors.background, borderColor: item?.company?.themeColor }]}
         onPress={() => navigation.navigate("LoanDetails", { item: item })}
         activeOpacity={0.95}
       >
-        <BankLogo source={item.logo} name={item.bank || item.company} size={48} />
+        {/* Skewed Background Image Container */}
+        <View style={styles.cardBackgroundContainer}>
+          <Image
+            source={bgSource}
+            style={styles.cardBackgroundImage}
+            resizeMode="stretch"
+          />
+
+          {/* Gradient overlay to enhance the 3D book effect (shadow on the right, light on the protruding left) */}
+          <LinearGradient
+            colors={[
+              'rgba(17, 24, 39, 0.05)',   // light on the protruding left edge
+              'rgba(17, 24, 39, 0.3)',
+              'rgba(17, 24, 39, 0.7)',    // shadow at the "spine" (center)
+              'rgba(17, 24, 39, 0.95)'    // dark on the right side
+            ]}
+            locations={[0.0, 0.3, 0.5, 1.0]}
+            start={{ x: 0, y: 0.5 }}
+            end={{ x: 1, y: 0.5 }}
+            style={styles.cardGradientOverlay}
+          />
+        </View>
+
+        <View style={styles.cardImageContainer}></View>
+
         <View style={styles.cardContent}>
-          <Text style={[styles.cardBank, { color: theme.colors.text }]}>{item.bank || item.company}</Text>
-          <Text style={[styles.cardType, { color: theme.colors.indicator }]}>{item.type}</Text>
+          <Text style={[styles.cardBank, { color: '#f4f0ff' }]} numberOfLines={1}>{item.companyName || item.company.companyName}</Text>
+          <Text style={[styles.cardType, { color: '#F59E0B' }]} numberOfLines={1}>{item?.name || item?.type}</Text>
 
           {activeTab === "Loans" && (
             <>
               <View style={styles.cardDetails}>
-                <Text style={styles.cardRate}>{item.rate}</Text>
-                <Text style={[styles.cardMax, { color: theme.colors.text }]}>{item.max}</Text>
+                <Text style={styles.cardRate}>{item?.interestRateApr + '%' || 0} interest</Text>
+                <Text style={[styles.cardMax, { color: theme.colors.text }]}>E{item?.maxAmount}</Text>
               </View>
-              <Text style={[styles.processingTime, { color: theme.colors.sub_text }]}>Processing: {item.processingTime}</Text>
+              <Text style={[styles.processingTime, { color: '#fff' }]}>Processing Time: {item?.processingTime}</Text>
 
               <View style={styles.cardButtons}>
                 <TouchableOpacity style={[styles.calcBtn, { backgroundColor: theme.colors.indicator }]} onPress={(e) => { e.stopPropagation(); navigation.navigate("LoanCalculator"); }}>
@@ -579,15 +631,26 @@ export default function FinancialHubScreen({ navigation }) {
 
           {activeTab === "Insurance" && (
             <>
-              <Text style={styles.cardRate}>{item.premium}</Text>
-              <Text style={[styles.cardMax, { color: theme.colors.text }]}>Cover: {item.cover}</Text>
+              <Text style={styles.cardRate}>Premium: E{item?.monthlyPremium}/pm</Text>
+              <Text style={[styles.cardMax, { color: '#ddd' }]}>Cover: Up to E{item?.coverageAmount}</Text>
             </>
           )}
 
           {activeTab === "Investments" && (
             <>
-              <Text style={styles.cardRate}>Min: {item.min}</Text>
-              <Text style={styles.cardMax}>Expected: {item.returns}</Text>
+              <Text style={styles.cardRate}>Min: E{item?.minInvestment}</Text>
+              <Text style={[styles.cardMax, { color: '#ddd' }]}>Expected: {item?.expectedReturns}% p.a</Text>
+            </>
+          )}
+
+          {activeTab === "Savings" && (
+            <>
+              <View style={styles.cardDetails}>
+                <Text style={styles.cardRate}>{item?.interestRate} p.a</Text>
+                <Text style={[styles.cardMax, { color: '#828ff7ff' }]}>Min: E{item?.minBalance}</Text>
+              </View>
+              <Text style={[styles.processingTime, { color: '#f4f0ff' }]}>Service Fee: {item?.monthlyFee}</Text>
+              <Text style={[styles.cardSubText, { color: '#fff' }]}>Account Type: {accountType}</Text>
             </>
           )}
         </View>
@@ -747,7 +810,7 @@ export default function FinancialHubScreen({ navigation }) {
         </View>
 
         {/* AI button btn for navigating to chat screen */}
-        <TouchableOpacity style={[styles.AIbtn]} onPress={() => navigation.navigate('Chatbot', { context: null, dealType: null })}>
+        <TouchableOpacity style={[styles.AIbtn]} onPress={() => navigation.navigate('Chatbot', { context: '', dealType: '' })}>
           <Icons.MaterialCommunityIcons name="face-agent" size={28} color="#1E40AF" />
           <Text style={{ fontSize: 20, fontWeight: 200, color: theme.colors.indicator }}>Ask AI</Text>
         </TouchableOpacity>
@@ -830,10 +893,10 @@ export default function FinancialHubScreen({ navigation }) {
       <View style={{ backgroundColor: theme.colors.card, borderTopRightRadius: 20, borderTopLeftRadius: 20, flex: 1 }}>
         <FlatList
           data={displayedData}
-          renderItem={renderLoanCard}
-          keyExtractor={item => item.id}
+          renderItem={renderCard}
+          keyExtractor={(item, index) => index}
           numColumns={isTablet ? 2 : 1}
-          columnWrapperStyle={isTablet ? { justifyContent: "space-between", paddingHorizontal: 16 } : null}
+          columnWrapperStyle={isTablet ? { justifyContent: "space-between", paddingHorizontal: 10 } : null}
           contentContainerStyle={{ paddingBottom: 50 }}
           ListHeaderComponent={ListHeader}
           ListEmptyComponent={() => (
@@ -847,7 +910,7 @@ export default function FinancialHubScreen({ navigation }) {
       </View>
 
       {/* Quick EMI Modal */}
-      <QuickCalcModal visible={!!quickCalcLoan} loan={quickCalcLoan} onClose={() => setQuickCalcLoan(null)} navigation={navigation} />
+      <QuickCalcModal visible={!!quickCalcLoan} product={quickCalcLoan} onClose={() => setQuickCalcLoan(null)} navigation={navigation} />
 
       {/* Animated Bottom Sheet (custom) */}
       {bottomSheetVisible && (
@@ -861,13 +924,13 @@ export default function FinancialHubScreen({ navigation }) {
             <Text style={{ fontSize: 18, fontWeight: '700', marginBottom: 12 }}>Filter Criteria</Text>
 
             <Text style={styles.sheetLabel}>Category</Text>
-            <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
-              {['All', 'Loans', 'Insurance', 'Investments'].map(c => (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
+              {['All', 'Loans', 'Savings', 'Insurance', 'Investments'].map(c => (
                 <TouchableOpacity key={c} style={[styles.radioBtn, form.category === c && styles.radioBtnActive]} onPress={() => setForm(prev => ({ ...prev, category: c }))}>
                   <Text style={{ color: form.category === c ? '#fff' : '#374151', fontWeight: '600' }}>{c}</Text>
                 </TouchableOpacity>
               ))}
-            </View>
+            </ScrollView>
 
             <Text style={styles.sheetLabel}>Product type</Text>
             <TextInput value={form.productType}
@@ -1017,25 +1080,86 @@ const styles = StyleSheet.create({
 
   loanCard: {
     borderRadius: 14,
+    borderWidth: 1,
+    borderLeftWidth: 4, // thicker left border for accent
     padding: 14,
     marginBottom: 12,
     flexDirection: "row",
     alignItems: "center",
     borderWidth: 1,
     flex: isTablet ? 0.48 : 1,
-    marginHorizontal: 16,
-    position: "relative"
+    marginHorizontal: 8,
+    position: "relative",
+    overflow: "hidden",
+    height: "auto",           // slightly taller for better image presence
+    backgroundColor: "#fff",
+  },
+
+  // Background Image - skewed / protruding effect
+  cardBackgroundContainer: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    overflow: "hidden",
+    borderRadius: 14,
+    // Perspective on the container allows children to rotate in 3D space
+    perspective: 1000,
+  },
+
+  cardBackgroundImage: {
+    width: "100%",
+    height: "100%",
+    position: "absolute",
+    left: "-40%", // Start from the center (halfway across)
+    transform: [
+      { perspective: 1000 },
+      { translateX: width * 0.2 }, // Adjust to center it horizontally relative to the card
+      { rotateY: "75deg" }, // The "opened book" angle
+      { scale: 1.8 }, // Scale up to ensure it covers the protrusion area
+    ],
+    opacity: 0.85,
+  },
+
+  // Diagonal gradient overlay - stronger on right, softer on left
+  cardGradientOverlay: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
+  // Existing small logo (kept on top)
+  cardImageContainer: {
+    position: "relative",
+    marginRight: 16,
+    justifyContent: "center",
+    alignItems: "center",
+    width: 56,
+    height: 56,
+    zIndex: 3,
+    backgroundColor: "transperant",
+    borderRadius: 12,
+  },
+
+  cardContent: {
+    flex: 1,
+    justifyContent: "space-between",
+    zIndex: 2,
   },
 
   checkbox: { position: "absolute", top: 12, right: 12, zIndex: 1 },
 
-  cardContent: { flex: 1, marginLeft: 12 },
   cardBank: { fontSize: 14, fontWeight: "600" },
-  cardType: { fontSize: 15, fontWeight: "700", marginTop: 2 },
+  cardType: { fontSize: 18, fontWeight: "700", marginTop: 2 },
   cardDetails: { flexDirection: "row", justifyContent: "space-between", marginTop: 6 },
-  cardRate: { fontSize: 14, fontWeight: "700", color: "#DC2626" },
-  cardMax: { fontSize: 13, fontWeight: "600" },
+  cardRate: { fontSize: 18, fontWeight: "700", color: "#fa6262ff" },
+  cardMax: { fontSize: 14, fontWeight: "600" },
   processingTime: { fontSize: 12, color: "#6B7280", marginTop: 4 },
+
+  cardDescription: { fontSize: 12, marginTop: 6, lineHeight: 16 },
+  cardSubText: { fontSize: 12, marginTop: 6, lineHeight: 16, fontWeight: "600" },
 
   cardButtons: { flexDirection: "row", gap: 8, marginTop: 12 },
   calcBtn: { flex: 1, flexDirection: "row", paddingVertical: 10, borderRadius: 8, justifyContent: "center", alignItems: "center", gap: 6 },

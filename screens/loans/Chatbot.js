@@ -110,7 +110,7 @@ export default function Chatbot({ navigation, route }) {
 
   // Initialize with welcome message
   useEffect(() => {
-    if (context) {
+    if (context !== '') {
       const intro = {
         id: "intro",
         text: `Hello ${user.displayName}, I'm your AI Financial Agent. How can I help with your ${context.type || "financial needs"} today?`,
@@ -147,7 +147,7 @@ export default function Chatbot({ navigation, route }) {
     scrollToBottom();
   }, [messages, isLoading]);
 
-  const introText = dealType !== null ? `Hello again, I am your AI agent guider for assisting you with the opted ${dealType} of the ${context?.productType}.
+  const introText = dealType !== '' ? `Hello again, I am your AI agent guider for assisting you with the opted ${dealType.toString()} of the ${context?.productType}.
       You can chat with me in writing about the opted financial product you may want advise on, and I will respond within my scope of data 
       that has been provided to me. Know that I may ask you questions as well to give you tailored advise for your specific needs I do not
       keep records of our convesations, or share them else where. Enjoy.
