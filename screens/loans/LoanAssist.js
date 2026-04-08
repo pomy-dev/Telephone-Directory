@@ -631,26 +631,26 @@ export default function FinancialHubScreen({ navigation }) {
 
           {activeTab === "Insurance" && (
             <>
-              <Text style={styles.cardRate}>From: E{item?.monthlyPremium}/pm</Text>
-              <Text style={[styles.cardMax, { color: theme.colors.text }]}>Cover: Up to E{item?.coverageAmount}</Text>
+              <Text style={styles.cardRate}>Premium: E{item?.monthlyPremium}/pm</Text>
+              <Text style={[styles.cardMax, { color: '#ddd' }]}>Cover: Up to E{item?.coverageAmount}</Text>
             </>
           )}
 
           {activeTab === "Investments" && (
             <>
               <Text style={styles.cardRate}>Min: E{item?.minInvestment}</Text>
-              <Text style={styles.cardMax}>Expected: {item?.expectedReturns}% p.a</Text>
+              <Text style={[styles.cardMax, { color: '#ddd' }]}>Expected: {item?.expectedReturns}% p.a</Text>
             </>
           )}
 
           {activeTab === "Savings" && (
             <>
               <View style={styles.cardDetails}>
-                <Text style={styles.cardRate}>{item?.interestRate} per annum</Text>
-                <Text style={[styles.cardMax, { color: theme.colors.text }]}>Min: E{item?.minBalance}</Text>
+                <Text style={styles.cardRate}>{item?.interestRate} p.a</Text>
+                <Text style={[styles.cardMax, { color: '#828ff7ff' }]}>Min: E{item?.minBalance}</Text>
               </View>
-              <Text style={[styles.processingTime, { color: theme.colors.sub_text }]}>Fee: {item?.monthlyFee}</Text>
-              <Text style={[styles.cardSubText, { color: theme.colors.sub_text }]}>Account Type: {accountType}</Text>
+              <Text style={[styles.processingTime, { color: '#f4f0ff' }]}>Service Fee: {item?.monthlyFee}</Text>
+              <Text style={[styles.cardSubText, { color: '#fff' }]}>Account Type: {accountType}</Text>
             </>
           )}
         </View>
@@ -810,7 +810,7 @@ export default function FinancialHubScreen({ navigation }) {
         </View>
 
         {/* AI button btn for navigating to chat screen */}
-        <TouchableOpacity style={[styles.AIbtn]} onPress={() => navigation.navigate('Chatbot', { context: null, dealType: null })}>
+        <TouchableOpacity style={[styles.AIbtn]} onPress={() => navigation.navigate('Chatbot', { context: '', dealType: '' })}>
           <Icons.MaterialCommunityIcons name="face-agent" size={28} color="#1E40AF" />
           <Text style={{ fontSize: 20, fontWeight: 200, color: theme.colors.indicator }}>Ask AI</Text>
         </TouchableOpacity>
@@ -1154,8 +1154,8 @@ const styles = StyleSheet.create({
   cardBank: { fontSize: 14, fontWeight: "600" },
   cardType: { fontSize: 18, fontWeight: "700", marginTop: 2 },
   cardDetails: { flexDirection: "row", justifyContent: "space-between", marginTop: 6 },
-  cardRate: { fontSize: 18, fontWeight: "700", color: "#DC2626" },
-  cardMax: { fontSize: 13, fontWeight: "600" },
+  cardRate: { fontSize: 18, fontWeight: "700", color: "#fa6262ff" },
+  cardMax: { fontSize: 14, fontWeight: "600" },
   processingTime: { fontSize: 12, color: "#6B7280", marginTop: 4 },
 
   cardDescription: { fontSize: 12, marginTop: 6, lineHeight: 16 },
