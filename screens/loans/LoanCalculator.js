@@ -81,7 +81,7 @@ export default function LoanCalculator({ navigation }) {
             <Ionicons name="trending-up-outline" size={20} color="#6B7280" />
             <TextInput
               style={styles.input}
-              placeholder="Annual Interest Rate % (e.g. 9.5)"
+              placeholder="Interest Rate % (e.g. 9.5)"
               keyboardType="numeric"
               value={rate}
               onChangeText={(text) => handleInput(text, setRate)}
