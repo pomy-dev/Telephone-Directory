@@ -220,7 +220,7 @@ const QuickCalcModal = ({ visible, product, onClose, navigation }) => {
 
 // === MAIN SCREEN ===
 export default function FinancialHubScreen({ navigation }) {
-  const { theme } = React.useContext(AppContext)
+  const { theme, isDarkMode } = React.useContext(AppContext)
   const [isLoading, setIsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("Loans");
   const [loanData, setLoanData] = useState([]);
@@ -611,7 +611,7 @@ export default function FinancialHubScreen({ navigation }) {
           {activeTab === "Loans" && (
             <>
               <View style={styles.cardDetails}>
-                <Text style={styles.cardRate}>{item?.interestRateApr + '%' || 0} interest</Text>
+                <Text style={[styles.cardRate, { color: "#fa6262ff" }]}>{item?.interestRateApr + '%' || 0} interest</Text>
                 <Text style={[styles.cardMax, { color: theme.colors.text }]}>E{item?.maxAmount}</Text>
               </View>
               <Text style={[styles.processingTime, { color: '#fff' }]}>Processing Time: {item?.processingTime}</Text>
@@ -631,14 +631,14 @@ export default function FinancialHubScreen({ navigation }) {
 
           {activeTab === "Insurance" && (
             <>
-              <Text style={styles.cardRate}>Premium: E{item?.monthlyPremium}/pm</Text>
+              <Text style={[styles.cardRate, { color: "#f81e79ff" }]}>Premium: E{item?.monthlyPremium}/pm</Text>
               <Text style={[styles.cardMax, { color: '#ddd' }]}>Cover: Up to E{item?.coverageAmount}</Text>
             </>
           )}
 
           {activeTab === "Investments" && (
             <>
-              <Text style={styles.cardRate}>Min: E{item?.minInvestment}</Text>
+              <Text style={[styles.cardRate, { color: "#06be9fff" }]}>Min: E{item?.minInvestment}</Text>
               <Text style={[styles.cardMax, { color: '#ddd' }]}>Expected: {item?.expectedReturns}% p.a</Text>
             </>
           )}
@@ -646,7 +646,7 @@ export default function FinancialHubScreen({ navigation }) {
           {activeTab === "Savings" && (
             <>
               <View style={styles.cardDetails}>
-                <Text style={styles.cardRate}>{item?.interestRate} p.a</Text>
+                <Text style={[styles.cardRate, { color: "#a89ff8ff" }]}>{item?.interestRate} p.a</Text>
                 <Text style={[styles.cardMax, { color: '#828ff7ff' }]}>Min: E{item?.minBalance}</Text>
               </View>
               <Text style={[styles.processingTime, { color: '#f4f0ff' }]}>Service Fee: {item?.monthlyFee}</Text>
@@ -765,14 +765,14 @@ export default function FinancialHubScreen({ navigation }) {
         </TouchableOpacity>
 
         {/* Search */}
-        <View style={styles.searchContainer}>
-          <Icons.Ionicons name="search" size={20} color="#64748B" />
+        <View style={[styles.searchContainer, { backgroundColor: theme.colors.surface, borderColor: theme.colors.border }]}>
+          <Icons.Ionicons name="search" size={20} color={theme.colors.sub_text} />
           <TextInput
             style={styles.searchInput}
             placeholder={`Search ${activeTab === "Loans" ? "banks/loans" : activeTab === "Insurance" ? "insurers" : "investments"}...`}
+            placeholderTextColor={theme.colors.sub_text}
             value={searchQuery}
             onChangeText={setSearchQuery}
-            placeholderTextColor="#8E8E93"
           />
           {searchQuery ? <TouchableOpacity onPress={() => setSearchQuery("")}><Icons.Ionicons name="close-circle" size={20} color="#64748B" /></TouchableOpacity> : null}
         </View>
@@ -782,7 +782,7 @@ export default function FinancialHubScreen({ navigation }) {
       <View style={styles.AIOptions}>
         <View style={{ alignItems: "center" }}>
           {/* summary audio-intro play */}
-          <TouchableOpacity style={styles.button} onPress={speak}>
+          <TouchableOpacity style={[styles.button, { backgroundColor: theme.colors.indicator }]} onPress={speak}>
             {isSpeaking ?
               isPaused ? (
                 <Icons.Ionicons name="play-circle-outline" size={24} color={'#fff'} />
@@ -810,7 +810,7 @@ export default function FinancialHubScreen({ navigation }) {
         </View>
 
         {/* AI button btn for navigating to chat screen */}
-        <TouchableOpacity style={[styles.AIbtn]} onPress={() => navigation.navigate('Chatbot', { context: '', dealType: '' })}>
+        <TouchableOpacity style={[styles.AIbtn]} onPress={() => navigation.navigate('Chatbot', { context: '' })}>
           <Icons.MaterialCommunityIcons name="face-agent" size={28} color="#1E40AF" />
           <Text style={{ fontSize: 20, fontWeight: 200, color: theme.colors.indicator }}>Ask AI</Text>
         </TouchableOpacity>
@@ -847,7 +847,7 @@ export default function FinancialHubScreen({ navigation }) {
           {(["Loans", "Savings", "Insurance", "Investments"]).map(tab => (
             <TouchableOpacity
               key={tab}
-              style={[styles.tabItem, activeTab === tab && styles.tabItemActive]}
+              style={[styles.tabItem, activeTab === tab && { backgroundColor: theme.colors.indicator, borderColor: theme.colors.indicator }]}
               onPress={() => { setActiveTab(tab); setSearchQuery(""); setSelectedLoans([]); }}
             >
               <Text style={[styles.tabText, activeTab === tab && styles.tabTextActive]}>
@@ -857,7 +857,6 @@ export default function FinancialHubScreen({ navigation }) {
           ))}
         </ScrollView>
       </View>
-
     </>
   );
 
@@ -1002,14 +1001,12 @@ const styles = StyleSheet.create({
     flex: 1, alignItems: "center", paddingVertical: 8,
     borderRadius: 30, backgroundColor: "#F2F2F7", paddingHorizontal: 10
   },
-  tabItemActive: { backgroundColor: "#111827" },
   tabText: { fontSize: 15, fontWeight: "600", color: "#aaabaeff" },
   tabTextActive: { color: "#FFFFFF" },
 
   button: {
     width: '100%', flexDirection: 'row', alignItems: 'center',
-    justifyContent: 'center', backgroundColor: '#000',
-    paddingHorizontal: 16, paddingVertical: 12,
+    justifyContent: 'center', paddingHorizontal: 16, paddingVertical: 12,
     borderRadius: 70, gap: 8, shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2, shadowRadius: 6, elevation: 1
@@ -1044,7 +1041,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center', marginBottom: 8
   },
 
-  searchContainer: { flexDirection: "row", alignItems: "center", backgroundColor: "#F2F2F7", margin: 16, paddingHorizontal: 16, borderRadius: 30, borderWidth: 1, borderColor: "#f2f2f2ff", gap: 8, elevation: 1 },
+  searchContainer: {
+    flexDirection: "row", alignItems: "center",
+    margin: 16, paddingHorizontal: 16, borderRadius: 30,
+    borderWidth: 1, gap: 8,
+    elevation: 1
+  },
   searchInput: { flex: 1, fontSize: 16, color: "#111827" },
 
   sectionTitle: { fontSize: 20, fontWeight: "700", paddingHorizontal: 16, marginVertical: 12 },
@@ -1152,9 +1154,9 @@ const styles = StyleSheet.create({
   checkbox: { position: "absolute", top: 12, right: 12, zIndex: 1 },
 
   cardBank: { fontSize: 14, fontWeight: "600" },
-  cardType: { fontSize: 18, fontWeight: "700", marginTop: 2 },
+  cardType: { fontSize: 18, fontWeight: "400", marginTop: 2 },
   cardDetails: { flexDirection: "row", justifyContent: "space-between", marginTop: 6 },
-  cardRate: { fontSize: 18, fontWeight: "700", color: "#fa6262ff" },
+  cardRate: { fontSize: 18, fontWeight: "700" },
   cardMax: { fontSize: 14, fontWeight: "600" },
   processingTime: { fontSize: 12, color: "#6B7280", marginTop: 4 },
 
