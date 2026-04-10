@@ -44,7 +44,7 @@ const RatingBottomSheet = React.forwardRef(({ theme, isDarkMode, onSubmit, onDis
             backdropComponent={renderBackdrop}
             onDismiss={onDismiss}
             backgroundStyle={theme.colors.card}
-            // backgroundComponent={theme.colors.card}
+            handleIndicatorStyle={{ backgroundColor: theme.colors.text }}
             enablePanDownToClose
         >
             <BottomSheetView style={[ratingSheetStyles.container, { backgroundColor: isDarkMode ? '#666' : '#fff' }]}>
@@ -89,6 +89,7 @@ const SortFilterBottomSheet = React.forwardRef(
                 snapPoints={['40%', '55%']}
                 backdropComponent={renderBackdrop}
                 backgroundStyle={{ backgroundColor: isDarkMode ? '#666' : '#fff' }}
+                handleIndicatorStyle={{ backgroundColor: theme.colors.text }}
                 onDismiss={onClose}
                 enablePanDownToClose
             >
