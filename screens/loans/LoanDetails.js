@@ -412,7 +412,7 @@ export default function FinancialDetailsScreen({ route, navigation }) {
           </Text>
         </SectionCard>
 
-        <SectionCard theme={theme} title="Application Process">
+        <SectionCard theme={theme} title="How to Join">
           {data.applicationSteps.map((step, index) => (
             <Text key={index} style={[styles.paragraph, { color: theme.colors.sub_text }]}>• {step}</Text>
           ))}
