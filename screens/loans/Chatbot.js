@@ -1,9 +1,9 @@
-import React, { useState, useRef, useEffect, useContext } from "react";
+import React, { useState, useEffect, useRef, useContext } from "react";
 import {
   View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, KeyboardAvoidingView,
-  Platform, ActivityIndicator, Dimensions, Keyboard, StatusBar
+  Platform, ActivityIndicator, Dimensions, StatusBar
 } from "react-native";
-import { SafeAreaFrameContext } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { API_BASE_URL } from "../../config/env";
 import { AppContext } from "../../context/appContext";
 import { Icons } from "../../constants/Icons";
@@ -11,92 +11,104 @@ import { AuthContext } from "../../context/authProvider";
 import { Avatar } from 'react-native-paper';
 import * as Speech from 'expo-speech';
 
-const { width } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window");
 const isTablet = width >= 768;
 
-const WhatsAppPatternFallback = () => (
-  <View style={StyleSheet.absoluteFillObject}>
-    <View style={styles.patternContainer}>
-      {[...Array(50)].map((_, i) => (
-        <View key={i} style={styles.patternRow}>
-          {[...Array(20)].map((_, j) => (
-            <View
-              key={`${i}- ${j}`}
-              style={[
-                styles.patternDot,
-                { opacity: (i + j) % 3 === 0 ? 0.08 : 0.04 },
-              ]}
-            />
-          ))}
-        </View>
-      ))}
-    </View>
-    <View style={styles.bgOverlay} />
-  </View>
-);
+// 1. WhatsAppPatternFallback responding to theme
+const WhatsAppPatternFallback = () => {
+  const { theme } = useContext(AppContext);
+  // Use theme primary color or a fallback WhatsApp green
+  const dotColor = "#075E54";
 
-// Message Bubble Component
+  return (
+    <View style={[StyleSheet.absoluteFillObject, { backgroundColor: theme.colors.background }]}>
+      <View style={styles.patternContainer}>
+        {[...Array(50)].map((_, i) => (
+          <View key={i} style={styles.patternRow}>
+            {[...Array(20)].map((_, j) => (
+              <View
+                key={`${i}-${j}`}
+                style={[
+                  styles.patternDot,
+                  {
+                    backgroundColor: dotColor,
+                    opacity: (i + j) % 3 === 0 ? 0.08 : 0.04
+                  },
+                ]}
+              />
+            ))}
+          </View>
+        ))}
+      </View>
+      <View style={[styles.bgOverlay]} />
+    </View>
+  );
+};
+
+// 2 & 3. Message Bubble Component with curved tails
 const MessageBubble = ({ message, isUser, timestamp }) => {
+  const { theme } = useContext(AppContext);
+
   return (
     <View style={[styles.messageWrapper, isUser ? styles.userWrapper : styles.aiWrapper]}>
-      {!isUser && (
-        <Icons.MaterialCommunityIcons
-          name="face-agent"
-          size={32}
-          color="#111827"
-          style={styles.avatar}
-        />
-      )}
       <View
         style={[
           styles.bubble,
-          isUser ? styles.userBubble : styles.aiBubble,
+          isUser ? [styles.userBubble, { backgroundColor: theme.colors.primary || "#111827" }] : [styles.aiBubble, { backgroundColor: theme.colors.card || "#FFFFFF", borderColor: theme.colors.border }],
+          isUser ? styles.userBubbleTail : styles.aiBubbleTail
         ]}
       >
-        <Text style={[styles.messageText, isUser ? styles.userText : styles.aiText]}>
+        <Text style={[styles.messageText, isUser ? styles.userText : [styles.aiText, { color: theme.colors.text }]]}>
           {message}
         </Text>
-        <Text style={styles.timestamp}>
+        <Text style={[styles.timestamp, { color: isUser ? "rgba(255,255,255,0.7)" : theme.colors.sub_text }]}>
           {new Date(timestamp).toLocaleTimeString([], {
             hour: "2-digit",
             minute: "2-digit",
           })}
         </Text>
+
+        {/* Tail implementation */}
+        <View style={[
+          styles.tailContainer,
+          isUser ? styles.userTailPos : styles.aiTailPos
+        ]}>
+          <View style={[
+            styles.tail,
+            isUser ?
+              { borderLeftColor: theme.colors.primary || "#111827" } :
+              { borderRightColor: theme.colors.card || "#FFFFFF" },
+            isUser ? styles.userTailShape : styles.aiTailShape
+          ]} />
+        </View>
       </View>
-      {isUser && (
-        <Icons.Ionicons
-          name="person-circle"
-          size={32}
-          color="#111827"
-          style={styles.avatar}
-        />
-      )}
     </View>
   );
 };
 
-// Loading Bubble (shown when AI is thinking)
-const LoadingBubble = () => (
-  <View style={[styles.messageWrapper, styles.aiWrapper]}>
-    <Icons.MaterialCommunityIcons
-      name="face-agent"
-      size={32}
-      color="#111827"
-      style={styles.avatar}
-    />
-    <View style={[styles.bubble, styles.aiBubble]}>
-      <View style={styles.loadingDots}>
-        <ActivityIndicator size="small" color="#6B7280" />
-        <Text style={styles.loadingText}>Thinking...</Text>
+// Loading Bubble
+const LoadingBubble = () => {
+  const { theme } = useContext(AppContext);
+  return (
+    <View style={[styles.messageWrapper, styles.aiWrapper]}>
+      <View style={[styles.bubble, styles.aiBubble, styles.aiBubbleTail, { backgroundColor: theme.colors.card || "#FFFFFF", borderColor: theme.colors.border }]}>
+        <View style={styles.loadingDots}>
+          <ActivityIndicator size="small" color={theme.colors.text} />
+          <Text style={[styles.loadingText, { color: theme.colors.text }]}>Thinking...</Text>
+        </View>
+        <View style={[styles.tailContainer, styles.aiTailPos]}>
+          <View style={[styles.tail, { borderRightColor: theme.colors.card || "#FFFFFF" }, styles.aiTailShape]} />
+        </View>
       </View>
     </View>
-  </View>
-);
+  );
+};
 
 export default function Chatbot({ navigation, route }) {
   const { theme, isDarkMode } = useContext(AppContext);
   const { user } = useContext(AuthContext);
-  const { context, dealType } = route.params;
+  const { context } = route.params;
+  const insets = useSafeAreaInsets();
   const [messages, setMessages] = useState([]);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
@@ -104,53 +116,78 @@ export default function Chatbot({ navigation, route }) {
   const [inputText, setInputText] = useState("");
   const [inputHeight, setInputHeight] = useState(50);
   const [isLoading, setIsLoading] = useState(false);
-  const [isKeyboardOpen, setIsKeyboardOpen] = useState(false);
 
   const flatListRef = useRef(null);
 
-  // Initialize with welcome message
-  useEffect(() => {
-    if (context !== '') {
-      const intro = {
-        id: "intro",
-        text: `Hello ${user.displayName}, I'm your AI Financial Agent. How can I help with your ${context.type || "financial needs"} today?`,
-        isUser: false,
-        timestamp: Date.now(),
-      };
-      setMessages([intro]);
-    }
-  }, [context]);
+  // useEffect(() => {
+  //   const greetClient = async () => {
+  //     if (context !== '') {
+  //       setIsLoading(true);
+  //       try {
+  //         const res = await fetch(`${API_BASE_URL}/api/ask-grok`, {
+  //           method: "POST",
+  //           headers: { "Content-Type": "application/json" },
+  //           body: JSON.stringify({
+  //             message: `Greet the client-(${user.displayName.toString()}) and introduce yourself.
+  //               This client wants to have your assistance pertaining-(${context?.category})
+  //               of this kind-(${context?.name}), probably with this keyId-(${context?._id}). 
+  //               Find the product from your provided storage and tailor assistance within it's scope. 
+  //               Ask them how you can assist them today in regard to the product in context.`,
+  //             history: messages?.map((msg) => ({
+  //               role: msg.isUser ? "user" : "assistant",
+  //               content: msg.text,
+  //             })),
+  //             context: context?.name || null,
+  //             dealType: context?.category || null
+  //           }),
+  //         });
 
-  // Auto-scroll to bottom when new messages arrive
+  //         if (!res.ok) throw new Error("Network error");
+
+  //         const data = await res.json();
+
+  //         const aiReply = {
+  //           id: (Date.now() + 1).toString(),
+  //           text: data.reply || "Sorry, I couldn't process that.",
+  //           isUser: false,
+  //           timestamp: Date.now(),
+  //         };
+
+  //         setMessages([aiReply]);
+  //       } catch (err) {
+  //         const errorMsg = {
+  //           id: new Date().toISOString(),
+  //           text: err.message,
+  //           isUser: false,
+  //           timestamp: Date.now(),
+  //         };
+  //         setMessages([errorMsg]);
+  //         console.error("greetClient: exception", err);
+  //       } finally {
+  //         setIsLoading(false);
+  //       }
+  //     }
+  //   };
+  //   greetClient();
+  // }, [context]);
+
+  // Auto-scroll to bottom
+
   const scrollToBottom = () => {
-    setTimeout(() => {
-      flatListRef.current?.scrollToEnd({ animated: true });
-    }, 100);
+    if (flatListRef.current) {
+      flatListRef.current.scrollToEnd({ animated: true });
+    }
   };
-
-  useEffect(() => {
-    const showSub = Keyboard.addListener("keyboardDidShow", (e) => {
-      setIsKeyboardOpen(true);
-    });
-
-    const hideSub = Keyboard.addListener("keyboardDidHide", () => {
-      setIsKeyboardOpen(false);
-    });
-
-    return () => {
-      showSub.remove();
-      hideSub.remove();
-    };
-  }, []);
 
   useEffect(() => {
     scrollToBottom();
   }, [messages, isLoading]);
 
-  const introText = dealType !== '' ? `Hello again, I am your AI agent guider for assisting you with the opted ${dealType.toString()} of the ${context?.productType}.
-      You can chat with me in writing about the opted financial product you may want advise on, and I will respond within my scope of data 
-      that has been provided to me. Know that I may ask you questions as well to give you tailored advise for your specific needs I do not
-      keep records of our convesations, or share them else where. Enjoy.
+  const introText = context !== '' ?
+    `Hello again, I am your AI agent guider for assisting you with the opted ${context.name} of the ${context?.category} type.
+     You can chat with me in writing about the opted financial product you may want advise on, and I will respond within my scope of data 
+     that has been provided to me. Know that I may ask you questions as well to give you tailored advise for your specific needs I do not
+     keep records of our convesations, or share them else where. Enjoy.
     `:
     `Hello again, I am your AI agent guider for assisting you with guidance on loans, investments as well as insurance policies.
       You can chat with me in writing about the opted financial product you may want advise on, and I will respond within my scope of data 
@@ -161,7 +198,6 @@ export default function Chatbot({ navigation, route }) {
   const speak = async () => {
     try {
       if (isSpeaking && !isPaused) {
-        // Currently speaking, pause
         Speech.stop();
         setIsPaused(true);
         return;
@@ -169,77 +205,62 @@ export default function Chatbot({ navigation, route }) {
 
       if (isPaused) {
         const remainingText = introText.substring(currentIndex);
-
         Speech.speak(remainingText, {
           language: "en-US",
           pitch: 1.0,
           rate: 0.95,
           volume: 1.0,
-
           onStart: () => {
             setIsSpeaking(true);
             setIsPaused(false);
           },
-
           onBoundary: (event) => {
-            // Track character position
             setCurrentIndex(currentIndex + event.charIndex);
           },
-
           onDone: () => {
             setIsSpeaking(false);
             setIsPaused(false);
             setCurrentIndex(0);
           },
-
           onError: (err) => {
             console.log("Speech error:", err);
             setIsSpeaking(false);
             setIsPaused(false);
           },
         });
-
         return;
       }
 
-      // Not speaking, start
       Speech.speak(introText, {
         language: "en-US",
         voice: "id-id-x-dfz#female_3-local",
         pitch: 1.0,
         rate: 0.95,
         volume: 1.0,
-
         onStart: () => {
           setIsSpeaking(true);
           setCurrentIndex(0);
         },
-
         onPause: () => {
           setIsPaused(true);
         },
-
         onResume: () => {
           setIsPaused(false);
         },
-
         onBoundary: (event) => {
           setCurrentIndex(event.charIndex);
         },
-
         onDone: () => {
           setIsSpeaking(false);
           setIsPaused(false);
           setCurrentIndex(0);
         },
-
         onError: (err) => {
           console.log("Speech error:", err);
           setIsSpeaking(false);
           setIsPaused(false);
         },
       });
-
     } catch (err) {
       console.log("speak: exception", err);
       setIsSpeaking(false);
@@ -260,7 +281,6 @@ export default function Chatbot({ navigation, route }) {
     setMessages((prev) => [...prev, userMessage]);
     setInputText("");
     setIsLoading(true);
-    scrollToBottom();
 
     try {
       const res = await fetch(`${API_BASE_URL}/api/ask-grok`, {
@@ -272,13 +292,12 @@ export default function Chatbot({ navigation, route }) {
             role: msg.isUser ? "user" : "assistant",
             content: msg.text,
           })),
-          context: context || null,
-          dealType: dealType || null
+          context: context?.name || null,
+          dealType: context?.category || null
         }),
       });
 
       if (!res.ok) throw new Error("Network error");
-
       const data = await res.json();
 
       const aiReply = {
@@ -304,29 +323,28 @@ export default function Chatbot({ navigation, route }) {
   };
 
   const renderItem = ({ item }) => {
-    if (item.isUser === undefined) return null; // safety
+    if (item.isUser === undefined) return null;
     return <MessageBubble message={item.text} isUser={item.isUser} timestamp={item.timestamp} />;
   };
 
   return (
-    <SafeAreaFrameContext style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={["top", "bottom"]}>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
       <WhatsAppPatternFallback />
 
+      {/* 4. KeyboardAware Input - behavior padding for iOS, height for Android */}
       <KeyboardAvoidingView
         style={styles.keyboardAvoidingView}
-        behavior={Platform.OS === "ios" ? "padding" : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : isKeyboardOpen ? -50 : -80}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 90 : 0}
       >
-        <View style={{ height: 25 }} />
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 16 }}>
           <View style={{ justifyContent: 'space-around', gap: 10, flexDirection: 'row', alignItems: 'center' }}>
             <TouchableOpacity onPress={() => navigation.goBack()}>
               <Icons.Ionicons name="arrow-back" color={theme.colors.text} size={24} />
             </TouchableOpacity>
-
             <Avatar.Icon size={30} icon="account" color={'#fff'} />
-            <Text style={{ color: theme.colors.text, fontSize: 16, fontWeight: 200 }}>{user.displayName}</Text>
+            <Text style={{ color: theme.colors.text, fontSize: 16, fontWeight: '200' }}>{user.displayName}</Text>
           </View>
           <TouchableOpacity onPress={speak} style={{ paddingHorizontal: 10, paddingVertical: 5, alignItems: 'center', borderRadius: 10, backgroundColor: theme.colors.card }}>
             {isSpeaking ?
@@ -343,36 +361,36 @@ export default function Chatbot({ navigation, route }) {
         <FlatList
           ref={flatListRef}
           data={messages}
-          renderItem={renderItem}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.chatContent}
+          renderItem={renderItem}
+          style={styles.chatList}
+          contentContainerStyle={[styles.chatContent, { paddingBottom: Math.max(insets.bottom + 16, 24) }]}
           showsVerticalScrollIndicator={false}
           onContentSizeChange={scrollToBottom}
           onLayout={scrollToBottom}
-          maintainVisibleContentPosition={{
-            minIndexForVisible: 0,
-            autoscrollToTopThreshold: 100,
-          }}
+          keyboardShouldPersistTaps="handled"
         />
 
-        {/* Loading Indicator as a message bubble */}
         {isLoading && <LoadingBubble />}
 
-        {/* Input Bar */}
-        <View style={styles.inputContainer}>
-          <View style={styles.inputWrapper}>
+        {/* Input Bar - stays visible on top of keyboard */}
+        <View style={[styles.inputContainer, { backgroundColor: 'transparent', paddingBottom: 0 }]}>
+          <View style={[styles.inputWrapper, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
             <TextInput
               style={[
                 styles.textInput,
-                { height: Math.max(50, Math.min(inputHeight, 120)) },
+                {
+                  height: Math.max(40, Math.min(inputHeight, 120)),
+                  color: theme.colors.text
+                },
               ]}
               placeholder="Type here..."
-              placeholderTextColor="#999"
+              placeholderTextColor={theme.colors.text}
               value={inputText}
               onChangeText={setInputText}
               multiline
               onContentSizeChange={(e) =>
-                setInputHeight(e.nativeEvent.contentSize.height + 20)
+                setInputHeight(e.nativeEvent.contentSize.height)
               }
             />
           </View>
@@ -382,6 +400,7 @@ export default function Chatbot({ navigation, route }) {
             disabled={!inputText.trim() || isLoading}
             style={[
               styles.sendButton,
+              { backgroundColor: theme.colors.primary || "#00A884" },
               (!inputText.trim() || isLoading) && styles.sendButtonDisabled,
             ]}
           >
@@ -389,110 +408,133 @@ export default function Chatbot({ navigation, route }) {
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
-    </SafeAreaFrameContext>
+    </SafeAreaView>
   )
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
   keyboardAvoidingView: { flex: 1 },
+  chatList: { flex: 1 },
   bgOverlay: { ...StyleSheet.absoluteFillObject },
   patternContainer: { flex: 1 },
   patternRow: { flexDirection: "row" },
-  patternDot: { width: 30, height: 30, backgroundColor: "#075E54" },
+  patternDot: { width: 30, height: 30 },
 
+  chatList: {
+    flex: 1,
+  },
   chatContent: {
     paddingHorizontal: 12,
     paddingTop: 12,
-    paddingBottom: 20, // Ensures last message is visible above input
+    paddingBottom: 10,
   },
 
   messageWrapper: {
     flexDirection: "row",
     alignItems: "flex-end",
-    marginVertical: 6,
+    marginVertical: 4,
     maxWidth: "100%",
   },
-  aiWrapper: { alignSelf: "flex-start" },
-  userWrapper: { alignSelf: "flex-end" },
-
-  avatar: { marginHorizontal: 8 },
+  aiWrapper: { alignSelf: "flex-start", paddingLeft: 10 },
+  userWrapper: { alignSelf: "flex-end", paddingRight: 10 },
 
   bubble: {
-    maxWidth: isTablet ? "80%" : "90%",
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 20,
+    maxWidth: isTablet ? "75%" : "85%",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 15,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
+    shadowRadius: 2,
+    elevation: 2,
+    position: 'relative',
   },
   aiBubble: {
-    backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "#E5E7EB",
   },
-  userBubble: {
-    backgroundColor: "#111827",
+  userBubble: {},
+
+  // Tail styles
+  aiBubbleTail: { borderBottomLeftRadius: 2 },
+  userBubbleTail: { borderBottomRightRadius: 2 },
+
+  tailContainer: {
+    position: 'absolute',
+    bottom: 0,
+    width: 10,
+    height: 10,
+  },
+  aiTailPos: { left: -8 },
+  userTailPos: { right: -8 },
+
+  tail: {
+    width: 0,
+    height: 0,
+    backgroundColor: 'transparent',
+    borderStyle: 'solid',
+    borderTopWidth: 0,
+    borderBottomWidth: 10,
+  },
+  aiTailShape: {
+    borderLeftWidth: 0,
+    borderRightWidth: 10,
+    borderBottomColor: 'transparent',
+  },
+  userTailShape: {
+    borderRightWidth: 0,
+    borderLeftWidth: 10,
+    borderBottomColor: 'transparent',
   },
 
   messageText: {
     fontSize: 16,
     lineHeight: 22,
   },
-  aiText: { color: "#111827" },
   userText: { color: "#FFFFFF" },
 
   timestamp: {
-    fontSize: 12,
-    color: "#9CA3AF",
-    marginTop: 6,
+    fontSize: 10,
+    marginTop: 4,
     alignSelf: "flex-end",
   },
 
   loadingDots: { flexDirection: "row", alignItems: "center" },
   loadingText: {
     marginLeft: 10,
-    color: "#6B7280",
-    fontSize: 15,
+    fontSize: 14,
     fontStyle: "italic",
   },
 
   inputContainer: {
     flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 12,
-    marginBottom: 50,
+    alignItems: "flex-end",
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    // marginBottom: Platform.OS === "ios" ? 0 : height * 0.06,
   },
   inputWrapper: {
     flex: 1,
-    backgroundColor: "#FFFFFF",
-    borderRadius: 30,
+    borderRadius: 25,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
-    paddingHorizontal: 16,
-    maxHeight: 120,
-    marginRight: 10,
+    paddingHorizontal: 15,
+    paddingVertical: 5,
+    marginRight: 8,
+    justifyContent: 'center',
   },
   textInput: {
     fontSize: 16,
-    color: "#000",
-    paddingTop: 12,
-    paddingBottom: 12,
     textAlignVertical: "center",
   },
   sendButton: {
-    backgroundColor: "#00A884",
-    width: 60,
-    height: 60,
-    padding: 0,
-    borderRadius: 25,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     justifyContent: "center",
     alignItems: "center",
   },
   sendButtonDisabled: {
-    backgroundColor: "#94A3B8",
+    opacity: 0.6,
   },
 });

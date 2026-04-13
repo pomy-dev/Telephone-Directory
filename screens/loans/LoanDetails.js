@@ -1,18 +1,9 @@
 import React from "react";
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Image,
-  Dimensions,
-  Linking,
-  StatusBar,
-  ActivityIndicator,
-  Share,
-  Platform,
+  View, Text, StyleSheet, ScrollView, TouchableOpacity, Image,
+  Dimensions, Linking, StatusBar, Share, Platform, Alert
 } from "react-native";
+import { Dialog, Portal, Divider, Button } from 'react-native-paper';
 import BottomSheet, { BottomSheetTextInput, BottomSheetScrollView } from "@gorhom/bottom-sheet"; // Ensure this package is installed
 import { Icons } from "../../constants/Icons";
 import { AppContext } from "../../context/appContext";
@@ -91,14 +82,16 @@ export default function FinancialDetailsScreen({ route, navigation }) {
   const data = item;
 
   const [isCommentSheetOpen, setIsCommentSheetOpen] = React.useState(false);
-  const [likes, setLikes] = React.useState(data?.likes); // Replace with real data if available
+  const [likes, setLikes] = React.useState(data?.likes || 24); // Replace with real data if available
   const [isLiked, setIsLiked] = React.useState(false);
-  const [reviews, setReviews] = React.useState(data?.reviews); // Replace with real data if available
+  const [reviews, setReviews] = React.useState(data?.reviews || 3); // Replace with real data if available
 
   const [rating, setRating] = React.useState(0);
   const [reviewText, setReviewText] = React.useState("");
   const [myComments, setMyComments] = React.useState([]);
   const [submitSuccess, setSubmitSuccess] = React.useState(false);
+  const [dialogVisible, setDialogVisible] = React.useState(false);
+  const [branchOptions, setBranchOptions] = React.useState([]);
 
   const sheetRef = React.useRef(null);
 
@@ -114,23 +107,87 @@ export default function FinancialDetailsScreen({ route, navigation }) {
     );
   }
 
-  const isLoan = data?.category === "loan";
-  const isInsurance = data?.category === "insurance";
-  const isInvestment = data?.category === "investment";
+  // console.log("Financial Product Details:", data); // Debug log to check data structure
 
-  const getDealType = () => {
-    if (isLoan) return "Loans";
-    if (isInsurance) return "Insurances";
-    if (isInvestment) return "Investments";
-    return "Financial Product";
-  }
+  const isLoan = data?.category.toLowerCase() === "loans";
+  const isSaving = data?.category.toLowerCase() === "savings";
+  const isInsurance = data?.category.toLowerCase() === "insurance";
+  const isInvestment = data?.category.toLowerCase() === "investment";
 
-  const companyName = data.bank || data.company || "Financial Provider";
-  const productName = data.type || "Financial Product";
+  const companyName = data.company.companyName || "Financial Provider";
+  const productName = data.name || "Financial Product";
 
+  // handle call
   const handleCall = (phone) => Linking.openURL(`tel:${phone}`);
 
+  // handle whatsapp
+  const handleWhatsapp = (number) => {
+    const url = `https://wa.me/${number.replace(/[^0-9]/g, "")}`;
+    Linking.openURL(url).catch(() =>
+      Alert.alert("Error", "Unable to open WhatsApp. Please try again.")
+    );
+  }
+
+  // handle email
   const handleEmail = (email) => Linking.openURL(`mailto:${email}`);
+
+  // handle twitter
+  const handleTwitter = (twitterHandle) => {
+    const url = `https://twitter.com/${twitterHandle.replace('@', '')}`;
+    Linking.openURL(url).catch(() =>
+      Alert.alert("Error", "Unable to open Twitter. Please try again.")
+    );
+  };
+
+  // handle facebook
+  const handleFacebook = (facebookHandle) => {
+    const url = `https://www.facebook.com/${facebookHandle.replace('@', '')}`;
+    Linking.openURL(url).catch(() =>
+      Alert.alert("Error", "Unable to open Facebook. Please try again.")
+    );
+  };
+
+  // handle instagram
+  const handleInstagram = (instagramHandle) => {
+    const url = `https://www.instagram.com/${instagramHandle.replace('@', '')}`;
+    Linking.openURL(url).catch(() =>
+      Alert.alert("Error", "Unable to open Instagram. Please try again.")
+    );
+  };
+
+  // handle website
+  const handleWebsite = (website) => {
+    const url = website.startsWith("http") ? website : `https://${website}`;
+    Linking.openURL(url).catch(() =>
+      Alert.alert("Error", "Unable to open website. Please try again.")
+    );
+  };
+
+  // Directions handler using coordinates if available, otherwise fallback to address search
+  const handleDirections = (company) => {
+    if (company.latitude && company.longitude) {
+      const url =
+        Platform.OS === "ios"
+          ? `maps://app?daddr=${company.latitude},${company.longitude}`
+          : `geo:${company.latitude || company.latitide},${company.longitude || company.longitude}?q=${company.latitude},${company.longitude}`;
+      Linking.openURL(url).catch(() =>
+        Linking.openURL(
+          `https://www.google.com/maps/dir/?api=1&destination=${company.latitude},${company.longitude}`
+        )
+      );
+    } else if (company.directionsText) {
+      const query = encodeURIComponent(company.directionsText);
+      const url =
+        Platform.OS === "ios"
+          ? `maps://app?daddr=${query}`
+          : `https://www.google.com/maps/search/?api=1&query=${query}`;
+      Linking.openURL(url).catch(() =>
+        Alert.alert("Error", "Unable to open maps. Please try again.")
+      );
+    } else {
+      Alert.alert("⚠️ Location!", "Location information not available");
+    }
+  };
 
   const handleLike = () => {
     setIsLiked(!isLiked);
@@ -140,7 +197,7 @@ export default function FinancialDetailsScreen({ route, navigation }) {
   const handleShare = async () => {
     try {
       const shareOptions = {
-        message: `Check out this financial product: ${productName} by ${companyName}. Learn more about it!`,
+        message: `Check out this financial product: ${productName} by ${companyName}. Learn more about it from the Business Link app > Smart Financing!`,
       };
       await Share.share(shareOptions);
     } catch (error) {
@@ -148,19 +205,38 @@ export default function FinancialDetailsScreen({ route, navigation }) {
     }
   };
 
+  // branches display
+  const hideDialog = () => setDialogVisible(false);
+  const handleBranchesView = (branches) => {
+    return (
+      <Portal>
+        <Dialog visible={dialogVisible} onDismiss={hideDialog}>
+          <Dialog.Icon icon="google-maps" color={theme.colors.indicator} size={40} />
+          <Dialog.Title style={{ textAlign: 'center', color: theme.colors.text }}>Choose Branch</Dialog.Title>
+          <Dialog.Content>
+            {branches.map((branch, index) => (
+              <React.Fragment key={index}>
+                <TouchableOpacity onPress={() => { hideDialog(); handleDirections(branch); }}>
+                  <Text numberOfLines={1} ellipsizeMode="tail" style={{ fontSize: 16, color: theme.colors.sub_text, paddingVertical: 12 }}>{branch.directionsText || `Branch ${index + 1}`}</Text>
+                </TouchableOpacity>
+                {(index < branches.length - 1) && <Divider />}
+              </React.Fragment>
+            ))}
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={hideDialog}>Cancel</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
+    );
+  }
+
   const handleGetDirections = () => {
-    if (data.location.lat && data.location.long) {
-      const url =
-        Platform.OS === "ios"
-          ? `maps://app?daddr=${data.latitude},${data.longitude}`
-          : `geo:${data.latitude},${data.longitude}?q=${data.latitude},${data.longitude}`;
-      Linking.openURL(url).catch(() =>
-        Linking.openURL(
-          `https://www.google.com/maps/dir/?api=1&destination=${data.latitude},${data.longitude}`
-        )
-      );
+    if (data.company.branches && data.company.branches.length > 1) {
+      setBranchOptions(data.company.branches);
+      setDialogVisible(true);
     } else {
-      alert("Location coordinates not available");
+      handleDirections(data.company);
     }
   };
 
@@ -194,6 +270,7 @@ export default function FinancialDetailsScreen({ route, navigation }) {
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
+      {branchOptions.length > 0 && handleBranchesView(branchOptions)}
 
       <View style={[styles.hero, { backgroundColor: theme.colors.card }]}>
         <TouchableOpacity style={styles.navHeader} onPress={() => navigation.goBack()}>
@@ -201,13 +278,13 @@ export default function FinancialDetailsScreen({ route, navigation }) {
         </TouchableOpacity>
 
         <View style={styles.heroCard}>
-          <BankLogo source={data.logo} name={companyName} />
+          <BankLogo source={data.company.logoFile?.url || data.company?.logoDataUrl} name={companyName} />
           <View style={styles.heroTextContainer}>
             <Text style={[styles.companyName, { color: theme.colors.text }]}>{companyName}</Text>
             <Text style={[styles.productName, { color: theme.colors.text }]}>{productName}</Text>
             <View style={styles.tag}>
               <Text style={[styles.tagText]}>
-                {isLoan ? "Loan Product" : isInsurance ? "Insurance Policy" : "Investment"}
+                {isLoan ? "Loan Product" : isSaving ? "Savings Account" : isInsurance ? "Insurance Policy" : "Investment"}
               </Text>
             </View>
           </View>
@@ -251,70 +328,78 @@ export default function FinancialDetailsScreen({ route, navigation }) {
         <View style={[styles.highlightsCard, { backgroundColor: theme.colors.sub_card }]}>
           {isLoan && (
             <>
-              <HighlightItem theme={theme} label="Interest Rate" value={data.rate} isRate />
-              <HighlightItem theme={theme} label="Maximum Amount" value={data.max} />
-              <HighlightItem theme={theme} label="Loan Term" value={data.term} />
+              <HighlightItem theme={theme} label="Interest Rate" value={data.interestRateApr} isRate />
+              <HighlightItem theme={theme} label="Maximum Amount" value={'E' + data.maxAmount} />
+              <HighlightItem theme={theme} label="Term (Months)" value={data.maxDurationMonths} />
+              <HighlightItem theme={theme} label="Repayment Frequency" value={data.repaymentFrequency} isRate />
+              {data.collateral && <HighlightItem theme={theme} label="Collateral/Security" value={data.collateral} />}
               <HighlightItem theme={theme} label="Processing Time" value={data.processingTime} />
+            </>
+          )}
+
+          {isSaving && (
+            <>
+              <HighlightItem theme={theme} label="Interest Apr" value={data.interestRateApr} isRate />
+              <HighlightItem theme={theme} label="Minimum Balance" value={data.minBalance} />
+              <HighlightItem theme={theme} label="Withdrawal Intervals" value={data.withdrawalIntervals || '24/7 - E5,000/day'} />
+              <HighlightItem theme={theme} label="Account Type" value={data.accountType || 'Fixed Account'} />
             </>
           )}
 
           {isInsurance && (
             <>
-              <HighlightItem theme={theme} label="Monthly Premium" value={data.premium} isRate />
-              <HighlightItem theme={theme} label="Coverage Amount" value={data.cover} />
-              <HighlightItem theme={theme} label="Policy Type" value={data.type} />
+              <HighlightItem theme={theme} label="Monthly Premium" value={data.monthlyPremium} isRate />
+              <HighlightItem theme={theme} label="Coverage Amount" value={data.coverageAmount} />
+              <HighlightItem theme={theme} label="Policy Type" value={data.policyType} />
             </>
           )}
 
           {isInvestment && (
             <>
-              <HighlightItem theme={theme} label="Minimum Investment" value={data.min} isRate />
-              <HighlightItem theme={theme} label="Expected Returns" value={data.returns} />
-              <HighlightItem theme={theme} label="Risk Level" value="Moderate" />
+              <HighlightItem theme={theme} label="Minimum Investment" value={data.minInvestment} isRate />
+              <HighlightItem theme={theme} label="Expected Returns" value={data.expectedReturns} />
+              <HighlightItem theme={theme} label="Risk Level" value={data.riskLevel} />
             </>
           )}
         </View>
 
         <SectionCard theme={theme} title="About">
+          {data.summary && (
+            <Text style={[styles.sumary, { color: theme.colors.text }]}>
+              {data.summary}
+            </Text>
+          )}
+
           <Text style={[styles.paragraph, { color: theme.colors.sub_text }]}>
             {data.description ||
               "A trusted financial product designed with your goals in mind. Backed by strong institutional expertise and regulated by the Financial Services Regulatory Authority (FSRA) of Eswatini."}
           </Text>
         </SectionCard>
 
-        {isLoan && (
-          <>
-            <CollapsibleSection theme={theme} title="Eligibility Requirements" initiallyOpen={true}>
-              <Text style={[styles.bullet, { color: theme.colors.sub_text }]}>• Eswatini resident aged 21–65</Text>
-              <Text style={[styles.bullet, { color: theme.colors.sub_text }]}>• Minimum monthly income: E5,000</Text>
-              <Text style={[styles.bullet, { color: theme.colors.sub_text }]}>• Valid National ID and proof of residence</Text>
-              <Text style={[styles.bullet, { color: theme.colors.sub_text }]}>• Last 3 months bank statements</Text>
-              <Text style={[styles.bullet, { color: theme.colors.sub_text }]}>• Good credit history preferred</Text>
-            </CollapsibleSection>
+        <CollapsibleSection theme={theme} title="Eligibility Requirements" initiallyOpen={true}>
+          {data.eligibility.map((el, index) => (
+            <Text key={index} style={[styles.bullet, { color: theme.colors.sub_text }]}>• {el}</Text>
+          ))}
+        </CollapsibleSection>
 
-            <CollapsibleSection theme={theme} title="Required Documents">
-              <Text style={[styles.bullet, { color: theme.colors.sub_text }]}>• Copy of National ID or Passport</Text>
-              <Text style={[styles.bullet, { color: theme.colors.sub_text }]}>• Recent payslips (last 3 months)</Text>
-              <Text style={[styles.bullet, { color: theme.colors.sub_text }]}>• Proof of residence (utility bill)</Text>
-              <Text style={[styles.bullet, { color: theme.colors.sub_text }]}>• Bank statements (last 3 months)</Text>
-            </CollapsibleSection>
-          </>
-        )}
+        <CollapsibleSection theme={theme} title="Required Documents">
+          {data.requirements.map((req, index) => (
+            <Text key={index} style={[styles.bullet, { color: theme.colors.sub_text }]}>• {req}</Text>
+          ))}
+        </CollapsibleSection>
 
         {isInsurance && (
           <CollapsibleSection theme={theme} title="Coverage Details">
-            <Text style={[styles.bullet, { color: theme.colors.sub_text }]}>• In-patient & out-patient treatment</Text>
-            <Text style={[styles.bullet, { color: theme.colors.sub_text }]}>• Prescription medication coverage</Text>
-            <Text style={[styles.bullet, { color: theme.colors.sub_text }]}>• Emergency medical evacuation</Text>
-            <Text style={[styles.bullet, { color: theme.colors.sub_text }]}>• Dental & optical (limited)</Text>
+            {data.coverageDetails.map((detail, index) => (
+              <Text key={index} style={[styles.bullet, { color: theme.colors.sub_text }]}>• {detail}</Text>
+            ))}
           </CollapsibleSection>
         )}
 
         {isInvestment && (
           <CollapsibleSection theme={theme} title="Investment Strategy">
             <Text style={[styles.paragraph, { color: theme.colors.sub_text }]}>
-              Diversified portfolio combining blue-chip equities, government bonds, and cash equivalents
-              for stable long-term growth with controlled risk exposure.
+              {data.investmentStrategy || "This investment product follows a diversified strategy, balancing growth and stability. It includes a mix of equities, bonds, and alternative assets to optimize returns while managing risk."}
             </Text>
           </CollapsibleSection>
         )}
@@ -327,28 +412,79 @@ export default function FinancialDetailsScreen({ route, navigation }) {
           </Text>
         </SectionCard>
 
+        <SectionCard theme={theme} title="How to Join">
+          {data.applicationSteps.map((step, index) => (
+            <Text key={index} style={[styles.paragraph, { color: theme.colors.sub_text }]}>• {step}</Text>
+          ))}
+        </SectionCard>
+
+        {data.charges &&
+          <CollapsibleSection theme={theme} title="Charges & Fees">
+            <Text style={[styles.paragraph, { color: theme.colors.sub_text }]}>{data.charges}</Text>
+          </CollapsibleSection>
+        }
+
         <SectionCard theme={theme} title="Help & Support">
-          <TouchableOpacity style={styles.contactRow} onPress={() => handleCall("+26824040000")}>
-            <Icons.Ionicons name="call-outline" size={22} color={theme.colors.indicator} />
-            <Text style={[styles.contactText, { color: theme.colors.sub_text }]}>+268 2404 0000</Text>
-          </TouchableOpacity>
+          <View style={{ flexDirection: "row", flexWrap: 'wrap', alignItems: "center", gap: 8, marginBottom: 6, backgroundColor: theme.colors.sub_card, padding: 10, borderRadius: 8 }}>
+            {data.company.companyPhone && <TouchableOpacity style={styles.contactRow} onPress={() => handleCall(data.company.companyPhone)}>
+              <Icons.Ionicons name="call-outline" size={22} color={theme.colors.indicator} />
+            </TouchableOpacity>}
 
-          <TouchableOpacity
-            style={styles.contactRow}
-            onPress={() =>
-              handleEmail(`support@${companyName.toLowerCase().replace(/\s+/g, "")}.sz`)
-            }
-          >
-            <Icons.Ionicons name="mail-outline" size={22} color={theme.colors.indicator} />
-            <Text style={[styles.contactText, { color: theme.colors.sub_text }]}>
-              support@{companyName.toLowerCase().replace(/\s+/g, "")}.sz
-            </Text>
-          </TouchableOpacity>
+            {data.company.whatsapp && <TouchableOpacity style={styles.contactRow} onPress={() => handleWhatsapp(data.company.whatsapp)}>
+              <Icons.Ionicons name="logo-whatsapp" size={22} color={theme.colors.indicator} />
+            </TouchableOpacity>}
 
-          <View style={styles.contactRow}>
-            <Icons.Ionicons name="time-outline" size={22} color={theme.colors.indicator} />
-            <Text style={[styles.contactText, { color: theme.colors.sub_text }]}>Monday – Friday: 8:00 AM – 5:00 PM</Text>
+            {data.company.email && <TouchableOpacity
+              style={styles.contactRow}
+              onPress={() =>
+                handleEmail(data.company.email)
+              }
+            >
+              <Icons.Ionicons name="mail-outline" size={22} color={theme.colors.indicator} />
+            </TouchableOpacity>}
+
+            {data.company.supportEmail && <TouchableOpacity
+              style={styles.contactRow}
+              onPress={() =>
+                handleEmail(data.company.supportEmail)
+              }
+            >
+              <Icons.Entypo name="email" size={22} color={theme.colors.indicator} />
+            </TouchableOpacity>}
+
+            {(data.company.twitter) && <TouchableOpacity
+              style={styles.contactRow}
+              onPress={() => handleTwitter(data.company.twitter)}
+            >
+              <Icons.Ionicons name="logo-twitter" size={22} color={theme.colors.indicator} />
+            </TouchableOpacity>}
+
+            {(data.company.facebook) && <TouchableOpacity
+              style={styles.contactRow}
+              onPress={() => handleFacebook(data.company.facebook)}
+            >
+              <Icons.Ionicons name="logo-facebook" size={22} color={theme.colors.indicator} />
+            </TouchableOpacity>}
+
+            {(data.company.instagram) && <TouchableOpacity
+              style={styles.contactRow}
+              onPress={() => handleInstagram(data.company.instagram)}
+            >
+              <Icons.Ionicons name="logo-instagram" size={22} color={theme.colors.indicator} />
+            </TouchableOpacity>}
+
+            {(data.company.website) && <TouchableOpacity
+              style={styles.contactRow}
+              onPress={() => handleWebsite(data.company.website)}
+            >
+              <Icons.Ionicons name="globe-outline" size={22} color={theme.colors.indicator} />
+            </TouchableOpacity>}
           </View>
+
+          {data.company.operationalHours && <View style={styles.operationalHrs}>
+            <Icons.Ionicons name="time-outline" size={22} color={theme.colors.indicator} />
+            <Text style={[styles.contactText, { color: theme.colors.sub_text }]}>{data.company.operationalHours}</Text>
+          </View>}
         </SectionCard>
 
         <View style={{ height: 20 }} />
@@ -365,14 +501,14 @@ export default function FinancialDetailsScreen({ route, navigation }) {
           setRating(0);
           setReviewText("");
         }}
-        backgroundStyle={{ backgroundColor: theme.colors.card }}
-        handleIndicatorStyle={{ backgroundColor: theme.colors.card }}
+        backgroundStyle={{ backgroundColor: isDarkMode ? '#666' : '#fff' }}
+        handleIndicatorStyle={{ backgroundColor: theme.colors.text }}
       >
         <BottomSheetScrollView style={{}}>
           <Text style={[styles.sheetTitle, { color: theme.colors.text }]}>Reviews & Ratings</Text>
 
           {/* Review Form */}
-          <View style={styles.reviewForm}>
+          <View style={[styles.reviewForm, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
             <Text style={[styles.formLabel, { color: theme.colors.text }]}>Your Rating</Text>
             <View style={styles.starContainer}>
               {[1, 2, 3, 4, 5].map((star) => (
@@ -388,14 +524,15 @@ export default function FinancialDetailsScreen({ route, navigation }) {
 
             <Text style={[styles.formLabel, { color: theme.colors.text }]}>Write Your Review</Text>
             <BottomSheetTextInput
-              style={styles.reviewInput}
+              style={[styles.reviewInput, { backgroundColor: isDarkMode ? theme.colors.card : "#F9FAFB", color: theme.colors.text }]}
               placeholder="Share your experience..."
+              placeholderTextColor={theme.colors.sub_text}
               multiline
               value={reviewText}
               onChangeText={setReviewText}
             />
 
-            <TouchableOpacity style={styles.submitButton} onPress={handleSubmitReview}>
+            <TouchableOpacity style={[styles.submitButton, { backgroundColor: theme.colors.indicator }]} onPress={handleSubmitReview}>
               <Text style={[styles.submitButtonText, { color: theme.colors.text }]}>
                 {submitSuccess ? "Submitted!" : "Submit Review"}
               </Text>
@@ -437,7 +574,7 @@ export default function FinancialDetailsScreen({ route, navigation }) {
 
       {/* Floating AI Agent FAB */}
       <TouchableOpacity style={styles.fab} onPress={() =>
-        navigation.navigate("Chatbot", { context: item, dealType: getDealType() })}
+        navigation.navigate("Chatbot", { context: data })}
         activeOpacity={0.9}
       >
         <Icons.MaterialCommunityIcons name="face-agent" size={30} color="#FFFFFF" />
@@ -449,7 +586,7 @@ export default function FinancialDetailsScreen({ route, navigation }) {
 const HighlightItem = ({ theme, label, value, isRate = false }) => (
   <View style={styles.highlightRow}>
     <Text style={[styles.highlightLabel, { color: theme.colors.sub_text }]}>{label}</Text>
-    <Text style={[styles.highlightValue, isRate && styles.highlightValueRate]}>
+    <Text style={[styles.highlightValue, !isRate && { color: theme.colors.sub_text }, isRate && styles.highlightValueRate]}>
       {value || "—"}
     </Text>
   </View>
@@ -557,7 +694,6 @@ const styles = StyleSheet.create({
   highlightValue: {
     fontSize: 17,
     fontWeight: "700",
-    color: "#111827",
   },
   highlightValueRate: {
     color: "#DC2626",
@@ -593,7 +729,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 20,
-    paddingVertical: 18,
+    paddingVertical: 6,
     backgroundColor: "#F8FAFC",
   },
 
@@ -608,8 +744,21 @@ const styles = StyleSheet.create({
     marginLeft: 6,
     marginVertical: 2,
   },
+  sumary: {
+    fontSize: 16,
+    lineHeight: 28,
+    fontWeight: "500",
+  },
 
   contactRow: {
+    alignItems: "center",
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    backgroundColor: "#F1F5F9",
+    borderRadius: 12,
+  },
+
+  operationalHrs: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 12,
@@ -659,14 +808,12 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   reviewForm: {
-    backgroundColor: "#FFFFFF",
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: 16,
     padding: 20,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: "#E2E8F0",
   },
   formLabel: {
     fontSize: 16,
@@ -688,11 +835,9 @@ const styles = StyleSheet.create({
     fontSize: 16,
     minHeight: 100,
     textAlignVertical: "top",
-    backgroundColor: "#F9FAFB",
     marginBottom: 16,
   },
   submitButton: {
-    backgroundColor: "#1E40AF",
     paddingVertical: 14,
     borderRadius: 12,
     alignItems: "center",

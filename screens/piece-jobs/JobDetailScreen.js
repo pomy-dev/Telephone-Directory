@@ -495,6 +495,7 @@ const JobDetailScreen = ({ route, navigation }) => {
             setAttachments([]);
           }}
           backgroundStyle={{ backgroundColor: isDarkMode ? '#666' : '#fff' }}
+          handleIndicatorStyle={{ backgroundColor: theme.colors.text }}
           enablePanDownToClose
           keyboardBehavior={Platform.OS === 'ios' ? 'extend' : 'interactive'}
           android_keyboardInputMode="adjustResize"
