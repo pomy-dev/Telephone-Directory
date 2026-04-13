@@ -20,7 +20,7 @@ import {
   Platform,
   Keyboard,
   TouchableWithoutFeedback,
-  LayoutAnimation,, RefreshControl,
+  LayoutAnimation, RefreshControl,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import Carousel from "react-native-reanimated-carousel";
@@ -1232,7 +1232,7 @@ export default function FinancialHubScreen({ navigation }) {
           {/* summary audio-intro play */}
           <TouchableOpacity style={[styles.button, { backgroundColor: theme.colors.indicator }]} onPress={speak}>
             {isSpeaking ?
-              isPaused ? (
+             ( isPaused ? (
                 <Icons.Ionicons
                   name="play-circle-outline"
                   size={24}
