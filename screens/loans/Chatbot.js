@@ -119,57 +119,72 @@ export default function Chatbot({ navigation, route }) {
 
   const flatListRef = useRef(null);
 
-  // useEffect(() => {
-  //   const greetClient = async () => {
-  //     if (context !== '') {
-  //       setIsLoading(true);
-  //       try {
-  //         const res = await fetch(`${API_BASE_URL}/api/ask-grok`, {
-  //           method: "POST",
-  //           headers: { "Content-Type": "application/json" },
-  //           body: JSON.stringify({
-  //             message: `Greet the client-(${user.displayName.toString()}) and introduce yourself.
-  //               This client wants to have your assistance pertaining-(${context?.category})
-  //               of this kind-(${context?.name}), probably with this keyId-(${context?._id}). 
-  //               Find the product from your provided storage and tailor assistance within it's scope. 
-  //               Ask them how you can assist them today in regard to the product in context.`,
-  //             history: messages?.map((msg) => ({
-  //               role: msg.isUser ? "user" : "assistant",
-  //               content: msg.text,
-  //             })),
-  //             context: context?.name || null,
-  //             dealType: context?.category || null
-  //           }),
-  //         });
+     const greetClient = async () => {
+      if (context !== '') {
+        setIsLoading(true);
+        try {
+          const res = await fetch(`${API_BASE_URL}/api/ask-grok`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              message: `Greet the client-(${user.displayName.toString()}) and introduce yourself.
+                This client wants to have your assistance pertaining-(${context?.category})
+                of this kind-(${context?.name}), probably with this keyId-(${context?._id}). 
+                Find the product from your provided storage and tailor assistance within it's scope. 
+                Ask them how you can assist them today in regard to the product in context.`,
+              history: messages?.map((msg) => ({
+                role: msg.isUser ? "user" : "assistant",
+                content: msg.text,
+              })),
+              context: context?.name || null,
+              dealType: context?.category || null
+            }),
+          });
 
-  //         if (!res.ok) throw new Error("Network error");
+          if (!res.ok) throw new Error("Network error");
 
-  //         const data = await res.json();
+          const data = await res.json();
 
-  //         const aiReply = {
-  //           id: (Date.now() + 1).toString(),
-  //           text: data.reply || "Sorry, I couldn't process that.",
-  //           isUser: false,
-  //           timestamp: Date.now(),
-  //         };
+          const aiReply = {
+            id: (Date.now() + 1).toString(),
+            text: data.reply || "Sorry, I couldn't process that.",
+            isUser: false,
+            timestamp: Date.now(),
+          };
 
-  //         setMessages([aiReply]);
-  //       } catch (err) {
-  //         const errorMsg = {
-  //           id: new Date().toISOString(),
-  //           text: err.message,
-  //           isUser: false,
-  //           timestamp: Date.now(),
-  //         };
-  //         setMessages([errorMsg]);
-  //         console.error("greetClient: exception", err);
-  //       } finally {
-  //         setIsLoading(false);
-  //       }
-  //     }
-  //   };
-  //   greetClient();
-  // }, [context]);
+          setMessages([aiReply]);
+        } catch (err) {
+          const errorMsg = {
+            id: new Date().toISOString(),
+            text: err.message,
+            isUser: false,
+            timestamp: Date.now(),
+          };
+          setMessages([errorMsg]);
+          console.error("greetClient: exception", err);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+
+     const greetClient2 = async () => {
+      const welcomeMessage = {
+    id: 'system-intro-' + Date.now(), // Unique ID for keyExtractor
+    text: introText.trim(),
+    isUser: false, // This ensures it renders as an AI bubble
+    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+  };
+      if (context !== '') {
+        setIsLoading(true);
+        setMessages([welcomeMessage]);
+        setIsLoading(false);
+      }
+    };
+
+  useEffect(() => {
+    greetClient2();
+  }, [context]);
 
   // Auto-scroll to bottom
 
