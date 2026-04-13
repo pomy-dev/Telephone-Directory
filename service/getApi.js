@@ -23,6 +23,43 @@ export const fetchSaccos = async () => {
   }
 };
 
+//----------------------------------------------------------------------------------------
+//----------------------------------------------------------------------------------------
+//s----------------------------------------------------------------------------------------s
+/**
+ * Fetch products based on user filters with a fallback to closest matches.
+ * @param {Object} filterObj - The filter object from the UI
+ */
+export const suggestSaccosProduct = async (filterObj) => {
+  try {
+    // Convert the filter object into a URL query string
+    const queryString = Object.keys(filterObj)
+      .filter(key => filterObj[key] !== "" && filterObj[key] !== "All") // Clean empty values
+      .map(key => `${encodeURIComponent(key)}=${encodeURIComponent(filterObj[key])}`)
+      .join('&');
+
+    const url = `${API_BASE_URL}/api/get-suggest-saccos-products?${queryString}`;
+    
+    const response = await fetch(url, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+    });
+
+    if (!response.ok) {
+      throw new Error("Network response was not ok " + response.statusText);
+    }
+
+    const data = await response.json();
+    // Expected response shape: { success: true, message: "...", data: [...] }
+    return data; 
+  } catch (error) {
+    console.error("Error suggesting products:", error);
+    throw error;
+  }
+};
+
+
+
 // ==================== User Profile Management ==================== //
 export const addUser = async (userData) => {
   try {
