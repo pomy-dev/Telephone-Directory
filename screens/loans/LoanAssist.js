@@ -8,7 +8,7 @@ import {
   FlatList,
   TouchableOpacity,
   Image,
- 
+
   TextInput,
   Dimensions,
   Animated,
@@ -27,10 +27,9 @@ import Carousel from "react-native-reanimated-carousel";
 import * as Speech from 'expo-speech';
 import NetInfo from "@react-native-community/netinfo";
 import { Icons } from "../../constants/Icons";
-import { Images } from "../../constants/Images";
 import { AppContext } from "../../context/appContext";
 import FinancialPromotion from "../../components/customBanner";
-import { fetchSaccos, fetchSaccosPromos } from "../../service/getApi";
+import { fetchSaccos, fetchSaccosPromos, suggestSaccosProduct } from "../../service/getApi";
 import CustomLoader from "../../components/customLoader";
 
 const { width } = Dimensions.get("window");
@@ -126,158 +125,6 @@ const savingsDataUn = [
     reviews: 71,
     companyName: "Swazi Bank",
     company: { companyName: "Swazi Bank" },
-  },
-];
-
-const bannerPromos = [
-  {
-    id: "loan-001",
-    category: "loan",
-    companyLogo: Images.bank1,
-    package: {
-      id: "2",
-      bank: "Standard Bank",
-      logo: require("../../assets/banks/bank2.png"),
-      type: "Home Loan",
-      category: "loan",
-      rate: "8.25%",
-      max: "E2,500,000",
-      term: "Up to 20 years",
-      featured: true,
-      description: "Build or buy your dream home.",
-      processingTime: "3–5 days",
-      location: { lat: -26.305, long: 31.1365 },
-      likes: 200,
-      reviews: 60,
-    },
-    name: "Home Loan",
-    subtype: "Prime Property",
-    keyBenefits: [
-      "Up to 100% financing",
-      "Low interest from 9.25%",
-      "Flexible repayment up to 30 years",
-      "No deposit required for qualifying applicants",
-    ],
-    minAmount: "R800,000",
-    interestRate: "from 9.25%",
-    ctaLabel: "Apply Now",
-  },
-  {
-    id: "loan-002",
-    category: "loan",
-    companyLogo: Images.bank2,
-    package: {
-      id: "5",
-      bank: "Swazi MTN MoMo",
-      logo: require("../../assets/banks/bank2.png"),
-      type: "Micro Loan",
-      category: "loan",
-      rate: "15.0%",
-      max: "E5,000",
-      term: "30 days",
-      featured: false,
-      description: "Instant cash via phone.",
-      processingTime: "5 mins",
-      location: { lat: -26.33, long: 31.14 },
-      likes: 300,
-      reviews: 75,
-    },
-    name: "Personal Loan",
-    subtype: "Quick Cash",
-    keyBenefits: [
-      "Approval in minutes",
-      "No collateral needed",
-      "Up to R250,000",
-      "Repay over 6–60 months",
-    ],
-    minAmount: "R5,000",
-    interestRate: "from 14.9%",
-    ctaLabel: "Get Funds",
-  },
-  {
-    id: "inv-001",
-    category: "investment",
-    companyLogo: Images.bank3,
-    package: {
-      id: "v1",
-      company: "Eswatini Stock Exchange",
-      logo: require("../../assets/banks/bank2.png"),
-      type: "Shares & ETFs",
-      category: "investment",
-      min: "E1,000",
-      returns: "8–15% p.a.",
-      featured: true,
-      location: { lat: -26.3275, long: 31.142 },
-      likes: 190,
-      reviews: 48,
-    },
-    name: "Balanced Growth Fund",
-    subtype: "Long-term",
-    keyBenefits: [
-      "Historical returns 8–12% p.a.",
-      "Diversified across shares & bonds",
-      "No lock-in period",
-      "Expert fund management",
-    ],
-    minAmount: "R1,000",
-    expectedReturn: "8–12% p.a.",
-    ctaLabel: "Start Investing",
-  },
-  {
-    id: "ins-001",
-    category: "insurance",
-    companyLogo: Images.bank3,
-    package: {
-      id: "i2",
-      company: "Old Mutual",
-      logo: require("../../assets/banks/bank1.jpeg"),
-      type: "Life Cover",
-      category: "insurance",
-      cover: "E1M+",
-      premium: "From E280/pm",
-      featured: true,
-      location: { lat: -26.305, long: 31.1365 },
-      likes: 220,
-      reviews: 65,
-    },
-    name: "Family Life Cover",
-    subtype: "Comprehensive",
-    keyBenefits: [
-      "Cover from R500,000 to R10,000,000",
-      "Pays out on death or disability",
-      "Premiums from R220/month",
-      "Funeral benefit included",
-    ],
-    monthlyCost: "from R220",
-    ctaLabel: "Get Quote",
-  },
-  {
-    id: "ins-002",
-    category: "insurance",
-    companyLogo: Images.bank2,
-    package: {
-      id: "i4",
-      company: "Momentum",
-      logo: require("../../assets/banks/bank2.png"),
-      type: "Car Insurance",
-      category: "insurance",
-      cover: "Comprehensive",
-      premium: "From E650/pm",
-      featured: false,
-      location: { lat: -26.32, long: 31.15 },
-      likes: 160,
-      reviews: 55,
-    },
-    name: "Hospital Cash Plan",
-    subtype: "Daily Benefit",
-    keyBenefits: [
-      "Up to R2,000 per day in hospital",
-      "No medical test required",
-      "Covers you + family",
-      "Pays directly to your account",
-    ],
-    monthlyCost: "from R145",
-    ctaLabel: "Join Today",
   },
 ];
 
@@ -399,9 +246,9 @@ export default function FinancialHubScreen({ navigation }) {
     minTerm: "",
     maxTerm: "",
     otherDetails: "",
-    interestRateApr:"",    
-    minInvestment:'',
-    expectedReturns:"",
+    interestRateApr: "",
+    minInvestment: '',
+    expectedReturns: "",
   });
   const categoryFieldConfig = {
     All: {
@@ -423,9 +270,9 @@ export default function FinancialHubScreen({ navigation }) {
     },
     Investments: {
       showRate: false,
-      showTerm: false,    
-      minInvestment:true,
-      expectedReturns:true,
+      showTerm: false,
+      minInvestment: true,
+      expectedReturns: true,
     },
   };
 
@@ -516,8 +363,8 @@ export default function FinancialHubScreen({ navigation }) {
   }, []);
 
   useEffect(() => {
-    const showSub = Keyboard.addListener("keyboardDidShow", () => {});
-    const hideSub = Keyboard.addListener("keyboardDidHide", () => {});
+    const showSub = Keyboard.addListener("keyboardDidShow", () => { });
+    const hideSub = Keyboard.addListener("keyboardDidHide", () => { });
 
     return () => {
       showSub.remove();
@@ -669,129 +516,6 @@ export default function FinancialHubScreen({ navigation }) {
     _category: item.category || (item.name ? 'insurance' : 'loan')
   }));
 
-  // Helper: apply everything EXCEPT category
-  // const applyNonCategoryFilters = (data) => {
-  //   if (!filters || !Array.isArray(data)) return data || [];  // safety
-
-  //   return data.filter(item => {
-  //     // Product type
-  //     if (filters.productType) {
-  //       const t = (item.type || item.name || '').toLowerCase();
-  //       if (!t.includes(filters.productType.toLowerCase())) return false;
-  //     }
-
-  //     // Name / Company
-  //     if (filters.nameOrCompany) {
-  //       const n = ((item.bank || item.company || item.name) + '').toLowerCase();
-  //       if (!n.includes(filters.nameOrCompany.toLowerCase())) return false;
-  //     }
-
-  //     // Interest rate
-  //     const itemRate = parseNumberFromString(
-  //       item.rate || item.returns || item.premium || item.interestRate || ''
-  //     );
-  //     if (filters.minInterest) {
-  //       const minI = parseFloat(filters.minInterest);
-  //       if (itemRate === null || itemRate < minI) return false;
-  //     }
-  //     if (filters.maxInterest) {
-  //       const maxI = parseFloat(filters.maxInterest);
-  //       if (itemRate === null || itemRate > maxI) return false;
-  //     }
-
-  //     // Term (months)
-  //     const itemTerm = parseTermToMonths(item.term || '');
-  //     if (filters.minTerm) {
-  //       const minT = parseInt(filters.minTerm, 10);
-  //       if (itemTerm === null || itemTerm < minT) return false;
-  //     }
-  //     if (filters.maxTerm) {
-  //       const maxT = parseInt(filters.maxTerm, 10);
-  //       if (itemTerm === null || itemTerm > maxT) return false;
-  //     }
-
-  //     // Other details
-  //     if (filters.otherDetails) {
-  //       const od = filters.otherDetails.toLowerCase();
-  //       const desc = (item.description || '').toLowerCase();
-  //       const benefits = (item.keyBenefits || []).join(' ').toLowerCase();
-  //       const timeProcessing = (item.processingTime || '').toLowerCase();
-  //       if (!desc.includes(od) && !benefits.includes(od) && !timeProcessing.includes(od)) {
-  //         return false;
-  //       }
-  //     }
-
-  //     return true;
-  //   });
-  // };
-
-  // Determine base dataset — always an array
-  // const currentDataLocal = activeTab === "Insurance"
-  //   ? insuranceData : activeTab === "Investments"
-  //     ? investmentData : loanData;
-  // let baseData = currentDataLocal || [];
-
-  // Inside your submission handler in LoanAssist.js
-
-  //   const handleApplyFilters = async () => {
-  //   console.log("--- Filter Process Started ---");
-  //   setIsLoading(true);
-  //   setStatusMessage("");
-
-  //   try {
-  //     console.log('Calling suggestSaccosProduct with form:', form);
-
-  //     // Safety check: ensure form isn't null
-  //     if (!form) throw new Error("Form data is missing");
-
-  //     const response = await suggestSaccosProduct(form);
-
-  //     console.log("API Response received successfully");
-
-  //     if (response && response.success) {
-  //       const results = response.data || [];
-
-  //       if (form.category === "All") {
-  //         console.log("Updating all categories...");
-  //         setLoanData(results.filter((p) => p.category?.toLowerCase() === "loans"));
-  //         setInsuranceData(results.filter((p) => p.category?.toLowerCase() === "insurance"));
-  //         setInvestmentData(results.filter((p) => p.category?.toLowerCase() === "investments"));
-  //         setSavingsData(results.filter((p) => p.category?.toLowerCase() === "savings"));
-  //       } else {
-  //         console.log(`Updating specific tab: ${activeTab}`);
-  //         const setterMap = {
-  //           Loans: setLoanData,
-  //           Insurance: setInsuranceData,
-  //           Investments: setInvestmentData,
-  //           Savings: setSavingsData,
-  //         };
-
-  //         // Safety check for setterMap
-  //         if (setterMap[activeTab]) {
-  //           setterMap[activeTab](results);
-  //         } else {
-  //           console.warn(`No setter found for tab: ${activeTab}`);
-  //         }
-  //       }
-
-  //       console.log("Server Message:", response.message);
-  //       setStatusMessage(response.message || "Search complete");
-  //       setBottomSheetVisible(false);
-  //     } else {
-  //       console.log("Response was not successful:", response);
-  //     }
-
-  //   } catch (error) {
-  //     // This MUST log if the network fails
-  //     console.error("CRITICAL Filter Error:", error);
-  //     setStatusMessage("Could not connect to the server.");
-  //   } finally {
-  //     // This will now definitely run unless the app itself crashes
-  //     console.log('--- Finally Block: Closing loading indicator ---');
-  //     setIsLoading(false);
-  //   }
-  // };
-
   const handleApplyFilters = async () => {
     setIsLoading(true);
     try {
@@ -834,21 +558,6 @@ export default function FinancialHubScreen({ navigation }) {
     // If category is something else or undefined → keep current tab (already set)
   }
 
-  // Apply the rest of the filters
-  // const filteredBase = applyNonCategoryFilters(baseData);
-
-  // Final displayed data (with search bar on top)
-  // const displayedData = filteredBase.filter(item => {
-  //   const search = searchQuery.toLowerCase();
-  //   if (!search) return true;
-
-  //   const name = (item.bank || item.company || item.name || '').toLowerCase();
-  //   const type = (item.type || item.name || '').toLowerCase();
-  //   const category = (item.category || item._category || '').toLowerCase();
-
-  //   return name.includes(search) || type.includes(search) || category.includes(search);
-  // });
-
   const refreshFilters = () => {
     const newFilters = {
       category: "All",
@@ -859,9 +568,9 @@ export default function FinancialHubScreen({ navigation }) {
       minTerm: "",
       maxTerm: "",
       otherDetails: "",
-      interestRateApr:"",    
-      minInvestment:'',
-      expectedReturns:"",
+      interestRateApr: "",
+      minInvestment: '',
+      expectedReturns: "",
     };
     setFilters(null);
     setForm(newFilters);
@@ -980,9 +689,9 @@ export default function FinancialHubScreen({ navigation }) {
     const accountType =
       activeTab === "Savings"
         ? item.accountType ||
-          (item.type?.toLowerCase().includes("fixed")
-            ? "Fixed Deposit"
-            : "Variable Savings")
+        (item.type?.toLowerCase().includes("fixed")
+          ? "Fixed Deposit"
+          : "Variable Savings")
         : null;
 
     return (
@@ -1247,7 +956,7 @@ export default function FinancialHubScreen({ navigation }) {
           {/* summary audio-intro play */}
           <TouchableOpacity style={[styles.button, { backgroundColor: theme.colors.indicator }]} onPress={speak}>
             {isSpeaking ?
-             ( isPaused ? (
+              (isPaused ? (
                 <Icons.Ionicons
                   name="play-circle-outline"
                   size={24}
@@ -1260,9 +969,9 @@ export default function FinancialHubScreen({ navigation }) {
                   color={"#fff"}
                 />
               )
-            ) : (
-              <Icons.FontAwesome name="microphone" size={24} color={"#fff"} />
-            )}
+              ) : (
+                <Icons.FontAwesome name="microphone" size={24} color={"#fff"} />
+              )}
             <Text style={styles.label}>
               {isSpeaking ? "Pause" : "Quick Overview"}
             </Text>
@@ -1371,7 +1080,7 @@ export default function FinancialHubScreen({ navigation }) {
               key={tab}
               style={[
                 styles.tabItem,
-                activeTab === tab && styles.tabItemActive,
+                activeTab === tab && { backgroundColor: theme.colors.indicator },
               ]}
               onPress={() => {
                 setActiveTab(tab);
@@ -1578,7 +1287,9 @@ export default function FinancialHubScreen({ navigation }) {
               <Animated.View
                 style={[
                   styles.bottomSheet,
-                  { transform: [{ translateY: bottomSheetY }] },
+                  {
+                    backgroundColor: isDarkMode ? "#666" : "#f1f1f1", transform: [{ translateY: bottomSheetY }]
+                  },
                 ]}
               >
                 <View style={styles.sheetHandle} />
@@ -1593,13 +1304,13 @@ export default function FinancialHubScreen({ navigation }) {
                     style={{
                       fontSize: 18,
                       fontWeight: "700",
-                      marginBottom: 12,
+                      marginBottom: 12, color: theme.colors.text
                     }}
                   >
                     Filter Criteria
                   </Text>
 
-                  <Text style={styles.sheetLabel}>Category</Text>
+                  <Text style={[styles.sheetLabel, { color: theme.colors.sub_text }]}>Category</Text>
                   <ScrollView
                     horizontal
                     showsHorizontalScrollIndicator={false}
@@ -1622,7 +1333,7 @@ export default function FinancialHubScreen({ navigation }) {
                           styles.radioBtn,
                           form.category === c && styles.radioBtnActive,
                         ]}
-                        onPress={() =>{
+                        onPress={() => {
                           LayoutAnimation.easeInEaseOut();
                           setForm((prev) => ({
                             ...prev,
@@ -1631,15 +1342,15 @@ export default function FinancialHubScreen({ navigation }) {
                             maxInterest: "",
                             minTerm: "",
                             maxTerm: "",
-                            interestRateApr:"",    
-                            minInvestment:'',
-                            expectedReturns:"",
+                            interestRateApr: "",
+                            minInvestment: '',
+                            expectedReturns: "",
                           }))
                         }}
                       >
                         <Text
                           style={{
-                            color: form.category === c ? "#fff" : "#374151",
+                            color: form.category === c ? "#fff" : "#666",
                             fontWeight: "600",
                           }}
                         >
@@ -1649,7 +1360,7 @@ export default function FinancialHubScreen({ navigation }) {
                     ))}
                   </ScrollView>
 
-                  <Text style={styles.sheetLabel}>Product type</Text>
+                  <Text style={[styles.sheetLabel, { color: theme.colors.sub_text }]}>Financial Deal Type</Text>
                   <TextInput
                     value={form.productType}
                     onChangeText={(v) =>
@@ -1659,55 +1370,53 @@ export default function FinancialHubScreen({ navigation }) {
                     placeholder="e.g. personal, home, life, funeral, unit trust..."
                   />
 
-                  <Text style={styles.sheetLabel}>Name / Company</Text>
+                  <Text style={[styles.sheetLabel, { color: theme.colors.sub_text }]}>Company Provider</Text>
                   <TextInput
                     value={form.nameOrCompany}
-                    onChangeText={(v) =>
-                      setForm((prev) => ({ ...prev, nameOrCompany: v }))
-                    }
+                    onChangeText={(v) => setForm((prev) => ({ ...prev, nameOrCompany: v }))}
                     style={styles.sheetInput}
                     placeholder="Bank or company name"
                   />
                   {activeCategoryConfig.interestRateApr && (
                     <>
-                        <Text style={styles.sheetLabel}>Interest Rate</Text>
-                       <TextInput
-                         keyboardType="numeric"
-                         value={form.interestRateApr}
-                         onChangeText={(v) =>
-                           setForm((prev) => ({ ...prev, interestRateApr: v }))
-                         }
-                         style={styles.sheetInput}
-                         placeholder="0"
-                       />
+                      <Text style={[styles.sheetLabel, { color: theme.colors.sub_text }]}>Interest Rate</Text>
+                      <TextInput
+                        keyboardType="numeric"
+                        value={form.interestRateApr}
+                        onChangeText={(v) =>
+                          setForm((prev) => ({ ...prev, interestRateApr: v }))
+                        }
+                        style={styles.sheetInput}
+                        placeholder="0"
+                      />
                     </>
                   )}
                   {activeCategoryConfig.minInvestment && (
                     <>
-                        <Text style={styles.sheetLabel}>Min Investment</Text>
-                       <TextInput
-                          keyboardType="numeric"
-                         value={form.minInvestment}
-                         onChangeText={(v) =>
-                           setForm((prev) => ({ ...prev, minInvestment: v }))
-                         }
-                         style={styles.sheetInput}
-                         placeholder="0"
-                       />
+                      <Text style={[styles.sheetLabel, { color: theme.colors.sub_text }]}>Min Investment</Text>
+                      <TextInput
+                        keyboardType="numeric"
+                        value={form.minInvestment}
+                        onChangeText={(v) =>
+                          setForm((prev) => ({ ...prev, minInvestment: v }))
+                        }
+                        style={styles.sheetInput}
+                        placeholder="0"
+                      />
                     </>
                   )}
                   {activeCategoryConfig.expectedReturns && (
                     <>
-                        <Text style={styles.sheetLabel}>Expected Returns</Text>
-                       <TextInput
-                          keyboardType="numeric"
-                         value={form.expectedReturns}
-                         onChangeText={(v) =>
-                           setForm((prev) => ({ ...prev, expectedReturns: v }))
-                         }
-                         style={styles.sheetInput}
-                         placeholder="0"
-                       />
+                      <Text style={[styles.sheetLabel, { color: theme.colors.sub_text }]}>Expected Returns</Text>
+                      <TextInput
+                        keyboardType="numeric"
+                        value={form.expectedReturns}
+                        onChangeText={(v) =>
+                          setForm((prev) => ({ ...prev, expectedReturns: v }))
+                        }
+                        style={styles.sheetInput}
+                        placeholder="0"
+                      />
                     </>
                   )}
 
@@ -1715,7 +1424,7 @@ export default function FinancialHubScreen({ navigation }) {
                   {activeCategoryConfig.showRate && (
                     <View style={{ flexDirection: "row", gap: 8 }}>
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.sheetLabel}>
+                        <Text style={[styles.sheetLabel, { color: theme.colors.sub_text }]}>
                           Min Rate / Premium / Return (%)
                         </Text>
                         <TextInput
@@ -1730,7 +1439,7 @@ export default function FinancialHubScreen({ navigation }) {
                       </View>
 
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.sheetLabel}>
+                        <Text style={[styles.sheetLabel, { color: theme.colors.sub_text }]}>
                           Max Rate / Premium / Return (%)
                         </Text>
                         <TextInput
@@ -1751,7 +1460,7 @@ export default function FinancialHubScreen({ navigation }) {
                       style={{ flexDirection: "row", gap: 8, marginTop: 8 }}
                     >
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.sheetLabel}>Min Term (months)</Text>
+                        <Text style={[styles.sheetLabel, { color: theme.colors.sub_text }]}>Min Term (months)</Text>
                         <TextInput
                           keyboardType="numeric"
                           value={form.minTerm}
@@ -1764,7 +1473,7 @@ export default function FinancialHubScreen({ navigation }) {
                       </View>
 
                       <View style={{ flex: 1 }}>
-                        <Text style={styles.sheetLabel}>Max Term (months)</Text>
+                        <Text style={[styles.sheetLabel, { color: theme.colors.sub_text }]}>Max Term (months)</Text>
                         <TextInput
                           keyboardType="numeric"
                           value={form.maxTerm}
@@ -1778,7 +1487,7 @@ export default function FinancialHubScreen({ navigation }) {
                     </View>
                   )}
 
-                  <Text style={styles.sheetLabel}>Other Details (Options)</Text>
+                  <Text style={[styles.sheetLabel, { color: theme.colors.sub_text }]}>Other Details (Options)</Text>
                   <TextInput
                     value={form.otherDetails}
                     onChangeText={(v) =>
@@ -1833,13 +1542,13 @@ export default function FinancialHubScreen({ navigation }) {
         visible={searchModalVisible}
         onRequestClose={() => setSearchModalVisible(false)}
       >
-        <View style={styles.modalContainer}>
+        <View style={[styles.modalContainer, { backgroundColor: isDarkMode ? '#333' : '#fff' }]}>
           {/* Header */}
           <View style={styles.modalHeader}>
             <TouchableOpacity onPress={() => setSearchModalVisible(false)}>
-              <Icons.Ionicons name="close" size={28} color="#111827" />
+              <Icons.Ionicons name="close" size={28} color={theme.colors.text} />
             </TouchableOpacity>
-            <Text style={styles.modalTitle}>Search Results</Text>
+            <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Search Results</Text>
             <View style={{ width: 28 }} />
           </View>
           {statusMessage ? (
@@ -2149,6 +1858,8 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 16,
+    paddingHorizontal: 16,
+    paddingBottom: 15,
   },
   modalTitle: { fontSize: 18, fontWeight: "700", color: "#111827" },
   modalBody: { marginBottom: 16 },
@@ -2184,7 +1895,6 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     height: 480,
-    backgroundColor: "#fff",
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     elevation: 20,
@@ -2203,7 +1913,6 @@ const styles = StyleSheet.create({
   },
   sheetLabel: {
     fontSize: 13,
-    color: "#374151",
     marginBottom: 6,
     fontWeight: "600",
   },
@@ -2219,7 +1928,7 @@ const styles = StyleSheet.create({
   radioBtn: {
     paddingVertical: 8,
     paddingHorizontal: 12,
-    backgroundColor: "#F1F5F9",
+    backgroundColor: "#F4F0FF",
     borderRadius: 8,
   },
   radioBtnActive: { backgroundColor: "#111827" },
@@ -2256,17 +1965,7 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: "#F9FAFB",
     paddingTop: Platform.OS === "ios" ? 50 : 20,
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingHorizontal: 16,
-    paddingBottom: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E7EB",
   },
   modalTitle: {
     fontSize: 18,
