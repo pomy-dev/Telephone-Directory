@@ -13,8 +13,8 @@ import NetInfo from "@react-native-community/netinfo";
 import { Icons } from "../../constants/Icons";
 import { Images } from '../../constants/Images';
 import { AppContext } from "../../context/appContext";
-import FinancialBanner from "../../components/customBanner";
-import { fetchSaccos } from "../../service/getApi";
+import FinancialPromotion from "../../components/customBanner";
+import { fetchSaccos, fetchSaccosPromos } from "../../service/getApi";
 import CustomLoader from "../../components/customLoader";
 
 const { width } = Dimensions.get("window");
@@ -240,13 +240,14 @@ export default function FinancialHubScreen({ navigation }) {
   const [savingsData, setSavingsData] = useState([]);
   const [insuranceData, setInsuranceData] = useState([]);
   const [investmentData, setInvestmentData] = useState([]);
+  const [bannerPromos, setBannerPromos] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedLoans, setSelectedLoans] = useState([]);
   const [quickCalcLoan, setQuickCalcLoan] = useState(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isBannersVisible, setIsBannersVisible] = useState(true);
+  const [isBannersVisible, setIsBannersVisible] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const bannerHeight = useRef(new Animated.Value(190)).current;
   const bannerOpacity = useRef(new Animated.Value(1)).current;
@@ -274,6 +275,7 @@ export default function FinancialHubScreen({ navigation }) {
     });
 
     loadSaccos();
+    loadSaccoPromos();
     return () => unsubscribe();
   }, []);
 
@@ -566,6 +568,19 @@ export default function FinancialHubScreen({ navigation }) {
     } catch (err) {
       console.error("Failed to load saccos:", err);
       // Optionally show toast/error message to user
+    }
+  };
+
+  const loadSaccoPromos = async () => {
+    try {
+      const promos = await fetchSaccosPromos((partialPromos) => {
+        setBannerPromos(partialPromos);
+      });
+
+      promos && setIsBannersVisible(true); // show banners if we got any promos
+      // console.log("Loaded promos:", promos);
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -868,26 +883,32 @@ export default function FinancialHubScreen({ navigation }) {
 
       <Animated.View style={{ height: bannerHeight, overflow: 'hidden' }}>
         <Animated.View style={{ flex: 1, opacity: bannerOpacity, transform: [{ translateY: bannerTranslate }] }}>
-          <Carousel
-            loop={bannerPromos.length > 1}
-            width={width}
-            height={190}
-            autoPlay={bannerPromos.length > 1 && isBannersVisible}
-            data={bannerPromos}
-            scrollAnimationDuration={3000}
-            renderItem={({ item }) => (
-              <FinancialBanner
-                key={item?.id}
-                companyProfile={item?.companyLogo}
-                visible={isBannersVisible}
-                category={item?.category}
-                productName={item?.name}
-                productType={item?.subtype}
-                onDismiss={() => handleDismiss(item?.id)}
-                onLearnMore={() => navigation.navigate("LoanDetails", { item: item.package })}
-              />
-            )}
-          />
+
+          {isBannersVisible && (
+            <Carousel
+              loop={bannerPromos.length > 1}
+              width={width}
+              autoPlay={bannerPromos.length > 1 && isBannersVisible}
+              data={bannerPromos}
+              scrollAnimationDuration={3000}
+              renderItem={({ item }) => (
+                <FinancialPromotion
+                  key={item?._id}
+                  companyName={item.companyName}
+                  productName={item?.productName}
+                  companyLogo={item?.companyLogoFile?.url || item?.companyLogoDataUrl}
+                  category={item?.productCategory}
+                  highlights={item?.highlights || []}
+                  headline={item?.headline}
+                  description={item?.description}
+                  specialties={item?.specialties || []}
+                  callToAction={item?.callToAction}
+                  validUntil={item?.validUntil}
+                  onAction={() => navigation.navigate("LoanDetails", { item: item.package })}
+                />
+              )}
+            />
+          )}
         </Animated.View>
       </Animated.View>
 

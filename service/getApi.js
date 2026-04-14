@@ -46,6 +46,44 @@ export const fetchSaccos = async (onProgress) => {
   }
 };
 
+export const fetchSaccosPromos = async (onProgress) => {
+  try {
+    let allPromos = [];
+    let currentPage = 1;
+    let totalPages = 1;
+    do {
+      const response = await fetch(
+        `${API_BASE_URL}/api/get-all-saccos-promos?page=${currentPage}&limit=10`,
+        {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+      if (!response.ok) throw new Error(`Failed to fetch page ${currentPage}`);
+
+      const pageData = await response.json();
+
+      const newPromos = Array.isArray(pageData)
+        ? pageData
+        : (pageData.promotions || []);
+
+      if (Array.isArray(newPromos) && newPromos.length > 0) {
+        allPromos = [...allPromos, ...newPromos];
+        // Call callback with current progress (good for smooth UI)
+        if (typeof onProgress === "function") {
+          onProgress(allPromos);
+        }
+      }
+      totalPages = pageData.totalPages || pageData.total_pages || currentPage;
+      currentPage++;
+    } while (currentPage <= totalPages);
+    return allPromos;
+  } catch (error) {
+    console.error("Error fetching saccos promos:", error);
+    throw error;
+  }
+};
+
 // ==================== User Profile Management ==================== //
 export const addUser = async (userData) => {
   try {
