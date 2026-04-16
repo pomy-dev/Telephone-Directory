@@ -46,88 +46,6 @@ const shuffleArray = (array) => {
   return shuffled;
 };
 
-// === DATA ===
-const savingsDataUn = [
-  {
-    id: "s1",
-    bank: "Standard Bank Eswatini",
-    logo: require("../../assets/banks/bank2.png"),
-    type: "Premium Savings Account",
-    category: "savings",
-    interestRate: "5.2%",
-    minBalance: "E1,000",
-    monthlyFee: "E0",
-    featured: true,
-    accountType: "Fixed",
-    description: "Earn interest on your savings with no hidden charges.",
-    processingTime: "Instant",
-    location: { lat: -26.3275, long: 31.142 },
-    likes: 250,
-    reviews: 85,
-    companyName: "Standard Bank",
-    company: { companyName: "Standard Bank" },
-  },
-  {
-    id: "s2",
-    bank: "Nedbank Eswatini",
-    logo: require("../../assets/banks/bank1.jpeg"),
-    type: "Youth Savings Account",
-    category: "savings",
-    interestRate: "6.0%",
-    minBalance: "E500",
-    monthlyFee: "E0",
-    featured: true,
-    accountType: "Variable",
-    description: "Special account for young savers with higher returns.",
-    processingTime: "Instant",
-    location: { lat: -26.305, long: 31.1365 },
-    likes: 180,
-    reviews: 62,
-    companyName: "Nedbank",
-    company: { companyName: "Nedbank" },
-  },
-  {
-    id: "s3",
-    bank: "FNB Eswatini",
-    logo: require("../../assets/banks/bank3.jpeg"),
-    type: "Goal Savings Account",
-    category: "savings",
-    interestRate: "4.8%",
-    minBalance: "E2,000",
-    monthlyFee: "E0",
-    featured: false,
-    accountType: "Variable",
-    description:
-      "Set savings goals and earn interest while building your fund.",
-    processingTime: "Instant",
-    location: { lat: -26.318, long: 31.145 },
-    likes: 140,
-    reviews: 48,
-    companyName: "FNB",
-    company: { companyName: "FNB" },
-  },
-  {
-    id: "s4",
-    bank: "Swazi Bank",
-    logo: require("../../assets/banks/bank2.png"),
-    type: "Fixed Deposit Account",
-    category: "savings",
-    interestRate: "7.5%",
-    minBalance: "E5,000",
-    monthlyFee: "E0",
-    featured: false,
-    accountType: "Fixed",
-    description:
-      "Lock your funds for guaranteed returns with higher interest rates.",
-    processingTime: "1-2 days",
-    location: { lat: -26.32, long: 31.15 },
-    likes: 200,
-    reviews: 71,
-    companyName: "Swazi Bank",
-    company: { companyName: "Swazi Bank" },
-  },
-];
-
 // === QUICK EMI MODAL (Loans only) ===
 const QuickCalcModal = ({ visible, product, onClose, navigation }) => {
   const slideAnim = useRef(new Animated.Value(300)).current;
@@ -217,6 +135,7 @@ export default function FinancialHubScreen({ navigation }) {
   const [investmentData, setInvestmentData] = useState([]);
   const [bannerPromos, setBannerPromos] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [selectedLoans, setSelectedLoans] = useState([]);
   const [quickCalcLoan, setQuickCalcLoan] = useState(null);
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -250,6 +169,7 @@ export default function FinancialHubScreen({ navigation }) {
     minInvestment: '',
     expectedReturns: "",
   });
+
   const categoryFieldConfig = {
     All: {
       showRate: true,
@@ -276,8 +196,7 @@ export default function FinancialHubScreen({ navigation }) {
     },
   };
 
-  const activeCategoryConfig =
-    categoryFieldConfig[form.category] || categoryFieldConfig.All;
+  const activeCategoryConfig = categoryFieldConfig[form.category] || categoryFieldConfig.All;
 
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener((state) => {
@@ -322,46 +241,6 @@ export default function FinancialHubScreen({ navigation }) {
     });
   }, [bottomSheetVisible]);
 
-  // fetch saccos on mount (for future use)
-  useEffect(() => {
-    const loadSaccos = async () => {
-      try {
-        const saccos = await fetchSaccos();
-        // =================== filter by category ======================== //
-        // select loans
-        const loans = saccos.filter(
-          (s) => s.category && s.category.toLowerCase() === "loans",
-        );
-        setLoanData(loans);
-
-        // select insurance
-        const insurance = saccos.filter(
-          (s) => s.category && s.category.toLowerCase() === "insurance",
-        );
-        setInsuranceData(insurance);
-
-        // select investments
-        const investments = saccos.filter(
-          (s) => s.category && s.category.toLowerCase() === "investments",
-        );
-        setInvestmentData(investments);
-
-        // select savings
-        const savings = saccos.filter(
-          (s) => s.category && s.category.toLowerCase() === "savings",
-        );
-        setSavingsData(savingsDataUn);
-
-        // console.log("Saccos loaded:", saccos.length);
-      } catch (err) {
-        console.log("Failed to load saccos:", err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    loadSaccos();
-  }, []);
-
   useEffect(() => {
     const showSub = Keyboard.addListener("keyboardDidShow", () => { });
     const hideSub = Keyboard.addListener("keyboardDidHide", () => { });
@@ -378,6 +257,13 @@ export default function FinancialHubScreen({ navigation }) {
     setIsFilter(false);
   };
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300); // 300ms debounce
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
   const getFilteredAndSearchedData = () => {
     // Start from current tab
     let data =
@@ -389,93 +275,27 @@ export default function FinancialHubScreen({ navigation }) {
             ? insuranceData
             : activeTab === "Investments"
               ? investmentData
-              : [];
-
-    // 1. Bottom sheet category override (optional — only if user really wants to switch)
-    if (filters?.category && filters.category !== "All") {
-      if (filters.category === "Loans") data = loanData;
-      else if (filters.category === "Insurance") data = insuranceData;
-      else if (filters.category === "Investments") data = investmentData;
-    }
-
-    // 2. Apply structured filters
-    if (filters) {
-      data = data.filter((item) => {
-        // Product type
-        if (filters.productType) {
-          const typeStr = (item.type || item.name || "").toLowerCase();
-          if (!typeStr.includes(filters.productType.toLowerCase()))
-            return false;
-        }
-
-        // Name / Company
-        if (filters.nameOrCompany) {
-          const nameStr = (item.bank || item.company || "").toLowerCase();
-          if (!nameStr.includes(filters.nameOrCompany.toLowerCase()))
-            return false;
-        }
-
-        // Interest / Rate / Premium / Return
-        if (filters.minInterest || filters.maxInterest) {
-          const rateStr =
-            item.rate ||
-            item.returns ||
-            item.premium ||
-            item.interestRate ||
-            "";
-          const rateNum = parseNumberFromString(rateStr); // improve this parser!
-          if (rateNum === null) return false;
-
-          if (filters.minInterest && rateNum < parseFloat(filters.minInterest))
-            return false;
-          if (filters.maxInterest && rateNum > parseFloat(filters.maxInterest))
-            return false;
-        }
-
-        // Term in months
-        if (filters.minTerm || filters.maxTerm) {
-          const termMonths = parseTermToMonths(item.term || "");
-          if (termMonths === null) return true; // be lenient if no term
-
-          if (filters.minTerm && termMonths < parseInt(filters.minTerm))
-            return false;
-          if (filters.maxTerm && termMonths > parseInt(filters.maxTerm))
-            return false;
-        }
-
-        // Free text match (more fields!)
-        if (filters.otherDetails) {
-          const query = filters.otherDetails.toLowerCase();
-          const text = [
-            item.description || "",
-            ...(item.keyBenefits || []),
-            item.processingTime || "",
-            item.type || "",
-            item.subtype || "",
-          ]
-            .join(" ")
-            .toLowerCase();
-
-          if (!text.includes(query)) return false;
-        }
-
-        return true;
-      });
-    }
+              : [...loanData, ...savingsData, ...insuranceData, ...investmentData];
 
     // 3. Apply search bar (always last)
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
+    if (debouncedSearchQuery.trim()) {
+      const queryWords = debouncedSearchQuery.toLowerCase().trim().split(/\s+/);
       data = data.filter((item) => {
         const text = [
-          item.bank || item.company || "",
-          item.type || item.name || "",
+          item.company?.companyName || item.companyName || "",
+          item.category || item.name || "",
           item.description || "",
           item.processingTime || "",
+          item.minDurationMonths || "",
+          item.maxDurationMonths || "",
+          item.minBalance || "",
+          (item.benefits || []).join(" "),
+          item.policyType || "",
+          item.interestRateApr || item.expectedReturns || "",
         ]
           .join(" ")
           .toLowerCase();
-        return text.includes(q);
+        return queryWords.every(word => text.includes(word));
       });
     }
 
@@ -485,35 +305,10 @@ export default function FinancialHubScreen({ navigation }) {
   //filter when you land on the page
   const displayedData = getFilteredAndSearchedData();
 
-  // Helpers for parsing numeric values from strings
-  const parseNumberFromString = (str) => {
-    if (!str) return null;
-    // Take the first realistic number (ignore % , p.a. etc)
-    const match = str.match(/(\d+[.,]?\d*)/);
-    return match ? parseFloat(match[1].replace(",", ".")) : null;
-  };
-
-  const parseTermToMonths = (str) => {
-    if (!str) return null;
-    const s = str
-      .toLowerCase()
-      .replace(/up to|maximum|approx/gi, "")
-      .trim();
-
-    const numMatch = s.match(/(\d+[.,]?\d*)/);
-    if (!numMatch) return null;
-
-    let num = parseFloat(numMatch[1].replace(",", "."));
-    if (s.includes("year") || s.includes("yr")) num *= 12;
-    if (s.includes("day")) num /= 30; // rough
-
-    return Math.round(num);
-  };
-
   // === FILTERING LOGIC (SAFER + DEBUG-FRIENDLY) ===
   const allProducts = [...loanData, ...savingsData, ...insuranceData, ...investmentData].map(item => ({
     ...item,
-    _category: item.category || (item.name ? 'insurance' : 'loan')
+    _category: item.category || (item.name ? 'insurance' : 'loans'), // crude guess if category missing
   }));
 
   const handleApplyFilters = async () => {
@@ -577,24 +372,6 @@ export default function FinancialHubScreen({ navigation }) {
     setIsFilter(false);
   };
 
-  // Filter logic per tab
-  // const getCurrentData = () => {
-  //   if (activeTab === "Insurance") return insuranceData;
-  //   if (activeTab === "Investments") return investmentData;
-  //   return loanData;
-  // };
-
-  // const currentData = getCurrentData();
-
-  // base search (search bar) applied before or along with filters
-  // const searchedData = currentData.filter(item => {
-  //   const search = searchQuery.toLowerCase();
-  //   const name = (item.bank || item.company || "").toLowerCase();
-  //   const type = (item.type || "").toLowerCase();
-  //   const category = (item.category || "").toLowerCase();
-  //   return search === "" || name.includes(search) || type.includes(search) || category.includes(search);
-  // });
-
   const loadSaccos = async () => {
     try {
       // For refresh, we can keep loading state separate
@@ -619,7 +396,6 @@ export default function FinancialHubScreen({ navigation }) {
       });
 
       promos && setIsBannersVisible(true); // show banners if we got any promos
-      // console.log("Loaded promos:", promos);
     } catch (err) {
       console.error(err);
     }
@@ -638,7 +414,7 @@ export default function FinancialHubScreen({ navigation }) {
       setInvestmentData(shuffleArray(investments));
 
       const savings = saccos.filter(s => s.category?.toLowerCase() === "savings");
-      setSavingsData(shuffleArray(savingsDataUn));        // Fixed!
+      setSavingsData(shuffleArray(savings));
     } catch (err) {
       console.error("Error processing saccos:", err);
     } finally {
@@ -664,7 +440,7 @@ export default function FinancialHubScreen({ navigation }) {
       'semi-annual': 'psa',
     };
 
-    return frequencyMap[freq] || '';
+    return frequencyMap[freq] || 'pm';
   };
 
   // Render Cards
@@ -689,9 +465,7 @@ export default function FinancialHubScreen({ navigation }) {
     const accountType =
       activeTab === "Savings"
         ? item.accountType ||
-        (item.type?.toLowerCase().includes("fixed")
-          ? "Fixed Deposit"
-          : "Variable Savings")
+        (item.type?.toLowerCase().includes("fixed") ? "Fixed Deposit" : "Variable Savings")
         : null;
 
     return (
@@ -742,7 +516,7 @@ export default function FinancialHubScreen({ navigation }) {
             style={[styles.cardType, { color: "#F59E0B" }]}
             numberOfLines={1}
           >
-            {item?.name || item?.type}
+            {item?.name}
           </Text>
 
           {isLoan && (
@@ -797,17 +571,16 @@ export default function FinancialHubScreen({ navigation }) {
           {isInvestments && (
             <>
               <Text style={[styles.cardRate, { color: "#06be9fff" }]}>Min: E{item?.minInvestment}</Text>
-              <Text style={[styles.cardMax, { color: '#ddd' }]}>Expected: {item?.expectedReturns}% {getCompoundingFrequency(item.compoundingFrequency)}</Text>
+              <Text style={[styles.cardMax, { color: '#ddd' }]}>Expected: {item?.expectedReturns}% {getCompoundingFrequency(item.expectedReturnsFrequency)}</Text>
             </>
           )}
 
           {isSavings && (
             <>
               <View style={styles.cardDetails}>
-                <Text style={[styles.cardRate, { color: "#a89ff8ff" }]}>{item?.interestRate} {getCompoundingFrequency(item.compoundingFrequency)}</Text>
+                <Text style={[styles.cardRate, { color: "#a89ff8ff" }]}>{item?.interestRateApr}% {getCompoundingFrequency(item?.interestRateFrequency)}</Text>
                 <Text style={[styles.cardMax, { color: '#828ff7ff' }]}>Min: E{item?.minBalance}</Text>
               </View>
-              <Text style={[styles.processingTime, { color: '#f4f0ff' }]}>Service Fee: {item?.monthlyFee}/{getCompoundingFrequency(item.compoundingFrequency)}</Text>
               <Text style={[styles.cardSubText, { color: '#fff' }]}>Account Type: {accountType}</Text>
             </>
           )}
@@ -936,7 +709,7 @@ export default function FinancialHubScreen({ navigation }) {
         <View style={[styles.searchContainer, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
           <Icons.Ionicons name="search" size={20} color={theme.colors.sub_text} />
           <TextInput
-            style={styles.searchInput}
+            style={[styles.searchInput, { color: theme.colors.text }]}
             placeholder={`Search ${activeTab === "Loans" ? "banks/loans" : activeTab === "Savings" ? "Savings Account" : activeTab === "Insurance" ? "insurers" : "investments"}...`}
             placeholderTextColor={theme.colors.sub_text}
             value={searchQuery}
@@ -1168,8 +941,6 @@ export default function FinancialHubScreen({ navigation }) {
   const onRefresh = useCallback(() => {
     handleRefresh();
   }, []);
-
-
 
   if (isOffline) {
     return (
@@ -1669,7 +1440,7 @@ const styles = StyleSheet.create({
     borderWidth: 1, gap: 8,
     elevation: 1
   },
-  searchInput: { flex: 1, fontSize: 16, color: "#111827" },
+  searchInput: { flex: 1, fontSize: 16 },
 
   sectionTitle: {
     fontSize: 20,
