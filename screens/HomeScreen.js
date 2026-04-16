@@ -297,7 +297,7 @@ export default function HomeScreen({ navigation }) {
           No Internet Connection
         </Text>
         <Text
-          style={[styles.offlineSubtitle, { color: theme.colors.sub_text }]}
+          style={[styles.offlineText, { color: theme.colors.sub_text }]}
         >
           Check your network settings to see the latest gigs on Pomy.
         </Text>
@@ -518,7 +518,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
   },
-  retryButtonText: {
+  retryText: {
     color: "#fff",
     fontSize: 16,
     fontWeight: "700",

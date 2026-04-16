@@ -264,42 +264,79 @@ export default function FinancialHubScreen({ navigation }) {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
+  // === IMPROVED SEARCH FUNCTION ===
   const getFilteredAndSearchedData = () => {
-    // Start from current tab
-    let data =
-      activeTab === "Loans"
-        ? loanData
-        : activeTab === "Savings"
-          ? savingsData
-          : activeTab === "Insurance"
-            ? insuranceData
-            : activeTab === "Investments"
-              ? investmentData
-              : [...loanData, ...savingsData, ...insuranceData, ...investmentData];
+    let data = [];
 
-    // 3. Apply search bar (always last)
+    // If there's a search query → search across ALL products (ignore current tab)
     if (debouncedSearchQuery.trim()) {
-      const queryWords = debouncedSearchQuery.toLowerCase().trim().split(/\s+/);
-      data = data.filter((item) => {
-        const text = [
+      const query = debouncedSearchQuery.toLowerCase().trim();
+      const queryWords = query.split(/\s+/).filter(Boolean);
+
+      // Combine all data sources
+      const allProducts = [...loanData, ...savingsData, ...insuranceData, ...investmentData];
+
+      data = allProducts.filter((item) => {
+        const searchableText = [
           item.company?.companyName || item.companyName || "",
-          item.category || item.name || "",
+          item.name || "",
+          item.category || "",
           item.description || "",
-          item.processingTime || "",
-          item.minDurationMonths || "",
-          item.maxDurationMonths || "",
-          item.minBalance || "",
-          (item.benefits || []).join(" "),
+          item.productType || "",
           item.policyType || "",
-          item.interestRateApr || item.expectedReturns || "",
+          item.processingTime || "",
+          item.interestRateApr ? item.interestRateApr + "%" : "",
+          item.expectedReturns ? item.expectedReturns + "%" : "",
+          item.minBalance || "",
+          item.maxAmount || "",
+          item.coverageAmount || "",
+          item.minInvestment || "",
+          ...(item.benefits || []),
+          ...(item.highlights || []),
+          ...(item.specialties || []),
         ]
           .join(" ")
           .toLowerCase();
-        return queryWords.every(word => text.includes(word));
+
+        // Every word in the query must be found somewhere in the text
+        return queryWords.every((word) => searchableText.includes(word));
       });
+
+      // Optional: Auto-switch tab to the first result's category (better UX)
+      if (data.length > 0 && activeTab !== "All") {
+        const firstResultCategory = getCategoryFromItem(data[0]);
+        if (firstResultCategory && firstResultCategory !== activeTab) {
+          // Auto-switch Tab
+          setActiveTab(firstResultCategory);
+        }
+      }
+
+      return data;
     }
 
-    return data;
+    // No search query → use current tab as before
+    switch (activeTab) {
+      case "Loans":
+        return loanData;
+      case "Savings":
+        return savingsData;
+      case "Insurance":
+        return insuranceData;
+      case "Investments":
+        return investmentData;
+      default:
+        return [];
+    }
+  };
+
+  // Helper to normalize category
+  const getCategoryFromItem = (item) => {
+    const cat = (item?.category || "").toLowerCase().trim();
+    if (cat.includes("loan")) return "Loans";
+    if (cat.includes("saving")) return "Savings";
+    if (cat.includes("insur")) return "Insurance";
+    if (cat.includes("invest")) return "Investments";
+    return null;
   };
 
   //filter when you land on the page
@@ -480,6 +517,12 @@ export default function FinancialHubScreen({ navigation }) {
         onPress={() => navigation.navigate("LoanDetails", { item: item })}
         activeOpacity={0.95}
       >
+        {debouncedSearchQuery.trim() && (
+          <Text style={{ fontSize: 12, color: '#888', marginTop: 4 }}>
+            {getCategoryFromItem(item)}
+          </Text>
+        )}
+
         {/* Skewed Background Image Container */}
         <View style={styles.cardBackgroundContainer}>
           <Image
@@ -694,7 +737,6 @@ export default function FinancialHubScreen({ navigation }) {
           flexDirection: "row",
           alignItems: "center",
           paddingHorizontal: 16,
-          marginBottom: 8,
         }}
       >
         <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -710,7 +752,7 @@ export default function FinancialHubScreen({ navigation }) {
           <Icons.Ionicons name="search" size={20} color={theme.colors.sub_text} />
           <TextInput
             style={[styles.searchInput, { color: theme.colors.text }]}
-            placeholder={`Search ${activeTab === "Loans" ? "banks/loans" : activeTab === "Savings" ? "Savings Account" : activeTab === "Insurance" ? "insurers" : "investments"}...`}
+            placeholder={`Search ${activeTab}...`}
             placeholderTextColor={theme.colors.sub_text}
             value={searchQuery}
             onChangeText={setSearchQuery}
@@ -721,92 +763,85 @@ export default function FinancialHubScreen({ navigation }) {
             </TouchableOpacity>
           ) : null}
         </View>
+
+        {/* summary audio-intro play */}
+        <TouchableOpacity style={[styles.button, { backgroundColor: theme.colors.indicator }]} onPress={speak}>
+          {isSpeaking ?
+            (isPaused ? (
+              <Icons.Ionicons
+                name="play-circle-outline"
+                size={24}
+                color={"#fff"}
+              />
+            ) : (
+              <Icons.Ionicons
+                name="pause-circle-outline"
+                size={24}
+                color={"#fff"}
+              />
+            )
+            ) : (
+              <Icons.FontAwesome name="microphone" size={24} color={"#fff"} />
+            )}
+        </TouchableOpacity>
       </View>
 
       {/* AI and options */}
       <View style={styles.AIOptions}>
-        <View style={{ alignItems: "center" }}>
-          {/* summary audio-intro play */}
-          <TouchableOpacity style={[styles.button, { backgroundColor: theme.colors.indicator }]} onPress={speak}>
-            {isSpeaking ?
-              (isPaused ? (
-                <Icons.Ionicons
-                  name="play-circle-outline"
-                  size={24}
-                  color={"#fff"}
-                />
-              ) : (
-                <Icons.Ionicons
-                  name="pause-circle-outline"
-                  size={24}
-                  color={"#fff"}
-                />
-              )
-              ) : (
-                <Icons.FontAwesome name="microphone" size={24} color={"#fff"} />
-              )}
-            <Text style={styles.label}>
-              {isSpeaking ? "Pause" : "Quick Overview"}
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: 6,
+          }}
+        >
+          {/* banner hiding button (default=[enabled]) */}
+          <TouchableOpacity
+            style={[styles.Optionsbtn]}
+            onPress={() => setIsBannersVisible(!isBannersVisible)}
+          >
+            <Icons.Feather
+              name={isBannersVisible ? "chevrons-up" : "chevrons-down"}
+              size={20}
+              color={theme.colors.indicator}
+            />
+            <Text
+              style={{
+                fontSize: 20,
+                fontWeight: 200,
+                color: theme.colors.indicator,
+              }}
+            >
+              For-Graps
             </Text>
           </TouchableOpacity>
 
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginTop: 12,
-              gap: 6,
-            }}
+          {/* options btn for criteria search - bottom bar */}
+          <TouchableOpacity
+            style={[styles.Optionsbtn]}
+            onPress={openBottomSheet}
           >
-            {/* banner hiding button (default=[enabled]) */}
-            <TouchableOpacity
-              style={[styles.Optionsbtn]}
-              onPress={() => setIsBannersVisible(!isBannersVisible)}
+            <Icons.Ionicons
+              name="options-outline"
+              size={24}
+              color={theme.colors.indicator}
+            />
+            <Text
+              style={{
+                fontSize: 20,
+                fontWeight: 200,
+                color: theme.colors.indicator,
+              }}
             >
-              <Icons.Feather
-                name={isBannersVisible ? "chevrons-up" : "chevrons-down"}
-                size={20}
-                color={theme.colors.indicator}
-              />
-              <Text
-                style={{
-                  fontSize: 20,
-                  fontWeight: 200,
-                  color: theme.colors.indicator,
-                }}
-              >
-                For-Graps
-              </Text>
-            </TouchableOpacity>
-
-            {/* options btn for criteria search - bottom bar */}
-            <TouchableOpacity
-              style={[styles.Optionsbtn]}
-              onPress={openBottomSheet}
-            >
-              <Icons.Ionicons
-                name="options-outline"
-                size={24}
-                color={theme.colors.indicator}
-              />
-              <Text
-                style={{
-                  fontSize: 20,
-                  fontWeight: 200,
-                  color: theme.colors.indicator,
-                }}
-              >
-                Opts
-              </Text>
-            </TouchableOpacity>
-          </View>
+              Opts
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* AI button btn for navigating to chat screen */}
         <TouchableOpacity style={[styles.AIbtn]} onPress={() => navigation.navigate('Chatbot', { context: '' })}>
-          <Icons.MaterialCommunityIcons name="face-agent" size={28} color="#1E40AF" />
-          <Text style={{ fontSize: 20, fontWeight: 200, color: theme.colors.indicator }}>Ask AI</Text>
+          <Icons.AntDesign name="wechat" size={28} color="#1E40AF" />
         </TouchableOpacity>
       </View>
 
@@ -959,7 +994,7 @@ export default function FinancialHubScreen({ navigation }) {
           No Internet Connection
         </Text>
         <Text
-          style={[styles.offlineSubtitle, { color: theme.colors.sub_text }]}
+          style={[styles.offlineText, { color: theme.colors.sub_text }]}
         >
           Check your network settings to see the latest gigs on Pomy.
         </Text>
@@ -1364,6 +1399,46 @@ export default function FinancialHubScreen({ navigation }) {
 // === STYLES (updated & extended) ===
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  // offline
+  offlineContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  offlineContent: {
+    alignItems: "center",
+    width: "100%",
+  },
+  offlineTitle: {
+    fontSize: 24,
+    fontWeight: "800",
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  offlineText: {
+    fontSize: 16,
+    textAlign: "center",
+    lineHeight: 24,
+    marginBottom: 30,
+    paddingHorizontal: 20,
+  },
+  retryButton: {
+    paddingHorizontal: 30,
+    paddingVertical: 15,
+    borderRadius: 12,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  retryText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "700",
+  },
+
   // Tab Bar
   tabBar: {
     flexDirection: "row",
@@ -1383,9 +1458,9 @@ const styles = StyleSheet.create({
   tabTextActive: { color: "#FFFFFF" },
 
   button: {
-    width: '100%', flexDirection: 'row', alignItems: 'center',
-    justifyContent: 'center', paddingHorizontal: 16, paddingVertical: 12,
-    borderRadius: 70, gap: 8, shadowColor: '#000',
+    alignItems: 'center',
+    justifyContent: 'center', paddingHorizontal: 10, paddingVertical: 8,
+    borderRadius: 70, shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 6,
@@ -1413,7 +1488,6 @@ const styles = StyleSheet.create({
 
   AIbtn: {
     alignItems: "center",
-    gap: 4,
     paddingHorizontal: 16,
     paddingVertical: 8,
     backgroundColor: "#E0E7FF",
@@ -1428,19 +1502,18 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingHorizontal: 16,
-    gap: 8,
-    justifyContent: "center",
+    paddingHorizontal: 10,
     marginBottom: 8,
   },
 
   searchContainer: {
+    width: width * 0.7,
     flexDirection: "row", alignItems: "center",
-    margin: 16, paddingHorizontal: 16, borderRadius: 30,
-    borderWidth: 1, gap: 8,
-    elevation: 1
+    marginHorizontal: 10, marginVertical: 16,
+    paddingHorizontal: 16, borderRadius: 30,
+    borderWidth: 1, gap: 1, elevation: 1
   },
-  searchInput: { flex: 1, fontSize: 16 },
+  searchInput: { width: width * 0.5, fontSize: 16 },
 
   sectionTitle: {
     fontSize: 20,
