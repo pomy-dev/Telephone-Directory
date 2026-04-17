@@ -86,6 +86,97 @@ export const fetchSaccosPromos = async (onProgress) => {
 };
 
 /**
+ * Add a like to a Sacco Product
+ */
+export const addSaccoProductLike = async (productId) => {
+  try {
+    if (!productId) {
+      throw new Error("Product ID is required");
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/add-product-likes?productId=${productId}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Failed to add like: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error adding like:", error);
+    throw error;
+  }
+};
+
+/**
+ * Remove a like from a Sacco Product
+ */
+export const removeSaccoProductLike = async (productId) => {
+  try {
+    if (!productId) {
+      throw new Error("Product ID is required");
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/remove-product-like?productId=${productId}`, {
+      method: "DELETE",
+      headers: {
+        "Content-Type": "application/json",
+      },
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Failed to remove like: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error removing like:", error);
+    throw error;
+  }
+};
+
+export const addSaccoProductReviews = async ({ productId, reviewData }) => {
+  try {
+    if (!productId) {
+      throw new Error("Product ID is required");
+    }
+
+    console.log(reviewData)
+
+    if (!reviewData?.reviewerEmail || !reviewData?.rating || !reviewData?.comment) {
+      throw new Error("User email, rating, and comment are required");
+    }
+
+    const response = await fetch(`${API_BASE_URL}/api/post-product-review?productId=${productId}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(reviewData),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.message || `Failed to add review: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error("Error adding review:", error);
+    throw error;
+  }
+};
+
+/**
  * Fetch products based on user filters with a fallback to closest matches.
  * @param {Object} filterObj - The filter object from the UI
  */

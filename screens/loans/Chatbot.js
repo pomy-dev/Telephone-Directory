@@ -146,7 +146,8 @@ export default function Chatbot({ navigation, route }) {
           timestamp: Date.now(),
         };
 
-        setMessages([aiReply]);
+        // set timeout
+        setTimeout(() => setMessages([aiReply]), 5000);
       } catch (e) {
         throw new Error(e)
       } finally {
