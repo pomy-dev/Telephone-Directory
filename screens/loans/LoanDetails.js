@@ -11,6 +11,7 @@ import { AppContext } from "../../context/appContext";
 import { AuthContext } from "../../context/authProvider";
 import SecondaryNav from "../../components/SecondaryNav";
 import { LoaderKitView } from 'react-native-loader-kit';
+import { format } from "date-fns";
 import { addSaccoProductLike, removeSaccoProductLike, addSaccoProductReviews } from "../../service/getApi"
 
 const { width } = Dimensions.get("window");
@@ -80,15 +81,22 @@ const CollapsibleSection = ({ theme, title, children, initiallyOpen = false }) =
   );
 };
 
+const formatCurrency = (amount, currency = 'E') => {
+  if (amount === null || amount === undefined || isNaN(amount)) return `${currency}0.00`;
+  const num = parseFloat(amount);
+  return `${currency}${num.toLocaleString('en-SZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+};
+
 export default function FinancialDetailsScreen({ route, navigation }) {
   const { theme, isDarkMode } = React.useContext(AppContext);
   const { item } = route.params || {};
-  const { user } = React.useContext(AuthContext);
+  const { user, likedProducts, setLikedProducts } = React.useContext(AuthContext);
   const data = item;
 
   const [isCommentSheetOpen, setIsCommentSheetOpen] = React.useState(false);
-  const [likes, setLikes] = React.useState(data?.likes || 0);
-  const [isLiked, setIsLiked] = React.useState(false);
+
+  const isLiked = likedProducts.financialProducts.includes(data._id);
+  const [likes, setLikes] = React.useState((isLiked ? (data?.likes + 1) : (data?.likes)) || 0);
   const [reviews, setReviews] = React.useState(data?.reviews);
   const [isPostingReview, setIsPostingReview] = React.useState(false);
 
@@ -204,15 +212,21 @@ export default function FinancialDetailsScreen({ route, navigation }) {
   const handleLike = async () => {
     let result;
     try {
-      setIsLiked(!isLiked);
       if (isLiked) {
-        result = await removeSaccoProductLike(data._id)
-        result && console.log("Like removed!", result.likes);
+        result = await removeSaccoProductLike(data._id);
+        result && setLikedProducts(prev => ({
+          ...prev,
+          financialProducts: prev.financialProducts.filter(id => id !== data._id)
+        }));
+        setLikes(likes - 1);
       } else {
         result = await addSaccoProductLike(data._id);
-        result && console.log("Like added!", result.likes);
+        result && setLikedProducts(prev => ({
+          ...prev,
+          financialProducts: [...prev.financialProducts, data._id]
+        }));
+        setLikes(likes + 1);
       }
-      setLikes(isLiked ? likes - 1 : likes + 1);
     } catch (err) {
       alert(err.message);
     }
@@ -376,8 +390,8 @@ export default function FinancialDetailsScreen({ route, navigation }) {
         <View style={[styles.highlightsCard, { backgroundColor: theme.colors.sub_card }]}>
           {isLoan && (
             <>
-              <HighlightItem theme={theme} label="Interest Rate" value={data.interestRateApr} isRate />
-              <HighlightItem theme={theme} label="Maximum Amount" value={'E' + data.maxAmount} />
+              <HighlightItem theme={theme} label="Interest Rate" value={data.interestRateApr + '%'} isRate />
+              <HighlightItem theme={theme} label="Maximum Amount" value={formatCurrency(data.maxAmount)} />
               <HighlightItem theme={theme} label="Term (Months)" value={data.maxDurationMonths} />
               <HighlightItem theme={theme} label="Repayment Frequency" value={data.repaymentFrequency} isRate />
               {data.collateral && <HighlightItem theme={theme} label="Collateral/Security" value={data.collateral} />}
@@ -387,8 +401,8 @@ export default function FinancialDetailsScreen({ route, navigation }) {
 
           {isSaving && (
             <>
-              <HighlightItem theme={theme} label="Interest Apr" value={data.interestRateApr} isRate />
-              <HighlightItem theme={theme} label="Minimum Balance" value={data.minBalance} />
+              <HighlightItem theme={theme} label="Interest Apr" value={data.interestRateApr + '%'} isRate />
+              <HighlightItem theme={theme} label="Minimum Balance" value={formatCurrency(data.minBalance)} />
               <HighlightItem theme={theme} label="Interest Accumulation" value={data.interestRateFrequency} />
               <HighlightItem theme={theme} label="Account Type" value={data.accountType || 'Fixed Account'} />
             </>
@@ -396,16 +410,16 @@ export default function FinancialDetailsScreen({ route, navigation }) {
 
           {isInsurance && (
             <>
-              <HighlightItem theme={theme} label="Monthly Premium" value={data.monthlyPremium} isRate />
-              <HighlightItem theme={theme} label="Coverage Amount" value={data.coverageAmount} />
+              <HighlightItem theme={theme} label="Monthly Premium" value={formatCurrency(data.monthlyPremium)} isRate />
+              <HighlightItem theme={theme} label="Coverage Amount" value={formatCurrency(data.coverageAmount)} />
               <HighlightItem theme={theme} label="Policy Type" value={data.policyType} />
             </>
           )}
 
           {isInvestment && (
             <>
-              <HighlightItem theme={theme} label="Minimum Investment" value={data.minInvestment} isRate />
-              <HighlightItem theme={theme} label="Expected Returns" value={data.expectedReturns} />
+              <HighlightItem theme={theme} label="Minimum Investment" value={formatCurrency(data.minInvestment)} isRate />
+              <HighlightItem theme={theme} label="Expected Returns" value={data.expectedReturns + '%'} />
               <HighlightItem theme={theme} label="Risk Level" value={data.riskLevel} />
             </>
           )}
@@ -648,7 +662,7 @@ export default function FinancialDetailsScreen({ route, navigation }) {
                   </View>
                 </View>
                 <Text style={[styles.reviewText, { color: theme.colors.text }]}>{review?.comment}</Text>
-                <Text style={[styles.reviewDate, { color: theme.colors.sub_text }]}>{review?.createdAt}</Text>
+                <Text style={[styles.reviewDate, { color: theme.colors.sub_text }]}>{format(review?.createdAt, 'PPP') + ' ' + format(review?.createdAt, 'HH:mm')}</Text>
               </View>
             ))
           )}
@@ -661,7 +675,7 @@ export default function FinancialDetailsScreen({ route, navigation }) {
         navigation.navigate("Chatbot", { context: data })}
         activeOpacity={0.9}
       >
-        <Icons.MaterialCommunityIcons name="face-agent" size={30} color="#FFFFFF" />
+        <Icons.AntDesign name="wechat" size={30} color="#FFFFFF" />
       </TouchableOpacity>
     </View>
   );

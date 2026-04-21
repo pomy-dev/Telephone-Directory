@@ -3,43 +3,39 @@ import { useQuery } from '@realm/react';
 import { API_BASE_URL } from "../config/env";
 
 // ==================== Sacco Functions ==================== //
+export const fetchSaccosPaginated = async (page = 1, limit = 20) => {
+  try {
+    const response = await fetch(
+      `${API_BASE_URL}/api/get-saccos-products?page=${page}&limit=${limit}`,
+      {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+    if (!response.ok) throw new Error(`Failed to fetch page ${page}`);
+    return await response.json();
+  } catch (error) {
+    console.error("Error fetching saccos paginated:", error);
+    throw error;
+  }
+};
+
 export const fetchSaccos = async (onProgress) => {
   try {
     let allSaccos = [];
     let currentPage = 1;
     let totalPages = 1;
-
     do {
-      const response = await fetch(
-        `${API_BASE_URL}/api/get-saccos-products?page=${currentPage}&limit=20`,
-        {
-          method: "GET",
-          headers: { "Content-Type": "application/json" },
-        }
-      );
-
-      if (!response.ok) throw new Error(`Failed to fetch page ${currentPage}`);
-
-      const pageData = await response.json();
-
-      const newSaccos = Array.isArray(pageData)
-        ? pageData
-        : (pageData.products || []);
-
-      if (Array.isArray(newSaccos) && newSaccos.length > 0) {
+      const pageData = await fetchSaccosPaginated(currentPage, 20);
+      const newSaccos = Array.isArray(pageData.products) ? pageData.products : [];
+      if (newSaccos.length > 0) {
         allSaccos = [...allSaccos, ...newSaccos];
-
-        // Call callback with current progress (good for smooth UI)
-        if (typeof onProgress === "function") {
-          onProgress(allSaccos);
-        }
+        if (typeof onProgress === "function") onProgress(allSaccos);
       }
-
-      totalPages = pageData.totalPages || pageData.total_pages || currentPage;
+      totalPages = pageData.totalPages || 1;
       currentPage++;
     } while (currentPage <= totalPages);
-
-    return allSaccos; // Return final complete list
+    return allSaccos;
   } catch (error) {
     console.error("Error fetching saccos:", error);
     throw error;

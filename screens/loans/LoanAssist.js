@@ -29,8 +29,10 @@ import NetInfo from "@react-native-community/netinfo";
 import { Icons } from "../../constants/Icons";
 import { AppContext } from "../../context/appContext";
 import FinancialPromotion from "../../components/customBanner";
-import { fetchSaccos, fetchSaccosPromos, suggestSaccosProduct } from "../../service/getApi";
+import { fetchSaccos, fetchSaccosPaginated, fetchSaccosPromos, suggestSaccosProduct } from "../../service/getApi";
 import CustomLoader from "../../components/customLoader";
+import { Banner } from 'react-native-paper';
+import { Images } from "../../constants/Images";
 
 const { width } = Dimensions.get("window");
 const isTablet = width >= 768;
@@ -44,6 +46,12 @@ const shuffleArray = (array) => {
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
   return shuffled;
+};
+
+const formatCurrency = (amount, currency = 'E') => {
+  if (amount === null || amount === undefined || isNaN(amount)) return `${currency}0.00`;
+  const num = parseFloat(amount);
+  return `${currency}${num.toLocaleString('en-SZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 };
 
 // === QUICK EMI MODAL (Loans only) ===
@@ -71,7 +79,7 @@ const QuickCalcModal = ({ visible, product, onClose, navigation }) => {
     P && r && n ? (P * r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1) : 0;
 
   const format = (v) =>
-    `E${v.toLocaleString("en-SZ", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    formatCurrency(v);
 
   return (
     <Modal transparent visible={visible} animationType="none">
@@ -112,7 +120,7 @@ const QuickCalcModal = ({ visible, product, onClose, navigation }) => {
             style={styles.fullCalcBtn}
             onPress={() => {
               onClose();
-              navigation.navigate("LoanCalculator");
+              navigation.navigate("LoanCalculator", { product: product });
             }}
           >
             <Text style={styles.fullCalcText}>Open Full Calculator</Text>
@@ -156,6 +164,7 @@ export default function FinancialHubScreen({ navigation }) {
   const [filters, setFilters] = useState(null);
   const [isFilter, setIsFilter] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
+  const [showRetry, setShowRetry] = useState(false);
   const [form, setForm] = useState({
     category: "All",
     productType: "",
@@ -169,6 +178,12 @@ export default function FinancialHubScreen({ navigation }) {
     minInvestment: '',
     expectedReturns: "",
   });
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [allProducts, setAllProducts] = useState([]); // Master list for all categories
+  const [isFetchingMore, setIsFetchingMore] = useState(false);
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
 
   const categoryFieldConfig = {
     All: {
@@ -203,9 +218,22 @@ export default function FinancialHubScreen({ navigation }) {
       setIsOffline(!state.isConnected);
     });
 
-    loadSaccos();
     loadSaccoPromos();
-    return () => unsubscribe();
+
+    loadInitialSaccos(); // Changed from loadSaccos()
+
+    // Set a timeout for loading: 30 seconds = 30000 ms
+    const loadingTimeout = setTimeout(() => {
+      if (isLoading) {
+        setIsLoading(false);
+        setShowRetry(true);
+      }
+    }, 30000);
+
+    return () => {
+      unsubscribe();
+      clearTimeout(loadingTimeout);
+    };
   }, []);
 
   useEffect(() => {
@@ -343,10 +371,10 @@ export default function FinancialHubScreen({ navigation }) {
   const displayedData = getFilteredAndSearchedData();
 
   // === FILTERING LOGIC (SAFER + DEBUG-FRIENDLY) ===
-  const allProducts = [...loanData, ...savingsData, ...insuranceData, ...investmentData].map(item => ({
-    ...item,
-    _category: item.category || (item.name ? 'insurance' : 'loans'), // crude guess if category missing
-  }));
+  // const allProducts = [...loanData, ...savingsData, ...insuranceData, ...investmentData].map(item => ({
+  //   ...item,
+  //   _category: item.category || (item.name ? 'insurance' : 'loans'), // crude guess if category missing
+  // }));
 
   const handleApplyFilters = async () => {
     setIsLoading(true);
@@ -409,23 +437,6 @@ export default function FinancialHubScreen({ navigation }) {
     setIsFilter(false);
   };
 
-  const loadSaccos = async () => {
-    try {
-      // For refresh, we can keep loading state separate
-      const saccos = await fetchSaccos((partialSaccos) => {
-        // This runs multiple times as pages load → good for progressive update
-        updateUIFromSaccos(partialSaccos);
-      });
-
-      // Final update with complete data (optional but recommended)
-      updateUIFromSaccos(saccos);
-
-    } catch (err) {
-      console.error("Failed to load saccos:", err);
-      // Optionally show toast/error message to user
-    }
-  };
-
   const loadSaccoPromos = async () => {
     try {
       const promos = await fetchSaccosPromos((partialPromos) => {
@@ -435,6 +446,67 @@ export default function FinancialHubScreen({ navigation }) {
       promos && setIsBannersVisible(true); // show banners if we got any promos
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const loadInitialSaccos = async () => {
+    setIsLoading(true);
+    setShowRetry(false);
+    try {
+      const initialData = await fetchSaccosPaginated(1, 8);
+      const newSaccos = Array.isArray(initialData.products) ? initialData.products : [];
+      setAllProducts(newSaccos);
+      updateUIFromSaccos(newSaccos);
+      setTotalPages(initialData.totalPages);
+      setCurrentPage(2);
+      setInitialLoadDone(true);
+      setIsLoading(false);
+
+      // 2. Start background loading for the rest silently
+      if (initialData.totalPages > 1) {
+        loadRemainingSaccos(2, initialData.totalPages);
+      }
+    } catch (err) {
+      console.error("Failed to load initial saccos:", err);
+      setIsLoading(false);
+      setShowRetry(true);
+    }
+  };
+
+  // 3. Background silent loader
+  const loadRemainingSaccos = async (startPage, totalPagesCount) => {
+    for (let page = startPage; page <= totalPagesCount; page++) {
+      try {
+        const pageData = await fetchSaccosPaginated(page, 20);
+        const newSaccos = Array.isArray(pageData.products) ? pageData.products : [];
+        setAllProducts(prev => {
+          const updated = [...prev, ...newSaccos];
+          updateUIFromSaccos(updated); // Update screen as data arrives
+          return updated;
+        });
+      } catch (err) {
+        console.error(`Background load error on page ${page}:`, err);
+      }
+    }
+  };
+
+  // 4. Scroll-to-load handler (for manual triggers)
+  const loadMoreSaccos = async () => {
+    if (isFetchingMore || currentPage > totalPages) return;
+    setIsFetchingMore(true);
+    try {
+      const pageData = await fetchSaccosPaginated(currentPage, 20);
+      const newSaccos = Array.isArray(pageData.products) ? pageData.products : [];
+      setAllProducts(prev => {
+        const updated = [...prev, ...newSaccos];
+        updateUIFromSaccos(updated);
+        return updated;
+      });
+      setCurrentPage(prev => prev + 1);
+    } catch (err) {
+      console.error("Load more error:", err);
+    } finally {
+      setIsFetchingMore(false);
     }
   };
 
@@ -457,6 +529,7 @@ export default function FinancialHubScreen({ navigation }) {
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
+      setShowRetry(false);
     }
   };
 
@@ -566,11 +639,8 @@ export default function FinancialHubScreen({ navigation }) {
             <>
               <View style={styles.cardDetails}>
                 <Text style={[styles.cardRate, { color: "#fa6262ff" }]}>{item?.interestRateApr + '%' || 0} interest</Text>
-                <Text style={[styles.cardMax, { color: theme.colors.text }]}>E{item?.maxAmount}</Text>
+                <Text style={[styles.cardMax, { color: '#fff' }]}>{formatCurrency(item?.maxAmount)}</Text>
               </View>
-              <Text style={[styles.processingTime, { color: "#fff" }]}>
-                Processing Time: {item?.processingTime}
-              </Text>
 
               <View style={styles.cardButtons}>
                 <TouchableOpacity
@@ -580,7 +650,7 @@ export default function FinancialHubScreen({ navigation }) {
                   ]}
                   onPress={(e) => {
                     e.stopPropagation();
-                    navigation.navigate("LoanCalculator");
+                    navigation.navigate("LoanCalculator", { product: item });
                   }}
                 >
                   <Icons.Ionicons
@@ -606,14 +676,14 @@ export default function FinancialHubScreen({ navigation }) {
 
           {isInsurance && (
             <>
-              <Text style={[styles.cardRate, { color: "#f81e79ff" }]}>Premium: E{item?.monthlyPremium}/{getCompoundingFrequency(item?.compoundingFrequency)}</Text>
-              <Text style={[styles.cardMax, { color: '#ddd' }]}>Cover: Up to E{item?.coverageAmount}</Text>
+              <Text style={[styles.cardRate, { color: "#f81e79ff" }]}>Premium: {formatCurrency(item?.monthlyPremium)}/{getCompoundingFrequency(item?.compoundingFrequency)}</Text>
+              <Text style={[styles.cardMax, { color: '#ddd' }]}>Cover: Up to {formatCurrency(item?.coverageAmount)}</Text>
             </>
           )}
 
           {isInvestments && (
             <>
-              <Text style={[styles.cardRate, { color: "#06be9fff" }]}>Min: E{item?.minInvestment}</Text>
+              <Text style={[styles.cardRate, { color: "#06be9fff" }]}>Min: {formatCurrency(item?.minInvestment)}</Text>
               <Text style={[styles.cardMax, { color: '#ddd' }]}>Expected: {item?.expectedReturns}% {getCompoundingFrequency(item.expectedReturnsFrequency)}</Text>
             </>
           )}
@@ -622,7 +692,7 @@ export default function FinancialHubScreen({ navigation }) {
             <>
               <View style={styles.cardDetails}>
                 <Text style={[styles.cardRate, { color: "#a89ff8ff" }]}>{item?.interestRateApr}% {getCompoundingFrequency(item?.interestRateFrequency)}</Text>
-                <Text style={[styles.cardMax, { color: '#828ff7ff' }]}>Min: E{item?.minBalance}</Text>
+                <Text style={[styles.cardMax, { color: '#828ff7ff' }]}>Min: {formatCurrency(item?.minBalance)}</Text>
               </View>
               <Text style={[styles.cardSubText, { color: '#fff' }]}>Account Type: {accountType}</Text>
             </>
@@ -1005,7 +1075,7 @@ export default function FinancialHubScreen({ navigation }) {
             { backgroundColor: theme.colors.primary },
           ]}
         >
-          <Text style={[styles.retryText, { color: theme.colors.sub_text }]}>Retry</Text>
+          <Text style={[styles.retryText]}>Retry</Text>
         </TouchableOpacity>
       </View>
     );
@@ -1021,6 +1091,30 @@ export default function FinancialHubScreen({ navigation }) {
 
       {isLoading && <CustomLoader />}
 
+      <Banner
+        visible={showRetry}
+        actions={[
+          {
+            label: 'Cancel',
+            onPress: () => setShowRetry(false),
+          },
+          {
+            label: 'Re-load',
+            onPress: () => { loadInitialSaccos(), setShowRetry(false) },
+          },
+        ]}
+        icon={({ size }) => (
+          <Image
+            source={Images.emptyFolder}
+            style={{
+              width: size,
+              height: size,
+            }}
+          />
+        )}>
+        Loading took too long. Please try again.
+      </Banner>
+
       <View
         style={{
           backgroundColor: theme.colors.card,
@@ -1032,7 +1126,7 @@ export default function FinancialHubScreen({ navigation }) {
         <FlatList
           data={displayedData}
           renderItem={renderCard}
-          keyExtractor={(item, index) => index}
+          keyExtractor={(item, index) => index.toString()}
           numColumns={isTablet ? 2 : 1}
           columnWrapperStyle={
             isTablet
@@ -1056,6 +1150,13 @@ export default function FinancialHubScreen({ navigation }) {
               colors={[theme.colors.primary]}
               progressBackgroundColor={theme.colors.card}
             />
+          }
+          onEndReached={loadMoreSaccos} // Load more on scroll
+          onEndReachedThreshold={0.5}
+          ListFooterComponent={() =>
+            isFetchingMore ? (
+              <ActivityIndicator size="large" color={theme.colors.primary} style={{ marginVertical: 20 }} />
+            ) : null
           }
           showsVerticalScrollIndicator={false}
         />

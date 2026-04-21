@@ -11,7 +11,7 @@ import { AuthContext } from "../../context/authProvider";
 import { Avatar } from 'react-native-paper';
 import * as Speech from 'expo-speech';
 
-const { width, height } = Dimensions.get("window");
+const { width } = Dimensions.get("window");
 const isTablet = width >= 768;
 
 // 1. WhatsAppPatternFallback responding to theme
