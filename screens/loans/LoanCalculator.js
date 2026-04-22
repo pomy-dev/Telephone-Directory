@@ -7,11 +7,13 @@ import {
   TouchableOpacity,
   Dimensions,
   Keyboard,
+  Image,
+  ScrollView,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import SecondaryNav from "../../components/SecondaryNav";
 
-const { width } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window");
 const isTablet = width >= 768;
 
 // Helper: format currency (Eswatini Lilangeni)
@@ -22,10 +24,12 @@ const formatCurrency = (value) => {
   })}`;
 };
 
-export default function LoanCalculator({ navigation }) {
+export default function LoanCalculator({ navigation, route }) {
+  const product = route?.params?.product || null;
+
   const [principal, setPrincipal] = useState("");
-  const [rate, setRate] = useState("");
-  const [termMonths, setTermMonths] = useState("");
+  const [rate, setRate] = useState(product?.interestRateApr?.toString() || "");
+  const [termMonths, setTermMonths] = useState(product?.maxDurationMonths?.toString() || "");
   const [monthlyPayment, setMonthlyPayment] = useState(0);
   const [totalInterest, setTotalInterest] = useState(0);
 
@@ -54,12 +58,58 @@ export default function LoanCalculator({ navigation }) {
     setter(numeric);
   };
 
+  // Get company logo source
+  const getLogoSource = () => {
+    if (!product) return null;
+    if (typeof product.logo === "number") {
+      return product.logo;
+    }
+    return {
+      uri: product.company?.logoFile?.url || product.company?.logoDataUrl || product.logoDataUrl,
+    };
+  };
+
   return (
     <View style={styles.container}>
       <View style={{ height: 25 }} />
       <SecondaryNav title="Loan Calculator" />
 
-      <View style={styles.content}>
+      <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* Product Details Header */}
+        {product && (
+          <View style={styles.productHeader}>
+            {getLogoSource() && (
+              <Image
+                source={getLogoSource()}
+                style={styles.companyLogo}
+                resizeMode="contain"
+              />
+            )}
+            <View style={styles.productInfo}>
+              <Text style={styles.companyName} numberOfLines={1}>
+                {product.company?.companyName || product.companyName}
+              </Text>
+              <Text style={styles.productName} numberOfLines={1}>
+                {product.name}
+              </Text>
+              <View style={styles.productMetaRow}>
+                <View style={styles.metaItem}>
+                  <Text style={styles.metaLabel}>Interest Rate</Text>
+                  <Text style={styles.metaValue}>{product.interestRateApr}%</Text>
+                </View>
+                <View style={styles.metaItem}>
+                  <Text style={styles.metaLabel}>Max Term</Text>
+                  <Text style={styles.metaValue}>{product.maxDurationMonths} mo</Text>
+                </View>
+                <View style={styles.metaItem}>
+                  <Text style={styles.metaLabel}>Max Amount</Text>
+                  <Text style={styles.metaValue}>{formatCurrency(product.maxAmount)}</Text>
+                </View>
+              </View>
+            </View>
+          </View>
+        )}
+
         {/* Input Card */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Enter Loan Details</Text>
@@ -69,7 +119,7 @@ export default function LoanCalculator({ navigation }) {
             <Ionicons name="cash-outline" size={20} color="#6B7280" />
             <TextInput
               style={styles.input}
-              placeholder="Loan Amount (e.g. 50000)"
+              placeholder={`Loan Amount (${product ? formatCurrency(product.maxAmount) : "E50,000.00"})`}
               keyboardType="numeric"
               value={principal}
               onChangeText={(text) => handleInput(text, setPrincipal)}
@@ -85,7 +135,9 @@ export default function LoanCalculator({ navigation }) {
               keyboardType="numeric"
               value={rate}
               onChangeText={(text) => handleInput(text, setRate)}
+              editable={!product}
             />
+            {product && <Text style={styles.prefilled}>Pre-filled</Text>}
           </View>
 
           {/* Term */}
@@ -93,11 +145,13 @@ export default function LoanCalculator({ navigation }) {
             <Ionicons name="time-outline" size={20} color="#6B7280" />
             <TextInput
               style={styles.input}
-              placeholder="Term in Months (e.g. 60)"
+              placeholder={`Term in Months (up to ${product?.maxDurationMonths || 60})`}
               keyboardType="numeric"
               value={termMonths}
               onChangeText={(text) => handleInput(text, setTermMonths)}
+              editable={!product}
             />
+            {product && <Text style={styles.prefilled}>Pre-filled</Text>}
           </View>
         </View>
 
@@ -129,13 +183,13 @@ export default function LoanCalculator({ navigation }) {
         )}
 
         {/* Clear Button */}
-        {(principal || rate || termMonths) && (
+        {(principal || (rate && !product) || (termMonths && !product)) && (
           <TouchableOpacity
             style={styles.clearBtn}
             onPress={() => {
               setPrincipal("");
-              setRate("");
-              setTermMonths("");
+              if (!product) setRate("");
+              if (!product) setTermMonths("");
               Keyboard.dismiss();
             }}
           >
@@ -143,7 +197,7 @@ export default function LoanCalculator({ navigation }) {
             <Text style={styles.clearText}>Clear All</Text>
           </TouchableOpacity>
         )}
-      </View>
+      </ScrollView>
     </View>
   );
 }
@@ -151,10 +205,75 @@ export default function LoanCalculator({ navigation }) {
 /* ====================== STYLES ====================== */
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: "#F9FAFB" },
-  content: { paddingHorizontal: 16, paddingTop: 12 },
+  scrollContent: { paddingTop: 12 },
+
+  productHeader: {
+    backgroundColor: "#FFFFFF",
+    borderRadius: 16,
+    marginHorizontal: 10,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    marginBottom: 16,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  companyLogo: {
+    width: 64,
+    height: 64,
+    borderRadius: 12,
+    backgroundColor: "#F3F4F6",
+  },
+  productInfo: {
+    flex: 1,
+  },
+  companyName: {
+    fontSize: 12,
+    color: "#6B7280",
+    textTransform: "uppercase",
+    fontWeight: "600",
+    letterSpacing: 0.5,
+  },
+  productName: {
+    fontSize: 16,
+    fontWeight: "700",
+    color: "#111827",
+    marginVertical: 4,
+  },
+  productMetaRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 8,
+    gap: 8,
+  },
+  metaItem: {
+    flex: 1,
+  },
+  metaLabel: {
+    fontSize: 11,
+    color: "#6B7280",
+    fontWeight: "600",
+  },
+  metaValue: {
+    fontSize: 13,
+    color: "#111827",
+    fontWeight: "700",
+    marginTop: 2,
+  },
+  prefilled: {
+    fontSize: 11,
+    color: "#059669",
+    fontWeight: "600",
+    backgroundColor: "#ECFDF5",
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
 
   card: {
     backgroundColor: "#FFFFFF",
+    marginHorizontal: 16,
     borderRadius: 16,
     padding: 20,
     borderWidth: 1,
@@ -178,10 +297,10 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     borderWidth: 1,
     borderColor: "#E5E7EB",
+    gap: 10,
   },
   input: {
     flex: 1,
-    marginLeft: 10,
     fontSize: 16,
     color: "#111827",
   },
@@ -189,6 +308,7 @@ const styles = StyleSheet.create({
   resultCard: {
     backgroundColor: "#EFF6FF",
     borderRadius: 16,
+    marginHorizontal: 10,
     padding: 20,
     alignItems: "center",
     borderWidth: 1,
@@ -231,6 +351,7 @@ const styles = StyleSheet.create({
 
   clearBtn: {
     flexDirection: "row",
+    marginHorizontal: 10,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: "#FEE2E2",
@@ -238,6 +359,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 12,
     gap: 8,
+    marginBottom: height * 0.1,
   },
   clearText: {
     color: "#DC2626",

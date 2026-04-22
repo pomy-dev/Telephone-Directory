@@ -11,14 +11,14 @@ import { AuthContext } from "../../context/authProvider";
 import { Avatar } from 'react-native-paper';
 import * as Speech from 'expo-speech';
 
-const { width, height } = Dimensions.get("window");
+const { width } = Dimensions.get("window");
 const isTablet = width >= 768;
 
 // 1. WhatsAppPatternFallback responding to theme
 const WhatsAppPatternFallback = () => {
-  const { theme } = useContext(AppContext);
+  const { theme, isDarkMode } = useContext(AppContext);
   // Use theme primary color or a fallback WhatsApp green
-  const dotColor = "#075E54";
+  const dotColor = isDarkMode ? "#c2fcf5ff" : "#075E54";
 
   return (
     <View style={[StyleSheet.absoluteFillObject, { backgroundColor: theme.colors.background }]}>
@@ -119,75 +119,44 @@ export default function Chatbot({ navigation, route }) {
 
   const flatListRef = useRef(null);
 
-     const greetClient = async () => {
-      if (context !== '') {
-        setIsLoading(true);
-        try {
-          const res = await fetch(`${API_BASE_URL}/api/ask-grok`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              message: `Greet the client-(${user.displayName.toString()}) and introduce yourself.
-                This client wants to have your assistance pertaining-(${context?.category})
-                of this kind-(${context?.name}), probably with this keyId-(${context?._id}). 
-                Find the product from your provided storage and tailor assistance within it's scope. 
-                Ask them how you can assist them today in regard to the product in context.`,
-              history: messages?.map((msg) => ({
-                role: msg.isUser ? "user" : "assistant",
-                content: msg.text,
-              })),
-              context: context?.name || null,
-              dealType: context?.category || null
-            }),
-          });
-
-          if (!res.ok) throw new Error("Network error");
-
-          const data = await res.json();
-
-          const aiReply = {
-            id: (Date.now() + 1).toString(),
-            text: data.reply || "Sorry, I couldn't process that.",
-            isUser: false,
-            timestamp: Date.now(),
-          };
-
-          setMessages([aiReply]);
-        } catch (err) {
-          const errorMsg = {
-            id: new Date().toISOString(),
-            text: err.message,
-            isUser: false,
-            timestamp: Date.now(),
-          };
-          setMessages([errorMsg]);
-          console.error("greetClient: exception", err);
-        } finally {
-          setIsLoading(false);
-        }
-      }
-    };
-
-     const greetClient2 = async () => {
-      const welcomeMessage = {
-    id: 'system-intro-' + Date.now(), // Unique ID for keyExtractor
-    text: introText.trim(),
-    isUser: false, // This ensures it renders as an AI bubble
-    timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-  };
-      if (context !== '') {
-        setIsLoading(true);
-        setMessages([welcomeMessage]);
-        setIsLoading(false);
-      }
-    };
-
   useEffect(() => {
-    greetClient2();
+    greetClient();
   }, [context]);
 
-  // Auto-scroll to bottom
+  // Greet client and Start message
+  const greetClient = () => {
+    if (context !== '') {
+      setIsLoading(true);
+      try {
+        const now = new Date();
+        const hour = now.getHours();
+        let greeting = "";
 
+        if (hour >= 5 && hour < 12) greeting = "Good Morning";
+        else if (hour >= 12 && hour < 17) greeting = "Good Afternoon";
+        else if (hour >= 17 && hour < 21) greeting = " Good Evening";
+        else greeting = "Hello";
+
+        const message = `${greeting} ${user.displayName.toString()}, I'm your AI assistant to help you with advise and answers pertaining ${context?.category} of the ${context?.name} financial product kind.\n\nMy advise will be within the scope of data that I have from my listings.\n\nWhat would you want to know or ask about the ${context?.name}?`
+
+        const aiReply = {
+          id: (Date.now() + 1).toString(),
+          text: message,
+          isUser: false,
+          timestamp: Date.now(),
+        };
+
+        // set timeout
+        setTimeout(() => setMessages([aiReply]), 5000);
+      } catch (e) {
+        throw new Error(e)
+      } finally {
+        setIsLoading(false);
+      }
+    }
+  }
+
+  // Auto-scroll to bottom
   const scrollToBottom = () => {
     if (flatListRef.current) {
       flatListRef.current.scrollToEnd({ animated: true });

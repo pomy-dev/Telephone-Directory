@@ -25,11 +25,16 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
+  const firebaseAuth = getAuth();
   const [accessToken, setAccessToken] = useState(null);
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const firebaseAuth = getAuth();
   const [isWorker, setIsWorker] = useState(false);
+  const [likedProducts, setLikedProducts] = useState({
+    financialProducts: [],
+    freelancers: [],
+    forehires: []
+  });
 
   // Function to check status (you can call this after login)
   const checkWorkerStatus = async (uid) => {
@@ -201,6 +206,11 @@ export const AuthProvider = ({ children }) => {
 
       setAccessToken(null);
       setUser(null);
+      setLikedProducts({
+        financialProducts: [],
+        freelancers: [],
+        forehires: []
+      });
       console.log("User signed out successfully!");
     } catch (error) {
       console.error("Logout failed:", error);
@@ -341,6 +351,7 @@ export const AuthProvider = ({ children }) => {
     fireBaseGoogleLogin, emailSignUp, emailLogin, phoneLogin,
     verifyOTP, logout, accessToken, user, loading, isWorker, setIsWorker,
     checkWorkerStatus, updateUserProfile, handleDeleteAccount,
+    likedProducts, setLikedProducts,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

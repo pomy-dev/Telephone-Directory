@@ -4,10 +4,15 @@ import {
   Dimensions, Linking, StatusBar, Share, Platform, Alert
 } from "react-native";
 import { Dialog, Portal, Divider, Button } from 'react-native-paper';
+import { LinearGradient } from 'expo-linear-gradient';
 import BottomSheet, { BottomSheetTextInput, BottomSheetScrollView } from "@gorhom/bottom-sheet"; // Ensure this package is installed
 import { Icons } from "../../constants/Icons";
 import { AppContext } from "../../context/appContext";
+import { AuthContext } from "../../context/authProvider";
 import SecondaryNav from "../../components/SecondaryNav";
+import { LoaderKitView } from 'react-native-loader-kit';
+import { format } from "date-fns";
+import { addSaccoProductLike, removeSaccoProductLike, addSaccoProductReviews } from "../../service/getApi"
 
 const { width } = Dimensions.get("window");
 const isTablet = width >= 768;
@@ -76,19 +81,27 @@ const CollapsibleSection = ({ theme, title, children, initiallyOpen = false }) =
   );
 };
 
+const formatCurrency = (amount, currency = 'E') => {
+  if (amount === null || amount === undefined || isNaN(amount)) return `${currency}0.00`;
+  const num = parseFloat(amount);
+  return `${currency}${num.toLocaleString('en-SZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+};
+
 export default function FinancialDetailsScreen({ route, navigation }) {
   const { theme, isDarkMode } = React.useContext(AppContext);
   const { item } = route.params || {};
+  const { user, likedProducts, setLikedProducts } = React.useContext(AuthContext);
   const data = item;
 
   const [isCommentSheetOpen, setIsCommentSheetOpen] = React.useState(false);
-  const [likes, setLikes] = React.useState(data?.likes || 24); // Replace with real data if available
-  const [isLiked, setIsLiked] = React.useState(false);
-  const [reviews, setReviews] = React.useState(data?.reviews || 3); // Replace with real data if available
+
+  const isLiked = likedProducts.financialProducts.includes(data._id);
+  const [likes, setLikes] = React.useState((isLiked ? (data?.likes + 1) : (data?.likes)) || 0);
+  const [reviews, setReviews] = React.useState(data?.reviews);
+  const [isPostingReview, setIsPostingReview] = React.useState(false);
 
   const [rating, setRating] = React.useState(0);
   const [reviewText, setReviewText] = React.useState("");
-  const [myComments, setMyComments] = React.useState([]);
   const [submitSuccess, setSubmitSuccess] = React.useState(false);
   const [dialogVisible, setDialogVisible] = React.useState(false);
   const [branchOptions, setBranchOptions] = React.useState([]);
@@ -107,15 +120,22 @@ export default function FinancialDetailsScreen({ route, navigation }) {
     );
   }
 
-  // console.log("Financial Product Details:", data); // Debug log to check data structure
-
   const isLoan = data?.category.toLowerCase() === "loans";
   const isSaving = data?.category.toLowerCase() === "savings";
   const isInsurance = data?.category.toLowerCase() === "insurance";
-  const isInvestment = data?.category.toLowerCase() === "investment";
+  const isInvestment = data?.category.toLowerCase() === "investments";
 
   const companyName = data.company.companyName || "Financial Provider";
   const productName = data.name || "Financial Product";
+  const themeColor = data.company.themeColor || theme.colors.card;
+  const averageRating = React.useMemo(() => {
+    const reviewsList = reviews || data.reviews || [];
+    if (!Array.isArray(reviewsList) || reviewsList?.length === 0) {
+      return 0;
+    }
+    const total = reviewsList.reduce((sum, review) => sum + (parseFloat(review.rating) || 0), 0);
+    return parseFloat((total / reviewsList?.length).toFixed(1));
+  }, [reviews, data.reviews]);
 
   // handle call
   const handleCall = (phone) => Linking.openURL(`tel:${phone}`);
@@ -189,15 +209,33 @@ export default function FinancialDetailsScreen({ route, navigation }) {
     }
   };
 
-  const handleLike = () => {
-    setIsLiked(!isLiked);
-    setLikes(isLiked ? likes - 1 : likes + 1);
+  const handleLike = async () => {
+    let result;
+    try {
+      if (isLiked) {
+        result = await removeSaccoProductLike(data._id);
+        result && setLikedProducts(prev => ({
+          ...prev,
+          financialProducts: prev.financialProducts.filter(id => id !== data._id)
+        }));
+        setLikes(likes - 1);
+      } else {
+        result = await addSaccoProductLike(data._id);
+        result && setLikedProducts(prev => ({
+          ...prev,
+          financialProducts: [...prev.financialProducts, data._id]
+        }));
+        setLikes(likes + 1);
+      }
+    } catch (err) {
+      alert(err.message);
+    }
   };
 
   const handleShare = async () => {
     try {
       const shareOptions = {
-        message: `Check out this financial product: ${productName} by ${companyName}. Learn more about it from the Business Link app > Smart Financing!`,
+        message: `Check out this financial product: ${productName} provided by ${companyName}.\nLearn more about it from the Business Link app > Smart Financing!`,
       };
       await Share.share(shareOptions);
     } catch (error) {
@@ -216,10 +254,12 @@ export default function FinancialDetailsScreen({ route, navigation }) {
           <Dialog.Content>
             {branches.map((branch, index) => (
               <React.Fragment key={index}>
-                <TouchableOpacity onPress={() => { hideDialog(); handleDirections(branch); }}>
+                <TouchableOpacity style={{ flexDirection: 'row', justifyContent: 'flex-start', gap: 5, alignItems: 'center' }}
+                  onPress={() => { hideDialog(); handleDirections(branch); }}>
+                  <Icons.FontAwesome5 name="search-location" size={20} color={theme.colors.indicator} />
                   <Text numberOfLines={1} ellipsizeMode="tail" style={{ fontSize: 16, color: theme.colors.sub_text, paddingVertical: 12 }}>{branch.directionsText || `Branch ${index + 1}`}</Text>
                 </TouchableOpacity>
-                {(index < branches.length - 1) && <Divider />}
+                {(index < branches?.length - 1) && <Divider />}
               </React.Fragment>
             ))}
           </Dialog.Content>
@@ -232,7 +272,7 @@ export default function FinancialDetailsScreen({ route, navigation }) {
   }
 
   const handleGetDirections = () => {
-    if (data.company.branches && data.company.branches.length > 1) {
+    if (data.company.branches && data.company.branches?.length > 1) {
       setBranchOptions(data.company.branches);
       setDialogVisible(true);
     } else {
@@ -245,34 +285,47 @@ export default function FinancialDetailsScreen({ route, navigation }) {
     sheetRef.current?.snapToIndex(0);
   };
 
-  const handleSubmitReview = () => {
-    if (rating === 0 || reviewText.trim() === "") {
+  const handleSubmitReview = async () => {
+    setIsPostingReview(true);
+    if (rating === 0 && reviewText.trim() === "") {
       alert("Please provide a star rating and write a review.");
       return;
     }
 
-    const newComment = {
-      id: reviews.length + 1,
-      name: "You", // Replace with actual user name from context/auth
-      rating,
-      text: reviewText.trim(),
-      date: new Date().toISOString().split("T")[0],
-    };
-    setMyComments([...myComments, newComment]);
-
-    setReviews(reviews + 1);
-    setRating(0);
-    setReviewText("");
-    setSubmitSuccess(true);
-    setTimeout(() => setSubmitSuccess(false), 2000);
+    try {
+      const newComment = {
+        reviewerName: user?.displayName,
+        reviewerEmail: user?.email,
+        rating,
+        comment: reviewText.trim(),
+        createdAt: new Date().toISOString().split("T")[0],
+      };
+      const result = await addSaccoProductReviews({ productId: data._id, reviewData: newComment });
+      setReviews([...reviews, newComment]);
+      result && Alert.alert("Submitted", "Review submitted successfully!");
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setIsPostingReview(false)
+      setRating(0);
+      setReviewText("");
+      setSubmitSuccess(true);
+      setTimeout(() => setSubmitSuccess(false), 2000);
+    }
   };
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
-      {branchOptions.length > 0 && handleBranchesView(branchOptions)}
+      {branchOptions?.length > 0 && handleBranchesView(branchOptions)}
 
-      <View style={[styles.hero, { backgroundColor: theme.colors.card }]}>
+      <LinearGradient
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+        colors={[themeColor, theme.colors.card]}
+        style={styles.hero}
+      >
+
         <TouchableOpacity style={styles.navHeader} onPress={() => navigation.goBack()}>
           <Icons.Ionicons name="arrow-back" size={24} color={theme.colors.text} />
         </TouchableOpacity>
@@ -280,12 +333,21 @@ export default function FinancialDetailsScreen({ route, navigation }) {
         <View style={styles.heroCard}>
           <BankLogo source={data.company.logoFile?.url || data.company?.logoDataUrl} name={companyName} />
           <View style={styles.heroTextContainer}>
-            <Text style={[styles.companyName, { color: theme.colors.text }]}>{companyName}</Text>
+            <Text numberOfLines={2} ellipsizeMode="tail" style={[styles.companyName, { color: theme.colors.text }]}>{companyName}</Text>
             <Text style={[styles.productName, { color: theme.colors.text }]}>{productName}</Text>
-            <View style={styles.tag}>
-              <Text style={[styles.tagText]}>
-                {isLoan ? "Loan Product" : isSaving ? "Savings Account" : isInsurance ? "Insurance Policy" : "Investment"}
-              </Text>
+
+            <View style={styles.heroMetaRow}>
+              <View style={styles.tag}>
+                <Text style={[styles.tagText]}>
+                  {isLoan ? "Loan Product" : isSaving ? "Savings Account" : isInsurance ? "Insurance Policy" : "Investment"}
+                </Text>
+              </View>
+              {averageRating > 0 && (
+                <View style={[styles.ratingBadge, { backgroundColor: theme.colors.background }]}>
+                  <Icons.Ionicons name="star" size={14} color="#FBBF24" />
+                  <Text style={[styles.ratingText, { color: theme.colors.text }]}>{averageRating.toFixed(1)}</Text>
+                </View>
+              )}
             </View>
           </View>
         </View>
@@ -296,7 +358,7 @@ export default function FinancialDetailsScreen({ route, navigation }) {
             <Icons.Ionicons
               name={isLiked ? "heart" : "heart-outline"}
               size={24}
-              color={isLiked ? "#DC2626" : theme.colors.indicator}
+              color={isLiked ? theme.colors.primary : theme.colors.indicator}
             />
             <Text style={[styles.actionButtonText, { color: theme.colors.text }]}>
               {likes} Like{likes !== 1 ? "s" : ""}
@@ -318,7 +380,7 @@ export default function FinancialDetailsScreen({ route, navigation }) {
             <Text style={[styles.actionButtonText, { color: theme.colors.text }]}>Directions</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </LinearGradient>
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -328,8 +390,8 @@ export default function FinancialDetailsScreen({ route, navigation }) {
         <View style={[styles.highlightsCard, { backgroundColor: theme.colors.sub_card }]}>
           {isLoan && (
             <>
-              <HighlightItem theme={theme} label="Interest Rate" value={data.interestRateApr} isRate />
-              <HighlightItem theme={theme} label="Maximum Amount" value={'E' + data.maxAmount} />
+              <HighlightItem theme={theme} label="Interest Rate" value={data.interestRateApr + '%'} isRate />
+              <HighlightItem theme={theme} label="Maximum Amount" value={formatCurrency(data.maxAmount)} />
               <HighlightItem theme={theme} label="Term (Months)" value={data.maxDurationMonths} />
               <HighlightItem theme={theme} label="Repayment Frequency" value={data.repaymentFrequency} isRate />
               {data.collateral && <HighlightItem theme={theme} label="Collateral/Security" value={data.collateral} />}
@@ -339,25 +401,25 @@ export default function FinancialDetailsScreen({ route, navigation }) {
 
           {isSaving && (
             <>
-              <HighlightItem theme={theme} label="Interest Apr" value={data.interestRateApr} isRate />
-              <HighlightItem theme={theme} label="Minimum Balance" value={data.minBalance} />
-              <HighlightItem theme={theme} label="Withdrawal Intervals" value={data.withdrawalIntervals || '24/7 - E5,000/day'} />
+              <HighlightItem theme={theme} label="Interest Apr" value={data.interestRateApr + '%'} isRate />
+              <HighlightItem theme={theme} label="Minimum Balance" value={formatCurrency(data.minBalance)} />
+              <HighlightItem theme={theme} label="Interest Accumulation" value={data.interestRateFrequency} />
               <HighlightItem theme={theme} label="Account Type" value={data.accountType || 'Fixed Account'} />
             </>
           )}
 
           {isInsurance && (
             <>
-              <HighlightItem theme={theme} label="Monthly Premium" value={data.monthlyPremium} isRate />
-              <HighlightItem theme={theme} label="Coverage Amount" value={data.coverageAmount} />
+              <HighlightItem theme={theme} label="Monthly Premium" value={formatCurrency(data.monthlyPremium)} isRate />
+              <HighlightItem theme={theme} label="Coverage Amount" value={formatCurrency(data.coverageAmount)} />
               <HighlightItem theme={theme} label="Policy Type" value={data.policyType} />
             </>
           )}
 
           {isInvestment && (
             <>
-              <HighlightItem theme={theme} label="Minimum Investment" value={data.minInvestment} isRate />
-              <HighlightItem theme={theme} label="Expected Returns" value={data.expectedReturns} />
+              <HighlightItem theme={theme} label="Minimum Investment" value={formatCurrency(data.minInvestment)} isRate />
+              <HighlightItem theme={theme} label="Expected Returns" value={data.expectedReturns + '%'} />
               <HighlightItem theme={theme} label="Risk Level" value={data.riskLevel} />
             </>
           )}
@@ -376,41 +438,59 @@ export default function FinancialDetailsScreen({ route, navigation }) {
           </Text>
         </SectionCard>
 
-        <CollapsibleSection theme={theme} title="Eligibility Requirements" initiallyOpen={true}>
-          {data.eligibility.map((el, index) => (
-            <Text key={index} style={[styles.bullet, { color: theme.colors.sub_text }]}>• {el}</Text>
-          ))}
-        </CollapsibleSection>
+        {data?.benefits?.length > 0 && (
+          <View style={[styles.highlightsCard, { backgroundColor: theme.colors.sub_card }]}>
+            {data.benefits.map((benefit, i) => (
+              <HighlightItem key={i} theme={theme} label={`Benefit ${i + 1}`} value={benefit} />
+            ))}
+          </View>
+        )}
 
-        <CollapsibleSection theme={theme} title="Required Documents">
-          {data.requirements.map((req, index) => (
-            <Text key={index} style={[styles.bullet, { color: theme.colors.sub_text }]}>• {req}</Text>
-          ))}
-        </CollapsibleSection>
+        {data?.eligibility?.length > 0 && (
+          <CollapsibleSection theme={theme} title="Eligibility Requirements" initiallyOpen={true}>
+            {data.eligibility.map((el, index) => (
+              <Text key={index} style={[styles.bullet, { color: theme.colors.sub_text }]}>• {el}</Text>
+            ))}
+          </CollapsibleSection>)}
+
+        {data?.requirements?.length > 0 && (
+          <CollapsibleSection theme={theme} title="Required Documents">
+            {data?.requirements?.map((req, index) => (
+              <Text key={index} style={[styles.bullet, { color: theme.colors.sub_text }]}>• {req}</Text>
+            ))}
+          </CollapsibleSection>)}
 
         {isInsurance && (
           <CollapsibleSection theme={theme} title="Coverage Details">
-            {data.coverageDetails.map((detail, index) => (
+            {data?.coverageDetails?.map((detail, index) => (
               <Text key={index} style={[styles.bullet, { color: theme.colors.sub_text }]}>• {detail}</Text>
             ))}
           </CollapsibleSection>
         )}
 
-        {isInvestment && (
+        {(isSaving && data?.withdrawalRules) && (
+          <CollapsibleSection theme={theme} title="Withdrawal Rules">
+            <Text style={[styles.bullet, { color: theme.colors.sub_text }]}>{data?.withdrawalRules}</Text>
+          </CollapsibleSection>)
+        }
+
+        {(isInvestment && data.investmentStrategy) && (
           <CollapsibleSection theme={theme} title="Investment Strategy">
             <Text style={[styles.paragraph, { color: theme.colors.sub_text }]}>
-              {data.investmentStrategy || "This investment product follows a diversified strategy, balancing growth and stability. It includes a mix of equities, bonds, and alternative assets to optimize returns while managing risk."}
+              {data?.investmentStrategy || "This investment product follows a diversified strategy, balancing growth and stability. It includes a mix of equities, bonds, and alternative assets to optimize returns while managing risk."}
             </Text>
           </CollapsibleSection>
         )}
 
-        <SectionCard theme={theme} title="Terms & Conditions">
-          <Text style={[styles.paragraph, { color: theme.colors.sub_text }]}>
-            All applications are subject to final approval. Rates and terms may vary based on credit
-            assessment. By proceeding, you agree to the provider’s terms of service, privacy policy,
-            and compliance with FSRA regulations.
-          </Text>
-        </SectionCard>
+        {data?.termsAndConditions?.length > 0 && (
+          <SectionCard theme={theme} title="Terms & Conditions">
+            {data.termsAndConditions.map((term, i) => (
+              <Text key={i} style={[styles.paragraph, { color: theme.colors.sub_text }]}>
+                {term}
+              </Text>
+            ))}
+          </SectionCard>
+        )}
 
         <SectionCard theme={theme} title="How to Join">
           {data.applicationSteps.map((step, index) => (
@@ -418,11 +498,24 @@ export default function FinancialDetailsScreen({ route, navigation }) {
           ))}
         </SectionCard>
 
-        {data.charges &&
-          <CollapsibleSection theme={theme} title="Charges & Fees">
+        {(!data.charges.toLowerCase() === "none" ||
+          !data.charges.toLowerCase() === "n/a" ||
+          data.charges) &&
+          (<CollapsibleSection theme={theme} title="Charges & Fees">
             <Text style={[styles.paragraph, { color: theme.colors.sub_text }]}>{data.charges}</Text>
           </CollapsibleSection>
-        }
+          )}
+
+        {/* Risk disclaimer section */}
+        {data?.riskDisclaimer && (
+          <View style={[styles.sectionCard, styles.riskDisclaimerCard]}>
+            <View style={styles.riskDisclaimerHeader}>
+              <Icons.Ionicons name="warning" size={24} color="#856404" />
+              <Text style={styles.riskDisclaimerTitle}>Risk Disclaimer</Text>
+            </View>
+            <Text style={styles.riskDisclaimerText}>{data?.riskDisclaimer}</Text>
+          </View>
+        )}
 
         <SectionCard theme={theme} title="Help & Support">
           <View style={{ flexDirection: "row", flexWrap: 'wrap', alignItems: "center", gap: 8, marginBottom: 6, backgroundColor: theme.colors.sub_card, padding: 10, borderRadius: 8 }}>
@@ -533,9 +626,14 @@ export default function FinancialDetailsScreen({ route, navigation }) {
             />
 
             <TouchableOpacity style={[styles.submitButton, { backgroundColor: theme.colors.indicator }]} onPress={handleSubmitReview}>
-              <Text style={[styles.submitButtonText, { color: theme.colors.text }]}>
-                {submitSuccess ? "Submitted!" : "Submit Review"}
-              </Text>
+              {isPostingReview ? (
+                <LoaderKitView name='BallBeat' style={{ width: 30, height: 30 }}
+                  color={theme.colors.text} animationSpeedMultiplier={1.0}
+                />) : (
+                <Text style={[styles.submitButtonText, { color: "#fff" }]}>
+                  {submitSuccess ? "Submitted!" : "Submit Review"}
+                </Text>
+              )}
             </TouchableOpacity>
 
             {submitSuccess && (
@@ -544,14 +642,14 @@ export default function FinancialDetailsScreen({ route, navigation }) {
           </View>
 
           {/* Reviews List */}
-          <Text style={[styles.reviewsListTitle, { color: theme.colors.text }]}>All Reviews ({reviews})</Text>
-          {(reviews === 0 && rating === 0) ? (
+          <Text style={[styles.reviewsListTitle, { color: theme.colors.text }]}>All Reviews ({reviews?.length || 0})</Text>
+          {(reviews?.length === 0 && rating === 0) ? (
             <Text style={[styles.noReviewsText, { color: theme.colors.sub_text }]}>No reviews yet. Be the first to review!</Text>
           ) : (
-            myComments?.map((review) => (
-              <View key={review.id} style={styles.reviewItem}>
+            reviews?.map((review, i) => (
+              <View key={i} style={styles.reviewItem}>
                 <View style={styles.reviewHeader}>
-                  <Text style={[styles.reviewerName, { color: theme.colors.text }]}>{review.name}</Text>
+                  <Text style={[styles.reviewerName, { color: theme.colors.text }]}>{review?.reviewerName || review?.reviewerEmail}</Text>
                   <View style={styles.reviewStars}>
                     {[1, 2, 3, 4, 5].map((star) => (
                       <Icons.Ionicons
@@ -563,8 +661,8 @@ export default function FinancialDetailsScreen({ route, navigation }) {
                     ))}
                   </View>
                 </View>
-                <Text style={[styles.reviewText, { color: theme.colors.text }]}>{review.text}</Text>
-                <Text style={[styles.reviewDate, { color: theme.colors.sub_text }]}>{review.date}</Text>
+                <Text style={[styles.reviewText, { color: theme.colors.text }]}>{review?.comment}</Text>
+                <Text style={[styles.reviewDate, { color: theme.colors.sub_text }]}>{format(review?.createdAt, 'PPP') + ' ' + format(review?.createdAt, 'HH:mm')}</Text>
               </View>
             ))
           )}
@@ -577,7 +675,7 @@ export default function FinancialDetailsScreen({ route, navigation }) {
         navigation.navigate("Chatbot", { context: data })}
         activeOpacity={0.9}
       >
-        <Icons.MaterialCommunityIcons name="face-agent" size={30} color="#FFFFFF" />
+        <Icons.AntDesign name="wechat" size={30} color="#FFFFFF" />
       </TouchableOpacity>
     </View>
   );
@@ -586,7 +684,7 @@ export default function FinancialDetailsScreen({ route, navigation }) {
 const HighlightItem = ({ theme, label, value, isRate = false }) => (
   <View style={styles.highlightRow}>
     <Text style={[styles.highlightLabel, { color: theme.colors.sub_text }]}>{label}</Text>
-    <Text style={[styles.highlightValue, !isRate && { color: theme.colors.sub_text }, isRate && styles.highlightValueRate]}>
+    <Text numberOfLines={1} ellipsizeMode="tail" style={[styles.highlightValue, !isRate && { color: theme.colors.sub_text }, isRate && styles.highlightValueRate]}>
       {value || "—"}
     </Text>
   </View>
@@ -624,8 +722,29 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     elevation: 5,
   },
-  heroCard: { flexDirection: "row", alignItems: "center" },
+  heroCard: { flexDirection: "row", alignItems: "center", justifyContent: 'flex-end' },
   heroTextContainer: { marginLeft: 5, flex: 1 },
+  heroMetaRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: 'space-between',
+    marginTop: 12,
+    flexWrap: "wrap",
+  },
+  ratingBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: "rgba(255, 255, 255, 0.3)",
+  },
+  ratingText: {
+    marginLeft: 6,
+    fontSize: 14,
+    fontWeight: "700",
+  },
   companyName: {
     fontSize: 24,
     fontWeight: "800",
@@ -898,5 +1017,41 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#9CA3AF",
     marginTop: 8,
+  },
+  riskDisclaimerCard: {
+    backgroundColor: '#FFF3CD',
+    borderColor: '#FFEAA7',
+    marginHorizontal: 8,
+    marginBottom: 16,
+    borderRadius: 10,
+    borderWidth: 1,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 0,
+  },
+  riskDisclaimerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 12,
+    backgroundColor: '#FFF3CD',
+  },
+  riskDisclaimerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#856404',
+    marginLeft: 10,
+  },
+  riskDisclaimerText: {
+    fontSize: 15.5,
+    lineHeight: 24,
+    color: '#856404',
+    padding: 20,
+    paddingTop: 8,
   },
 });
