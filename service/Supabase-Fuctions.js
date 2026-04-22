@@ -1,4 +1,5 @@
 import { supabase } from "./Supabase-Client";
+import { RECOMMENDATION_FUNC_API_KEY , RECOMMENDATION_FUNC_URL } from "../config/env";
 import { UploadImage, uploadImages, uploadAttachments } from "../service/uploadFiles";
 import { CustomToast } from "../components/customToast";
 
@@ -967,26 +968,59 @@ export async function logUserActivity(userId, itemId, itemType) {
  * Synchronizes Firebase Auth user data into the Supabase 'user_profiles' table.
  * Matches your schema: user_id, email, display_name, phone_number, photo_url, last_login
  */
-export async function syncUserProfile(firebaseUser) {
+// export async function oldSyncUserProfile(firebaseUser) {
+//   if (!firebaseUser) return null;
+
+//   try {
+//     const { data, error } = await supabase
+//       .from("user_profiles")
+//       .upsert(
+//         {
+//           user_id: firebaseUser.uid,
+//           email: firebaseUser.email,
+//           display_name: firebaseUser.displayName || "Anonymous",
+//           phone_number: firebaseUser.phoneNumber || null,
+//           photo_url: firebaseUser.photoURL || null,
+//           last_login: new Date().toISOString(),
+//           // Note: We DO NOT include interest_embedding here.
+//           // This prevents us from overwriting their AI profile with NULL.
+//         },
+//         { onConflict: "user_id" },
+//       )
+//       .select();
+
+//     if (error) throw error;
+//     return { success: true, data: data[0] };
+//   } catch (error) {
+//     console.error("Error syncing profile:", error.message);
+//     return { success: false, error: error.message };
+//   }
+// }
+
+
+
+
+
+// this is the function user to sysnc the user to the old database  for recomendation
+// -- before the universal recommendation engine ------------
+export async function SyncUserProfile(firebaseUser) {
   if (!firebaseUser) return null;
 
   try {
-    const { data, error } = await supabase
-      .from("user_profiles")
-      .upsert(
-        {
-          user_id: firebaseUser.uid,
-          email: firebaseUser.email,
-          display_name: firebaseUser.displayName || "Anonymous",
-          phone_number: firebaseUser.phoneNumber || null,
-          photo_url: firebaseUser.photoURL || null,
-          last_login: new Date().toISOString(),
-          // Note: We DO NOT include interest_embedding here.
-          // This prevents us from overwriting their AI profile with NULL.
-        },
-        { onConflict: "user_id" },
-      )
-      .select();
+    
+    await fetch(RECOMMENDATION_FUNC_URL, {
+    method: 'POST',
+    headers: { 
+      'Content-Type': 'application/json',
+      'FUNC_API_KEY':  RECOMMENDATION_FUNC_API_KEY
+    },
+    body: JSON.stringify({
+      user_id: firebaseUser.uid,      
+      origin: 'firebase business link',   
+      name: firebaseUser.displayName   
+    })
+  });
+
 
     if (error) throw error;
     return { success: true, data: data[0] };
