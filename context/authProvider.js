@@ -64,8 +64,7 @@ export const AuthProvider = ({ children }) => {
         if (currentUser) {
           // if (currentUser.emailVerified) {
           setUser(currentUser);
-          // 2. CREATE OR UPDATE the profile in Supabase
-          await syncUserProfile(currentUser);
+
           // App is opening with an existing logged-in user
           await checkWorkerStatus(currentUser.uid);
           // } else {
@@ -168,6 +167,9 @@ export const AuthProvider = ({ children }) => {
       //       }
       //     ])
       // }
+                // 2. CREATE OR UPDATE the profile in Supabase
+      
+      await syncUserProfile(user);
       return user
     } catch (error) {
       console.error("Login Failed:", error.message);

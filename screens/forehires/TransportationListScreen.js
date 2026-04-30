@@ -597,9 +597,14 @@ export default function TransportationListScreen({ navigation }) {
                 key={vehicle.id}
                 style={[styles.vehicleCard, { backgroundColor: theme.colors.card }]}
                 activeOpacity={0.92}
-                onPress={() => {
+                onPress={async() => {
                     if (user) {
-                        logUserActivity(user.uid, vehicle.id, 'pomy_forhire_transport');
+                        await logUserActivity({
+                          userId: user.uid,
+                          itemId: vehicle.id,
+                          action: "click",
+                          itemType: "pomy_forhire_transport",
+                        });
                     }
                     navigation.navigate('TransDetailsScreen', { vehicleData: vehicle })
                 }}

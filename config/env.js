@@ -4,6 +4,13 @@ export const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 
 // export const API_BASE_URL = 'https://phone-bool-eswatini.onrender.com';
 // export const API_BASE_URL = 'https://phone-book-api-qpil.onrender.com';
-export const API_BASE_URL = 'http://10.150.51.170:5000';
+export const API_BASE_URL = 'http://10.150.51.143:5000';
 
 export const GOOGLE_MAPS_API_KEY = 'AIzaSyD-tfJ9-YxVddtDWtx01lhTMpXBlT3s4aU';
+
+export const RECOMMENDATION_FUNC_API_KEY = 'open' 
+//below funtion to create the user profile for recommendation
+export const RECOMMENDATION_FUNC_URL = 'https://rfaejfthnsutifortmaa.supabase.co/functions/v1/hyper-responder' 
+//below function to create the user log for activity in recommendation
+export const RECOMMENDATION_LOG_FUNC_URL = 'https://rfaejfthnsutifortmaa.supabase.co/functions/v1/quick-responder' 
+export const RECOMMENDATION_GET_REC_FUNC_URL = 'https://rfaejfthnsutifortmaa.supabase.co/functions/v1/get-recommendation' 

@@ -42,6 +42,30 @@ export const fetchSaccos = async (onProgress) => {
   }
 };
 
+export const getSaccoByID = async (id) => {
+  try {
+    // 1. Match the server route (Path Parameter /:id)
+    const response = await fetch(`${API_BASE_URL}/api/sacco-product/${id}`, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" }
+    });
+
+    // 2. You MUST parse the body to see the error message
+    const result = await response.json();
+
+    if (!response.ok) {
+      // If the server sent { error: "..." }, this will throw that specific string
+      throw new Error(result.error || result.message || "Server Error");
+    }
+
+    return result; // This is now your clean product object
+  } catch (error) {
+    // 3. Log the ACTUAL message string, not the object
+    console.log("Error fetching saccos:", error.message);
+    // throw error;
+  }
+};
+
 export const fetchSaccosPromos = async (onProgress) => {
   try {
     let allPromos = [];
