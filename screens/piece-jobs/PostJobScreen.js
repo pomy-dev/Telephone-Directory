@@ -23,7 +23,7 @@ import { AuthContext } from "../../context/authProvider";
 import { submitGig } from "../../service/Supabase-Fuctions";
 import { AppContext } from "../../context/appContext";
 
-const CATEGORIES = ["Moving", "Cleaning", "Groundsman", "LandScaping", "Delivery", "Gardening", "Pet Care", "Tech"]
+const CATEGORIES = ["Moving", "Fixing", "Building", "Cleaning", "Groundsman", "LandScaping", "Delivery", "Gardening", "Pet Care", "Tech"]
 const STEPS = ["Job Details", "Description", "Photos", "Contacts"]
 const { width } = Dimensions.get('window')
 
@@ -497,7 +497,7 @@ const PostGigScreen = ({ navigation }) => {
                 </View>
             </View>
         </View>
-    )
+    );
 }
 
 const styles = StyleSheet.create({

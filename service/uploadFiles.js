@@ -45,6 +45,8 @@ export const uploadImages = async (path, subpath, files = []) => {
   console.log('Path: ', path, '\nSubpath: ', subpath, '\nImages: ', files)
   if (files?.length === 0) return;
 
+  // console.log('Files to upload:', files?.length)
+
   const uploaded = [];
   for (const file of files) {
     if (file?.url?.startsWith('https://')) {
@@ -55,7 +57,7 @@ export const uploadImages = async (path, subpath, files = []) => {
         // === 1. Extract file info ===
         const fileName = `img_${Date.now()}`;
 
-        const imageFile = file?.uri;
+        const imageFile = file?.uri || file;
 
         // === 1. Read file as Base64 ===
         const base64 = await FileSystem.readAsStringAsync(imageFile, {
@@ -97,6 +99,8 @@ export const uploadImages = async (path, subpath, files = []) => {
         const type = mimeType.startsWith('image/') ? 'image' :
           mimeType.startsWith('video/') ? 'video' :
             'document';
+
+        // console.log('File type:', type)
 
         // === 7. Push clean metadata ===
         uploaded.push({
