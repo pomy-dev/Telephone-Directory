@@ -267,17 +267,30 @@ export default function Chatbot({ navigation, route }) {
     setIsLoading(true);
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api/ask-grok`, {
+      // const res = await fetch(`${API_BASE_URL}/api/ask-grok`, {
+      //   method: "POST",
+      //   headers: { "Content-Type": "application/json" },
+      //   body: JSON.stringify({
+      //     message: userMessage.text,
+      //     history: messages.map((msg) => ({
+      //       role: msg.isUser ? "user" : "assistant",
+      //       content: msg.text,
+      //     })),
+      //     context: context?.name || null,
+      //     dealType: context?.category || null
+      //   }),
+      // });
+
+      const res = await fetch(`${API_BASE_URL}/api/chat-deepseek`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          message: userMessage.text,
-          history: messages.map((msg) => ({
+          userId: user?.uid,
+          query: userMessage.text,
+          chatHistory: messages.map((msg) => ({
             role: msg.isUser ? "user" : "assistant",
             content: msg.text,
           })),
-          context: context?.name || null,
-          dealType: context?.category || null
         }),
       });
 

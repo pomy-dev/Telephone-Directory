@@ -48,8 +48,26 @@ const CATEGORIES = [
     iconType: Icons.Ionicons,
   },
   {
-    id: "Moving",
-    name: "Moving",
+    id: "Transporting",
+    name: "Transporting",
+    iconName: "bicycle-outline",
+    iconType: Icons.Ionicons,
+  },
+  {
+    id: "Fixing",
+    name: "Fixing",
+    iconName: "cube-outline",
+    iconType: Icons.Ionicons,
+  },
+  {
+    id: "Construction",
+    name: "Construction",
+    iconName: "cube-outline",
+    iconType: Icons.Ionicons,
+  },
+  {
+    id: "Artisan",
+    name: "Artisan",
     iconName: "cube-outline",
     iconType: Icons.Ionicons,
   },
@@ -72,12 +90,6 @@ const CATEGORIES = [
     iconType: Icons.MaterialCommunityIcons,
   },
   {
-    id: "Delivery",
-    name: "Delivery",
-    iconName: "bicycle-outline",
-    iconType: Icons.Ionicons,
-  },
-  {
     id: "Gardening",
     name: "Gardening",
     iconName: "leaf-outline",
@@ -90,8 +102,14 @@ const CATEGORIES = [
     iconType: Icons.Ionicons,
   },
   {
-    id: "Pet Care",
-    name: "Pet Care",
+    id: "Pets & Animals",
+    name: "Pets & Animals",
+    iconName: "paw-outline",
+    iconType: Icons.Ionicons,
+  },
+  {
+    id: "Fashion & Fabric",
+    name: "Pets & Animals",
     iconName: "paw-outline",
     iconType: Icons.Ionicons,
   },
@@ -102,8 +120,38 @@ const CATEGORIES = [
     iconType: Icons.Ionicons,
   },
   {
+    id: "Engineering",
+    name: "Engineering",
+    iconName: "laptop-outline",
+    iconType: Icons.Ionicons,
+  },
+  {
     id: "Catering",
     name: "Catering",
+    iconName: "pot-steam-outline",
+    iconType: Icons.MaterialCommunityIcons,
+  },
+  {
+    id: "Beauty & Care",
+    name: "Beauty & Care",
+    iconName: "pot-steam-outline",
+    iconType: Icons.MaterialCommunityIcons,
+  },
+  {
+    id: "Educating",
+    name: "Educating",
+    iconName: "pot-steam-outline",
+    iconType: Icons.MaterialCommunityIcons,
+  },
+  {
+    id: "Property-Gard",
+    name: "Property-Gard",
+    iconName: "pot-steam-outline",
+    iconType: Icons.MaterialCommunityIcons,
+  },
+  {
+    id: "Baby-Sitter",
+    name: "Baby-Sitter",
     iconName: "pot-steam-outline",
     iconType: Icons.MaterialCommunityIcons,
   },
@@ -1057,7 +1105,7 @@ const GigsScreen = ({ navigation }) => {
             style={styles.blackActionBtn}
             onPress={() => Linking.openURL(`tel:${item.phone}`)}
           >
-            <Icons.Ionicons name="call" size={16} color="#10b981"/>
+            <Icons.Ionicons name="call" size={16} color="#10b981" />
             <Text style={styles.actionBtnText}>Call</Text>
           </TouchableOpacity>
         </View>
@@ -1114,69 +1162,69 @@ const GigsScreen = ({ navigation }) => {
       <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
 
       {/* Custom Modern Header */}
-        <View style={styles.customHeader}>
-          {/* Back Btn */}
-          <TouchableOpacity onPress={() => navigation.goBack()}>
+      <View style={styles.customHeader}>
+        {/* Back Btn */}
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Icons.Ionicons
+            name="arrow-back"
+            size={28}
+            color={theme.colors.text}
+          />
+        </TouchableOpacity>
+
+        {/* SEARCH BAR */}
+        <View style={{ backgroundColor: theme.colors.background }}>
+          <View
+            style={[
+              styles.searchBar,
+              { backgroundColor: isDarkMode ? '#94a3b8' : theme.colors.sub_card },
+            ]}
+          >
             <Icons.Ionicons
-              name="arrow-back"
-              size={28}
-              color={theme.colors.text}
+              name="search"
+              size={18}
+              color={theme.colors.sub_text}
             />
-          </TouchableOpacity>
-
-          {/* SEARCH BAR */}
-          <View style={{ backgroundColor: theme.colors.background }}>
-            <View
-              style={[
-                styles.searchBar,
-                { backgroundColor: isDarkMode ? '#94a3b8' : theme.colors.sub_card },
-              ]}
-            >
-              <Icons.Ionicons
-                name="search"
-                size={18}
-                color={theme.colors.sub_text}
-              />
-              <TouchableOpacity onPress={() => toggleSheet(true)}>
-                <Text style={[styles.searchInput, { color: theme.colors.text }]}>
-                  {viewMode === "gigs"
-                    ? "search for gigs..."
-                    : "search for workers..."}
-                </Text>
-              </TouchableOpacity>
-              {((viewMode === "gigs" && gigSearch.length > 0) ||
-                (viewMode === "workers" && workerSearch.length > 0)) && (
-                  <TouchableOpacity
-                    style={{
-                      position: "absolute",
-                      right: 20,
-                      paddingHorizontal: 5,
-                      paddingVertical: 3,
-                      backgroundColor: "#f0f4ff",
-                      borderRadius: 10,
-                    }}
-                    onPress={() => {
-                      viewMode === "gigs" ? setGigSearch("") : setWorkerSearch("");
-                    }}
-                  >
-                    <Icons.Ionicons
-                      name="close"
-                      size={18}
-                      color={theme.colors.sub_text}
-                    />
-                  </TouchableOpacity>
-                )}
-            </View>
+            <TouchableOpacity onPress={() => toggleSheet(true)}>
+              <Text style={[styles.searchInput, { color: theme.colors.text }]}>
+                {viewMode === "gigs"
+                  ? "search for gigs..."
+                  : "search for workers..."}
+              </Text>
+            </TouchableOpacity>
+            {((viewMode === "gigs" && gigSearch.length > 0) ||
+              (viewMode === "workers" && workerSearch.length > 0)) && (
+                <TouchableOpacity
+                  style={{
+                    position: "absolute",
+                    right: 20,
+                    paddingHorizontal: 5,
+                    paddingVertical: 3,
+                    backgroundColor: "#f0f4ff",
+                    borderRadius: 10,
+                  }}
+                  onPress={() => {
+                    viewMode === "gigs" ? setGigSearch("") : setWorkerSearch("");
+                  }}
+                >
+                  <Icons.Ionicons
+                    name="close"
+                    size={18}
+                    color={theme.colors.sub_text}
+                  />
+                </TouchableOpacity>
+              )}
           </View>
-
-          {/* Options Handle */}
-          <Pressable onPress={() => toggleSheet(true)}>
-            <Icons.Ionicons name="options" size={30} color={theme.colors.text} />
-          </Pressable>
-
-          {/* More Handle */}
-          <MoreDropdown items={moreItems} />
         </View>
+
+        {/* Options Handle */}
+        <Pressable onPress={() => toggleSheet(true)}>
+          <Icons.Ionicons name="options" size={30} color={theme.colors.text} />
+        </Pressable>
+
+        {/* More Handle */}
+        <MoreDropdown items={moreItems} />
+      </View>
 
       {/* BOTTOM SHEET FOR CATEGORIES / WORKER FILTER */}
       {sheetVisible && (
