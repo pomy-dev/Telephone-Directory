@@ -55,7 +55,12 @@ const WorkerProfileScreen = ({ route }) => {
         }
       } else {
         if (user) {
-          logUserActivity(user.uid, worker.id, "pomy_workers");
+            await logUserActivity({
+              userId: user.uid,
+              itemId: worker.id,
+              action: "click",
+              itemType: "pomy_workers",
+            });
         }
       }
     };

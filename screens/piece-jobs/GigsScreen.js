@@ -640,9 +640,14 @@ const GigsScreen = ({ navigation }) => {
       item.images.length > 0 &&
       !item.images[0].includes("via.placeholder.com");
 
-    const handlePressGig = (item) => {
+    const handlePressGig = async (item) => {
       if (user) {
-        logUserActivity(user.uid, item.id, "pomy_gigs");
+          await logUserActivity({
+          userId: user.uid,
+          itemId: item.id,
+          action: "click",
+          itemType: "pomy_gigs",
+        });
       }
       // ----------------------
       navigation.navigate("JobDetailScreen", { jobData: item });

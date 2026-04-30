@@ -10,9 +10,10 @@ import { Icons } from "../../constants/Icons";
 import { AppContext } from "../../context/appContext";
 import { AuthContext } from "../../context/authProvider";
 import SecondaryNav from "../../components/SecondaryNav";
+import CustomLoader from "../../components/customLoader";
 import { LoaderKitView } from 'react-native-loader-kit';
 import { format } from "date-fns";
-import { addSaccoProductLike, removeSaccoProductLike, addSaccoProductReviews } from "../../service/getApi"
+import { addSaccoProductLike, removeSaccoProductLike, addSaccoProductReviews , getSaccoByID} from "../../service/getApi"
 
 const { width } = Dimensions.get("window");
 const isTablet = width >= 768;
@@ -89,13 +90,16 @@ const formatCurrency = (amount, currency = 'E') => {
 
 export default function FinancialDetailsScreen({ route, navigation }) {
   const { theme, isDarkMode } = React.useContext(AppContext);
-  const { item } = route.params || {};
+  const { item, saccoId } = route.params || {};
   const { user, likedProducts, setLikedProducts } = React.useContext(AuthContext);
-  const data = item;
+  const [data, setData] = React.useState(item ? item : '');
+  const [loading, setLoading] = React.useState(!item && !!saccoId);
+
+  const fetchFromCloud = route.params?.saccoId || false;
 
   const [isCommentSheetOpen, setIsCommentSheetOpen] = React.useState(false);
 
-  const isLiked = likedProducts.financialProducts.includes(data._id);
+  const isLiked = likedProducts.financialProducts.includes(data?._id);
   const [likes, setLikes] = React.useState((isLiked ? (data?.likes + 1) : (data?.likes)) || 0);
   const [reviews, setReviews] = React.useState(data?.reviews);
   const [isPostingReview, setIsPostingReview] = React.useState(false);
@@ -108,34 +112,60 @@ export default function FinancialDetailsScreen({ route, navigation }) {
 
   const sheetRef = React.useRef(null);
 
-  if (!data) {
-    return (
-      <View style={styles.container}>
-        <View style={{ height: 25 }} />
-        <SecondaryNav title="Details" />
-        <View style={styles.emptyContainer}>
-          <Text style={styles.emptyText}>No details available</Text>
-        </View>
-      </View>
-    );
-  }
+  // if (!data?) {
+  //   return (
+  //     <View style={styles.container}>
+  //       <View style={{ height: 25 }} />
+  //       <SecondaryNav title="Details" />
+  //       <View style={styles.emptyContainer}>
+  //         <Text style={styles.emptyText}>No details available</Text>
+  //       </View>
+  //     </View>
+  //   );
+  // }
 
-  const isLoan = data?.category.toLowerCase() === "loans";
-  const isSaving = data?.category.toLowerCase() === "savings";
-  const isInsurance = data?.category.toLowerCase() === "insurance";
-  const isInvestment = data?.category.toLowerCase() === "investments";
+  const isLoan = data?.category?.toLowerCase() === "loans";
+  const isSaving = data?.categoy?.toLowerCase() === "savings";
+  const isInsurance = data?.category?.toLowerCase() === "insurance";
+  const isInvestment = data?.category?.toLowerCase() === "investments";
 
-  const companyName = data.company.companyName || "Financial Provider";
-  const productName = data.name || "Financial Product";
-  const themeColor = data.company.themeColor || theme.colors.card;
+  const companyName = data?.company?.companyName || "Financial Provider";
+  const productName = data?.name || "Financial Product";
+  const themeColor = data?.company?.themeColor || theme.colors.card;
   const averageRating = React.useMemo(() => {
-    const reviewsList = reviews || data.reviews || [];
+    const reviewsList = reviews || data?.reviews || [];
     if (!Array.isArray(reviewsList) || reviewsList?.length === 0) {
       return 0;
     }
     const total = reviewsList.reduce((sum, review) => sum + (parseFloat(review.rating) || 0), 0);
     return parseFloat((total / reviewsList?.length).toFixed(1));
-  }, [reviews, data.reviews]);
+  }, [reviews, data?.reviews]);
+
+
+
+
+   //this use effect is fetching data? when comming from recomendation
+  React.useEffect(() => {
+  const fetchFreshData = async () => {
+    // Only fetch if we don't have item data? but we do have a saccoId
+    if (!data && saccoId) {
+      try {
+        setLoading(true);
+        const fetchedData = await getSaccoByID(saccoId);
+        
+        if (fetchedData) {
+          setData(fetchedData);
+        }
+      } catch (err) {
+        console.error("Error fetching sacco details:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+  };
+
+  fetchFreshData();
+}, [saccoId]);
 
   // handle call
   const handleCall = (phone) => Linking.openURL(`tel:${phone}`);
@@ -213,17 +243,17 @@ export default function FinancialDetailsScreen({ route, navigation }) {
     let result;
     try {
       if (isLiked) {
-        result = await removeSaccoProductLike(data._id);
+        result = await removeSaccoProductLike(data?._id);
         result && setLikedProducts(prev => ({
           ...prev,
-          financialProducts: prev.financialProducts.filter(id => id !== data._id)
+          financialProducts: prev.financialProducts.filter(id => id !== data?._id)
         }));
         setLikes(likes - 1);
       } else {
-        result = await addSaccoProductLike(data._id);
+        result = await addSaccoProductLike(data?._id);
         result && setLikedProducts(prev => ({
           ...prev,
-          financialProducts: [...prev.financialProducts, data._id]
+          financialProducts: [...prev.financialProducts, data?._id]
         }));
         setLikes(likes + 1);
       }
@@ -272,11 +302,11 @@ export default function FinancialDetailsScreen({ route, navigation }) {
   }
 
   const handleGetDirections = () => {
-    if (data.company.branches && data.company.branches?.length > 1) {
-      setBranchOptions(data.company.branches);
+    if (data?.company?.branches && data?.company?.branches?.length > 1) {
+      setBranchOptions(data?.company.branches);
       setDialogVisible(true);
     } else {
-      handleDirections(data.company);
+      handleDirections(data?.company);
     }
   };
 
@@ -300,7 +330,7 @@ export default function FinancialDetailsScreen({ route, navigation }) {
         comment: reviewText.trim(),
         createdAt: new Date().toISOString().split("T")[0],
       };
-      const result = await addSaccoProductReviews({ productId: data._id, reviewData: newComment });
+      const result = await addSaccoProductReviews({ productId: data?._id, reviewData: newComment });
       setReviews([...reviews, newComment]);
       result && Alert.alert("Submitted", "Review submitted successfully!");
     } catch (err) {
@@ -313,6 +343,15 @@ export default function FinancialDetailsScreen({ route, navigation }) {
       setTimeout(() => setSubmitSuccess(false), 2000);
     }
   };
+
+  if (loading) {
+  return (
+    <View >
+      <CustomLoader />
+      <Text style={{ marginTop: 10, color: theme.colors.text }}>Loading Details...</Text>
+    </View>
+  );
+}
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
@@ -331,7 +370,7 @@ export default function FinancialDetailsScreen({ route, navigation }) {
         </TouchableOpacity>
 
         <View style={styles.heroCard}>
-          <BankLogo source={data.company.logoFile?.url || data.company?.logoDataUrl} name={companyName} />
+          <BankLogo source={data?.company?.logoFile?.url || data?.company?.logoDataUrl} name={companyName} />
           <View style={styles.heroTextContainer}>
             <Text numberOfLines={2} ellipsizeMode="tail" style={[styles.companyName, { color: theme.colors.text }]}>{companyName}</Text>
             <Text style={[styles.productName, { color: theme.colors.text }]}>{productName}</Text>
@@ -390,57 +429,57 @@ export default function FinancialDetailsScreen({ route, navigation }) {
         <View style={[styles.highlightsCard, { backgroundColor: theme.colors.sub_card }]}>
           {isLoan && (
             <>
-              <HighlightItem theme={theme} label="Interest Rate" value={data.interestRateApr + '%'} isRate />
-              <HighlightItem theme={theme} label="Maximum Amount" value={formatCurrency(data.maxAmount)} />
-              <HighlightItem theme={theme} label="Term (Months)" value={data.maxDurationMonths} />
-              <HighlightItem theme={theme} label="Repayment Frequency" value={data.repaymentFrequency} isRate />
-              {data.collateral && <HighlightItem theme={theme} label="Collateral/Security" value={data.collateral} />}
-              <HighlightItem theme={theme} label="Processing Time" value={data.processingTime} />
+              <HighlightItem theme={theme} label="Interest Rate" value={data?.interestRateApr + '%'} isRate />
+              <HighlightItem theme={theme} label="Maximum Amount" value={formatCurrency(data?.maxAmount)} />
+              <HighlightItem theme={theme} label="Term (Months)" value={data?.maxDurationMonths} />
+              <HighlightItem theme={theme} label="Repayment Frequency" value={data?.repaymentFrequency} isRate />
+              {data?.collateral && <HighlightItem theme={theme} label="Collateral/Security" value={data?.collateral} />}
+              <HighlightItem theme={theme} label="Processing Time" value={data?.processingTime} />
             </>
           )}
 
           {isSaving && (
             <>
-              <HighlightItem theme={theme} label="Interest Apr" value={data.interestRateApr + '%'} isRate />
-              <HighlightItem theme={theme} label="Minimum Balance" value={formatCurrency(data.minBalance)} />
-              <HighlightItem theme={theme} label="Interest Accumulation" value={data.interestRateFrequency} />
-              <HighlightItem theme={theme} label="Account Type" value={data.accountType || 'Fixed Account'} />
+              <HighlightItem theme={theme} label="Interest Apr" value={data?.interestRateApr + '%'} isRate />
+              <HighlightItem theme={theme} label="Minimum Balance" value={formatCurrency(data?.minBalance)} />
+              <HighlightItem theme={theme} label="Interest Accumulation" value={data?.interestRateFrequency} />
+              <HighlightItem theme={theme} label="Account Type" value={data?.accountType || 'Fixed Account'} />
             </>
           )}
 
           {isInsurance && (
             <>
-              <HighlightItem theme={theme} label="Monthly Premium" value={formatCurrency(data.monthlyPremium)} isRate />
-              <HighlightItem theme={theme} label="Coverage Amount" value={formatCurrency(data.coverageAmount)} />
-              <HighlightItem theme={theme} label="Policy Type" value={data.policyType} />
+              <HighlightItem theme={theme} label="Monthly Premium" value={formatCurrency(data?.monthlyPremium)} isRate />
+              <HighlightItem theme={theme} label="Coverage Amount" value={formatCurrency(data?.coverageAmount)} />
+              <HighlightItem theme={theme} label="Policy Type" value={data?.policyType} />
             </>
           )}
 
           {isInvestment && (
             <>
-              <HighlightItem theme={theme} label="Minimum Investment" value={formatCurrency(data.minInvestment)} isRate />
-              <HighlightItem theme={theme} label="Expected Returns" value={data.expectedReturns + '%'} />
-              <HighlightItem theme={theme} label="Risk Level" value={data.riskLevel} />
+              <HighlightItem theme={theme} label="Minimum Investment" value={formatCurrency(data?.minInvestment)} isRate />
+              <HighlightItem theme={theme} label="Expected Returns" value={data?.expectedReturns + '%'} />
+              <HighlightItem theme={theme} label="Risk Level" value={data?.riskLevel} />
             </>
           )}
         </View>
 
         <SectionCard theme={theme} title="About">
-          {data.summary && (
+          {data?.summary && (
             <Text style={[styles.sumary, { color: theme.colors.text }]}>
-              {data.summary}
+              {data?.summary}
             </Text>
           )}
 
           <Text style={[styles.paragraph, { color: theme.colors.sub_text }]}>
-            {data.description ||
+            {data?.description ||
               "A trusted financial product designed with your goals in mind. Backed by strong institutional expertise and regulated by the Financial Services Regulatory Authority (FSRA) of Eswatini."}
           </Text>
         </SectionCard>
 
         {data?.benefits?.length > 0 && (
           <View style={[styles.highlightsCard, { backgroundColor: theme.colors.sub_card }]}>
-            {data.benefits.map((benefit, i) => (
+            {data?.benefits.map((benefit, i) => (
               <HighlightItem key={i} theme={theme} label={`Benefit ${i + 1}`} value={benefit} />
             ))}
           </View>
@@ -448,7 +487,7 @@ export default function FinancialDetailsScreen({ route, navigation }) {
 
         {data?.eligibility?.length > 0 && (
           <CollapsibleSection theme={theme} title="Eligibility Requirements" initiallyOpen={true}>
-            {data.eligibility.map((el, index) => (
+            {data?.eligibility.map((el, index) => (
               <Text key={index} style={[styles.bullet, { color: theme.colors.sub_text }]}>• {el}</Text>
             ))}
           </CollapsibleSection>)}
@@ -474,7 +513,7 @@ export default function FinancialDetailsScreen({ route, navigation }) {
           </CollapsibleSection>)
         }
 
-        {(isInvestment && data.investmentStrategy) && (
+        {(isInvestment && data?.investmentStrategy) && (
           <CollapsibleSection theme={theme} title="Investment Strategy">
             <Text style={[styles.paragraph, { color: theme.colors.sub_text }]}>
               {data?.investmentStrategy || "This investment product follows a diversified strategy, balancing growth and stability. It includes a mix of equities, bonds, and alternative assets to optimize returns while managing risk."}
@@ -484,7 +523,7 @@ export default function FinancialDetailsScreen({ route, navigation }) {
 
         {data?.termsAndConditions?.length > 0 && (
           <SectionCard theme={theme} title="Terms & Conditions">
-            {data.termsAndConditions.map((term, i) => (
+            {data?.termsAndConditions.map((term, i) => (
               <Text key={i} style={[styles.paragraph, { color: theme.colors.sub_text }]}>
                 {term}
               </Text>
@@ -493,16 +532,16 @@ export default function FinancialDetailsScreen({ route, navigation }) {
         )}
 
         <SectionCard theme={theme} title="How to Join">
-          {data.applicationSteps.map((step, index) => (
+          {data?.applicationSteps.map((step, index) => (
             <Text key={index} style={[styles.paragraph, { color: theme.colors.sub_text }]}>• {step}</Text>
           ))}
         </SectionCard>
 
-        {(!data.charges.toLowerCase() === "none" ||
-          !data.charges.toLowerCase() === "n/a" ||
-          data.charges) &&
+        {(!data?.charges.toLowerCase() === "none" ||
+          !data?.charges.toLowerCase() === "n/a" ||
+          data?.charges) &&
           (<CollapsibleSection theme={theme} title="Charges & Fees">
-            <Text style={[styles.paragraph, { color: theme.colors.sub_text }]}>{data.charges}</Text>
+            <Text style={[styles.paragraph, { color: theme.colors.sub_text }]}>{data?.charges}</Text>
           </CollapsibleSection>
           )}
 
@@ -519,64 +558,64 @@ export default function FinancialDetailsScreen({ route, navigation }) {
 
         <SectionCard theme={theme} title="Help & Support">
           <View style={{ flexDirection: "row", flexWrap: 'wrap', alignItems: "center", gap: 8, marginBottom: 6, backgroundColor: theme.colors.sub_card, padding: 10, borderRadius: 8 }}>
-            {data.company.companyPhone && <TouchableOpacity style={styles.contactRow} onPress={() => handleCall(data.company.companyPhone)}>
+            {data?.company.companyPhone && <TouchableOpacity style={styles.contactRow} onPress={() => handleCall(data?.company.companyPhone)}>
               <Icons.Ionicons name="call-outline" size={22} color={theme.colors.indicator} />
             </TouchableOpacity>}
 
-            {data.company.whatsapp && <TouchableOpacity style={styles.contactRow} onPress={() => handleWhatsapp(data.company.whatsapp)}>
+            {data?.company.whatsapp && <TouchableOpacity style={styles.contactRow} onPress={() => handleWhatsapp(data?.company.whatsapp)}>
               <Icons.Ionicons name="logo-whatsapp" size={22} color={theme.colors.indicator} />
             </TouchableOpacity>}
 
-            {data.company.email && <TouchableOpacity
+            {data?.company.email && <TouchableOpacity
               style={styles.contactRow}
               onPress={() =>
-                handleEmail(data.company.email)
+                handleEmail(data?.company.email)
               }
             >
               <Icons.Ionicons name="mail-outline" size={22} color={theme.colors.indicator} />
             </TouchableOpacity>}
 
-            {data.company.supportEmail && <TouchableOpacity
+            {data?.company.supportEmail && <TouchableOpacity
               style={styles.contactRow}
               onPress={() =>
-                handleEmail(data.company.supportEmail)
+                handleEmail(data?.company.supportEmail)
               }
             >
               <Icons.Entypo name="email" size={22} color={theme.colors.indicator} />
             </TouchableOpacity>}
 
-            {(data.company.twitter) && <TouchableOpacity
+            {(data?.company.twitter) && <TouchableOpacity
               style={styles.contactRow}
-              onPress={() => handleTwitter(data.company.twitter)}
+              onPress={() => handleTwitter(data?.company.twitter)}
             >
               <Icons.Ionicons name="logo-twitter" size={22} color={theme.colors.indicator} />
             </TouchableOpacity>}
 
-            {(data.company.facebook) && <TouchableOpacity
+            {(data?.company.facebook) && <TouchableOpacity
               style={styles.contactRow}
-              onPress={() => handleFacebook(data.company.facebook)}
+              onPress={() => handleFacebook(data?.company.facebook)}
             >
               <Icons.Ionicons name="logo-facebook" size={22} color={theme.colors.indicator} />
             </TouchableOpacity>}
 
-            {(data.company.instagram) && <TouchableOpacity
+            {(data?.company.instagram) && <TouchableOpacity
               style={styles.contactRow}
-              onPress={() => handleInstagram(data.company.instagram)}
+              onPress={() => handleInstagram(data?.company.instagram)}
             >
               <Icons.Ionicons name="logo-instagram" size={22} color={theme.colors.indicator} />
             </TouchableOpacity>}
 
-            {(data.company.website) && <TouchableOpacity
+            {(data?.company.website) && <TouchableOpacity
               style={styles.contactRow}
-              onPress={() => handleWebsite(data.company.website)}
+              onPress={() => handleWebsite(data?.company.website)}
             >
               <Icons.Ionicons name="globe-outline" size={22} color={theme.colors.indicator} />
             </TouchableOpacity>}
           </View>
 
-          {data.company.operationalHours && <View style={styles.operationalHrs}>
+          {data?.company.operationalHours && <View style={styles.operationalHrs}>
             <Icons.Ionicons name="time-outline" size={22} color={theme.colors.indicator} />
-            <Text style={[styles.contactText, { color: theme.colors.sub_text }]}>{data.company.operationalHours}</Text>
+            <Text style={[styles.contactText, { color: theme.colors.sub_text }]}>{data?.company.operationalHours}</Text>
           </View>}
         </SectionCard>
 

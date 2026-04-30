@@ -103,7 +103,7 @@ const AdCard = ({ ad, onPress, onView, theme }) => {
                   Starting from
                 </Text>
                 <Text style={[styles.priceText, { color: theme.colors.text }]}>
-                  {ad.price ? `E${ad.price}` : "Quote"}
+                  {ad.price ? `${ad.price}` : "Quote"}
                 </Text>
               </>
             ) : (
@@ -168,15 +168,18 @@ const PersonalizedAdsSection = forwardRef((props, ref) => {
 
     setLoading(true);
     try {
-      const result = await getPersonalizedRecommendations(user.uid);
+      const result = await getPersonalizedRecommendations({
+        userId: user.uid,
+        limit: 10,
+      });
       if (result.success) {
         const formatted = result.data.map((item) => ({
-          item_id: item.item_id,
-          item_type: item.item_type,
-          title: item.real_title,
-          imageUrl: item.real_image,
-          description: item.real_description,
-          price: item.price,
+          item_id: item.id,
+          item_type: item.type,
+          title: item.metadata.title,
+          imageUrl: item.metadata.image_url || "",
+          description: item.metadata.description,
+          price: item.metadata.price,
         }));
         setPersonalizedAds(formatted);
       }
@@ -187,8 +190,14 @@ const PersonalizedAdsSection = forwardRef((props, ref) => {
     }
   };
 
-  const handleAdClick = (ad) => {
-    logUserActivity(user.uid, ad.item_id, ad.item_type);
+  const handleAdClick = async (ad) => {
+    // logUserActivity(user.uid, ad.item_id, ad.item_type);
+    await logUserActivity({
+      userId: user.uid,
+      itemId: ad.item_id,
+      action: "click Recomendation",
+      itemType: ad.item_type,
+    });
 
     if (ad.item_type === "pomy_gigs") {
       const jobPayload = {
@@ -223,6 +232,11 @@ const PersonalizedAdsSection = forwardRef((props, ref) => {
       navigation.navigate("TransDetailsScreen", {
         vehicleData: vehiclePayload,
         from: "recommendation",
+      });
+    } else {
+     
+      navigation.navigate("LoanDetails", {
+        saccoId: ad.item_id,
       });
     }
   };

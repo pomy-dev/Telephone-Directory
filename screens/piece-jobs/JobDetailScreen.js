@@ -16,8 +16,11 @@ import {
   KeyboardAvoidingView,
 } from "react-native";
 import {
-  BottomSheetModal, BottomSheetScrollView, BottomSheetView, BottomSheetBackdrop
-} from '@gorhom/bottom-sheet';
+  BottomSheetModal,
+  BottomSheetScrollView,
+  BottomSheetView,
+  BottomSheetBackdrop,
+} from "@gorhom/bottom-sheet";
 import { TextInput } from "react-native-paper";
 import { Icons } from "../../constants/Icons";
 import React, { useState, useRef, useCallback } from "react";
@@ -105,23 +108,30 @@ const JobDetailScreen = ({ route, navigation }) => {
   const [expertiseInput, setExpertiseInput] = useState("");
   const [expertises, setExpertises] = useState([]);
   const [attachments, setAttachments] = useState([]);
-  const [sheetMinHieght, setSheetMinHeight] = useState('60%')
+  const [sheetMinHieght, setSheetMinHeight] = useState("60%");
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { width } = Dimensions.get("window");
 
   const ref = useRef(null);
 
-  const renderBackdrop = useCallback(props => (
-    <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} opacity={0.5} />
-  ), []);
+  const renderBackdrop = useCallback(
+    (props) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        opacity={0.5}
+      />
+    ),
+    [],
+  );
 
   React.useEffect(() => {
     const fetchFreshData = async () => {
       // Check if we need to fetch full details (e.g., from recommendation)
       if (from === "recommendation" && jobData) {
         try {
-
           const { data, error } = await getGigById(jobData.id);
           if (data) {
             // Update state with the fully mapped database record
@@ -209,7 +219,12 @@ const JobDetailScreen = ({ route, navigation }) => {
       const response = await applyForGig(applicationData);
 
       if (response.success) {
-        logUserActivity(user.uid, job.id, "pomy_gigs_application");
+        await logUserActivity({
+          userId: user.uid,
+          itemId: job.id,
+          action: "applied for gig",
+          itemType: "pomy_gigs",
+        });
         CustomToast(
           "Success!👍",
           "Your application has been successfully submitted.",
@@ -225,7 +240,7 @@ const JobDetailScreen = ({ route, navigation }) => {
       setPhone("");
       setExpertises([]);
       setAttachments([]);
-      setSheetMinHeight(0)
+      setSheetMinHeight(0);
     }
   };
 
@@ -247,13 +262,24 @@ const JobDetailScreen = ({ route, navigation }) => {
     if (!expertiseInput.trim()) return;
     setExpertises([...expertises, expertiseInput.trim()]);
     setExpertiseInput("");
-  }
+  };
 
   return (
     <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
-      <View behavior={Platform.OS === "ios" ? "padding" : "height"} style={styles.container}>
-        <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
-        <SecondaryNav title="Job Details" rightIcon="share-social-outline" onRightPress={handleShareJob} onBackPress={() => navigation.goBack()} />
+      <View
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        style={styles.container}
+      >
+        <StatusBar
+          barStyle={isDarkMode ? "light-content" : "dark-content"}
+          backgroundColor={theme.colors.background}
+        />
+        <SecondaryNav
+          title="Job Details"
+          rightIcon="share-social-outline"
+          onRightPress={handleShareJob}
+          onBackPress={() => navigation.goBack()}
+        />
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           {hasImages ? (
@@ -485,25 +511,32 @@ const JobDetailScreen = ({ route, navigation }) => {
         <BottomSheetModal
           ref={ref}
           index={0}
-          snapPoints={['40%', '50%', '60%', '70%', '80%', '90%']}
+          snapPoints={["40%", "50%", "60%", "70%", "80%", "90%"]}
           enableDynamicSizing={true}
-          maxDynamicContentSize={Dimensions.get('window').height * 0.95}
+          maxDynamicContentSize={Dimensions.get("window").height * 0.95}
           backdropComponent={renderBackdrop}
           onDismiss={() => {
             setPhone("");
             setExpertises([]);
             setAttachments([]);
           }}
-          backgroundStyle={{ backgroundColor: isDarkMode ? '#666' : '#fff' }}
+          backgroundStyle={{ backgroundColor: isDarkMode ? "#666" : "#fff" }}
           handleIndicatorStyle={{ backgroundColor: theme.colors.text }}
           enablePanDownToClose
-          keyboardBehavior={Platform.OS === 'ios' ? 'extend' : 'interactive'}
+          keyboardBehavior={Platform.OS === "ios" ? "extend" : "interactive"}
           android_keyboardInputMode="adjustResize"
           enableContentPanningGesture={true}
           enableHandlePanningGesture={true}
         >
-          <BottomSheetView style={[styles.modalContent, { backgroundColor: isDarkMode ? '#666' : '#fff' }]}>
-            <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Apply for this Gig</Text>
+          <BottomSheetView
+            style={[
+              styles.modalContent,
+              { backgroundColor: isDarkMode ? "#666" : "#fff" },
+            ]}
+          >
+            <Text style={[styles.modalTitle, { color: theme.colors.text }]}>
+              Apply for this Gig
+            </Text>
 
             <TextInput
               label="Phone Number"
@@ -513,7 +546,10 @@ const JobDetailScreen = ({ route, navigation }) => {
               onChangeText={setPhone}
               style={[
                 styles.input,
-                { color: theme.colors.text, backgroundColor: isDarkMode ? "#AAA" : "#fff" },
+                {
+                  color: theme.colors.text,
+                  backgroundColor: isDarkMode ? "#AAA" : "#fff",
+                },
               ]}
               keyboardType="phone-pad"
               onSubmitEditing={addSkill}
@@ -535,12 +571,19 @@ const JobDetailScreen = ({ route, navigation }) => {
                 onChangeText={setExpertiseInput}
                 style={[
                   styles.input,
-                  { flex: 2, color: theme.colors.text, backgroundColor: isDarkMode ? "#AAA" : "#fff" },
+                  {
+                    flex: 2,
+                    color: theme.colors.text,
+                    backgroundColor: isDarkMode ? "#AAA" : "#fff",
+                  },
                 ]}
               />
               <TouchableOpacity
                 onPress={addSkill}
-                style={[styles.addButton, { opacity: expertiseInput.trim() ? 1 : 0.5 }]}
+                style={[
+                  styles.addButton,
+                  { opacity: expertiseInput.trim() ? 1 : 0.5 },
+                ]}
                 disabled={!expertiseInput.trim()}
               >
                 <Icons.Ionicons
@@ -556,8 +599,10 @@ const JobDetailScreen = ({ route, navigation }) => {
               <BottomSheetScrollView
                 showsVerticalScrollIndicator={false}
                 contentContainerStyle={{
-                  paddingVertical: 12, gap: 5,
-                  flexDirection: 'row', flexWrap: 'wrap'
+                  paddingVertical: 12,
+                  gap: 5,
+                  flexDirection: "row",
+                  flexWrap: "wrap",
                 }}
                 style={{ maxHeight: 100 }}
               >
@@ -565,21 +610,29 @@ const JobDetailScreen = ({ route, navigation }) => {
                   <View
                     key={index}
                     style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      backgroundColor: theme.colors.card2 || '#333',
+                      flexDirection: "row",
+                      alignItems: "center",
+                      backgroundColor: theme.colors.card2 || "#333",
                       paddingHorizontal: 14,
                       paddingVertical: 8,
                       borderRadius: 20,
                       gap: 8,
                     }}
                   >
-                    <Text style={{ color: '#fff', fontSize: 14 }}>{exp}</Text>
+                    <Text style={{ color: "#fff", fontSize: 14 }}>{exp}</Text>
                     <TouchableOpacity
-                      onPress={() => setExpertises(prev => prev.filter((_, i) => i !== index))}
+                      onPress={() =>
+                        setExpertises((prev) =>
+                          prev.filter((_, i) => i !== index),
+                        )
+                      }
                       hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                     >
-                      <Icons.Ionicons name="close-circle" size={20} color="#ff5555" />
+                      <Icons.Ionicons
+                        name="close-circle"
+                        size={20}
+                        color="#ff5555"
+                      />
                     </TouchableOpacity>
                   </View>
                 ))}
@@ -593,11 +646,7 @@ const JobDetailScreen = ({ route, navigation }) => {
                 { backgroundColor: theme.colors.card2 },
               ]}
             >
-              <Icons.Ionicons
-                name="attach-outline"
-                color={"#fff"}
-                size={24}
-              />
+              <Icons.Ionicons name="attach-outline" color={"#fff"} size={24} />
               <Text style={styles.attachButtonText}>Attach Documents</Text>
             </TouchableOpacity>
 
@@ -611,9 +660,9 @@ const JobDetailScreen = ({ route, navigation }) => {
                   <View
                     key={index}
                     style={{
-                      flexDirection: 'row',
-                      alignItems: 'center',
-                      backgroundColor: isDarkMode ? '#444' : '#f9f9f9',
+                      flexDirection: "row",
+                      alignItems: "center",
+                      backgroundColor: isDarkMode ? "#444" : "#f9f9f9",
                       padding: 12,
                       borderRadius: 12,
                       marginBottom: 8,
@@ -621,21 +670,39 @@ const JobDetailScreen = ({ route, navigation }) => {
                     }}
                   >
                     {att.mimeType?.startsWith("image/") ? (
-                      <Image source={{ uri: att.uri }} style={{ width: 60, height: 60, borderRadius: 8 }} />
+                      <Image
+                        source={{ uri: att.uri }}
+                        style={{ width: 60, height: 60, borderRadius: 8 }}
+                      />
                     ) : (
                       <View style={{ flex: 1 }}>
-                        <Text style={{ fontWeight: '600', color: theme.colors.text }}>{att.name}</Text>
-                        <Text style={{ fontSize: 12, color: '#888' }}>
+                        <Text
+                          style={{
+                            fontWeight: "600",
+                            color: theme.colors.text,
+                          }}
+                        >
+                          {att.name}
+                        </Text>
+                        <Text style={{ fontSize: 12, color: "#888" }}>
                           {(att.size / 1024).toFixed(1)} KB
                         </Text>
                       </View>
                     )}
 
                     <TouchableOpacity
-                      onPress={() => setAttachments(prev => prev.filter((_, i) => i !== index))}
+                      onPress={() =>
+                        setAttachments((prev) =>
+                          prev.filter((_, i) => i !== index),
+                        )
+                      }
                       hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
                     >
-                      <Icons.Ionicons name="close-circle-sharp" size={28} color="#ff4444" />
+                      <Icons.Ionicons
+                        name="close-circle-sharp"
+                        size={28}
+                        color="#ff4444"
+                      />
                     </TouchableOpacity>
                   </View>
                 ))}

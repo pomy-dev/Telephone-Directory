@@ -48,38 +48,68 @@ export const FeedbackSystem = () => {
     };
   }, []);
 
+  // useEffect(() => {
+  //   const checkShouldShow = async () => {
+  //     const network = await NetInfo.fetch();
+  //     if (!network.isConnected) {
+  //       console.log("Feedback Timer: Skipping check, user is offline.");
+  //       return;
+  //     }
+
+  //     // Only prompt if a user is logged in
+  //     if (!user) return;
+
+  //     const lastPrompt = await AsyncStorage.getItem(FEEDBACK_STORAGE_KEY);
+  //     const now = Date.now();
+
+  //     // Show every 30 days if they haven't submitted yet
+  //     const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
+
+  //     if (lastPrompt > THIRTY_DAYS) {
+  //       // Delay the popup so it doesn't hit them immediately on splash
+  //       setTimeout(() => setIsVisible(true), 5000);
+  //     }
+
+  //     //   // To this (Temporary for testing):
+  //     //   if (true) {
+  //     //     setTimeout(() => setIsVisible(true), 2000); // Pops up after 2 seconds
+  //     //   }
+  //   };
+
+  //   // Delay the auto-popup so it doesn't hit them immediately on app open
+  //   const timer = setTimeout(checkShouldShow, 60000);
+  //   return () => clearTimeout(timer);
+  // }, [user]);
+
+
   useEffect(() => {
-    const checkShouldShow = async () => {
-      const network = await NetInfo.fetch();
-      if (!network.isConnected) {
-        console.log("Feedback Timer: Skipping check, user is offline.");
-        return;
-      }
+  const checkShouldShow = async () => {
+    const network = await NetInfo.fetch();
+    if (!network.isConnected || !user) return;
 
-      // Only prompt if a user is logged in
-      if (!user) return;
+    const lastPrompt = await AsyncStorage.getItem(FEEDBACK_STORAGE_KEY);
+    if (!lastPrompt) {
+      // First time user? Wait 5 seconds and show it.
+      setTimeout(() => setIsVisible(true), 5000);
+      return;
+    }
 
-      const lastPrompt = await AsyncStorage.getItem(FEEDBACK_STORAGE_KEY);
-      const now = Date.now();
+    const now = Date.now();
+    const timeSinceLastPrompt = now - parseInt(lastPrompt);
+    
+    // Define your wait periods
+    const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
 
-      // Show every 30 days if they haven't submitted yet
-      const THIRTY_DAYS = 15 * 24 * 60 * 60 * 1000;
+    // Only show if the gap is larger than 30 days
+    if (timeSinceLastPrompt > THIRTY_DAYS) {
+      setTimeout(() => setIsVisible(true), 5000);
+    }
+  };
 
-      if (!lastPrompt || now - parseInt(lastPrompt) > THIRTY_DAYS) {
-        // Delay the popup so it doesn't hit them immediately on splash
-        setTimeout(() => setIsVisible(true), 5000);
-      }
+  const timer = setTimeout(checkShouldShow, 60000); // Check 1 minute after app start
+  return () => clearTimeout(timer);
+}, [user]);
 
-      //   // To this (Temporary for testing):
-      //   if (true) {
-      //     setTimeout(() => setIsVisible(true), 2000); // Pops up after 2 seconds
-      //   }
-    };
-
-    // Delay the auto-popup so it doesn't hit them immediately on app open
-    const timer = setTimeout(checkShouldShow, 60000);
-    return () => clearTimeout(timer);
-  }, [user]);
 
   const handleSubmit = async () => {
     if (rating === 0) {
@@ -115,7 +145,7 @@ export const FeedbackSystem = () => {
 
       // Set timer so we don't ask again for a long time
       await AsyncStorage.setItem(FEEDBACK_STORAGE_KEY, Date.now().toString());
-      Alert.alert("Thank You!", "Your feedback helps us make Pomy better.");
+      Alert.alert("Thank You!", "Your feedback will helps us make the service better.");
       setIsVisible(false);
     } catch (error) {
       console.error("Feedback retry later");
@@ -131,8 +161,10 @@ export const FeedbackSystem = () => {
 
   const handleDismiss = async () => {
     // If they dismiss, wait 7 days before asking again
-    const sevenDaysAgo = Date.now() - 23 * 24 * 60 * 60 * 1000;
-    await AsyncStorage.setItem(FEEDBACK_STORAGE_KEY, sevenDaysAgo.toString());
+    // const sevenDaysAgo = Date.now()* 24 * 60 * 60 * 1000;
+    // await AsyncStorage.setItem(FEEDBACK_STORAGE_KEY, sevenDaysAgo.toString());
+
+    await AsyncStorage.setItem(FEEDBACK_STORAGE_KEY, Date.now().toString());
     setIsVisible(false);
   };
 
