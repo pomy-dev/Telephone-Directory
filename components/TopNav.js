@@ -20,7 +20,6 @@ export default function TopNav({ onCartPress, onSearch, onNotificationPress, onL
   const [tempLocation, setTempLocation] = useState("")
   const [isFindingLocation, setIsFindingLocation] = useState(false);
 
-
   useEffect(() => {
     loadLocation()
   }, [])
@@ -45,7 +44,17 @@ export default function TopNav({ onCartPress, onSearch, onNotificationPress, onL
       }
       const currentLocation = await Location.getCurrentPositionAsync({})
       const [address] = await Location.reverseGeocodeAsync(currentLocation.coords)
-      const formattedAddress = address.street || address.name || address.district || "Current Location"
+
+      // Improved location formatting logic
+      let formattedAddress = address.street || address.name || address.district;
+
+      if (!formattedAddress) {
+        // If specific address name cannot be determined, display country name demarcated by latitudes and longitudes
+        const { latitude, longitude } = currentLocation.coords;
+        const country = address.country || "Unknown Country";
+        formattedAddress = `${latitude.toFixed(4)}, ${country}, ${longitude.toFixed(4)}`;
+      }
+
       setLocation(formattedAddress)
       await AsyncStorage.setItem("userLocation", formattedAddress)
     } catch (error) {
@@ -155,7 +164,7 @@ export default function TopNav({ onCartPress, onSearch, onNotificationPress, onL
           <TouchableOpacity
             style={[styles.modalButton, styles.cancelButton]}
             // onPress={() => { }}
-            onPress={() => setModalVisible(false)}  
+            onPress={() => setModalVisible(false)}
           >
             <Text style={styles.cancelText}>Cancel</Text>
           </TouchableOpacity>

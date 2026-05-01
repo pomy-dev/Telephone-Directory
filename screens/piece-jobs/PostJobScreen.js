@@ -23,14 +23,29 @@ import { AuthContext } from "../../context/authProvider";
 import { submitGig } from "../../service/Supabase-Fuctions";
 import { AppContext } from "../../context/appContext";
 
-const CATEGORIES = ["Moving", "Fixing", "Building", "Cleaning", "Groundsman", "LandScaping", "Delivery", "Gardening", "Pet Care", "Tech"]
-const STEPS = ["Job Details", "Description", "Photos", "Contacts"]
+const CATEGORIES = ["Transporting", "Fixing", "Construction", "Artisan", "Cleaning",
+    "Groundsman", "LandScaping", "Beauty & Care", "Gardening", "Fabric & Fashion", "Property-Gard",
+    "Pets & Animals", "Tech", "Engineering", "Media", "Catering", "Educating", "Baby-Sitter"];
+
+const STEPS = ["Job Details", "Description", "Photos", "Contacts"];
 const { width } = Dimensions.get('window')
 
 const PostGigScreen = ({ navigation }) => {
     const { theme, isDarkMode } = useContext(AppContext)
     const { user } = React.useContext(AuthContext)
     const [step, setStep] = useState(0)
+
+    // Shuffle function
+    const shuffleArray = (array) => {
+        const shuffled = [...array];
+        for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+        }
+        return shuffled;
+    };
+
+    const [shuffledCategories, setShuffledCategories] = useState(CATEGORIES);
 
     // Form fields
     const [title, setTitle] = useState("")
@@ -52,6 +67,10 @@ const PostGigScreen = ({ navigation }) => {
 
     // Errors
     const [errors, setErrors] = useState({})
+
+    useEffect(() => {
+        setShuffledCategories(shuffleArray(CATEGORIES));
+    }, []);
 
     const validateCurrentStep = () => {
         const newErrors = {}
@@ -281,7 +300,7 @@ const PostGigScreen = ({ navigation }) => {
 
                         <Text style={[styles.label, { marginTop: 24, color: theme.colors.text }]}>Category *</Text>
                         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriesScroll}>
-                            {CATEGORIES.map((cat) => (
+                            {shuffledCategories.map((cat) => (
                                 <TouchableOpacity
                                     key={cat}
                                     style={[styles.categoryChip, category === cat && styles.categoryChipActive]}
