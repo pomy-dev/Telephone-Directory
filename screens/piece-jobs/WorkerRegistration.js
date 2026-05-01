@@ -2,7 +2,6 @@ import React, { useState, useContext, useEffect } from "react";
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
   Alert,
@@ -31,9 +30,11 @@ import { AppContext } from "../../context/appContext";
 import CustomLoader from "../../components/customLoader";
 import { handleCall } from "../../utils/callFunctions";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { TextInput } from "react-native-paper";
 
 const { width } = Dimensions.get("window");
 const MODAL_COLUMN_WIDTH = (width - 60) / 2;
+
 // --- Helper for Dynamic Contact Icons ---
 const getContactIcon = (platform) => {
   switch (platform) {
@@ -78,25 +79,25 @@ const ProfilePreview = ({ form, setGalleryVisible, handleCall, theme }) => {
             style={styles.heroImage}
           />
         ) : (
-          <View style={[styles.heroPlaceholder, { backgroundColor: theme.colors.text }]}>
+          <View style={[styles.heroPlaceholder, { backgroundColor: theme.colors.card }]}>
             <Icons.Ionicons
               name="person-circle-outline"
               size={80}
-              color="#e2e8f0"
+              color={theme.colors.sub_text}
             />
           </View>
         )}
       </View>
 
       <TouchableOpacity
-        style={[styles.galleryTrigger, { backgroundColor: theme.colors.card, borderColor: theme.colors.card }]}
+        style={[styles.galleryTrigger, { backgroundColor: theme.colors.card2}]}
         onPress={() => setGalleryVisible(true)}
       >
-        <Icons.Ionicons name="images" size={20} color={theme.colors.text} />
-        <Text style={[styles.galleryTriggerText, { color: "#94a3b8" }]}>
+        <Icons.Ionicons name="images" size={20} color={theme.colors.light} />
+        <Text style={[styles.galleryTriggerText, { color: "#fff" }]}>
           View Portfolio ({form.experience_images?.length || 0})
         </Text>
-        <Icons.Ionicons name="chevron-forward" size={16} color="#94a3b8" />
+        <Icons.Ionicons name="chevron-forward" size={16} color={theme.colors.sub_text} />
       </TouchableOpacity>
 
       <ScrollView
@@ -104,13 +105,14 @@ const ProfilePreview = ({ form, setGalleryVisible, handleCall, theme }) => {
         contentContainerStyle={styles.scrollContent}
       >
         <View style={styles.mainContent}>
+          {/* Identity */}
           <View style={styles.identityContainer}>
-            <Text style={styles.nameLabelText}>
+            <Text style={[styles.nameLabelText, { color: theme.colors.text }]}>
               {form.name || "Unnamed Professional"}
             </Text>
             <View style={styles.locRow}>
-              <Icons.Ionicons name="location" size={14} color="#10b981" />
-              <Text style={styles.locationLabelText}>
+              <Icons.Ionicons name="location" size={14} color={theme.colors.card2} />
+              <Text style={[styles.locationLabelText, { color: theme.colors.sub_text }]}>
                 {form.location?.address || "Location not set"}
               </Text>
             </View>
@@ -118,110 +120,85 @@ const ProfilePreview = ({ form, setGalleryVisible, handleCall, theme }) => {
             <View style={styles.contactIconRow}>
               {form.phone && (
                 <TouchableOpacity
-                  style={[styles.miniSocialBtn, { backgroundColor: "#3b82f6" }]}
+                  style={[styles.miniSocialBtn, { backgroundColor: theme.colors.primary}]}
                   onPress={handleCall}
                 >
                   <Icons.Ionicons name="call" size={20} color="#fff" />
                 </TouchableOpacity>
               )}
-              {Object.entries(form.contact_options || {}).map(
-                ([platform, value]) => {
-                  if (!value) return null;
-                  const icon = getContactIcon(platform);
-                  return (
-                    <TouchableOpacity
-                      key={platform}
-                      style={[
-                        styles.miniSocialBtn,
-                        { backgroundColor: icon.color },
-                      ]}
-                      onPress={() => handleContact(platform, value)}
-                    >
-                      <Icons.Ionicons name={icon.name} size={20} color="#fff" />
-                    </TouchableOpacity>
-                  );
-                },
-              )}
+              {Object.entries(form.contact_options || {}).map(([platform, value]) => {
+                if (!value) return null;
+                const icon = getContactIcon(platform);
+                return (
+                  <TouchableOpacity
+                    key={platform}
+                    style={[styles.miniSocialBtn, { backgroundColor: icon.color }]}
+                    onPress={() => handleContact(platform, value)}
+                  >
+                    <Icons.Ionicons name={icon.name} size={20} color="#fff" />
+                  </TouchableOpacity>
+                );
+              })}
             </View>
 
-            <View style={styles.statsRow}>
+            <View style={[styles.statsRow, { backgroundColor: theme.colors.card }]}>
               <View style={styles.statBox}>
-                <Icons.Ionicons name="thumbs-up" size={16} color="#10b981" />
-                <Text style={styles.statCount}>{form.likes || 0}</Text>
-                <Text style={styles.statLabel}>Likes</Text>
+                <Icons.Ionicons name="thumbs-up" size={16} color={theme.colors.card2} />
+                <Text style={[styles.statCount, { color: theme.colors.text }]}>{form.likes || 0}</Text>
+                <Text style={[styles.statLabel, { color: theme.colors.sub_text }]}>Likes</Text>
               </View>
-              <View
-                style={[
-                  styles.statBox,
-                  { borderLeftWidth: 1, borderColor: "#f1f5f9" },
-                ]}
-              >
-                <Icons.Ionicons name="thumbs-down" size={16} color="#ef4444" />
-                <Text style={styles.statCount}>{form.dislikes || 0}</Text>
-                <Text style={styles.statLabel}>Dislikes</Text>
+              <View style={[styles.statBox, { borderLeftWidth: 1, borderColor: theme.colors.border }]}>
+                <Icons.Ionicons name="thumbs-down" size={16} color={theme.colors.card2} />
+                <Text style={[styles.statCount, { color: theme.colors.text }]}>{form.dislikes || 0}</Text>
+                <Text style={[styles.statLabel, { color: theme.colors.sub_text }]}>Dislikes</Text>
               </View>
             </View>
           </View>
 
-          <View style={styles.divider} />
+          <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
 
+          {/* Bio */}
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Professional Bio</Text>
-            <Text style={styles.bioPreviewText}>
+            <Text style={[styles.sectionLabel, { color: theme.colors.sub_text }]}>Professional Bio</Text>
+            <Text style={[styles.bioPreviewText, { color: theme.colors.text }]}>
               {form.bio || "No bio provided yet."}
             </Text>
           </View>
 
+          {/* Documents */}
           <View style={styles.section}>
-            {form.documents && form.documents.length > 0 ? (
+            {form.documents && form.documents.length > 0 && (
               <>
-                <Text style={styles.sectionLabel}>
+                <Text style={[styles.sectionLabel, { color: theme.colors.sub_text }]}>
                   Qualifications / Certification
                 </Text>
                 <View style={{ gap: 10 }}>
                   {form.documents.map((doc, index) => (
                     <TouchableOpacity
                       key={index}
-                      style={styles.docPreviewItem}
-                      onPress={() => {
-                        if (doc?.url) {
-                          Linking.openURL(doc?.url);
-                        }
-                      }}
+                      style={[styles.docPreviewItem, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
+                      onPress={() => { if (doc?.url) Linking.openURL(doc?.url); }}
                     >
-                      <Icons.Ionicons
-                        name="document-text"
-                        size={18}
-                        color={theme.colors.sub_text}
-                      />
-                      <Text style={styles.docPreviewText} numberOfLines={1}>
+                      <Icons.Ionicons name="document-text" size={18} color={theme.colors.primary} />
+                      <Text style={[styles.docPreviewText, { color: theme.colors.text }]} numberOfLines={1}>
                         {doc.name || "Document"}
                       </Text>
-                      <Icons.Ionicons
-                        name="open-outline"
-                        size={16}
-                        color="#94a3b8"
-                      />
+                      <Icons.Ionicons name="open-outline" size={16} color={theme.colors.sub_text} />
                     </TouchableOpacity>
                   ))}
                 </View>
               </>
-            ) : (
-              <Text style={styles.bioPreviewText}></Text>
             )}
           </View>
 
+          {/* Services */}
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Services</Text>
+            <Text style={[styles.sectionLabel, { color: theme.colors.sub_text }]}>Services</Text>
             <View style={styles.skillsList}>
               {form.skills.map((skill, index) => (
-                <View key={index} style={styles.skillItem}>
-                  <Icons.Ionicons
-                    name="checkmark-circle"
-                    size={18}
-                    color="#10b981"
-                  />
-                  <Text style={styles.skillText}>{skill}</Text>
+                <View key={index} style={[styles.skillItem, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+                  <Icons.Ionicons name="checkmark-circle" size={18} color="#10b981" />
+                  <Text style={[styles.skillText, { color: theme.colors.text }]}>{skill}</Text>
                 </View>
               ))}
             </View>
@@ -249,57 +226,27 @@ const ProfileForm = ({
   pickImage,
   isWorker,
   setManageModalVisible,
-  theme
+  theme,
 }) => {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const scrollRef = React.useRef(null);
-
   const [selectedPlatform, setSelectedPlatform] = useState("whatsapp");
   const [contactModalVisible, setContactModalVisible] = useState(false);
 
   const CONTACT_PLATFORMS = [
-    {
-      id: "whatsapp",
-      label: "WhatsApp",
-      icon: "logo-whatsapp",
-      color: "#25D366",
-      keyboard: "phone-pad",
-      placeholder: "Enter phone number",
-    },
-    {
-      id: "email",
-      label: "Email",
-      icon: "mail",
-      color: "#f43f5e",
-      keyboard: "email-address",
-      placeholder: "Enter email address",
-    },
-    {
-      id: "instagram",
-      label: "Instagram",
-      icon: "logo-instagram",
-      color: "#E4405F",
-      keyboard: "default",
-      placeholder: "Enter username",
-    },
-    {
-      id: "facebook",
-      label: "Facebook",
-      icon: "logo-facebook",
-      color: "#1877F2",
-      keyboard: "default",
-      placeholder: "Enter page name",
-    },
+    { id: "whatsapp", label: "WhatsApp", icon: "logo-whatsapp", color: "#25D366", keyboard: "phone-pad", placeholder: "Enter phone number" },
+    { id: "email", label: "Email", icon: "mail", color: "#f43f5e", keyboard: "email-address", placeholder: "Enter email address" },
+    { id: "instagram", label: "Instagram", icon: "logo-instagram", color: "#E4405F", keyboard: "default", placeholder: "Enter username" },
+    { id: "facebook", label: "Facebook", icon: "logo-facebook", color: "#1877F2", keyboard: "default", placeholder: "Enter page name" },
   ];
 
-  const activePlatform = CONTACT_PLATFORMS.find(
-    (p) => p.id === selectedPlatform,
-  );
+  const activePlatform = CONTACT_PLATFORMS.find((p) => p.id === selectedPlatform);
+
   return (
     <>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingHorizontal: 24 }]}
         keyboardShouldPersistTaps="handled"
         ref={scrollRef}
         onScroll={(e) => {
@@ -308,94 +255,59 @@ const ProfileForm = ({
         }}
         scrollEventThrottle={16}
       >
+        {/* ── Hero: Profile Picture + Gallery ── */}
         {isWorker && (
           <View style={[styles.heroSectionContainer, { backgroundColor: theme.colors.background }]}>
-            {/* Left Column: Profile Picture + Gallery */}
             <View style={[styles.heroLeftColumn, { backgroundColor: theme.colors.background }]}>
-              {/* Profile Picture Section (2/3) */}
-              <View style={styles.profilePictureSection}>
+              <View style={[styles.profilePictureSection, { backgroundColor: theme.colors.card }]}>
                 {form.worker_pp && form.worker_pp.length > 0 ? (
                   <Image
-                    source={{
-                      uri: form.worker_pp[0]?.url || form.worker_pp[0]?.uri,
-                    }}
+                    source={{ uri: form.worker_pp[0]?.url || form.worker_pp[0]?.uri }}
                     style={styles.profilePictureImage}
                   />
                 ) : (
-                  <View style={styles.profilePicturePlaceholder}>
-                    <Icons.Ionicons
-                      name="person-circle-outline"
-                      size={60}
-                      color="#cbd5e1"
-                    />
+                  <View style={[styles.profilePicturePlaceholder, { backgroundColor: theme.colors.card }]}>
+                    <Icons.Ionicons name="person-circle-outline" size={60} color={theme.colors.sub_text} />
                   </View>
                 )}
               </View>
 
-              {/* Gallery Section (1/3) */}
-              <View style={styles.galleryPreviewSection}>
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.galleryScrollContent}
-                >
-                  {form.experience_images &&
-                    form.experience_images.length > 0 ? (
+              <View style={[styles.galleryPreviewSection, { backgroundColor: theme.colors.card }]}>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.galleryScrollContent}>
+                  {form.experience_images && form.experience_images.length > 0 ? (
                     form.experience_images.map((img, index) => (
-                      <TouchableOpacity
-                        key={`gallery-${index}`}
-                        onPress={() => setManageModalVisible(true)} // Open the multi-select modal
-                      >
-                        <Image
-                          key={index}
-                          source={{ uri: img?.url || img?.uri }}
-                          style={styles.galleryThumbnail}
-                        />
+                      <TouchableOpacity key={`gallery-${index}`} onPress={() => setManageModalVisible(true)}>
+                        <Image source={{ uri: img?.url || img?.uri }} style={styles.galleryThumbnail} />
                       </TouchableOpacity>
                     ))
                   ) : (
-                    <View style={styles.galleryEmptyPlaceholder}>
-                      <Icons.Ionicons
-                        name="images-outline"
-                        size={30}
-                        color="#cbd5e1"
-                      />
+                    <View style={[styles.galleryEmptyPlaceholder, { backgroundColor: theme.colors.card }]}>
+                      <Icons.Ionicons name="images-outline" size={30} color={theme.colors.sub_text} />
                     </View>
                   )}
                 </ScrollView>
               </View>
             </View>
 
-            {/* Right Column: Action Buttons */}
             <View style={styles.heroRightColumn}>
-              {/* Add Profile Picture Button (2/3) */}
               <TouchableOpacity
-                style={styles.actionButtonLarge}
+                style={[styles.actionButtonLarge, { backgroundColor: theme.colors.card, borderColor: theme.colors.primary }]}
                 onPress={() => pickImage(false)}
                 activeOpacity={0.7}
               >
-                <Icons.MaterialIcons
-                  name="flip-camera-ios"
-                  size={28}
-                  color="#3b82f6"
-                />
-                <Text style={styles.actionButtonText}>
+                <Icons.MaterialIcons name="flip-camera-ios" size={28} color={theme.colors.primary} />
+                <Text style={[styles.actionButtonText, { color: theme.colors.primary }]}>
                   {isProfilePicking ? "Picking..." : "Profile\nPicture"}
                 </Text>
               </TouchableOpacity>
 
-              {/* Add Gallery Button (1/3) */}
               <TouchableOpacity
-                style={styles.actionButtonSmall}
+                style={[styles.actionButtonSmall, { backgroundColor: theme.colors.card, borderColor: "#10b981" }]}
                 onPress={() => pickImage(true)}
                 activeOpacity={0.7}
               >
-                <Icons.MaterialCommunityIcons
-                  name="camera-plus-outline"
-                  size={20}
-                  color="#10b981"
-                />
-                <Text style={styles.actionButtonSmallText}>
+                <Icons.MaterialCommunityIcons name="camera-plus-outline" size={20} color="#10b981" />
+                <Text style={[styles.actionButtonSmallText, { color: "#10b981" }]}>
                   {isGalleryPicking ? "Picking..." : "Gallery"}
                 </Text>
               </TouchableOpacity>
@@ -403,206 +315,174 @@ const ProfileForm = ({
           </View>
         )}
 
-        <View style={styles.mainContent}>
-          {/* 1. BUSINESS IDENTITY */}
+        {/* ── 1. Business Identity ── */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionLabel, { color: theme.colors.sub_text }]}>Business Identity</Text>
+          <TextInput
+            label="Business Name"
+            value={form.name}
+            onChangeText={(t) => setForm({ ...form, name: t })}
+            mode="outlined"
+            style={styles.paperInput}
+            theme={{ roundness: 12 }}
+            left={<TextInput.Icon icon="briefcase-outline" />}
+          />
+        </View>
+
+        {/* ── 2. Contact Number ── */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionLabel, { color: theme.colors.sub_text }]}>Contact Number</Text>
+          <TextInput
+            label="Phone Number"
+            value={form.phone}
+            onChangeText={(t) => setForm({ ...form, phone: t })}
+            mode="outlined"
+            keyboardType="phone-pad"
+            style={styles.paperInput}
+            theme={{ roundness: 12 }}
+            left={<TextInput.Icon icon="phone" />}
+          />
+        </View>
+
+        {/* ── 3. Communication Channel ── */}
+        {isWorker && (
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Business Identity</Text>
-            <TextInput
-              style={styles.nameInput}
-              value={form.name}
-              placeholder="Your Business Name"
-              placeholderTextColor="#94a3b8"
-              onChangeText={(t) => setForm({ ...form, name: t })}
-            />
-          </View>
-
-          {/* 2. CONTACT DETAILS */}
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Contact Number</Text>
-            <View style={styles.simpleInputWrapper}>
-              <Icons.Ionicons
-                name="call"
-                size={20}
-                color="#64748b"
-                style={styles.inputIcon}
-              />
-              <TextInput
-                style={styles.simpleTextInput}
-                value={form.phone}
-                placeholder="7600 0000"
-                placeholderTextColor="#94a3b8"
-                keyboardType="phone-pad"
-                onChangeText={(t) => setForm({ ...form, phone: t })}
-              />
-            </View>
-          </View>
-
-          {/* 3. CONTACT OPTIONS */}
-          {isWorker && (
-            <View style={styles.section}>
-              <Text style={styles.sectionLabel}>Communication Channel</Text>
-
-              <View style={styles.dynamicContactRow}>
-                {/* PLATFORM PICKER */}
-                <TouchableOpacity
-                  style={[
-                    styles.platformSelector,
-                    { backgroundColor: activePlatform.color },
-                  ]}
-                  onPress={() => setContactModalVisible(true)}
-                >
-                  <Icons.Ionicons
-                    name={activePlatform.icon}
-                    size={18}
-                    color="#fff"
-                  />
-                  <Text style={styles.platformText}>
-                    {activePlatform.label}
-                  </Text>
-                  <Icons.Ionicons name="chevron-down" size={14} color="#fff" />
-                </TouchableOpacity>
-
-                {/* SINGLE INPUT */}
-                <TextInput
-                  style={styles.dynamicContactInput}
-                  placeholder={activePlatform.placeholder}
-                  keyboardType={activePlatform.keyboard}
-                  value={form.contact_options?.[selectedPlatform] || ""}
-                  onChangeText={(text) =>
-                    setForm({
-                      ...form,
-                      contact_options: {
-                        ...form.contact_options,
-                        [selectedPlatform]: text,
-                      },
-                    })
-                  }
-                  autoCapitalize="none"
-                />
-              </View>
-            </View>
-          )}
-
-          {/* 4. LOCATION */}
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Location</Text>
-            <View style={styles.simpleInputWrapper}>
-              <Icons.Ionicons
-                name="location"
-                size={20}
-                color="#10b981"
-                style={styles.inputIcon}
-              />
-              <TextInput
-                style={styles.simpleTextInput}
-                value={form.location?.address}
-                placeholder="Primary Location (e.g. Mbabane)"
-                placeholderTextColor="#94a3b8"
-                onChangeText={(t) =>
-                  setForm({ ...form, location: { address: t } })
-                }
-              />
-            </View>
-          </View>
-
-          <View style={styles.divider} />
-
-          {/* 5. DOCUMENT UPLOAD */}
-          {isWorker && (
-            <View style={styles.section}>
-              <Text style={styles.sectionLabel}>
-                Qualifications & Clearances
-              </Text>
-              <Text style={styles.helperText}>
-                Add certificates, licenses, or police clearance
-              </Text>
+            <Text style={[styles.sectionLabel, { color: theme.colors.sub_text }]}>Communication Channel</Text>
+            <View style={styles.dynamicContactRow}>
               <TouchableOpacity
-                style={styles.uploadDocBtn}
-                onPress={pickDocument}
+                style={[styles.platformSelector, { backgroundColor: activePlatform.color }]}
+                onPress={() => setContactModalVisible(true)}
               >
-                <Icons.Ionicons name="cloud-upload" size={20} color="#3b82f6" />
-                <Text style={styles.uploadDocBtnText}>Upload Document</Text>
+                <Icons.Ionicons name={activePlatform.icon} size={18} color="#fff" />
+                <Text style={styles.platformText}>{activePlatform.label}</Text>
+                <Icons.Ionicons name="chevron-down" size={14} color="#fff" />
               </TouchableOpacity>
 
-              <View style={styles.docList}>
-                {form.documents?.map((doc, index) => (
-                  <View key={index} style={styles.docItem}>
-                    <Icons.Ionicons
-                      name="document-text"
-                      size={20}
-                      color="#64748b"
-                    />
-                    <Text style={styles.docName} numberOfLines={1}>
-                      {doc.name}
-                    </Text>
-                    <TouchableOpacity onPress={() => removeDocument(index)}>
-                      <Icons.Ionicons
-                        name="trash-outline"
-                        size={18}
-                        color="#ef4444"
-                      />
-                    </TouchableOpacity>
-                  </View>
-                ))}
-              </View>
-            </View>
-          )}
-
-          <View style={styles.divider} />
-
-          {/* 6. BIO */}
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Professional Bio</Text>
-            <TextInput
-              multiline
-              style={styles.bioInputEdit}
-              value={form.bio}
-              onChangeText={(t) => setForm({ ...form, bio: t })}
-              placeholder="What makes your service great?"
-              placeholderTextColor="#94a3b8"
-            />
-          </View>
-
-          {/* 7. SERVICES */}
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Services You Provide</Text>
-            <View style={styles.skillInputWrapper}>
               <TextInput
-                style={styles.growingSkillInput}
-                placeholder="e.g. Plumbing, Teaching..."
-                placeholderTextColor="#94a3b8"
-                value={currentSkill}
-                onChangeText={setCurrentSkill}
+                value={form.contact_options?.[selectedPlatform] || ""}
+                onChangeText={(text) =>
+                  setForm({
+                    ...form,
+                    contact_options: {
+                      ...form.contact_options,
+                      [selectedPlatform]: text,
+                    },
+                  })
+                }
+                placeholder={activePlatform.placeholder}
+                keyboardType={activePlatform.keyboard}
+                autoCapitalize="none"
+                mode="outlined"
+                style={[styles.paperInput, { flex: 1, marginBottom: 0 }]}
+                theme={{ roundness: 12 }}
               />
-              <TouchableOpacity onPress={addSkill} style={styles.addSkillFab}>
-                <Icons.Ionicons name="add" size={24} color="#fff" />
-              </TouchableOpacity>
             </View>
+          </View>
+        )}
 
-            <View style={styles.skillsList}>
-              {form.skills.map((skill, index) => (
-                <View key={index} style={styles.skillItemEdit}>
-                  <Text style={styles.skillText}>• {skill}</Text>
-                  <TouchableOpacity onPress={() => removeSkill(index)}>
-                    <Icons.Ionicons
-                      name="close-circle"
-                      size={20}
-                      color="#ef4444"
-                    />
+        {/* ── 4. Location ── */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionLabel, { color: theme.colors.sub_text }]}>Location</Text>
+          <TextInput
+            label="Primary Location (e.g. Mbabane)"
+            value={form.location?.address}
+            onChangeText={(t) => setForm({ ...form, location: { address: t } })}
+            mode="outlined"
+            style={styles.paperInput}
+            theme={{ roundness: 12 }}
+            left={<TextInput.Icon icon="map-marker-outline" />}
+          />
+        </View>
+
+        <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
+
+        {/* ── 5. Document Upload ── */}
+        {isWorker && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionLabel, { color: theme.colors.sub_text }]}>Qualifications & Clearances</Text>
+            <Text style={[styles.helperText, { color: theme.colors.sub_text }]}>
+              Add certificates, licenses, or police clearance
+            </Text>
+            <TouchableOpacity
+              style={[styles.uploadDocBtn, { backgroundColor: theme.colors.card, borderColor: theme.colors.primary }]}
+              onPress={pickDocument}
+            >
+              <Icons.Ionicons name="cloud-upload" size={20} color={theme.colors.primary} />
+              <Text style={[styles.uploadDocBtnText, { color: theme.colors.primary }]}>Upload Document</Text>
+            </TouchableOpacity>
+
+            <View style={styles.docList}>
+              {form.documents?.map((doc, index) => (
+                <View key={index} style={[styles.docItem, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+                  <Icons.Ionicons name="document-text" size={20} color={theme.colors.primary} />
+                  <Text style={[styles.docName, { color: theme.colors.text }]} numberOfLines={1}>
+                    {doc.name}
+                  </Text>
+                  <TouchableOpacity onPress={() => removeDocument(index)}>
+                    <Icons.Ionicons name="trash-outline" size={18} color="#ef4444" />
                   </TouchableOpacity>
                 </View>
               ))}
             </View>
           </View>
+        )}
+
+        <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
+
+        {/* ── 6. Professional Bio ── */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionLabel, { color: theme.colors.sub_text }]}>Professional Bio</Text>
+          <TextInput
+            label="What makes your service great?"
+            value={form.bio}
+            onChangeText={(t) => setForm({ ...form, bio: t })}
+            mode="outlined"
+            multiline
+            numberOfLines={4}
+            style={[styles.paperInput, styles.bioInput]}
+            theme={{ roundness: 12 }}
+            left={<TextInput.Icon icon="text-box-outline" />}
+          />
+        </View>
+
+        {/* ── 7. Services ── */}
+        <View style={styles.section}>
+          <Text style={[styles.sectionLabel, { color: theme.colors.sub_text }]}>Services You Provide</Text>
+          <View style={styles.skillInputWrapper}>
+            <TextInput
+              label="e.g. Plumbing, Teaching..."
+              value={currentSkill}
+              onChangeText={setCurrentSkill}
+              mode="outlined"
+              style={[styles.paperInput, { flex: 1, marginBottom: 0 }]}
+              theme={{ roundness: 12 }}
+              left={<TextInput.Icon icon="plus-circle-outline" />}
+            />
+            <TouchableOpacity onPress={addSkill} style={[styles.addSkillFab, { backgroundColor: theme.colors.primary }]}>
+              <Icons.Ionicons name="add" size={24} color="#fff" />
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.skillsList}>
+            {form.skills.map((skill, index) => (
+              <View key={index} style={[styles.skillItemEdit, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+                <Text style={[styles.skillText, { color: theme.colors.text }]}>• {skill}</Text>
+                <TouchableOpacity onPress={() => removeSkill(index)}>
+                  <Icons.Ionicons name="close-circle" size={20} color="#ef4444" />
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
         </View>
       </ScrollView>
 
+      {/* Platform picker modal */}
       <Modal visible={contactModalVisible} transparent animationType="fade">
         <Pressable
           style={styles.modalOverlay}
           onPress={() => setContactModalVisible(false)}
         >
-          <View style={styles.platformModal}>
+          <View style={[styles.platformModal, { backgroundColor: theme.colors.card }]}>
             {CONTACT_PLATFORMS.map((item) => (
               <TouchableOpacity
                 key={item.id}
@@ -612,12 +492,10 @@ const ProfileForm = ({
                   setContactModalVisible(false);
                 }}
               >
-                <View
-                  style={[styles.optionIcon, { backgroundColor: item.color }]}
-                >
+                <View style={[styles.optionIcon, { backgroundColor: item.color }]}>
                   <Icons.Ionicons name={item.icon} size={18} color="#fff" />
                 </View>
-                <Text style={styles.optionText}>{item.label}</Text>
+                <Text style={[styles.optionText, { color: theme.colors.text }]}>{item.label}</Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -673,7 +551,6 @@ const WorkerRegistration = ({ navigation }) => {
 
   const deleteSelectedImages = () => {
     if (selectedIndices.length === 0) return;
-
     Alert.alert(
       "Delete Images",
       `Are you sure you want to delete ${selectedIndices.length} selected image(s)?`,
@@ -683,12 +560,11 @@ const WorkerRegistration = ({ navigation }) => {
           text: "Delete",
           style: "destructive",
           onPress: () => {
-            // Filter out the images whose indices are in the selectedIndices array
             const updatedImages = form.experience_images.filter(
               (_, index) => !selectedIndices.includes(index),
             );
             setForm({ ...form, experience_images: updatedImages });
-            setSelectedIndices([]); // Reset selection
+            setSelectedIndices([]);
             setManageModalVisible(false);
           },
         },
@@ -731,10 +607,8 @@ const WorkerRegistration = ({ navigation }) => {
       setFetching(false);
       return;
     }
-
     const result = await getWorkerProfile(user.uid);
     if (result.success && result.data) {
-      console.log("Worker: ", result.data);
       setForm(result.data);
       setOriginalData(result.data);
       setIsWorker(true);
@@ -831,14 +705,10 @@ const WorkerRegistration = ({ navigation }) => {
       });
       if (!result.canceled) {
         const newImages = result.assets.map((asset) => asset);
-        console.log(newImages);
         isGallery
           ? setForm((prev) => ({
             ...prev,
-            experience_images: [
-              ...(prev.experience_images || []),
-              ...newImages,
-            ],
+            experience_images: [...(prev.experience_images || []), ...newImages],
           }))
           : setForm((prev) => ({ ...prev, worker_pp: [...newImages] }));
       }
@@ -857,36 +727,34 @@ const WorkerRegistration = ({ navigation }) => {
         barStyle={isDarkMode ? "light-content" : "dark-content"}
         backgroundColor={theme.colors.background}
       />
-      <View
-        style={[
-          styles.headerSafe,
-          styles.headerNav,
-          { backgroundColor: theme.colors.background, borderBottomColor: theme.colors.background },
-        ]}
-      >
+
+      {/* ── Header ── */}
+      <View style={[styles.headerNav, { backgroundColor: theme.colors.background, borderBottomColor: theme.colors.border }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icons.Ionicons name="arrow-back" size={24} color={theme.colors.text} />
         </TouchableOpacity>
 
-        <Text style={[styles.headerTitle, { color: theme.colors.text, }]}>
-          {isEditing ? "EDIT PROFILE" : "PROFILE"}
+        <Text style={[styles.headerTitle, { color: theme.colors.text }]}>
+          {isEditing ? "Edit Profile" : "My Profile"}
         </Text>
 
-        <View style={{ flexDirection: "row", gap: 15 }}>
+        <View style={{ flexDirection: "row", gap: 15, alignItems: "center" }}>
           {isWorker && (
             <TouchableOpacity onPress={toggleEdit}>
-              <Text
-                style={[styles.editBtnText, isEditing && { color: "#ef4444" }]}
-              >
-                {isEditing ? "CANCEL" : "EDIT"}
+              <Text style={[styles.headerActionText, isEditing && { color: "#ef4444" }]}>
+                {isEditing ? "Cancel" : "Edit"}
               </Text>
             </TouchableOpacity>
           )}
-          <TouchableOpacity onPress={handleSave} disabled={loading}>
+          <TouchableOpacity
+            style={[styles.syncBtn, { backgroundColor: theme.colors.card2 }]}
+            onPress={handleSave}
+            disabled={loading}
+          >
             {loading ? (
-              <ActivityIndicator size="small" color="#10b981" />
+              <ActivityIndicator size="small" color="#fff" />
             ) : (
-              <Text style={styles.saveBtnText}>SYNC</Text>
+              <Text style={styles.syncBtnText}>Save</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -927,16 +795,17 @@ const WorkerRegistration = ({ navigation }) => {
         )}
       </KeyboardAvoidingView>
 
+      {/* ── Portfolio Gallery Modal ── */}
       <Modal visible={galleryVisible} animationType="slide">
-        <SafeAreaView style={[styles.modalContainer, { backgroundColor: theme.colors.card }]}>
-          <View style={styles.modalHeader}>
+        <SafeAreaView style={[styles.modalContainer, { backgroundColor: theme.colors.background }]}>
+          <View style={[styles.modalHeader, { borderBottomColor: theme.colors.border }]}>
             <TouchableOpacity onPress={() => setGalleryVisible(false)}>
               <Icons.Ionicons name="close" size={28} color={theme.colors.text} />
             </TouchableOpacity>
             <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Portfolio</Text>
             {isEditing ? (
               <TouchableOpacity onPress={pickImage}>
-                <Icons.Ionicons name="add-circle" size={28} color="#10b981" />
+                <Icons.Ionicons name="add-circle" size={28} color={theme.colors.primary} />
               </TouchableOpacity>
             ) : (
               <View style={{ width: 28 }} />
@@ -946,6 +815,14 @@ const WorkerRegistration = ({ navigation }) => {
           <FlatList
             data={form.experience_images}
             numColumns={2}
+            contentContainerStyle={{ padding: 10 }}
+            ListHeaderComponent={
+              <View style={{ paddingHorizontal: 10, paddingBottom: 10 }}>
+                <Text style={[styles.sectionLabel, { color: theme.colors.sub_text }]}>
+                  Jobs Accomplished
+                </Text>
+              </View>
+            }
             renderItem={({ item, index }) => (
               <View style={styles.modalItem}>
                 <Image
@@ -959,62 +836,41 @@ const WorkerRegistration = ({ navigation }) => {
                 )}
               </View>
             )}
-            ListHeaderComponent={
-              <View style={{ paddingHorizontal: 10 }}>
-                <Text
-                  style={{
-                    fontSize: 16,
-                    fontWeight: 600,
-                    color: theme.colors.sub_text,
-                  }}
-                >
-                  Jobs Accomplished
-                </Text>
-              </View>
-            }
           />
         </SafeAreaView>
       </Modal>
 
+      {/* ── Manage Gallery Modal ── */}
       <Modal visible={manageModalVisible} animationType="slide">
-        <SafeAreaView style={[styles.modalContainer, { backgroundColor: theme.colors.card }]}>
-          <View style={styles.modalHeader}>
-            <TouchableOpacity
-              onPress={() => {
-                setManageModalVisible(false);
-                setSelectedIndices([]);
-              }}
-            >
+        <SafeAreaView style={[styles.modalContainer, { backgroundColor: theme.colors.background }]}>
+          <View style={[styles.modalHeader, { borderBottomColor: theme.colors.border }]}>
+            <TouchableOpacity onPress={() => { setManageModalVisible(false); setSelectedIndices([]); }}>
               <Icons.Ionicons name="close" size={28} color={theme.colors.text} />
             </TouchableOpacity>
 
             <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Manage Gallery</Text>
 
-            {/* Corrected: Comments inside JSX must be wrapped like this */}
-            <TouchableOpacity onPress={toggleSelectAll}>
-              <Text style={{ color: '#54adf0ff', fontWeight: "700" }}>
-                {selectedIndices.length === form.experience_images.length
-                  ? "Deselect All"
-                  : "Select All"}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={deleteSelectedImages}
-              disabled={selectedIndices.length === 0}
-            >
-              <Icons.Ionicons
-                name="trash"
-                size={26}
-                color={selectedIndices.length > 0 ? "#ef4444" : "#cbd5e1"}
-              />
-            </TouchableOpacity>
+            <View style={{ flexDirection: "row", gap: 16, alignItems: "center" }}>
+              <TouchableOpacity onPress={toggleSelectAll}>
+                <Text style={[styles.headerActionText, { color: theme.colors.primary }]}>
+                  {selectedIndices.length === form.experience_images.length ? "Deselect All" : "Select All"}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={deleteSelectedImages} disabled={selectedIndices.length === 0}>
+                <Icons.Ionicons
+                  name="trash"
+                  size={26}
+                  color={selectedIndices.length > 0 ? "#ef4444" : theme.colors.sub_text}
+                />
+              </TouchableOpacity>
+            </View>
           </View>
 
           <FlatList
             data={form.experience_images}
             numColumns={3}
             keyExtractor={(_, index) => `manage-${index}`}
+            contentContainerStyle={{ padding: 10 }}
             renderItem={({ item, index }) => {
               const isSelected = selectedIndices.includes(index);
               return (
@@ -1026,69 +882,83 @@ const WorkerRegistration = ({ navigation }) => {
                     source={{ uri: item?.url || item?.uri }}
                     style={styles.manageImage}
                   />
-                  <View
-                    style={[
-                      styles.selectionOverlay,
-                      isSelected && styles.selectedBox,
-                    ]}
-                  >
+                  <View style={[styles.selectionOverlay, isSelected && styles.selectedBox]}>
                     {isSelected && (
-                      <Icons.Ionicons
-                        name="checkmark-circle"
-                        size={24}
-                        color="#3b82f6"
-                      />
+                      <Icons.Ionicons name="checkmark-circle" size={24} color="#3b82f6" />
                     )}
                   </View>
                 </TouchableOpacity>
               );
             }}
-            contentContainerStyle={{ padding: 10 }}
           />
 
           {selectedIndices.length > 0 && (
-            <View style={styles.selectionFooter}>
-              <Text style={styles.footerText}>
-                {selectedIndices.length} images selected
+            <View style={[styles.selectionFooter, { borderTopColor: theme.colors.border }]}>
+              <Text style={[styles.footerText, { color: theme.colors.primary }]}>
+                {selectedIndices.length} image{selectedIndices.length > 1 ? "s" : ""} selected
               </Text>
             </View>
           )}
         </SafeAreaView>
-      </Modal >
-    </SafeAreaView >
+      </Modal>
+    </SafeAreaView>
   );
 };
 
+// ────────────────────────────── Styles ──────────────────────────────
 const styles = StyleSheet.create({
-  container: { flex: 1, },
-  center: { flex: 1, justifyContent: "center", alignItems: "center" },
-  headerSafe: { borderBottomWidth: 1, },
+  container: { flex: 1 },
+
+  // ── Header ──
   headerNav: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 20,
     height: 60,
+    borderBottomWidth: 1,
   },
-  headerTitle: { fontSize: 11, fontWeight: "900", color: "#64748b" },
-  editBtnText: { color: "#3b82f6", fontWeight: "900" },
-  saveBtnText: { color: "#10b981", fontWeight: "900" },
-  scrollContent: { paddingBottom: 50 },
+  headerTitle: {
+    fontSize: 17,
+    fontWeight: "700",
+  },
+  headerActionText: {
+    color: "#3b82f6",
+    fontWeight: "700",
+    fontSize: 15,
+  },
+  syncBtn: {
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 18,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  syncBtnText: {
+    color: "#fff",
+    fontWeight: "700",
+    fontSize: 14,
+  },
+
+  // ── Scroll & Layout ──
+  scrollContent: { paddingBottom: 50, paddingTop: 8 },
+  mainContent: { paddingHorizontal: 24, paddingTop: 8 },
+
+  // ── Hero Section ──
   heroSectionContainer: {
     flexDirection: "row",
     height: 280,
     paddingHorizontal: 5,
     paddingVertical: 4,
     gap: 6,
+    marginBottom: 8,
   },
   heroLeftColumn: { flex: 3, gap: 6 },
   heroRightColumn: { flex: 1, gap: 6 },
 
-  // Profile Picture Section
   profilePictureSection: {
     flex: 2,
-    backgroundColor: "#fff",
-    borderRadius: 15,
+    borderRadius: 16,
     overflow: "hidden",
     elevation: 3,
     shadowOpacity: 0.1,
@@ -1099,14 +969,11 @@ const styles = StyleSheet.create({
     height: "100%",
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#f1f5f9",
   },
 
-  // Gallery Preview Section
   galleryPreviewSection: {
     flex: 1,
-    backgroundColor: "#fff",
-    borderRadius: 15,
+    borderRadius: 16,
     overflow: "hidden",
     elevation: 3,
     shadowOpacity: 0.1,
@@ -1123,142 +990,151 @@ const styles = StyleSheet.create({
     height: "100%",
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#f1f5f9",
   },
 
-  attachmentCard: {
-    flexDirection: "row",
+  actionButtonLarge: {
+    flex: 2,
+    borderRadius: 16,
+    justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#fafafa",
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#eee",
+    borderWidth: 1.5,
+    gap: 8,
   },
-  attachmentText: {
-    marginLeft: 10,
-    fontSize: 14,
-    fontWeight: "600",
+  actionButtonText: {
+    fontSize: 12,
+    fontWeight: "800",
+    textAlign: "center",
+  },
+  actionButtonSmall: {
+    flex: 1,
+    borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1.5,
+    gap: 6,
+  },
+  actionButtonSmallText: {
+    fontSize: 11,
+    fontWeight: "700",
+    textAlign: "center",
   },
 
-  // From Lethu
+  // ── Section & Inputs ──
+  section: { marginBottom: 20 },
+  sectionLabel: {
+    fontSize: 11,
+    fontWeight: "800",
+    letterSpacing: 0.5,
+    textTransform: "uppercase",
+    marginBottom: 10,
+  },
+  paperInput: {
+    marginBottom: 12,
+    backgroundColor: "transparent",
+  },
+  bioInput: {
+    minHeight: 110,
+  },
+  helperText: {
+    fontSize: 12,
+    marginBottom: 10,
+    marginTop: -6,
+  },
+  divider: { height: 1, marginVertical: 16 },
+
+  // ── Dynamic Contact ──
   dynamicContactRow: {
     flexDirection: "row",
     gap: 10,
     alignItems: "center",
   },
-
   platformSelector: {
     flexDirection: "row",
     alignItems: "center",
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 14,
     borderRadius: 12,
     gap: 6,
   },
-
   platformText: {
     color: "#fff",
     fontWeight: "700",
     fontSize: 13,
   },
 
-  dynamicContactInput: {
-    flex: 1,
-    backgroundColor: "#f8fafc",
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
-    fontWeight: "600",
-  },
-
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.4)",
-    justifyContent: "center",
-    padding: 30,
-  },
-
-  platformModal: {
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    padding: 20,
-  },
-
-  platformOption: {
+  // ── Documents ──
+  uploadDocBtn: {
     flexDirection: "row",
     alignItems: "center",
-    paddingVertical: 12,
-    gap: 15,
-  },
-
-  optionIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
     justifyContent: "center",
+    padding: 15,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderStyle: "dashed",
+    gap: 10,
+    marginBottom: 12,
+  },
+  uploadDocBtnText: { fontWeight: "800", fontSize: 15 },
+  docList: { gap: 10 },
+  docItem: {
+    flexDirection: "row",
     alignItems: "center",
+    padding: 12,
+    borderRadius: 12,
+    gap: 10,
+    borderWidth: 1,
   },
+  docName: { flex: 1, fontSize: 14, fontWeight: "600" },
 
-  optionText: {
-    fontWeight: "700",
-    fontSize: 15,
-  },
   docPreviewItem: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#f8fafc",
     padding: 12,
-    borderRadius: 10,
+    borderRadius: 12,
     gap: 10,
     borderWidth: 1,
-    borderColor: "#f1f5f9",
   },
   docPreviewText: {
     flex: 1,
     fontSize: 14,
     fontWeight: "600",
-    color: "#334155",
   },
 
-  // Action Buttons
-  actionButtonLarge: {
-    flex: 2,
-    backgroundColor: "#eff6ff",
-    borderRadius: 15,
+  // ── Skills ──
+  skillInputWrapper: {
+    flexDirection: "row",
+    gap: 10,
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  addSkillFab: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 1.5,
-    borderColor: "#3b82f6",
-    gap: 8,
   },
-  actionButtonText: {
-    fontSize: 12,
-    fontWeight: "800",
-    color: "#3b82f6",
-    textAlign: "center",
-  },
-  actionButtonSmall: {
-    flex: 1,
-    backgroundColor: "#f0fdf4",
-    borderRadius: 15,
-    justifyContent: "center",
+  skillsList: { gap: 10 },
+  skillItemEdit: {
+    flexDirection: "row",
     alignItems: "center",
-    borderWidth: 1.5,
-    borderColor: "#10b981",
-    gap: 6,
+    justifyContent: "space-between",
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
   },
-  actionButtonSmallText: {
-    fontSize: 11,
-    fontWeight: "700",
-    color: "#10b981",
-    textAlign: "center",
+  skillItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
   },
-  scrollContent: { paddingBottom: 50 },
-  heroContainer: { height: 200, backgroundColor: "#f8fafc" },
+  skillText: { fontWeight: "600", flex: 1 },
+
+  // ── Preview Header ──
+  heroContainer: { height: 200 },
   heroImage: { width: "100%", height: "100%" },
   heroPlaceholder: {
     height: 200,
@@ -1268,143 +1144,49 @@ const styles = StyleSheet.create({
   galleryTrigger: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
     marginHorizontal: 20,
-    padding: 18,
-    borderRadius: 15,
-    elevation: 8,
+    padding: 16,
+    borderRadius: 16,
+    elevation: 6,
     shadowOpacity: 0.1,
-    marginTop: -30,
+    marginTop: -28,
     gap: 12,
+    // borderWidth: 1,
   },
-  galleryTriggerText: { flex: 1, fontWeight: "800" },
-  mainContent: { padding: 25 },
-  nameLabelText: { fontSize: 26, fontWeight: "900" },
-  nameInput: {
-    fontSize: 20,
-    fontWeight: "900",
-    backgroundColor: "#f8fafc",
-    padding: 15,
-    borderRadius: 12,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
-  },
+  galleryTriggerText: { flex: 1, fontWeight: "700" },
+
+  // ── Preview Identity ──
+  identityContainer: { marginBottom: 8 },
+  nameLabelText: { fontSize: 26, fontWeight: "900", marginBottom: 6 },
   locRow: { flexDirection: "row", alignItems: "center", gap: 5 },
-  locationLabelText: { fontSize: 16, color: "#64748b", fontWeight: "600" },
-  simpleInputWrapper: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#f8fafc",
-    paddingHorizontal: 15,
-    paddingVertical: 5,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
-  },
-  simpleTextInput: { flex: 1, fontSize: 16, fontWeight: "600", color: "#000" },
-  inputIcon: { marginRight: 10 },
-  contactIconRow: { flexDirection: "row", gap: 12, marginTop: 15 },
+  locationLabelText: { fontSize: 15, fontWeight: "600" },
+  contactIconRow: { flexDirection: "row", gap: 12, marginTop: 16 },
   miniSocialBtn: {
     width: 44,
     height: 44,
-    borderRadius: 22,
+    borderRadius: 16,
     justifyContent: "center",
     alignItems: "center",
   },
   statsRow: {
     flexDirection: "row",
-    backgroundColor: "#f8fafc",
-    borderRadius: 12,
-    paddingVertical: 12,
+    borderRadius: 16,
+    paddingVertical: 14,
     marginTop: 20,
   },
   statBox: { flex: 1, alignItems: "center" },
-  statCount: { fontWeight: "900" },
-  statLabel: { fontSize: 10, color: "#94a3b8" },
-  divider: { height: 1, backgroundColor: "#f1f5f9", marginVertical: 15 },
-  section: { marginBottom: 25 },
-  sectionLabel: {
-    fontSize: 11,
-    fontWeight: "800",
-    color: "#94a3b8",
-    marginBottom: 10,
-  },
-  bioPreviewText: { fontSize: 15, lineHeight: 22, color: "#666" },
-  bioInputEdit: {
-    backgroundColor: "#f8fafc",
-    padding: 15,
-    borderRadius: 12,
-    minHeight: 120,
-    textAlignVertical: "top",
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
-  },
-  helperText: {
-    fontSize: 12,
-    color: "#94a3b8",
-    marginBottom: 10,
-    marginTop: -5,
-  },
-  uploadDocBtn: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#eff6ff",
-    padding: 15,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderStyle: "dashed",
-    borderColor: "#3b82f6",
-    gap: 10,
-  },
-  uploadDocBtnText: { color: "#3b82f6", fontWeight: "800" },
-  docList: { gap: 10, },
-  docItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#f8fafc",
-    padding: 12,
-    borderRadius: 10,
-    gap: 10,
-    marginTop: 6,
-    marginBottom: 10,
-  },
-  docName: { flex: 1, fontSize: 14, fontWeight: "600" },
-  skillInputWrapper: { flexDirection: "row", gap: 10, marginBottom: 15 },
-  growingSkillInput: {
-    flex: 1,
-    backgroundColor: "#f8fafc",
-    borderRadius: 12,
-    padding: 12,
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
-  },
-  addSkillFab: {
-    backgroundColor: "#10b981",
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  skillsList: { gap: 12 },
-  skillItem: { flexDirection: "row", alignItems: "center", gap: 10 },
-  skillItemEdit: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: "#f1f5f9",
-    padding: 12,
-    borderRadius: 10,
-  },
-  skillText: { fontWeight: "600", color: "#666" },
+  statCount: { fontWeight: "900", fontSize: 16 },
+  statLabel: { fontSize: 10, marginTop: 2 },
+  bioPreviewText: { fontSize: 15, lineHeight: 22 },
+
+  // ── Modals ──
   modalContainer: { flex: 1 },
   modalHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-    padding: 20,
     alignItems: "center",
+    padding: 20,
+    borderBottomWidth: 1,
   },
   modalTitle: { fontWeight: "800", fontSize: 18 },
   modalItem: {
@@ -1412,7 +1194,6 @@ const styles = StyleSheet.create({
     margin: 10,
     borderRadius: 12,
     overflow: "hidden",
-    backgroundColor: "#f1f5f9",
   },
   modalImage: { width: "100%", height: 150 },
   mainBadge: {
@@ -1425,76 +1206,52 @@ const styles = StyleSheet.create({
   },
   mainBadgeText: { color: "#fff", fontSize: 8, fontWeight: "900" },
 
-  //single image delete
-  manageModalOverlay: {
+  // Platform modal
+  modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.8)",
+    backgroundColor: "rgba(0,0,0,0.4)",
     justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
+    padding: 30,
   },
-  manageModalContent: {
-    backgroundColor: "#fff",
-    width: "100%",
+  platformModal: {
     borderRadius: 20,
-    padding: 15,
-    alignItems: "center",
+    padding: 20,
+    elevation: 10,
+    shadowOpacity: 0.15,
   },
-  manageModalHeader: {
+  platformOption: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    width: "100%",
-    marginBottom: 15,
     alignItems: "center",
+    paddingVertical: 12,
+    gap: 15,
   },
-  manageModalTitle: {
-    fontWeight: "800",
-    fontSize: 16,
-    color: "#1e293b",
-  },
-  manageFullImage: {
-    width: "100%",
-    height: 300,
-    borderRadius: 12,
-    backgroundColor: "#f1f5f9",
-  },
-  deleteImageBtn: {
-    flexDirection: "row",
-    backgroundColor: "#ef4444",
-    width: "100%",
-    padding: 15,
-    borderRadius: 12,
-    marginTop: 20,
+  optionIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: "center",
     alignItems: "center",
-    gap: 10,
   },
-  deleteImageBtnText: {
-    color: "#fff",
-    fontWeight: "800",
-    fontSize: 15,
-  },
+  optionText: { fontWeight: "700", fontSize: 15 },
 
-  //multi image delete:
+  // Manage gallery
   manageItem: {
     flex: 1 / 3,
     aspectRatio: 1,
     margin: 4,
-    borderRadius: 8,
+    borderRadius: 10,
     overflow: "hidden",
     position: "relative",
   },
-  manageImage: {
-    width: "100%",
-    height: "100%",
-  },
+  manageImage: { width: "100%", height: "100%" },
   selectionOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(255,255,255,0.2)",
+    backgroundColor: "rgba(255,255,255,0.1)",
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 2,
     borderColor: "transparent",
+    borderRadius: 10,
   },
   selectedBox: {
     backgroundColor: "rgba(59, 130, 246, 0.3)",
@@ -1502,15 +1259,10 @@ const styles = StyleSheet.create({
   },
   selectionFooter: {
     padding: 20,
-    backgroundColor: "#fff",
     borderTopWidth: 1,
-    borderTopColor: "#f1f5f9",
     alignItems: "center",
   },
-  footerText: {
-    fontWeight: "800",
-    color: "#3b82f6",
-  },
+  footerText: { fontWeight: "800", fontSize: 15 },
 });
 
 export default WorkerRegistration;
