@@ -24,7 +24,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   Keyboard,
-  TouchableWithoutFeedback,
   LayoutAnimation,
   RefreshControl,
 } from "react-native";
@@ -36,7 +35,6 @@ import { Icons } from "../../constants/Icons";
 import { AppContext } from "../../context/appContext";
 import FinancialPromotion from "../../components/customBanner";
 import {
-  fetchSaccos,
   fetchSaccosPaginated,
   fetchSaccosPromos,
   suggestSaccosProduct,
@@ -237,21 +235,23 @@ export default function FinancialHubScreen({ route, navigation }) {
 
     loadInitialSaccos(); // Changed from loadSaccos()
 
-    // Set a timeout for loading: 30 seconds = 30000 ms
-    const loadingTimeout = setTimeout(() => {
-      if (isLoading) {
-        setIsLoading(false);
-        setShowRetry(true);
-      }
-    }, 30000);
-
     return () => {
       unsubscribe();
       clearTimeout(loadingTimeout);
     };
   }, []);
 
- 
+  useEffect(() => {
+    // Set a timeout for loading: 30 seconds = 30000 ms
+    loadingTimeout;
+  }, [isLoading])
+
+  const loadingTimeout = setTimeout(() => {
+    if (isLoading) {
+      setIsLoading(false);
+      setShowRetry(true);
+    }
+  }, 30000);
 
   useEffect(() => {
     // animate height (needs nativeDriver: false) and fade/translate (can use native driver)
@@ -287,8 +287,8 @@ export default function FinancialHubScreen({ route, navigation }) {
   }, [bottomSheetVisible]);
 
   useEffect(() => {
-    const showSub = Keyboard.addListener("keyboardDidShow", () => {});
-    const hideSub = Keyboard.addListener("keyboardDidHide", () => {});
+    const showSub = Keyboard.addListener("keyboardDidShow", () => { });
+    const hideSub = Keyboard.addListener("keyboardDidHide", () => { });
 
     return () => {
       showSub.remove();
@@ -392,12 +392,6 @@ export default function FinancialHubScreen({ route, navigation }) {
   //filter when you land on the page
   const displayedData = getFilteredAndSearchedData();
 
-  // === FILTERING LOGIC (SAFER + DEBUG-FRIENDLY) ===
-  // const allProducts = [...loanData, ...savingsData, ...insuranceData, ...investmentData].map(item => ({
-  //   ...item,
-  //   _category: item.category || (item.name ? 'insurance' : 'loans'), // crude guess if category missing
-  // }));
-
   const handleApplyFilters = async () => {
     setIsLoading(true);
     try {
@@ -465,7 +459,7 @@ export default function FinancialHubScreen({ route, navigation }) {
         setBannerPromos(partialPromos);
       });
 
-      promos && setIsBannersVisible(true); // show banners if we got any promos
+      promos.length > 0 && setIsBannersVisible(true); // show banners if we got any promos
     } catch (err) {
       console.error(err);
     }
@@ -609,9 +603,9 @@ export default function FinancialHubScreen({ route, navigation }) {
     const accountType =
       activeTab === "Savings"
         ? item.accountType ||
-          (item.type?.toLowerCase().includes("fixed")
-            ? "Fixed Deposit"
-            : "Variable Savings")
+        (item.type?.toLowerCase().includes("fixed")
+          ? "Fixed Deposit"
+          : "Variable Savings")
         : null;
 
     return (
@@ -1194,10 +1188,12 @@ export default function FinancialHubScreen({ route, navigation }) {
         actions={[
           {
             label: "Cancel",
+            labelStyle: { color: theme.colors.text },
             onPress: () => setShowRetry(false),
           },
           {
             label: "Re-load",
+            labelStyle: { color: theme.colors.indicator },
             onPress: () => {
               (loadInitialSaccos(), setShowRetry(false));
             },
@@ -1255,7 +1251,7 @@ export default function FinancialHubScreen({ route, navigation }) {
           onEndReached={loadMoreSaccos} // Load more on scroll
           onEndReachedThreshold={0.5}
           ListFooterComponent={() =>
-            isFetchingMore ? (
+            (!isLoading && isFetchingMore) ? (
               <ActivityIndicator
                 size="large"
                 color={theme.colors.primary}
@@ -1295,331 +1291,329 @@ export default function FinancialHubScreen({ route, navigation }) {
             behavior={Platform.OS === "ios" ? "padding" : "height"}
             style={{ width: "100%", justifyContent: "flex-end" }}
           >
-            <TouchableWithoutFeedback>
-              <Animated.View
-                style={[
-                  styles.bottomSheet,
-                  {
-                    backgroundColor: isDarkMode ? "#666" : "#f1f1f1",
-                    transform: [{ translateY: bottomSheetY }],
-                  },
-                ]}
+            <Animated.View
+              style={[
+                styles.bottomSheet,
+                {
+                  backgroundColor: isDarkMode ? "#666" : "#f1f1f1",
+                  transform: [{ translateY: bottomSheetY }],
+                },
+              ]}
+            >
+              <View style={styles.sheetHandle} />
+              <ScrollView
+                contentContainerStyle={{
+                  paddingHorizontal: 16,
+                  paddingBottom: 60,
+                }}
+                keyboardShouldPersistTaps="handled"
               >
-                <View style={styles.sheetHandle} />
-                <ScrollView
-                  contentContainerStyle={{
-                    paddingHorizontal: 16,
-                    paddingBottom: 60,
+                <Text
+                  style={{
+                    fontSize: 18,
+                    fontWeight: "700",
+                    marginBottom: 12,
+                    color: theme.colors.text,
                   }}
-                  keyboardShouldPersistTaps="handled"
                 >
-                  <Text
-                    style={{
-                      fontSize: 18,
-                      fontWeight: "700",
-                      marginBottom: 12,
-                      color: theme.colors.text,
-                    }}
-                  >
-                    Filter Criteria
-                  </Text>
+                  Filter Criteria
+                </Text>
 
-                  <Text
-                    style={[
-                      styles.sheetLabel,
-                      { color: theme.colors.sub_text },
-                    ]}
-                  >
-                    Category
-                  </Text>
-                  <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={{
-                      flexDirection: "row",
-                      gap: 8,
-                      marginBottom: 12,
-                    }}
-                  >
-                    {[
-                      "All",
-                      "Loans",
-                      "Savings",
-                      "Insurance",
-                      "Investments",
-                    ].map((c) => (
-                      <TouchableOpacity
-                        key={c}
-                        style={[
-                          styles.radioBtn,
-                          form.category === c && styles.radioBtnActive,
-                        ]}
-                        onPress={() => {
-                          LayoutAnimation.easeInEaseOut();
-                          setForm((prev) => ({
-                            ...prev,
-                            category: c,
-                            minInterest: "",
-                            maxInterest: "",
-                            minTerm: "",
-                            maxTerm: "",
-                            interestRateApr: "",
-                            minInvestment: "",
-                            expectedReturns: "",
-                          }));
-                        }}
-                      >
-                        <Text
-                          style={{
-                            color: form.category === c ? "#fff" : "#666",
-                            fontWeight: "600",
-                          }}
-                        >
-                          {c}
-                        </Text>
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-
-                  <Text
-                    style={[
-                      styles.sheetLabel,
-                      { color: theme.colors.sub_text },
-                    ]}
-                  >
-                    Financial Deal Type
-                  </Text>
-                  <TextInput
-                    value={form.productType}
-                    onChangeText={(v) =>
-                      setForm((prev) => ({ ...prev, productType: v }))
-                    }
-                    style={styles.sheetInput}
-                    placeholder="e.g. personal, home, life, funeral, unit trust..."
-                  />
-
-                  <Text
-                    style={[
-                      styles.sheetLabel,
-                      { color: theme.colors.sub_text },
-                    ]}
-                  >
-                    Company Provider
-                  </Text>
-                  <TextInput
-                    value={form.nameOrCompany}
-                    onChangeText={(v) =>
-                      setForm((prev) => ({ ...prev, nameOrCompany: v }))
-                    }
-                    style={styles.sheetInput}
-                    placeholder="Bank or company name"
-                  />
-                  {activeCategoryConfig.interestRateApr && (
-                    <>
-                      <Text
-                        style={[
-                          styles.sheetLabel,
-                          { color: theme.colors.sub_text },
-                        ]}
-                      >
-                        Interest Rate
-                      </Text>
-                      <TextInput
-                        keyboardType="numeric"
-                        value={form.interestRateApr}
-                        onChangeText={(v) =>
-                          setForm((prev) => ({ ...prev, interestRateApr: v }))
-                        }
-                        style={styles.sheetInput}
-                        placeholder="0"
-                      />
-                    </>
-                  )}
-                  {activeCategoryConfig.minInvestment && (
-                    <>
-                      <Text
-                        style={[
-                          styles.sheetLabel,
-                          { color: theme.colors.sub_text },
-                        ]}
-                      >
-                        Min Investment
-                      </Text>
-                      <TextInput
-                        keyboardType="numeric"
-                        value={form.minInvestment}
-                        onChangeText={(v) =>
-                          setForm((prev) => ({ ...prev, minInvestment: v }))
-                        }
-                        style={styles.sheetInput}
-                        placeholder="0"
-                      />
-                    </>
-                  )}
-                  {activeCategoryConfig.expectedReturns && (
-                    <>
-                      <Text
-                        style={[
-                          styles.sheetLabel,
-                          { color: theme.colors.sub_text },
-                        ]}
-                      >
-                        Expected Returns
-                      </Text>
-                      <TextInput
-                        keyboardType="numeric"
-                        value={form.expectedReturns}
-                        onChangeText={(v) =>
-                          setForm((prev) => ({ ...prev, expectedReturns: v }))
-                        }
-                        style={styles.sheetInput}
-                        placeholder="0"
-                      />
-                    </>
-                  )}
-
-                  {activeCategoryConfig.showRate && (
-                    <View style={{ flexDirection: "row", gap: 8 }}>
-                      <View style={{ flex: 1 }}>
-                        <Text
-                          style={[
-                            styles.sheetLabel,
-                            { color: theme.colors.sub_text },
-                          ]}
-                        >
-                          Min Rate / Premium / Return (%)
-                        </Text>
-                        <TextInput
-                          keyboardType="numeric"
-                          value={form.minInterest}
-                          onChangeText={(v) =>
-                            setForm((prev) => ({ ...prev, minInterest: v }))
-                          }
-                          style={styles.sheetInput}
-                          placeholder="e.g. 8"
-                        />
-                      </View>
-
-                      <View style={{ flex: 1 }}>
-                        <Text
-                          style={[
-                            styles.sheetLabel,
-                            { color: theme.colors.sub_text },
-                          ]}
-                        >
-                          Max Rate / Premium / Return (%)
-                        </Text>
-                        <TextInput
-                          keyboardType="numeric"
-                          value={form.maxInterest}
-                          onChangeText={(v) =>
-                            setForm((prev) => ({ ...prev, maxInterest: v }))
-                          }
-                          style={styles.sheetInput}
-                          placeholder="e.g. 15"
-                        />
-                      </View>
-                    </View>
-                  )}
-
-                  {activeCategoryConfig.showTerm && (
-                    <View
-                      style={{ flexDirection: "row", gap: 8, marginTop: 8 }}
-                    >
-                      <View style={{ flex: 1 }}>
-                        <Text
-                          style={[
-                            styles.sheetLabel,
-                            { color: theme.colors.sub_text },
-                          ]}
-                        >
-                          Min Term (months)
-                        </Text>
-                        <TextInput
-                          keyboardType="numeric"
-                          value={form.minTerm}
-                          onChangeText={(v) =>
-                            setForm((prev) => ({ ...prev, minTerm: v }))
-                          }
-                          style={styles.sheetInput}
-                          placeholder="e.g. 12"
-                        />
-                      </View>
-
-                      <View style={{ flex: 1 }}>
-                        <Text
-                          style={[
-                            styles.sheetLabel,
-                            { color: theme.colors.sub_text },
-                          ]}
-                        >
-                          Max Term (months)
-                        </Text>
-                        <TextInput
-                          keyboardType="numeric"
-                          value={form.maxTerm}
-                          onChangeText={(v) =>
-                            setForm((prev) => ({ ...prev, maxTerm: v }))
-                          }
-                          style={styles.sheetInput}
-                          placeholder="e.g. 240"
-                        />
-                      </View>
-                    </View>
-                  )}
-
-                  <Text
-                    style={[
-                      styles.sheetLabel,
-                      { color: theme.colors.sub_text },
-                    ]}
-                  >
-                    Other Details (Options)
-                  </Text>
-                  <TextInput
-                    value={form.otherDetails}
-                    onChangeText={(v) =>
-                      setForm((prev) => ({ ...prev, otherDetails: v }))
-                    }
-                    textAlignVertical="top"
-                    numberOfLines={3}
-                    style={[styles.sheetInput, { height: 70 }]}
-                    placeholder="instant, no collateral, comprehensive, offshore..."
-                  />
-
-                  <View
-                    style={{ flexDirection: "row", gap: 12, marginTop: 16 }}
-                  >
+                <Text
+                  style={[
+                    styles.sheetLabel,
+                    { color: theme.colors.sub_text },
+                  ]}
+                >
+                  Category
+                </Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{
+                    flexDirection: "row",
+                    gap: 8,
+                    marginBottom: 12,
+                  }}
+                >
+                  {[
+                    "All",
+                    "Loans",
+                    "Savings",
+                    "Insurance",
+                    "Investments",
+                  ].map((c) => (
                     <TouchableOpacity
-                      style={styles.applyBtn}
+                      key={c}
+                      style={[
+                        styles.radioBtn,
+                        form.category === c && { backgroundColor: theme.colors.indicator },
+                      ]}
                       onPress={() => {
-                        // set the filters object (the filtering runs on render)
-                        // setFilters(form);
-                        setIsFilter(true);
-                        handleApplyFilters();
+                        LayoutAnimation.easeInEaseOut();
+                        setForm((prev) => ({
+                          ...prev,
+                          category: c,
+                          minInterest: "",
+                          maxInterest: "",
+                          minTerm: "",
+                          maxTerm: "",
+                          interestRateApr: "",
+                          minInvestment: "",
+                          expectedReturns: "",
+                        }));
                       }}
                     >
-                      {isFilter ? (
-                        <ActivityIndicator color={"#fff"} size={20} />
-                      ) : (
-                        <Text style={{ color: "#fff", fontWeight: "700" }}>
-                          Apply
-                        </Text>
-                      )}
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      style={styles.resetBtn}
-                      onPress={refreshFilters}
-                    >
-                      <Text style={{ color: "#111827", fontWeight: "700" }}>
-                        Reset
+                      <Text
+                        style={{
+                          color: form.category === c ? "#fff" : "#666",
+                          fontWeight: "600",
+                        }}
+                      >
+                        {c}
                       </Text>
                     </TouchableOpacity>
-                  </View>
+                  ))}
                 </ScrollView>
-              </Animated.View>
-            </TouchableWithoutFeedback>
+
+                <Text
+                  style={[
+                    styles.sheetLabel,
+                    { color: theme.colors.sub_text },
+                  ]}
+                >
+                  Financial Deal Type
+                </Text>
+                <TextInput
+                  value={form.productType}
+                  onChangeText={(v) =>
+                    setForm((prev) => ({ ...prev, productType: v }))
+                  }
+                  style={styles.sheetInput}
+                  placeholder="e.g. personal, home, life, funeral, unit trust..."
+                />
+
+                <Text
+                  style={[
+                    styles.sheetLabel,
+                    { color: theme.colors.sub_text },
+                  ]}
+                >
+                  Company Provider
+                </Text>
+                <TextInput
+                  value={form.nameOrCompany}
+                  onChangeText={(v) =>
+                    setForm((prev) => ({ ...prev, nameOrCompany: v }))
+                  }
+                  style={styles.sheetInput}
+                  placeholder="Bank or company name"
+                />
+                {activeCategoryConfig.interestRateApr && (
+                  <>
+                    <Text
+                      style={[
+                        styles.sheetLabel,
+                        { color: theme.colors.sub_text },
+                      ]}
+                    >
+                      Interest Rate
+                    </Text>
+                    <TextInput
+                      keyboardType="numeric"
+                      value={form.interestRateApr}
+                      onChangeText={(v) =>
+                        setForm((prev) => ({ ...prev, interestRateApr: v }))
+                      }
+                      style={styles.sheetInput}
+                      placeholder="0"
+                    />
+                  </>
+                )}
+                {activeCategoryConfig.minInvestment && (
+                  <>
+                    <Text
+                      style={[
+                        styles.sheetLabel,
+                        { color: theme.colors.sub_text },
+                      ]}
+                    >
+                      Min Investment
+                    </Text>
+                    <TextInput
+                      keyboardType="numeric"
+                      value={form.minInvestment}
+                      onChangeText={(v) =>
+                        setForm((prev) => ({ ...prev, minInvestment: v }))
+                      }
+                      style={styles.sheetInput}
+                      placeholder="0"
+                    />
+                  </>
+                )}
+                {activeCategoryConfig.expectedReturns && (
+                  <>
+                    <Text
+                      style={[
+                        styles.sheetLabel,
+                        { color: theme.colors.sub_text },
+                      ]}
+                    >
+                      Expected Returns
+                    </Text>
+                    <TextInput
+                      keyboardType="numeric"
+                      value={form.expectedReturns}
+                      onChangeText={(v) =>
+                        setForm((prev) => ({ ...prev, expectedReturns: v }))
+                      }
+                      style={styles.sheetInput}
+                      placeholder="0"
+                    />
+                  </>
+                )}
+
+                {activeCategoryConfig.showRate && (
+                  <View style={{ flexDirection: "row", gap: 8 }}>
+                    <View style={{ flex: 1 }}>
+                      <Text
+                        style={[
+                          styles.sheetLabel,
+                          { color: theme.colors.sub_text },
+                        ]}
+                      >
+                        Min Rate / Premium / Return (%)
+                      </Text>
+                      <TextInput
+                        keyboardType="numeric"
+                        value={form.minInterest}
+                        onChangeText={(v) =>
+                          setForm((prev) => ({ ...prev, minInterest: v }))
+                        }
+                        style={styles.sheetInput}
+                        placeholder="e.g. 8"
+                      />
+                    </View>
+
+                    <View style={{ flex: 1 }}>
+                      <Text
+                        style={[
+                          styles.sheetLabel,
+                          { color: theme.colors.sub_text },
+                        ]}
+                      >
+                        Max Rate / Premium / Return (%)
+                      </Text>
+                      <TextInput
+                        keyboardType="numeric"
+                        value={form.maxInterest}
+                        onChangeText={(v) =>
+                          setForm((prev) => ({ ...prev, maxInterest: v }))
+                        }
+                        style={styles.sheetInput}
+                        placeholder="e.g. 15"
+                      />
+                    </View>
+                  </View>
+                )}
+
+                {activeCategoryConfig.showTerm && (
+                  <View
+                    style={{ flexDirection: "row", gap: 8, marginTop: 8 }}
+                  >
+                    <View style={{ flex: 1 }}>
+                      <Text
+                        style={[
+                          styles.sheetLabel,
+                          { color: theme.colors.sub_text },
+                        ]}
+                      >
+                        Min Term (months)
+                      </Text>
+                      <TextInput
+                        keyboardType="numeric"
+                        value={form.minTerm}
+                        onChangeText={(v) =>
+                          setForm((prev) => ({ ...prev, minTerm: v }))
+                        }
+                        style={styles.sheetInput}
+                        placeholder="e.g. 12"
+                      />
+                    </View>
+
+                    <View style={{ flex: 1 }}>
+                      <Text
+                        style={[
+                          styles.sheetLabel,
+                          { color: theme.colors.sub_text },
+                        ]}
+                      >
+                        Max Term (months)
+                      </Text>
+                      <TextInput
+                        keyboardType="numeric"
+                        value={form.maxTerm}
+                        onChangeText={(v) =>
+                          setForm((prev) => ({ ...prev, maxTerm: v }))
+                        }
+                        style={styles.sheetInput}
+                        placeholder="e.g. 240"
+                      />
+                    </View>
+                  </View>
+                )}
+
+                <Text
+                  style={[
+                    styles.sheetLabel,
+                    { color: theme.colors.sub_text },
+                  ]}
+                >
+                  Other Details (Options)
+                </Text>
+                <TextInput
+                  value={form.otherDetails}
+                  onChangeText={(v) =>
+                    setForm((prev) => ({ ...prev, otherDetails: v }))
+                  }
+                  textAlignVertical="top"
+                  numberOfLines={3}
+                  style={[styles.sheetInput, { height: 70 }]}
+                  placeholder="instant, no collateral, comprehensive, offshore..."
+                />
+
+                <View
+                  style={{ flexDirection: "row", gap: 12, marginTop: 16 }}
+                >
+                  <TouchableOpacity
+                    style={[styles.applyBtn, { backgroundColor: theme.colors.indicator }]}
+                    onPress={() => {
+                      // set the filters object (the filtering runs on render)
+                      // setFilters(form);
+                      setIsFilter(true);
+                      handleApplyFilters();
+                    }}
+                  >
+                    {isFilter ? (
+                      <ActivityIndicator color={"#fff"} size={20} />
+                    ) : (
+                      <Text style={{ color: "#fff", fontWeight: "700" }}>
+                        Apply
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.resetBtn}
+                    onPress={refreshFilters}
+                  >
+                    <Text style={{ color: "#111827", fontWeight: "700" }}>
+                      Reset
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </ScrollView>
+            </Animated.View>
           </KeyboardAvoidingView>
         </View>
       </Modal>
@@ -2054,7 +2048,7 @@ const styles = StyleSheet.create({
   sheetHandle: {
     width: 48,
     height: 6,
-    backgroundColor: "#E5E7EB",
+    backgroundColor: "#aaa",
     borderRadius: 6,
     alignSelf: "center",
     marginTop: 8,
@@ -2077,13 +2071,12 @@ const styles = StyleSheet.create({
   radioBtn: {
     paddingVertical: 8,
     paddingHorizontal: 12,
-    backgroundColor: "#F4F0FF",
-    borderRadius: 8,
+    backgroundColor: "#F0F4FF",
+    borderRadius: 30,
   },
-  radioBtnActive: { backgroundColor: "#111827" },
+  radioBtnActive: {},
   applyBtn: {
     flex: 1,
-    backgroundColor: "#111827",
     paddingVertical: 12,
     borderRadius: 10,
     alignItems: "center",

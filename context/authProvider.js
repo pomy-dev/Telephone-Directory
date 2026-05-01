@@ -30,7 +30,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isWorker, setIsWorker] = useState(false);
-  const [likedProducts, setLikedProducts] = useState({
+  const [likedItems, setLikedItems] = useState({
     financialProducts: [],
     freelancers: [],
     forehires: []
@@ -167,8 +167,8 @@ export const AuthProvider = ({ children }) => {
       //       }
       //     ])
       // }
-                // 2. CREATE OR UPDATE the profile in Supabase
-      
+      // 2. CREATE OR UPDATE the profile in Supabase
+
       await syncUserProfile(user);
       return user
     } catch (error) {
@@ -353,7 +353,7 @@ export const AuthProvider = ({ children }) => {
     fireBaseGoogleLogin, emailSignUp, emailLogin, phoneLogin,
     verifyOTP, logout, accessToken, user, loading, isWorker, setIsWorker,
     checkWorkerStatus, updateUserProfile, handleDeleteAccount,
-    likedProducts, setLikedProducts,
+    likedItems, setLikedItems,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

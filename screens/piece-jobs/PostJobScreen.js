@@ -554,6 +554,14 @@ const styles = StyleSheet.create({
         fontSize: 16,
     },
     textArea: { minHeight: 100, paddingTop: 14 },
+
+    categoryChipText: {
+        fontSize: 14,
+        fontWeight: "500",
+        color: "#555",
+        textAlign: 'center',
+    },
+
     categoriesScroll: { marginTop: 8 },
     categoryChip: {
         paddingHorizontal: 18,
@@ -565,7 +573,6 @@ const styles = StyleSheet.create({
         borderColor: "#f0f4ff",
     },
     categoryChipActive: { backgroundColor: "#003366", borderColor: "#003366" },
-    categoryChipText: { fontSize: 15, fontWeight: "500", color: "#555" },
     categoryChipTextActive: { color: "#fff" },
 
     priceInputContainer: {

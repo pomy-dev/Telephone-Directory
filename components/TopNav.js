@@ -21,49 +21,48 @@ export default function TopNav({ onCartPress, onSearch, onNotificationPress, onL
   const [isFindingLocation, setIsFindingLocation] = useState(false);
 
   useEffect(() => {
-    loadLocation()
+    getCurrentLocation();
   }, [])
-
-  const loadLocation = async () => {
-    try {
-      const savedLocation = await AsyncStorage.getItem("userLocation")
-      if (savedLocation) setLocation(savedLocation)
-      else getCurrentLocation()
-    } catch (error) {
-      console.log("Error loading location:", error)
-    }
-  }
 
   const getCurrentLocation = async () => {
     try {
-      setIsFindingLocation(true)
-      const { status } = await Location.requestForegroundPermissionsAsync()
-      if (status !== "granted") {
-        setLocation("Permission denied")
-        return
-      }
-      const currentLocation = await Location.getCurrentPositionAsync({})
-      const [address] = await Location.reverseGeocodeAsync(currentLocation.coords)
+      setIsFindingLocation(true);
 
-      // Improved location formatting logic
-      let formattedAddress = address.street || address.name || address.district;
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        setLocation("Permission denied");
+        return;
+      }
+
+      const currentLocation = await Location.getCurrentPositionAsync({});
+      const [address] = await Location.reverseGeocodeAsync(currentLocation.coords);
+
+      // Better location formatting
+      let formattedAddress =
+        address.street ||
+        address.name ||
+        address.district ||
+        address.city ||
+        address.subregion ||
+        address.region;
 
       if (!formattedAddress) {
-        // If specific address name cannot be determined, display country name demarcated by latitudes and longitudes
-        const { latitude, longitude } = currentLocation.coords;
-        const country = address.country || "Unknown Country";
-        formattedAddress = `${latitude.toFixed(4)}, ${country}, ${longitude.toFixed(4)}`;
+        // Fallback: show only country name when nothing more specific is available
+        formattedAddress = address.country || "Unknown Country";
+      }
+      else if (address.country && !formattedAddress.includes(address.country)) {
+        // Append country if it's not already part of the address
+        formattedAddress = `${formattedAddress}, ${address.country}`;
       }
 
-      setLocation(formattedAddress)
-      await AsyncStorage.setItem("userLocation", formattedAddress)
+      setLocation(formattedAddress);
     } catch (error) {
-      console.log("Error fetching location:", error)
-      setLocation("Unable to get location")
+      console.log("Error fetching location:", error);
+      setLocation("Unable to get location");
     } finally {
-      setIsFindingLocation(false)
+      setIsFindingLocation(false);
     }
-  }
+  };
 
   const saveLocation = async (newLocation) => {
     if (!newLocation.trim()) return

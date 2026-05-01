@@ -36,6 +36,7 @@ import { MoreDropdown } from "../../components/moreDropDown";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { isConnected } from "../../utils/checkNetworkBlocker";
 import NetInfo from "@react-native-community/netinfo";
+import { formatCurrency } from "../../utils/currencyFormater";
 
 const MEDIA_HEIGHT = 180;
 const { height, width } = Dimensions.get("window");
@@ -48,28 +49,16 @@ const CATEGORIES = [
     iconType: Icons.Ionicons,
   },
   {
-    id: "Transporting",
-    name: "Transporting",
-    iconName: "bicycle-outline",
-    iconType: Icons.Ionicons,
-  },
-  {
     id: "Fixing",
     name: "Fixing",
-    iconName: "cube-outline",
-    iconType: Icons.Ionicons,
-  },
-  {
-    id: "Construction",
-    name: "Construction",
-    iconName: "cube-outline",
-    iconType: Icons.Ionicons,
+    iconName: "tools",
+    iconType: Icons.Entypo,
   },
   {
     id: "Artisan",
     name: "Artisan",
-    iconName: "cube-outline",
-    iconType: Icons.Ionicons,
+    iconName: "star-three-points-outline",
+    iconType: Icons.MaterialCommunityIcons,
   },
   {
     id: "Cleaning",
@@ -78,39 +67,15 @@ const CATEGORIES = [
     iconType: Icons.Ionicons,
   },
   {
-    id: "Groundsman",
-    name: "Groundsman",
-    iconName: "hammer-outline",
-    iconType: Icons.Ionicons,
-  },
-  {
-    id: "LandScaping",
-    name: "LandScaping",
-    iconName: "spade",
-    iconType: Icons.MaterialCommunityIcons,
-  },
-  {
     id: "Gardening",
     name: "Gardening",
-    iconName: "leaf-outline",
-    iconType: Icons.Ionicons,
+    iconName: "pagelines",
+    iconType: Icons.FontAwesome,
   },
   {
     id: "Media",
     name: "Media",
     iconName: "camera-outline",
-    iconType: Icons.Ionicons,
-  },
-  {
-    id: "Pets & Animals",
-    name: "Pets & Animals",
-    iconName: "paw-outline",
-    iconType: Icons.Ionicons,
-  },
-  {
-    id: "Fashion & Fabric",
-    name: "Pets & Animals",
-    iconName: "paw-outline",
     iconType: Icons.Ionicons,
   },
   {
@@ -120,10 +85,10 @@ const CATEGORIES = [
     iconType: Icons.Ionicons,
   },
   {
-    id: "Engineering",
-    name: "Engineering",
-    iconName: "laptop-outline",
-    iconType: Icons.Ionicons,
+    id: "Baby-Sitter",
+    name: "Baby-Sitter",
+    iconName: "baby",
+    iconType: Icons.FontAwesome5,
   },
   {
     id: "Catering",
@@ -132,27 +97,63 @@ const CATEGORIES = [
     iconType: Icons.MaterialCommunityIcons,
   },
   {
+    id: "Transporting",
+    name: "Transporting",
+    iconName: "bicycle-outline",
+    iconType: Icons.Ionicons,
+  },
+  {
+    id: "Construction",
+    name: "Construction",
+    iconName: "cube-outline",
+    iconType: Icons.Ionicons,
+  },
+  {
+    id: "Groundsman",
+    name: "Groundsman",
+    iconName: "helmet-safety",
+    iconType: Icons.FontAwesome6,
+  },
+  {
+    id: "LandScaping",
+    name: "LandScaping",
+    iconName: "spade",
+    iconType: Icons.MaterialCommunityIcons,
+  },
+  {
+    id: "Pets & Animals",
+    name: "Pets & Animals",
+    iconName: "paw-outline",
+    iconType: Icons.Ionicons,
+  },
+  {
+    id: "Fashion & Fabric",
+    name: "Fashion & Fabric",
+    iconName: "cut",
+    iconType: Icons.FontAwesome,
+  },
+  {
+    id: "Engineering",
+    name: "Engineering",
+    iconName: "engineering",
+    iconType: Icons.MaterialIcons,
+  },
+  {
     id: "Beauty & Care",
     name: "Beauty & Care",
-    iconName: "pot-steam-outline",
+    iconName: "account-tie-outline",
     iconType: Icons.MaterialCommunityIcons,
   },
   {
     id: "Educating",
     name: "Educating",
-    iconName: "pot-steam-outline",
-    iconType: Icons.MaterialCommunityIcons,
+    iconName: "chalkboard-teacher",
+    iconType: Icons.FontAwesome5,
   },
   {
-    id: "Property-Gard",
-    name: "Property-Gard",
-    iconName: "pot-steam-outline",
-    iconType: Icons.MaterialCommunityIcons,
-  },
-  {
-    id: "Baby-Sitter",
-    name: "Baby-Sitter",
-    iconName: "pot-steam-outline",
+    id: "Security",
+    name: "Security",
+    iconName: "boom-gate-alert",
     iconType: Icons.MaterialCommunityIcons,
   },
 ];
@@ -690,7 +691,7 @@ const GigsScreen = ({ navigation }) => {
 
     const handlePressGig = async (item) => {
       if (user) {
-          await logUserActivity({
+        await logUserActivity({
           userId: user.uid,
           itemId: item.id,
           action: "click",
@@ -753,7 +754,7 @@ const GigsScreen = ({ navigation }) => {
             >
               {item.title}
             </Text>
-            <Text style={[styles.jobPrice, { color: theme.colors.success }]}>E{item.price}</Text>
+            <Text style={[styles.jobPrice, { color: theme.colors.text }]}>{formatCurrency(item.price)}</Text>
           </View>
 
           {hasImage ? (
@@ -928,7 +929,7 @@ const GigsScreen = ({ navigation }) => {
               {item.name}
             </Text>
             <View style={styles.locationRow}>
-              <Icons.Ionicons name="location-sharp" size={12} color="#10b981" />
+              <Icons.Ionicons name="location-sharp" size={12} color={theme.colors.indicator} />
               <Text style={[styles.locationText, { color: theme.colors.text }]}>
                 {locationString}
               </Text>
@@ -1107,10 +1108,10 @@ const GigsScreen = ({ navigation }) => {
           </View>
 
           <TouchableOpacity
-            style={styles.blackActionBtn}
+            style={[styles.blackActionBtn, { backgroundColor: theme.colors.indicator }]}
             onPress={() => Linking.openURL(`tel:${item.phone}`)}
           >
-            <Icons.Ionicons name="call" size={16} color="#10b981" />
+            <Icons.Ionicons name="call" size={16} color="#fff" />
             <Text style={styles.actionBtnText}>Call</Text>
           </TouchableOpacity>
         </View>
@@ -1273,24 +1274,9 @@ const GigsScreen = ({ navigation }) => {
                 >
                   Filter
                 </Text>
-                <TouchableOpacity
-                  onPress={() => {
-                    viewMode === "gigs"
-                      ? setGigSearch("")
-                      : () => {
-                        setWorkerSearch("");
-                      };
-                  }}
-                >
-                  <Text
-                    style={{ color: theme.colors.indicator, fontWeight: "700" }}
-                  >
-                    Clear
-                  </Text>
-                </TouchableOpacity>
               </View>
 
-              <View style={{ paddingHorizontal: 14, paddingTop: 8 }}>
+              <View style={{ paddingHorizontal: 10, paddingTop: 8 }}>
                 <View
                   style={[
                     styles.searchBar2,
@@ -1324,9 +1310,9 @@ const GigsScreen = ({ navigation }) => {
                         styles.categoryButton,
                         viewMode === "gigs"
                           ? gigCategory === cat.id &&
-                          styles.categoryButtonActive
+                          { backgroundColor: theme.colors.indicator }
                           : workerCategory === cat.id &&
-                          styles.categoryButtonActive,
+                          { backgroundColor: theme.colors.indicator },
                       ]}
                       onPress={() => {
                         viewMode === "gigs"
@@ -1672,6 +1658,8 @@ const styles = StyleSheet.create({
   categorySet: {
     flexDirection: "row",
     flexWrap: "wrap",
+    alignItems: 'center',
+    justifyContent: 'space-evenly',
     marginTop: 12,
     paddingBottom: 20,
   },
@@ -1679,13 +1667,12 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     marginBottom: 10,
     borderRadius: 20,
     backgroundColor: "#f0f4ff",
-    marginRight: 8,
-    height: 40,
+    marginRight: 5
   },
   categoryButtonActive: {
     backgroundColor: "#000",
@@ -1770,7 +1757,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     borderRadius: 50,
     padding: 4,
-    marginHorizontal: 16,
+    marginHorizontal: 10,
     marginVertical: 8,
     overflow: "hidden",
   },
@@ -2015,7 +2002,7 @@ const styles = StyleSheet.create({
   jobCard: {
     backgroundColor: "#fff",
     marginBottom: 16,
-    borderRadius: 12, // Added rounding for a modern look
+    // borderRadius: 12, // Added rounding for a modern look
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -2109,12 +2096,12 @@ const styles = StyleSheet.create({
     backgroundColor: "#E6E7EA",
     borderRadius: 6,
     alignSelf: "center",
-    marginTop: 8,
+    marginVertical: 8,
   },
   sheetHeader: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    justifyContent: "flex-start",
+    // alignItems: "flex-start",
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 6,
@@ -2149,7 +2136,7 @@ const styles = StyleSheet.create({
   workerCard: {
     // marginHorizontal: 2,
     marginBottom: 20,
-    borderRadius: 14,
+    // borderRadius: 14,
     borderWidth: 1,
     // borderColor: "#e2e8f0",
     overflow: "hidden",
@@ -2308,7 +2295,6 @@ const styles = StyleSheet.create({
   blackActionBtn: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#000",
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 6,

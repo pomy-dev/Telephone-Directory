@@ -9,6 +9,7 @@ import {
     Platform,
     Linking,
     Image,
+    Dimensions,
     TextInput,
     RefreshControl,
     ActivityIndicator,
@@ -28,6 +29,8 @@ import { checkNetworkConnectivity } from '../../service/checkNetwork';
 import CustomLoader from '../../components/customLoader';
 import SecondaryNav from '../../components/SecondaryNav';
 import { AuthContext } from "../../context/authProvider";
+
+const { width, height } = Dimensions.get("window")
 
 // ────── Rating Bottom Sheet ──────
 const RatingBottomSheet = React.forwardRef(({ theme, isDarkMode, onSubmit, onDismiss,
@@ -98,7 +101,7 @@ const SortFilterBottomSheet = React.forwardRef(
                             style={[sortFilterModalStyles.applyButton]}
                             onPress={onClose}
                         >
-                            <Text style={[sortFilterModalStyles.applyButtonText]}>Apply Filters</Text>
+                            <Text style={[sortFilterModalStyles.applyButtonText, { color: "#333" }]}>Apply Filters</Text>
                         </TouchableOpacity>
                     </View>
 
@@ -264,7 +267,6 @@ const sortFilterModalStyles = StyleSheet.create({
         alignItems: 'center',
     },
     applyButtonText: {
-        color: '#AAAAAA',
         fontSize: 16,
         fontWeight: '700',
     },
@@ -275,13 +277,12 @@ const sortFilterModalStyles = StyleSheet.create({
 // ──────────────────────────────────────────────────────────────
 export default function TransportationListScreen({ navigation }) {
     const { theme, isDarkMode } = React.useContext(AppContext)
-    const { user } = React.useContext(AuthContext);
+    const { user, likedItems, setLikedItems } = React.useContext(AuthContext);
     // ────── State ──────
     const [selectedType, setSelectedType] = useState('All');
     const [sortByCategory, setSortByCategory] = useState('All');
     const [sortByBorderCrossing, setSortByBorderCrossing] = useState('All');
     const [searchQuery, setSearchQuery] = useState('');
-    const [likedVehicles, setLikedVehicles] = useState(new Set());
     const [vehicleRatings, setVehicleRatings] = useState({});
     const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -291,7 +292,6 @@ export default function TransportationListScreen({ navigation }) {
     const [loading, setLoading] = useState(false);
     const [isConnected, setIsConnected] = useState(null);
 
-    const [sortFilterModalVisible, setSortFilterModalVisible] = useState(false);
     const [ratingVehicleId, setRatingVehicleId] = useState(null);
     const [isSubmit, setIsSubmit] = useState(false);
 
@@ -313,34 +313,13 @@ export default function TransportationListScreen({ navigation }) {
             const connected = await checkNetworkConnectivity();
             setIsConnected(connected);
             // Load liked vehicles from AsyncStorage
-            await loadLikedVehicles();
+            // await loadLikedVehicles();
             if (connected) {
                 getAllForeHire();
             }
         };
         checkAndFetch();
     }, []);
-
-    // Load liked vehicles from AsyncStorage
-    const loadLikedVehicles = async () => {
-        try {
-            const stored = await AsyncStorage.getItem('likedVehicles');
-            if (stored) {
-                setLikedVehicles(new Set(JSON.parse(stored)));
-            }
-        } catch (err) {
-            console.error('Error loading liked vehicles:', err);
-        }
-    };
-
-    // Save liked vehicles to AsyncStorage
-    const saveLikedVehicles = async (likedSet) => {
-        try {
-            await AsyncStorage.setItem('likedVehicles', JSON.stringify([...likedSet]));
-        } catch (err) {
-            console.error('Error saving liked vehicles:', err.message);
-        }
-    };
 
     useEffect(() => {
         const filtered_v = filterVehicles(vehicles);
@@ -403,20 +382,21 @@ export default function TransportationListScreen({ navigation }) {
 
     // ────── Interactions ──────
     const toggleLike = async (id) => {
-        const isCurrentlyLiked = likedVehicles.has(id);
+        const isCurrentlyLiked = likedItems.forehires.includes(id) // likedVehicles.has(id);
 
         try {
             // Update UI first (optimistic update)
-            setLikedVehicles(prev => {
-                const copy = new Set(prev);
-                if (copy.has(id)) {
-                    copy.delete(id);
-                } else {
-                    copy.add(id);
-                }
-                saveLikedVehicles(copy);
-                return copy;
-            });
+            if (isCurrentlyLiked) {
+                setLikedItems(prev => ({
+                    ...prev,
+                    forehires: prev.forehires.filter(id => id !== id)
+                }));
+            } else {
+                setLikedItems(prev => ({
+                    ...prev,
+                    forehires: [...prev.forehires, id]
+                }));
+            }
 
             // Then update backend
             const result = await updateVehicleLike(id, !isCurrentlyLiked);
@@ -428,17 +408,6 @@ export default function TransportationListScreen({ navigation }) {
 
         } catch (err) {
             console.error('Error toggling like:', err);
-            // Revert the optimistic update
-            setLikedVehicles(prev => {
-                const copy = new Set(prev);
-                if (isCurrentlyLiked) {
-                    copy.add(id);
-                } else {
-                    copy.delete(id);
-                }
-                saveLikedVehicles(copy);
-                return copy;
-            });
         }
     };
 
@@ -587,10 +556,12 @@ export default function TransportationListScreen({ navigation }) {
     // ────── RENDER VEHICLE CARD – Modern Overlay Style ──────
     const renderVehicleCard = (vehicle) => {
 
-        const isLiked = likedVehicles.has(vehicle.id);
+        // const isLiked = likedVehicles.has(vehicle.id);
+        const isLiked = likedItems.forehires?.includes(vehicle.id)
+        const likes = isLiked ? vehicle.likes + 1 : vehicle.likes || 0;
+
         const userRating = vehicleRatings[vehicle.id];
-        const rating = userRating || vehicle.rating_average || 0;
-        const likes = vehicle.likes || 0;
+        const rating = vehicle.rating_average + Number(userRating || '0') || userRating || 0;
 
         return (
             <TouchableOpacity
@@ -668,14 +639,14 @@ export default function TransportationListScreen({ navigation }) {
                     {/* Stats Bar */}
                     <View style={styles.statsOverlay}>
                         <TouchableOpacity style={styles.stat} onPress={(e) => { e.stopPropagation(); toggleLike(vehicle.id); }}>
-                            <Icons.Ionicons name={isLiked ? 'heart' : 'heart-outline'} size={19} color={isLiked ? "#ff4444" : "#fff"} />
+                            <Icons.Ionicons name={isLiked ? 'heart' : 'heart-outline'} size={19} color={isLiked ? "#5a85b0ff" : "#fff"} />
                             <Text style={styles.statText}>{likes}</Text>
                         </TouchableOpacity>
 
                         <View style={{ width: 2, backgroundColor: '#f0f4ff', }} />
 
                         <TouchableOpacity style={styles.stat} onPress={(e) => { e.stopPropagation(); handleRate(vehicle.id); }}>
-                            <Icons.Ionicons name="star" size={19} color="#fbbf24" />
+                            {rating > 0 ? <Icons.Ionicons name="star" size={19} color="#fbbf24" /> : <Icons.Ionicons name="star-outline" size={19} color="#ddd" />}
                             <Text style={styles.statText}>{rating.toFixed(1)}</Text>
                         </TouchableOpacity>
                     </View>
@@ -731,11 +702,11 @@ export default function TransportationListScreen({ navigation }) {
     return (
         <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
             <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
-            <View style={{ height: 20 }} />
+            <View style={{ height: height * 0.04 }} />
             <SecondaryNav title="Transport For Hire" rightIcon="options-outline" onRightPress={handleOptions} />
 
             {(sortByCategory !== 'All' || sortByBorderCrossing !== 'All') && (
-                <View style={styles.activeFiltersBar}>
+                <View style={[styles.activeFiltersBar, { backgroundColor: theme.colors.card }]}>
                     <ScrollView
                         horizontal
                         showsHorizontalScrollIndicator={false}
@@ -752,7 +723,7 @@ export default function TransportationListScreen({ navigation }) {
                         {/* Border Crossing Chip */}
                         {sortByBorderCrossing !== 'All' && (
                             <ActiveFilterChip
-                                label={`Border: ${sortByBorderCrossing}`}
+                                label={`Cross-Border: ${sortByBorderCrossing}`}
                                 icon="globe-outline"
                                 onClear={() => setSortByBorderCrossing('All')}
                             />
@@ -777,7 +748,7 @@ export default function TransportationListScreen({ navigation }) {
             )}
 
             {/* Search Bar */}
-            <View style={styles.searchBar}>
+            <View style={[styles.searchBar, { backgroundColor: theme.colors.card }]}>
                 <Icons.Ionicons name="search" size={20} color="#94a3b8" />
                 <TextInput
                     style={styles.searchInput}
@@ -787,7 +758,7 @@ export default function TransportationListScreen({ navigation }) {
                     placeholderTextColor="#94a3b8"
                 />
                 {(sortByCategory !== 'All' || sortByBorderCrossing !== 'All') && (
-                    <TouchableOpacity onPress={() => setSortFilterModalVisible(true)}>
+                    <TouchableOpacity onPress={() => handleOptions()}>
                         <Icons.Ionicons name="options" size={24} color="#2563eb" />
                     </TouchableOpacity>
                 )}
@@ -897,7 +868,6 @@ const styles = StyleSheet.create({
     activeFiltersBar: {
         paddingHorizontal: 16,
         paddingVertical: 12,
-        backgroundColor: '#eff6ff',
         borderBottomWidth: 1,
         borderBottomColor: '#dbeafe',
     },
@@ -945,7 +915,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         marginHorizontal: 16,
         marginVertical: 16,
-        backgroundColor: '#F2F2F7',
         borderRadius: 50,
         paddingHorizontal: 16,
         height: 45,

@@ -55,12 +55,12 @@ const WorkerProfileScreen = ({ route }) => {
         }
       } else {
         if (user) {
-            await logUserActivity({
-              userId: user.uid,
-              itemId: worker.id,
-              action: "click",
-              itemType: "pomy_workers",
-            });
+          await logUserActivity({
+            userId: user.uid,
+            itemId: worker.id,
+            action: "click",
+            itemType: "pomy_workers",
+          });
         }
       }
     };
@@ -125,17 +125,13 @@ const WorkerProfileScreen = ({ route }) => {
   const handleCall = () => Linking.openURL(`tel:${worker.phone}`);
 
   // SMART LOGIC: Only true if images array exists and has content
-  const hasImages =
-    worker.experience_images && worker.experience_images.length > 0;
+  const hasImages = worker.experience_images && worker.experience_images.length > 0;
   const hasProfile = worker.worker_pp && worker.worker_pp.length > 0;
   const hasSkills = worker.skills && worker.skills.length > 0;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
-      <StatusBar
-        barStyle={isDarkMode ? "light-content" : "dark-content"}
-        backgroundColor={theme.colors.background}
-      />
+      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
       <SecondaryNav title={"Freelancer Profile"} />
 
       {/* BODY CONTENT */}
@@ -382,7 +378,7 @@ const styles = StyleSheet.create({
   statsBadge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#f0fdf4",
+    backgroundColor: "#f0f4ff",
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 6,

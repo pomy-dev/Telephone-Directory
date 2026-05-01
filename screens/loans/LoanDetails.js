@@ -13,7 +13,7 @@ import SecondaryNav from "../../components/SecondaryNav";
 import CustomLoader from "../../components/customLoader";
 import { LoaderKitView } from 'react-native-loader-kit';
 import { format } from "date-fns";
-import { addSaccoProductLike, removeSaccoProductLike, addSaccoProductReviews , getSaccoByID} from "../../service/getApi"
+import { addSaccoProductLike, removeSaccoProductLike, addSaccoProductReviews, getSaccoByID } from "../../service/getApi"
 
 const { width } = Dimensions.get("window");
 const isTablet = width >= 768;
@@ -91,7 +91,7 @@ const formatCurrency = (amount, currency = 'E') => {
 export default function FinancialDetailsScreen({ route, navigation }) {
   const { theme, isDarkMode } = React.useContext(AppContext);
   const { item, saccoId } = route.params || {};
-  const { user, likedProducts, setLikedProducts } = React.useContext(AuthContext);
+  const { user, likedItems, setLikedItems } = React.useContext(AuthContext);
   const [data, setData] = React.useState(item ? item : '');
   const [loading, setLoading] = React.useState(!item && !!saccoId);
 
@@ -99,7 +99,7 @@ export default function FinancialDetailsScreen({ route, navigation }) {
 
   const [isCommentSheetOpen, setIsCommentSheetOpen] = React.useState(false);
 
-  const isLiked = likedProducts.financialProducts.includes(data?._id);
+  const isLiked = likedItems.financialProducts.includes(data?._id);
   const [likes, setLikes] = React.useState((isLiked ? (data?.likes + 1) : (data?.likes)) || 0);
   const [reviews, setReviews] = React.useState(data?.reviews);
   const [isPostingReview, setIsPostingReview] = React.useState(false);
@@ -144,28 +144,28 @@ export default function FinancialDetailsScreen({ route, navigation }) {
 
 
 
-   //this use effect is fetching data? when comming from recomendation
+  //this use effect is fetching data? when comming from recomendation
   React.useEffect(() => {
-  const fetchFreshData = async () => {
-    // Only fetch if we don't have item data? but we do have a saccoId
-    if (!data && saccoId) {
-      try {
-        setLoading(true);
-        const fetchedData = await getSaccoByID(saccoId);
-        
-        if (fetchedData) {
-          setData(fetchedData);
-        }
-      } catch (err) {
-        console.error("Error fetching sacco details:", err);
-      } finally {
-        setLoading(false);
-      }
-    }
-  };
+    const fetchFreshData = async () => {
+      // Only fetch if we don't have item data? but we do have a saccoId
+      if (!data && saccoId) {
+        try {
+          setLoading(true);
+          const fetchedData = await getSaccoByID(saccoId);
 
-  fetchFreshData();
-}, [saccoId]);
+          if (fetchedData) {
+            setData(fetchedData);
+          }
+        } catch (err) {
+          console.error("Error fetching sacco details:", err);
+        } finally {
+          setLoading(false);
+        }
+      }
+    };
+
+    fetchFreshData();
+  }, [saccoId]);
 
   // handle call
   const handleCall = (phone) => Linking.openURL(`tel:${phone}`);
@@ -244,14 +244,14 @@ export default function FinancialDetailsScreen({ route, navigation }) {
     try {
       if (isLiked) {
         result = await removeSaccoProductLike(data?._id);
-        result && setLikedProducts(prev => ({
+        result && setLikedItems(prev => ({
           ...prev,
           financialProducts: prev.financialProducts.filter(id => id !== data?._id)
         }));
         setLikes(likes - 1);
       } else {
         result = await addSaccoProductLike(data?._id);
-        result && setLikedProducts(prev => ({
+        result && setLikedItems(prev => ({
           ...prev,
           financialProducts: [...prev.financialProducts, data?._id]
         }));
@@ -345,13 +345,13 @@ export default function FinancialDetailsScreen({ route, navigation }) {
   };
 
   if (loading) {
-  return (
-    <View >
-      <CustomLoader />
-      <Text style={{ marginTop: 10, color: theme.colors.text }}>Loading Details...</Text>
-    </View>
-  );
-}
+    return (
+      <View >
+        <CustomLoader />
+        <Text style={{ marginTop: 10, color: theme.colors.text }}>Loading Details...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>

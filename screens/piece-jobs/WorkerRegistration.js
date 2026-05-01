@@ -109,7 +109,7 @@ const ProfilePreview = ({ form, setGalleryVisible, handleCall, theme }) => {
               {form.name || "Unnamed Professional"}
             </Text>
             <View style={styles.locRow}>
-              <Icons.Ionicons name="location" size={14} color="#10b981" />
+              <Icons.Ionicons name="location" size={14} color={theme.colors.indicator} />
               <Text style={styles.locationLabelText}>
                 {form.location?.address || "Location not set"}
               </Text>
@@ -146,7 +146,7 @@ const ProfilePreview = ({ form, setGalleryVisible, handleCall, theme }) => {
 
             <View style={styles.statsRow}>
               <View style={styles.statBox}>
-                <Icons.Ionicons name="thumbs-up" size={16} color="#10b981" />
+                <Icons.Ionicons name="thumbs-up" size={16} color={theme.colors.indicator} />
                 <Text style={styles.statCount}>{form.likes || 0}</Text>
                 <Text style={styles.statLabel}>Likes</Text>
               </View>
@@ -156,7 +156,7 @@ const ProfilePreview = ({ form, setGalleryVisible, handleCall, theme }) => {
                   { borderLeftWidth: 1, borderColor: "#f1f5f9" },
                 ]}
               >
-                <Icons.Ionicons name="thumbs-down" size={16} color="#ef4444" />
+                <Icons.Ionicons name="thumbs-down" size={16} color={theme.colors.sub_text} />
                 <Text style={styles.statCount}>{form.dislikes || 0}</Text>
                 <Text style={styles.statLabel}>Dislikes</Text>
               </View>
@@ -166,7 +166,7 @@ const ProfilePreview = ({ form, setGalleryVisible, handleCall, theme }) => {
           <View style={styles.divider} />
 
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Professional Bio</Text>
+            <Text style={[styles.sectionLabel, { color: theme.colors.sub_text }]}>Professional Bio</Text>
             <Text style={styles.bioPreviewText}>
               {form.bio || "No bio provided yet."}
             </Text>
@@ -175,7 +175,7 @@ const ProfilePreview = ({ form, setGalleryVisible, handleCall, theme }) => {
           <View style={styles.section}>
             {form.documents && form.documents.length > 0 ? (
               <>
-                <Text style={styles.sectionLabel}>
+                <Text style={[styles.sectionLabel, { color: theme.colors.sub_text }]}>
                   Qualifications / Certification
                 </Text>
                 <View style={{ gap: 10 }}>
@@ -212,7 +212,7 @@ const ProfilePreview = ({ form, setGalleryVisible, handleCall, theme }) => {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Services</Text>
+            <Text style={[styles.sectionLabel, { color: theme.colors.sub_text }]}>Services</Text>
             <View style={styles.skillsList}>
               {form.skills.map((skill, index) => (
                 <View key={index} style={styles.skillItem}>
@@ -406,7 +406,7 @@ const ProfileForm = ({
         <View style={styles.mainContent}>
           {/* 1. BUSINESS IDENTITY */}
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>Business Identity</Text>
+            <Text style={[styles.sectionLabel, { color: theme.colors.sub_text }]}>Business Identity</Text>
             <TextInput
               style={styles.nameInput}
               value={form.name}
@@ -490,7 +490,7 @@ const ProfileForm = ({
               <Icons.Ionicons
                 name="location"
                 size={20}
-                color="#10b981"
+                color={theme.colors.indicator}
                 style={styles.inputIcon}
               />
               <TextInput
@@ -869,7 +869,7 @@ const WorkerRegistration = ({ navigation }) => {
         </TouchableOpacity>
 
         <Text style={[styles.headerTitle, { color: theme.colors.text, }]}>
-          {isEditing ? "EDIT PROFILE" : "PROFILE"}
+          {isEditing ? "EDIT PROFILE" : "MY PROFILE"}
         </Text>
 
         <View style={{ flexDirection: "row", gap: 15 }}>
@@ -884,9 +884,9 @@ const WorkerRegistration = ({ navigation }) => {
           )}
           <TouchableOpacity onPress={handleSave} disabled={loading}>
             {loading ? (
-              <ActivityIndicator size="small" color="#10b981" />
+              <ActivityIndicator size="small" color={theme.colors.indicator} />
             ) : (
-              <Text style={styles.saveBtnText}>SYNC</Text>
+              <Text style={[styles.saveBtnText, { color: theme.colors.indicator }]}>SYNC</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -1070,9 +1070,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     height: 60,
   },
-  headerTitle: { fontSize: 11, fontWeight: "900", color: "#64748b" },
+  headerTitle: { fontSize: 16, fontWeight: "900", color: "#64748b" },
   editBtnText: { color: "#3b82f6", fontWeight: "900" },
-  saveBtnText: { color: "#10b981", fontWeight: "900" },
+  saveBtnText: { fontWeight: "900" },
   scrollContent: { paddingBottom: 50 },
   heroSectionContainer: {
     flexDirection: "row",
@@ -1325,9 +1325,8 @@ const styles = StyleSheet.create({
   divider: { height: 1, backgroundColor: "#f1f5f9", marginVertical: 15 },
   section: { marginBottom: 25 },
   sectionLabel: {
-    fontSize: 11,
+    fontSize: 16,
     fontWeight: "800",
-    color: "#94a3b8",
     marginBottom: 10,
   },
   bioPreviewText: { fontSize: 15, lineHeight: 22, color: "#666" },
