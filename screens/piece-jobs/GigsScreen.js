@@ -1083,7 +1083,7 @@ const GigsScreen = ({ navigation }) => {
                     : "thumbs-up-outline"
                 }
                 size={18}
-                color={workerVotes[item.id] === "like" ? "#10b981" : "#64748b"}
+                color={workerVotes[item.id] === "like" ? theme.colors.indicator : "#64748b"}
               />
               <Text style={styles.voteCount}>{item.likes || 0}</Text>
             </TouchableOpacity>
@@ -1183,7 +1183,7 @@ const GigsScreen = ({ navigation }) => {
           <View
             style={[
               styles.searchBar,
-              { backgroundColor: isDarkMode ? '#94a3b8' : theme.colors.sub_card },
+              { backgroundColor: theme.colors.card },
             ]}
           >
             <Icons.Ionicons
@@ -1280,7 +1280,7 @@ const GigsScreen = ({ navigation }) => {
                 <View
                   style={[
                     styles.searchBar2,
-                    { backgroundColor: isDarkMode ? '#94a3b8' : theme.colors.sub_card },
+                    { backgroundColor: theme.colors.card },
                   ]}
                 >
                   <Icons.Ionicons name="search" size={20} color={theme.colors.sub_text} />
@@ -2088,7 +2088,7 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 16,
     borderBottomRightRadius: 16,
     paddingTop: 28,
-    minHeight: height * 0.65,
+    minHeight: height * 0.4,
   },
   sheetHandle: {
     width: 40,

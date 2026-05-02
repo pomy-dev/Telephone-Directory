@@ -90,7 +90,7 @@ const ProfilePreview = ({ form, setGalleryVisible, handleCall, theme }) => {
       </View>
 
       <TouchableOpacity
-        style={[styles.galleryTrigger, { backgroundColor: theme.colors.card2}]}
+        style={[styles.galleryTrigger, { backgroundColor: theme.colors.card2 }]}
         onPress={() => setGalleryVisible(true)}
       >
         <Icons.Ionicons name="images" size={20} color={theme.colors.light} />
@@ -120,7 +120,7 @@ const ProfilePreview = ({ form, setGalleryVisible, handleCall, theme }) => {
             <View style={styles.contactIconRow}>
               {form.phone && (
                 <TouchableOpacity
-                  style={[styles.miniSocialBtn, { backgroundColor: theme.colors.primary}]}
+                  style={[styles.miniSocialBtn, { backgroundColor: theme.colors.primary }]}
                   onPress={handleCall}
                 >
                   <Icons.Ionicons name="call" size={20} color="#fff" />
@@ -179,7 +179,7 @@ const ProfilePreview = ({ form, setGalleryVisible, handleCall, theme }) => {
                       style={[styles.docPreviewItem, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
                       onPress={() => { if (doc?.url) Linking.openURL(doc?.url); }}
                     >
-                      <Icons.Ionicons name="document-text" size={18} color={theme.colors.primary} />
+                      <Icons.Ionicons name="document-text" size={18} color={theme.colors.indicator} />
                       <Text style={[styles.docPreviewText, { color: theme.colors.text }]} numberOfLines={1}>
                         {doc.name || "Document"}
                       </Text>
@@ -414,7 +414,7 @@ const ProfileForm = ({
             <View style={styles.docList}>
               {form.documents?.map((doc, index) => (
                 <View key={index} style={[styles.docItem, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
-                  <Icons.Ionicons name="document-text" size={20} color={theme.colors.primary} />
+                  <Icons.Ionicons name="document-text" size={20} color={theme.colors.indicator} />
                   <Text style={[styles.docName, { color: theme.colors.text }]} numberOfLines={1}>
                     {doc.name}
                   </Text>
@@ -852,7 +852,7 @@ const WorkerRegistration = ({ navigation }) => {
 
             <View style={{ flexDirection: "row", gap: 16, alignItems: "center" }}>
               <TouchableOpacity onPress={toggleSelectAll}>
-                <Text style={[styles.headerActionText, { color: theme.colors.primary }]}>
+                <Text style={[styles.headerActionText, { color: theme.colors.indicator }]}>
                   {selectedIndices.length === form.experience_images.length ? "Deselect All" : "Select All"}
                 </Text>
               </TouchableOpacity>
@@ -1022,7 +1022,7 @@ const styles = StyleSheet.create({
   // ── Section & Inputs ──
   section: { marginBottom: 20 },
   sectionLabel: {
-    fontSize: 11,
+    fontSize: 16,
     fontWeight: "800",
     letterSpacing: 0.5,
     textTransform: "uppercase",

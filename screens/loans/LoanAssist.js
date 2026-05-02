@@ -773,7 +773,7 @@ export default function FinancialHubScreen({ route, navigation }) {
     \n2. You may Use the search bar to quickly find specific financial products as well as their company profile.
     \n3. You may tap on any listing for detailed information, making reviews, and company provider contact options.
     \n4. At each listed financial product you can use the Quick Equated Monthly Installment (EMI) Calculator for instant loan repayment estimates.
-    \nAnd last but not least, you can also access personalized financial advice by tapping the Ask AI button. Have a good experience, and good bye.
+    \nAnd last but not least, you can also acquire personalized financial advice by tapping the chat button. Have a good experience, and good bye.
   `;
 
   const speak = async () => {
@@ -1205,6 +1205,8 @@ export default function FinancialHubScreen({ route, navigation }) {
             style={{
               width: size,
               height: size,
+              backgroundColor: '#f0f4ff',
+              borderRadius: 8
             }}
           />
         )}
