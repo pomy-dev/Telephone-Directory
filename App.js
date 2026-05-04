@@ -14,7 +14,9 @@ import Toast from "react-native-toast-message";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Provider as PaperProvider } from "react-native-paper";
 import * as Notifications from "expo-notifications";
+import * as NavigationBar from "expo-navigation-bar";
 import { RealmProvider } from "@realm/react";
+import { configureGoogleSignin } from "./utils/callFunctions";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
@@ -280,6 +282,15 @@ function AppContent() {
       subscription.remove();
     };
   }, [navigationRef, notificationsEnabled, addNotification]);
+
+  useEffect(() => {
+    if (Platform.OS === "android") {
+      NavigationBar.setBackgroundColorAsync("#000000"); // Dark background
+      NavigationBar.setButtonStyleAsync("light");      // White buttons
+    }
+
+    configureGoogleSignin();
+  }, []);
 
   const toastConfig = {
     success: ({ text1, text2 }) => (

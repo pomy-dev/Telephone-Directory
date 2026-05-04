@@ -370,3 +370,9 @@ const Saccos = [
     "createdAt": "2026-03-21T14:54:50.528Z"
   }
 ]
+
+// App signing key certificate
+'SHA-1' = '3F:D1:99:F1:47:9F:C4:0B:AA:95:AC:3C:69:EC:70:46:8E:8C:CA:B4'
+
+// Upload key Certificate
+'SHA-1' = 'DF:08:91:06:CC:D3:72:06:D7:6E:F3:A5:A3:30:B1:7A:80:59:AA:5D'

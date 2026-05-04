@@ -1,3 +1,4 @@
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 import Clipboard from '@react-native-clipboard/clipboard';
 import { Linking, Platform, Share, Alert } from "react-native";
 import { CustomToast } from "../components/customToast";
@@ -272,3 +273,10 @@ export async function filterAllBusinesses(query = "", companies) {
     return [];
   }
 }
+
+export const configureGoogleSignin = () => {
+  GoogleSignin.configure({
+    webClientId: "200364606139-5bkuo0she2e1lou9ruiq5qkvnej9lp3u.apps.googleusercontent.com", // ← Very important
+    offlineAccess: false,
+  });
+};
