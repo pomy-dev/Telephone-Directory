@@ -79,7 +79,12 @@ const ProfilePreview = ({ form, setGalleryVisible, handleCall, theme }) => {
             style={styles.heroImage}
           />
         ) : (
-          <View style={[styles.heroPlaceholder, { backgroundColor: theme.colors.card }]}>
+          <View
+            style={[
+              styles.heroPlaceholder,
+              { backgroundColor: theme.colors.card },
+            ]}
+          >
             <Icons.Ionicons
               name="person-circle-outline"
               size={80}
@@ -97,7 +102,11 @@ const ProfilePreview = ({ form, setGalleryVisible, handleCall, theme }) => {
         <Text style={[styles.galleryTriggerText, { color: "#fff" }]}>
           View Portfolio ({form.experience_images?.length || 0})
         </Text>
-        <Icons.Ionicons name="chevron-forward" size={16} color={theme.colors.sub_text} />
+        <Icons.Ionicons
+          name="chevron-forward"
+          size={16}
+          color={theme.colors.sub_text}
+        />
       </TouchableOpacity>
 
       <ScrollView
@@ -111,8 +120,17 @@ const ProfilePreview = ({ form, setGalleryVisible, handleCall, theme }) => {
               {form.name || "Unnamed Professional"}
             </Text>
             <View style={styles.locRow}>
-              <Icons.Ionicons name="location" size={14} color={theme.colors.card2} />
-              <Text style={[styles.locationLabelText, { color: theme.colors.sub_text }]}>
+              <Icons.Ionicons
+                name="location"
+                size={14}
+                color={theme.colors.card2}
+              />
+              <Text
+                style={[
+                  styles.locationLabelText,
+                  { color: theme.colors.sub_text },
+                ]}
+              >
                 {form.location?.address || "Location not set"}
               </Text>
             </View>
@@ -120,46 +138,87 @@ const ProfilePreview = ({ form, setGalleryVisible, handleCall, theme }) => {
             <View style={styles.contactIconRow}>
               {form.phone && (
                 <TouchableOpacity
-                  style={[styles.miniSocialBtn, { backgroundColor: theme.colors.primary }]}
+                  style={[
+                    styles.miniSocialBtn,
+                    { backgroundColor: theme.colors.primary },
+                  ]}
                   onPress={handleCall}
                 >
                   <Icons.Ionicons name="call" size={20} color="#fff" />
                 </TouchableOpacity>
               )}
-              {Object.entries(form.contact_options || {}).map(([platform, value]) => {
-                if (!value) return null;
-                const icon = getContactIcon(platform);
-                return (
-                  <TouchableOpacity
-                    key={platform}
-                    style={[styles.miniSocialBtn, { backgroundColor: icon.color }]}
-                    onPress={() => handleContact(platform, value)}
-                  >
-                    <Icons.Ionicons name={icon.name} size={20} color="#fff" />
-                  </TouchableOpacity>
-                );
-              })}
+              {Object.entries(form.contact_options || {}).map(
+                ([platform, value]) => {
+                  if (!value) return null;
+                  const icon = getContactIcon(platform);
+                  return (
+                    <TouchableOpacity
+                      key={platform}
+                      style={[
+                        styles.miniSocialBtn,
+                        { backgroundColor: icon.color },
+                      ]}
+                      onPress={() => handleContact(platform, value)}
+                    >
+                      <Icons.Ionicons name={icon.name} size={20} color="#fff" />
+                    </TouchableOpacity>
+                  );
+                },
+              )}
             </View>
 
-            <View style={[styles.statsRow, { backgroundColor: theme.colors.card }]}>
+            <View
+              style={[styles.statsRow, { backgroundColor: theme.colors.card }]}
+            >
               <View style={styles.statBox}>
-                <Icons.Ionicons name="thumbs-up" size={16} color={theme.colors.card2} />
-                <Text style={[styles.statCount, { color: theme.colors.text }]}>{form.likes || 0}</Text>
-                <Text style={[styles.statLabel, { color: theme.colors.sub_text }]}>Likes</Text>
+                <Icons.Ionicons
+                  name="thumbs-up"
+                  size={16}
+                  color={theme.colors.card2}
+                />
+                <Text style={[styles.statCount, { color: theme.colors.text }]}>
+                  {form.likes || 0}
+                </Text>
+                <Text
+                  style={[styles.statLabel, { color: theme.colors.sub_text }]}
+                >
+                  Likes
+                </Text>
               </View>
-              <View style={[styles.statBox, { borderLeftWidth: 1, borderColor: theme.colors.border }]}>
-                <Icons.Ionicons name="thumbs-down" size={16} color={theme.colors.card2} />
-                <Text style={[styles.statCount, { color: theme.colors.text }]}>{form.dislikes || 0}</Text>
-                <Text style={[styles.statLabel, { color: theme.colors.sub_text }]}>Dislikes</Text>
+              <View
+                style={[
+                  styles.statBox,
+                  { borderLeftWidth: 1, borderColor: theme.colors.border },
+                ]}
+              >
+                <Icons.Ionicons
+                  name="thumbs-down"
+                  size={16}
+                  color={theme.colors.card2}
+                />
+                <Text style={[styles.statCount, { color: theme.colors.text }]}>
+                  {form.dislikes || 0}
+                </Text>
+                <Text
+                  style={[styles.statLabel, { color: theme.colors.sub_text }]}
+                >
+                  Dislikes
+                </Text>
               </View>
             </View>
           </View>
 
-          <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
+          <View
+            style={[styles.divider, { backgroundColor: theme.colors.border }]}
+          />
 
           {/* Bio */}
           <View style={styles.section}>
-            <Text style={[styles.sectionLabel, { color: theme.colors.sub_text }]}>Professional Bio</Text>
+            <Text
+              style={[styles.sectionLabel, { color: theme.colors.sub_text }]}
+            >
+              Professional Bio
+            </Text>
             <Text style={[styles.bioPreviewText, { color: theme.colors.text }]}>
               {form.bio || "No bio provided yet."}
             </Text>
@@ -169,21 +228,48 @@ const ProfilePreview = ({ form, setGalleryVisible, handleCall, theme }) => {
           <View style={styles.section}>
             {form.documents && form.documents.length > 0 && (
               <>
-                <Text style={[styles.sectionLabel, { color: theme.colors.sub_text }]}>
+                <Text
+                  style={[
+                    styles.sectionLabel,
+                    { color: theme.colors.sub_text },
+                  ]}
+                >
                   Qualifications / Certification
                 </Text>
                 <View style={{ gap: 10 }}>
                   {form.documents.map((doc, index) => (
                     <TouchableOpacity
                       key={index}
-                      style={[styles.docPreviewItem, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}
-                      onPress={() => { if (doc?.url) Linking.openURL(doc?.url); }}
+                      style={[
+                        styles.docPreviewItem,
+                        {
+                          backgroundColor: theme.colors.card,
+                          borderColor: theme.colors.border,
+                        },
+                      ]}
+                      onPress={() => {
+                        if (doc?.url) Linking.openURL(doc?.url);
+                      }}
                     >
-                      <Icons.Ionicons name="document-text" size={18} color={theme.colors.indicator} />
-                      <Text style={[styles.docPreviewText, { color: theme.colors.text }]} numberOfLines={1}>
+                      <Icons.Ionicons
+                        name="document-text"
+                        size={18}
+                        color={theme.colors.primary}
+                      />
+                      <Text
+                        style={[
+                          styles.docPreviewText,
+                          { color: theme.colors.text },
+                        ]}
+                        numberOfLines={1}
+                      >
                         {doc.name || "Document"}
                       </Text>
-                      <Icons.Ionicons name="open-outline" size={16} color={theme.colors.sub_text} />
+                      <Icons.Ionicons
+                        name="open-outline"
+                        size={16}
+                        color={theme.colors.sub_text}
+                      />
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -193,12 +279,33 @@ const ProfilePreview = ({ form, setGalleryVisible, handleCall, theme }) => {
 
           {/* Services */}
           <View style={styles.section}>
-            <Text style={[styles.sectionLabel, { color: theme.colors.sub_text }]}>Services</Text>
+            <Text
+              style={[styles.sectionLabel, { color: theme.colors.sub_text }]}
+            >
+              Services
+            </Text>
             <View style={styles.skillsList}>
               {form.skills.map((skill, index) => (
-                <View key={index} style={[styles.skillItem, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
-                  <Icons.Ionicons name="checkmark-circle" size={18} color="#10b981" />
-                  <Text style={[styles.skillText, { color: theme.colors.text }]}>{skill}</Text>
+                <View
+                  key={index}
+                  style={[
+                    styles.skillItem,
+                    {
+                      backgroundColor: theme.colors.card,
+                      borderColor: theme.colors.border,
+                    },
+                  ]}
+                >
+                  <Icons.Ionicons
+                    name="checkmark-circle"
+                    size={18}
+                    color="#10b981"
+                  />
+                  <Text
+                    style={[styles.skillText, { color: theme.colors.text }]}
+                  >
+                    {skill}
+                  </Text>
                 </View>
               ))}
             </View>
@@ -234,19 +341,52 @@ const ProfileForm = ({
   const [contactModalVisible, setContactModalVisible] = useState(false);
 
   const CONTACT_PLATFORMS = [
-    { id: "whatsapp", label: "WhatsApp", icon: "logo-whatsapp", color: "#25D366", keyboard: "phone-pad", placeholder: "Enter phone number" },
-    { id: "email", label: "Email", icon: "mail", color: "#f43f5e", keyboard: "email-address", placeholder: "Enter email address" },
-    { id: "instagram", label: "Instagram", icon: "logo-instagram", color: "#E4405F", keyboard: "default", placeholder: "Enter username" },
-    { id: "facebook", label: "Facebook", icon: "logo-facebook", color: "#1877F2", keyboard: "default", placeholder: "Enter page name" },
+    {
+      id: "whatsapp",
+      label: "WhatsApp",
+      icon: "logo-whatsapp",
+      color: "#25D366",
+      keyboard: "phone-pad",
+      placeholder: "Enter phone number",
+    },
+    {
+      id: "email",
+      label: "Email",
+      icon: "mail",
+      color: "#f43f5e",
+      keyboard: "email-address",
+      placeholder: "Enter email address",
+    },
+    {
+      id: "instagram",
+      label: "Instagram",
+      icon: "logo-instagram",
+      color: "#E4405F",
+      keyboard: "default",
+      placeholder: "Enter username",
+    },
+    {
+      id: "facebook",
+      label: "Facebook",
+      icon: "logo-facebook",
+      color: "#1877F2",
+      keyboard: "default",
+      placeholder: "Enter page name",
+    },
   ];
 
-  const activePlatform = CONTACT_PLATFORMS.find((p) => p.id === selectedPlatform);
+  const activePlatform = CONTACT_PLATFORMS.find(
+    (p) => p.id === selectedPlatform,
+  );
 
   return (
     <>
       <ScrollView
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={[styles.scrollContent, { paddingHorizontal: 24 }]}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingHorizontal: 24 },
+        ]}
         keyboardShouldPersistTaps="handled"
         ref={scrollRef}
         onScroll={(e) => {
@@ -257,67 +397,240 @@ const ProfileForm = ({
       >
         {/* ── Hero: Profile Picture + Gallery ── */}
         {isWorker && (
-          <View style={[styles.heroSectionContainer, { backgroundColor: theme.colors.background }]}>
-            <View style={[styles.heroLeftColumn, { backgroundColor: theme.colors.background }]}>
-              <View style={[styles.profilePictureSection, { backgroundColor: theme.colors.card }]}>
+          <View
+            style={[
+              styles.heroCard,
+              {
+                backgroundColor: theme.colors.card,
+                borderColor: theme.colors.border,
+              },
+            ]}
+          >
+            {/* ── Identity Row: Avatar + Name + Change Button ── */}
+            <View style={styles.identityRow}>
+              {/* Profile Picture */}
+              <TouchableOpacity
+                style={styles.avatarWrap}
+                onPress={() => pickImage(false)}
+                activeOpacity={0.8}
+              >
                 {form.worker_pp && form.worker_pp.length > 0 ? (
                   <Image
-                    source={{ uri: form.worker_pp[0]?.url || form.worker_pp[0]?.uri }}
-                    style={styles.profilePictureImage}
+                    source={{
+                      uri: form.worker_pp[0]?.url || form.worker_pp[0]?.uri,
+                    }}
+                    style={styles.avatarImage}
                   />
                 ) : (
-                  <View style={[styles.profilePicturePlaceholder, { backgroundColor: theme.colors.card }]}>
-                    <Icons.Ionicons name="person-circle-outline" size={60} color={theme.colors.sub_text} />
+                  <View
+                    style={[
+                      styles.avatarPlaceholder,
+                      { backgroundColor: theme.colors.background },
+                    ]}
+                  >
+                    <Icons.Ionicons
+                      name="person-circle-outline"
+                      size={44}
+                      color={theme.colors.sub_text}
+                    />
                   </View>
                 )}
+                {/* Camera badge */}
+                <View
+                  style={[
+                    styles.cameraBadge,
+                    { backgroundColor: theme.colors.primary },
+                  ]}
+                >
+                  <Icons.Ionicons name="camera" size={11} color="#fff" />
+                </View>
+              </TouchableOpacity>
+
+              {/* Name + Location */}
+              <View style={styles.identityInfo}>
+                <Text
+                  style={[styles.workerName, { color: theme.colors.text }]}
+                  numberOfLines={1}
+                >
+                  {form.name || "Your Business Name"}
+                </Text>
+                <View style={styles.locRow}>
+                  <View style={styles.locDot} />
+                  <Text
+                    style={[styles.workerLoc, { color: theme.colors.sub_text }]}
+                    numberOfLines={1}
+                  >
+                    {form.location?.address || "Location not set"}
+                  </Text>
+                </View>
               </View>
 
-              <View style={[styles.galleryPreviewSection, { backgroundColor: theme.colors.card }]}>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.galleryScrollContent}>
-                  {form.experience_images && form.experience_images.length > 0 ? (
+              {/* Change profile pic button */}
+              <TouchableOpacity
+                style={[
+                  styles.changePicBtn,
+                  {
+                    borderColor: theme.colors.primary,
+                    backgroundColor: theme.colors.background,
+                  },
+                ]}
+                onPress={() => pickImage(false)}
+                activeOpacity={0.7}
+              >
+                {isProfilePicking ? (
+                  <ActivityIndicator size={12} color={theme.colors.primary} />
+                ) : (
+                  <>
+                    <Icons.MaterialIcons
+                      name="flip-camera-ios"
+                      size={14}
+                      color={theme.colors.primary}
+                    />
+                    <Text
+                      style={[
+                        styles.changePicText,
+                        { color: theme.colors.primary },
+                      ]}
+                    >
+                      Change
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
+
+            {/* ── Divider ── */}
+            <View
+              style={[
+                styles.heroDivider,
+                { backgroundColor: theme.colors.border },
+              ]}
+            />
+
+            {/* ── Gallery Row ── */}
+            <View style={styles.gallerySection}>
+              <View style={styles.galleryHeader}>
+                <Text
+                  style={[
+                    styles.galleryLabel,
+                    { color: theme.colors.sub_text },
+                  ]}
+                >
+                  Portfolio
+                </Text>
+                <View
+                  style={[
+                    styles.galleryCountBadge,
+                    {
+                      backgroundColor: theme.colors.background,
+                      borderColor: theme.colors.border,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.galleryCountText,
+                      { color: theme.colors.sub_text },
+                    ]}
+                  >
+                    {form.experience_images?.length || 0} photos
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.galleryRow}>
+                {/* Fixed "Add" button — always visible on the left */}
+                <TouchableOpacity
+                  style={[
+                    styles.galleryAddThumb,
+                    
+                    {
+                      borderColor: theme.colors.card2,
+                      backgroundColor: theme.colors.card2,
+            
+                    },
+                  ]}
+                  onPress={() => pickImage(true)}
+                  activeOpacity={0.7}
+                >
+                  {isGalleryPicking ? (
+                    <ActivityIndicator size={16} color={theme.colors.primary} />
+                  ) : (
+                    <>
+                      <Icons.Ionicons
+                        name="add"
+                        size={22}
+                        color={"#fff"}
+                      />
+                      <Text
+                        style={[
+                          styles.galleryAddText,
+                          { color: "#fff" },
+                        ]}
+                      >
+                        Add
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+
+                {/* Scrollable thumbnails */}
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.galleryScroll}
+                  style={{ flex: 1 }}
+                >
+                  {form.experience_images &&
+                  form.experience_images.length > 0 ? (
                     form.experience_images.map((img, index) => (
-                      <TouchableOpacity key={`gallery-${index}`} onPress={() => setManageModalVisible(true)}>
-                        <Image source={{ uri: img?.url || img?.uri }} style={styles.galleryThumbnail} />
+                      <TouchableOpacity
+                        key={`gallery-${index}`}
+                        onPress={() => setManageModalVisible(true)}
+                        activeOpacity={0.85}
+                      >
+                        <Image
+                          source={{ uri: img?.url || img?.uri }}
+                          style={styles.galleryThumb}
+                        />
                       </TouchableOpacity>
                     ))
                   ) : (
-                    <View style={[styles.galleryEmptyPlaceholder, { backgroundColor: theme.colors.card }]}>
-                      <Icons.Ionicons name="images-outline" size={30} color={theme.colors.sub_text} />
+                    <View
+                      style={[
+                        styles.galleryEmptyThumb,
+                        {
+                          backgroundColor: theme.colors.background,
+                          borderColor: theme.colors.border,
+                        },
+                      ]}
+                    >
+                      <Icons.Ionicons
+                        name="images-outline"
+                        size={22}
+                        color={theme.colors.sub_text}
+                      />
+                      <Text
+                        style={[
+                          styles.galleryEmptyText,
+                          { color: theme.colors.sub_text },
+                        ]}
+                      >
+                        No photos yet
+                      </Text>
                     </View>
                   )}
                 </ScrollView>
               </View>
-            </View>
-
-            <View style={styles.heroRightColumn}>
-              <TouchableOpacity
-                style={[styles.actionButtonLarge, { backgroundColor: theme.colors.card, borderColor: theme.colors.primary }]}
-                onPress={() => pickImage(false)}
-                activeOpacity={0.7}
-              >
-                <Icons.MaterialIcons name="flip-camera-ios" size={28} color={theme.colors.primary} />
-                <Text style={[styles.actionButtonText, { color: theme.colors.primary }]}>
-                  {isProfilePicking ? "Picking..." : "Profile\nPicture"}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.actionButtonSmall, { backgroundColor: theme.colors.card, borderColor: "#10b981" }]}
-                onPress={() => pickImage(true)}
-                activeOpacity={0.7}
-              >
-                <Icons.MaterialCommunityIcons name="camera-plus-outline" size={20} color="#10b981" />
-                <Text style={[styles.actionButtonSmallText, { color: "#10b981" }]}>
-                  {isGalleryPicking ? "Picking..." : "Gallery"}
-                </Text>
-              </TouchableOpacity>
             </View>
           </View>
         )}
 
         {/* ── 1. Business Identity ── */}
         <View style={styles.section}>
-          <Text style={[styles.sectionLabel, { color: theme.colors.sub_text }]}>Business Identity</Text>
+          <Text style={[styles.sectionLabel, { color: theme.colors.sub_text }]}>
+            Business Identity
+          </Text>
           <TextInput
             label="Business Name"
             value={form.name}
@@ -331,7 +644,9 @@ const ProfileForm = ({
 
         {/* ── 2. Contact Number ── */}
         <View style={styles.section}>
-          <Text style={[styles.sectionLabel, { color: theme.colors.sub_text }]}>Contact Number</Text>
+          <Text style={[styles.sectionLabel, { color: theme.colors.sub_text }]}>
+            Contact Number
+          </Text>
           <TextInput
             label="Phone Number"
             value={form.phone}
@@ -347,13 +662,24 @@ const ProfileForm = ({
         {/* ── 3. Communication Channel ── */}
         {isWorker && (
           <View style={styles.section}>
-            <Text style={[styles.sectionLabel, { color: theme.colors.sub_text }]}>Communication Channel</Text>
+            <Text
+              style={[styles.sectionLabel, { color: theme.colors.sub_text }]}
+            >
+              Communication Channel
+            </Text>
             <View style={styles.dynamicContactRow}>
               <TouchableOpacity
-                style={[styles.platformSelector, { backgroundColor: activePlatform.color }]}
+                style={[
+                  styles.platformSelector,
+                  { backgroundColor: activePlatform.color },
+                ]}
                 onPress={() => setContactModalVisible(true)}
               >
-                <Icons.Ionicons name={activePlatform.icon} size={18} color="#fff" />
+                <Icons.Ionicons
+                  name={activePlatform.icon}
+                  size={18}
+                  color="#fff"
+                />
                 <Text style={styles.platformText}>{activePlatform.label}</Text>
                 <Icons.Ionicons name="chevron-down" size={14} color="#fff" />
               </TouchableOpacity>
@@ -382,7 +708,9 @@ const ProfileForm = ({
 
         {/* ── 4. Location ── */}
         <View style={styles.section}>
-          <Text style={[styles.sectionLabel, { color: theme.colors.sub_text }]}>Location</Text>
+          <Text style={[styles.sectionLabel, { color: theme.colors.sub_text }]}>
+            Location
+          </Text>
           <TextInput
             label="Primary Location (e.g. Mbabane)"
             value={form.location?.address}
@@ -394,32 +722,75 @@ const ProfileForm = ({
           />
         </View>
 
-        <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
+        <View
+          style={[styles.divider, { backgroundColor: theme.colors.border }]}
+        />
 
         {/* ── 5. Document Upload ── */}
         {isWorker && (
           <View style={styles.section}>
-            <Text style={[styles.sectionLabel, { color: theme.colors.sub_text }]}>Qualifications & Clearances</Text>
+            <Text
+              style={[styles.sectionLabel, { color: theme.colors.sub_text }]}
+            >
+              Qualifications & Clearances
+            </Text>
             <Text style={[styles.helperText, { color: theme.colors.sub_text }]}>
               Add certificates, licenses, or police clearance
             </Text>
             <TouchableOpacity
-              style={[styles.uploadDocBtn, { backgroundColor: theme.colors.card, borderColor: theme.colors.primary }]}
+              style={[
+                styles.uploadDocBtn,
+                {
+                  backgroundColor: theme.colors.card2,
+                  borderColor: theme.colors.card2,
+                },
+              ]}
               onPress={pickDocument}
             >
-              <Icons.Ionicons name="cloud-upload" size={20} color={theme.colors.primary} />
-              <Text style={[styles.uploadDocBtnText, { color: theme.colors.primary }]}>Upload Document</Text>
+              <Icons.Ionicons
+                name="cloud-upload"
+                size={20}
+                color={theme.colors.text}
+              />
+              <Text
+                style={[
+                  styles.uploadDocBtnText,
+                  { color: theme.colors.text },
+                ]}
+              >
+                Upload Document
+              </Text>
             </TouchableOpacity>
 
             <View style={styles.docList}>
               {form.documents?.map((doc, index) => (
-                <View key={index} style={[styles.docItem, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
-                  <Icons.Ionicons name="document-text" size={20} color={theme.colors.indicator} />
-                  <Text style={[styles.docName, { color: theme.colors.text }]} numberOfLines={1}>
+                <View
+                  key={index}
+                  style={[
+                    styles.docItem,
+                    {
+                      backgroundColor: theme.colors.card,
+                      borderColor: theme.colors.border,
+                    },
+                  ]}
+                >
+                  <Icons.Ionicons
+                    name="document-text"
+                    size={20}
+                    color={theme.colors.primary}
+                  />
+                  <Text
+                    style={[styles.docName, { color: theme.colors.text }]}
+                    numberOfLines={1}
+                  >
                     {doc.name}
                   </Text>
                   <TouchableOpacity onPress={() => removeDocument(index)}>
-                    <Icons.Ionicons name="trash-outline" size={18} color="#ef4444" />
+                    <Icons.Ionicons
+                      name="trash-outline"
+                      size={18}
+                      color="#ef4444"
+                    />
                   </TouchableOpacity>
                 </View>
               ))}
@@ -427,11 +798,15 @@ const ProfileForm = ({
           </View>
         )}
 
-        <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
+        <View
+          style={[styles.divider, { backgroundColor: theme.colors.border }]}
+        />
 
         {/* ── 6. Professional Bio ── */}
         <View style={styles.section}>
-          <Text style={[styles.sectionLabel, { color: theme.colors.sub_text }]}>Professional Bio</Text>
+          <Text style={[styles.sectionLabel, { color: theme.colors.sub_text }]}>
+            Professional Bio
+          </Text>
           <TextInput
             label="What makes your service great?"
             value={form.bio}
@@ -447,7 +822,9 @@ const ProfileForm = ({
 
         {/* ── 7. Services ── */}
         <View style={styles.section}>
-          <Text style={[styles.sectionLabel, { color: theme.colors.sub_text }]}>Services You Provide</Text>
+          <Text style={[styles.sectionLabel, { color: theme.colors.sub_text }]}>
+            Services You Provide
+          </Text>
           <View style={styles.skillInputWrapper}>
             <TextInput
               label="e.g. Plumbing, Teaching..."
@@ -458,17 +835,38 @@ const ProfileForm = ({
               theme={{ roundness: 12 }}
               left={<TextInput.Icon icon="plus-circle-outline" />}
             />
-            <TouchableOpacity onPress={addSkill} style={[styles.addSkillFab, { backgroundColor: theme.colors.primary }]}>
+            <TouchableOpacity
+              onPress={addSkill}
+              style={[
+                styles.addSkillFab,
+                { backgroundColor: theme.colors.primary },
+              ]}
+            >
               <Icons.Ionicons name="add" size={24} color="#fff" />
             </TouchableOpacity>
           </View>
 
           <View style={styles.skillsList}>
             {form.skills.map((skill, index) => (
-              <View key={index} style={[styles.skillItemEdit, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
-                <Text style={[styles.skillText, { color: theme.colors.text }]}>• {skill}</Text>
+              <View
+                key={index}
+                style={[
+                  styles.skillItemEdit,
+                  {
+                    backgroundColor: theme.colors.card,
+                    borderColor: theme.colors.border,
+                  },
+                ]}
+              >
+                <Text style={[styles.skillText, { color: theme.colors.text }]}>
+                  • {skill}
+                </Text>
                 <TouchableOpacity onPress={() => removeSkill(index)}>
-                  <Icons.Ionicons name="close-circle" size={20} color="#ef4444" />
+                  <Icons.Ionicons
+                    name="close-circle"
+                    size={20}
+                    color="#ef4444"
+                  />
                 </TouchableOpacity>
               </View>
             ))}
@@ -482,7 +880,12 @@ const ProfileForm = ({
           style={styles.modalOverlay}
           onPress={() => setContactModalVisible(false)}
         >
-          <View style={[styles.platformModal, { backgroundColor: theme.colors.card }]}>
+          <View
+            style={[
+              styles.platformModal,
+              { backgroundColor: theme.colors.card },
+            ]}
+          >
             {CONTACT_PLATFORMS.map((item) => (
               <TouchableOpacity
                 key={item.id}
@@ -492,10 +895,14 @@ const ProfileForm = ({
                   setContactModalVisible(false);
                 }}
               >
-                <View style={[styles.optionIcon, { backgroundColor: item.color }]}>
+                <View
+                  style={[styles.optionIcon, { backgroundColor: item.color }]}
+                >
                   <Icons.Ionicons name={item.icon} size={18} color="#fff" />
                 </View>
-                <Text style={[styles.optionText, { color: theme.colors.text }]}>{item.label}</Text>
+                <Text style={[styles.optionText, { color: theme.colors.text }]}>
+                  {item.label}
+                </Text>
               </TouchableOpacity>
             ))}
           </View>
@@ -521,7 +928,7 @@ const WorkerRegistration = ({ navigation }) => {
   const [form, setForm] = useState({
     name: "",
     phone: "",
-    email: user.email,
+    // email: user.email,
     skills: [],
     bio: "",
     worker_pp: [],
@@ -707,9 +1114,12 @@ const WorkerRegistration = ({ navigation }) => {
         const newImages = result.assets.map((asset) => asset);
         isGallery
           ? setForm((prev) => ({
-            ...prev,
-            experience_images: [...(prev.experience_images || []), ...newImages],
-          }))
+              ...prev,
+              experience_images: [
+                ...(prev.experience_images || []),
+                ...newImages,
+              ],
+            }))
           : setForm((prev) => ({ ...prev, worker_pp: [...newImages] }));
       }
     } catch (err) {
@@ -722,16 +1132,30 @@ const WorkerRegistration = ({ navigation }) => {
   if (fetching) return <CustomLoader />;
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+    >
       <StatusBar
         barStyle={isDarkMode ? "light-content" : "dark-content"}
         backgroundColor={theme.colors.background}
       />
 
       {/* ── Header ── */}
-      <View style={[styles.headerNav, { backgroundColor: theme.colors.background, borderBottomColor: theme.colors.border }]}>
+      <View
+        style={[
+          styles.headerNav,
+          {
+            backgroundColor: theme.colors.background,
+            borderBottomColor: theme.colors.border,
+          },
+        ]}
+      >
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Icons.Ionicons name="arrow-back" size={24} color={theme.colors.text} />
+          <Icons.Ionicons
+            name="arrow-back"
+            size={24}
+            color={theme.colors.text}
+          />
         </TouchableOpacity>
 
         <Text style={[styles.headerTitle, { color: theme.colors.text }]}>
@@ -741,7 +1165,12 @@ const WorkerRegistration = ({ navigation }) => {
         <View style={{ flexDirection: "row", gap: 15, alignItems: "center" }}>
           {isWorker && (
             <TouchableOpacity onPress={toggleEdit}>
-              <Text style={[styles.headerActionText, isEditing && { color: "#ef4444" }]}>
+              <Text
+                style={[
+                  styles.headerActionText,
+                  isEditing && { color: "#ef4444" },
+                ]}
+              >
                 {isEditing ? "Cancel" : "Edit"}
               </Text>
             </TouchableOpacity>
@@ -797,15 +1226,35 @@ const WorkerRegistration = ({ navigation }) => {
 
       {/* ── Portfolio Gallery Modal ── */}
       <Modal visible={galleryVisible} animationType="slide">
-        <SafeAreaView style={[styles.modalContainer, { backgroundColor: theme.colors.background }]}>
-          <View style={[styles.modalHeader, { borderBottomColor: theme.colors.border }]}>
+        <SafeAreaView
+          style={[
+            styles.modalContainer,
+            { backgroundColor: theme.colors.background },
+          ]}
+        >
+          <View
+            style={[
+              styles.modalHeader,
+              { borderBottomColor: theme.colors.border },
+            ]}
+          >
             <TouchableOpacity onPress={() => setGalleryVisible(false)}>
-              <Icons.Ionicons name="close" size={28} color={theme.colors.text} />
+              <Icons.Ionicons
+                name="close"
+                size={28}
+                color={theme.colors.text}
+              />
             </TouchableOpacity>
-            <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Portfolio</Text>
+            <Text style={[styles.modalTitle, { color: theme.colors.text }]}>
+              Portfolio
+            </Text>
             {isEditing ? (
               <TouchableOpacity onPress={pickImage}>
-                <Icons.Ionicons name="add-circle" size={28} color={theme.colors.primary} />
+                <Icons.Ionicons
+                  name="add-circle"
+                  size={28}
+                  color={theme.colors.primary}
+                />
               </TouchableOpacity>
             ) : (
               <View style={{ width: 28 }} />
@@ -818,7 +1267,12 @@ const WorkerRegistration = ({ navigation }) => {
             contentContainerStyle={{ padding: 10 }}
             ListHeaderComponent={
               <View style={{ paddingHorizontal: 10, paddingBottom: 10 }}>
-                <Text style={[styles.sectionLabel, { color: theme.colors.sub_text }]}>
+                <Text
+                  style={[
+                    styles.sectionLabel,
+                    { color: theme.colors.sub_text },
+                  ]}
+                >
                   Jobs Accomplished
                 </Text>
               </View>
@@ -842,25 +1296,62 @@ const WorkerRegistration = ({ navigation }) => {
 
       {/* ── Manage Gallery Modal ── */}
       <Modal visible={manageModalVisible} animationType="slide">
-        <SafeAreaView style={[styles.modalContainer, { backgroundColor: theme.colors.background }]}>
-          <View style={[styles.modalHeader, { borderBottomColor: theme.colors.border }]}>
-            <TouchableOpacity onPress={() => { setManageModalVisible(false); setSelectedIndices([]); }}>
-              <Icons.Ionicons name="close" size={28} color={theme.colors.text} />
+        <SafeAreaView
+          style={[
+            styles.modalContainer,
+            { backgroundColor: theme.colors.background },
+          ]}
+        >
+          <View
+            style={[
+              styles.modalHeader,
+              { borderBottomColor: theme.colors.border },
+            ]}
+          >
+            <TouchableOpacity
+              onPress={() => {
+                setManageModalVisible(false);
+                setSelectedIndices([]);
+              }}
+            >
+              <Icons.Ionicons
+                name="close"
+                size={28}
+                color={theme.colors.text}
+              />
             </TouchableOpacity>
 
-            <Text style={[styles.modalTitle, { color: theme.colors.text }]}>Manage Gallery</Text>
+            <Text style={[styles.modalTitle, { color: theme.colors.text }]}>
+              Manage Gallery
+            </Text>
 
-            <View style={{ flexDirection: "row", gap: 16, alignItems: "center" }}>
+            <View
+              style={{ flexDirection: "row", gap: 16, alignItems: "center" }}
+            >
               <TouchableOpacity onPress={toggleSelectAll}>
-                <Text style={[styles.headerActionText, { color: theme.colors.indicator }]}>
-                  {selectedIndices.length === form.experience_images.length ? "Deselect All" : "Select All"}
+                <Text
+                  style={[
+                    styles.headerActionText,
+                    { color: theme.colors.primary },
+                  ]}
+                >
+                  {selectedIndices.length === form.experience_images.length
+                    ? "Deselect All"
+                    : "Select All"}
                 </Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={deleteSelectedImages} disabled={selectedIndices.length === 0}>
+              <TouchableOpacity
+                onPress={deleteSelectedImages}
+                disabled={selectedIndices.length === 0}
+              >
                 <Icons.Ionicons
                   name="trash"
                   size={26}
-                  color={selectedIndices.length > 0 ? "#ef4444" : theme.colors.sub_text}
+                  color={
+                    selectedIndices.length > 0
+                      ? "#ef4444"
+                      : theme.colors.sub_text
+                  }
                 />
               </TouchableOpacity>
             </View>
@@ -882,9 +1373,18 @@ const WorkerRegistration = ({ navigation }) => {
                     source={{ uri: item?.url || item?.uri }}
                     style={styles.manageImage}
                   />
-                  <View style={[styles.selectionOverlay, isSelected && styles.selectedBox]}>
+                  <View
+                    style={[
+                      styles.selectionOverlay,
+                      isSelected && styles.selectedBox,
+                    ]}
+                  >
                     {isSelected && (
-                      <Icons.Ionicons name="checkmark-circle" size={24} color="#3b82f6" />
+                      <Icons.Ionicons
+                        name="checkmark-circle"
+                        size={24}
+                        color="#3b82f6"
+                      />
                     )}
                   </View>
                 </TouchableOpacity>
@@ -893,9 +1393,17 @@ const WorkerRegistration = ({ navigation }) => {
           />
 
           {selectedIndices.length > 0 && (
-            <View style={[styles.selectionFooter, { borderTopColor: theme.colors.border }]}>
-              <Text style={[styles.footerText, { color: theme.colors.primary }]}>
-                {selectedIndices.length} image{selectedIndices.length > 1 ? "s" : ""} selected
+            <View
+              style={[
+                styles.selectionFooter,
+                { borderTopColor: theme.colors.border },
+              ]}
+            >
+              <Text
+                style={[styles.footerText, { color: theme.colors.primary }]}
+              >
+                {selectedIndices.length} image
+                {selectedIndices.length > 1 ? "s" : ""} selected
               </Text>
             </View>
           )}
@@ -1070,7 +1578,7 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 16,
     borderWidth: 1.5,
-    borderStyle: "dashed",
+    borderStyle: "solid",
     gap: 10,
     marginBottom: 12,
   },
@@ -1263,6 +1771,162 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   footerText: { fontWeight: "800", fontSize: 15 },
+
+  heroCard: {
+    marginHorizontal: 0,
+    marginTop: 12,
+    marginBottom: 8,
+    borderRadius: 16,
+    borderWidth: 0.5,
+    overflow: "hidden",
+  },
+  identityRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 16,
+  },
+  avatarWrap: {
+    position: "relative",
+    width: 72,
+    height: 72,
+    flexShrink: 0,
+  },
+  avatarImage: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+  },
+  avatarPlaceholder: {
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  cameraBadge: {
+    position: "absolute",
+    bottom: 0,
+    right: 0,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  identityInfo: {
+    flex: 1,
+    minWidth: 0,
+  },
+  workerName: {
+    fontSize: 16,
+    fontWeight: "700",
+  },
+  locRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    marginTop: 4,
+  },
+  locDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: "#10b981",
+  },
+  workerLoc: {
+    fontSize: 12,
+    fontWeight: "500",
+    flex: 1,
+  },
+  changePicBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 20,
+    borderWidth: 1,
+  },
+  changePicText: {
+    fontSize: 12,
+    fontWeight: "700",
+  },
+  heroDivider: {
+    height: 0.5,
+    marginHorizontal: 16,
+  },
+  gallerySection: {
+    padding: 12,
+    paddingTop: 10,
+  },
+  galleryHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
+  galleryLabel: {
+    fontSize: 10,
+    fontWeight: "800",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  galleryCountBadge: {
+    borderRadius: 6,
+    borderWidth: 0.5,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+  },
+  galleryCountText: {
+    fontSize: 11,
+  },
+  galleryScroll: {
+    gap: 8,
+    paddingBottom: 2,
+  },
+  galleryRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  galleryAddThumb: {
+    width: 68,
+    height: 68,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderStyle: "solid",
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 2,
+    flexShrink: 0, // never shrinks — always visible
+  },
+  galleryAddText: {
+    fontSize: 10,
+    fontWeight: "700",
+  },
+  galleryEmptyThumb: {
+    width: 120,
+    height: 68,
+    borderRadius: 10,
+    borderWidth: 0.5,
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 4,
+  },
+  galleryEmptyText: {
+    fontSize: 10,
+    fontWeight: "500",
+  },
+  galleryScroll: {
+    gap: 8,
+    paddingBottom: 2,
+  },
+  galleryThumb: {
+    width: 68,
+    height: 68,
+    borderRadius: 10,
+  },
 });
 
 export default WorkerRegistration;
