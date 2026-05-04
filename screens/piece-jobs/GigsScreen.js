@@ -158,21 +158,6 @@ const CATEGORIES = [
   },
 ];
 
-// Calculate distance between two coordinates (Haversine formula)
-const calculateDistance = (lat1, lon1, lat2, lon2) => {
-  const R = 6371; // Radius of Earth in km
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) *
-    Math.cos((lat2 * Math.PI) / 180) *
-    Math.sin(dLon / 2) *
-    Math.sin(dLon / 2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  const distance = R * c;
-  return distance;
-};
 
 const mapDatabaseToUI = (dbGigs, userLocation = null) => {
   return dbGigs.map((job) => {
@@ -206,9 +191,7 @@ const mapDatabaseToUI = (dbGigs, userLocation = null) => {
         ? new Date(job.created_at).toLocaleDateString()
         : "Just now",
       images: displayImages, // Empty array if no images
-      distance: userLocation
-        ? calculateDistance(userLocation.lat, userLocation.lng, lat, lng)
-        : null,
+      distance:null,
     };
   });
 };
@@ -778,11 +761,7 @@ const GigsScreen = ({ navigation }) => {
                 {item.location}
               </Text>
             </View>
-            {item.distance && (
-              <Text style={{ color: theme.colors.sub_text }}>
-                {item.distance.toFixed(1)} km
-              </Text>
-            )}
+        
           </View>
 
           <View
