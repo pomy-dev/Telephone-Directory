@@ -702,8 +702,34 @@ export default function TransportationListScreen({ navigation }) {
     return (
         <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
             <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
-            <View style={{ height: height * 0.04 }} />
-            <SecondaryNav title="Transport For Hire" rightIcon="options-outline" onRightPress={handleOptions} />
+            <View style={{ height: height * 0.06 }} />
+
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 10 }}>
+                <TouchableOpacity onPress={() => navigation.goBack()}>
+                    <Icons.Ionicons name='arrow-back' color={theme.colors.text} size={24} />
+                </TouchableOpacity>
+                {/* Search Bar */}
+                <View style={[styles.searchBar, { backgroundColor: theme.colors.card }]}>
+                    <Icons.Ionicons name="search" size={20} color={theme.colors.sub_text} />
+                    <TextInput
+                        style={styles.searchInput}
+                        placeholder="Search make, model, type..."
+                        value={searchQuery}
+                        onChangeText={setSearchQuery}
+                        placeholderTextColor={theme.colors.sub_text}
+                    />
+                    {(sortByCategory !== 'All' || sortByBorderCrossing !== 'All') && (
+                        <TouchableOpacity onPress={() => handleOptions()}>
+                            <Icons.Ionicons name="options" size={24} color="#2563eb" />
+                        </TouchableOpacity>
+                    )}
+                </View>
+                {/* options */}
+                <TouchableOpacity onPress={handleOptions}>
+                    <Icons.Ionicons name='options-outline' size={24} color={theme.colors.text} />
+                </TouchableOpacity>
+            </View>
+
 
             {(sortByCategory !== 'All' || sortByBorderCrossing !== 'All') && (
                 <View style={[styles.activeFiltersBar, { backgroundColor: theme.colors.card }]}>
@@ -746,23 +772,6 @@ export default function TransportationListScreen({ navigation }) {
                     </ScrollView>
                 </View>
             )}
-
-            {/* Search Bar */}
-            <View style={[styles.searchBar, { backgroundColor: theme.colors.card }]}>
-                <Icons.Ionicons name="search" size={20} color="#94a3b8" />
-                <TextInput
-                    style={styles.searchInput}
-                    placeholder="Search make, model, or location..."
-                    value={searchQuery}
-                    onChangeText={setSearchQuery}
-                    placeholderTextColor="#94a3b8"
-                />
-                {(sortByCategory !== 'All' || sortByBorderCrossing !== 'All') && (
-                    <TouchableOpacity onPress={() => handleOptions()}>
-                        <Icons.Ionicons name="options" size={24} color="#2563eb" />
-                    </TouchableOpacity>
-                )}
-            </View>
 
             {/* Type Tabs */}
             <View>
@@ -911,12 +920,13 @@ const styles = StyleSheet.create({
     },
 
     searchBar: {
+        flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
-        marginHorizontal: 16,
-        marginVertical: 16,
+        marginHorizontal: 5,
+        // marginVertical: 16,
         borderRadius: 50,
-        paddingHorizontal: 16,
+        paddingHorizontal: 10,
         height: 45,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 4 },

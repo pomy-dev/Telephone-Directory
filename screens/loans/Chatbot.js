@@ -18,7 +18,7 @@ const isTablet = width >= 768;
 const WhatsAppPatternFallback = () => {
   const { theme, isDarkMode } = useContext(AppContext);
   // Use theme primary color or a fallback WhatsApp green
-  const dotColor = isDarkMode ? "#c2fcf5ff" : "#075E54";
+  const dotColor = isDarkMode ? "#f0f4ff" : "#075E54";
 
   return (
     <View style={[StyleSheet.absoluteFillObject, { backgroundColor: theme.colors.background }]}>
@@ -299,7 +299,8 @@ export default function Chatbot({ navigation, route }) {
 
       const aiReply = {
         id: (Date.now() + 1).toString(),
-        text: data.reply || "Sorry, I couldn't process that.",
+        // text: data.reply || "Sorry, I couldn't process that.",
+        text: data.answer || "Sorry, I couldn't process that.",
         isUser: false,
         timestamp: Date.now(),
       };
@@ -340,7 +341,7 @@ export default function Chatbot({ navigation, route }) {
             <TouchableOpacity onPress={() => navigation.goBack()}>
               <Icons.Ionicons name="arrow-back" color={theme.colors.text} size={24} />
             </TouchableOpacity>
-            <Avatar.Icon size={30} icon="account" color={'#fff'} />
+            {user.photoURL ? <Avatar.Image source={{ uri: user.photoURL }} size={30} /> : <Avatar.Icon size={30} icon="account" color={'#fff'} />}
             <Text style={{ color: theme.colors.text, fontSize: 16, fontWeight: '200' }}>{user.displayName}</Text>
           </View>
           <TouchableOpacity onPress={speak} style={{ paddingHorizontal: 10, paddingVertical: 5, alignItems: 'center', borderRadius: 10, backgroundColor: theme.colors.card }}>

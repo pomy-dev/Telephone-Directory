@@ -96,6 +96,7 @@ const ProfilePreview = ({ form, setGalleryVisible, handleCall, theme }) => {
 
       <TouchableOpacity
         style={[styles.galleryTrigger, { backgroundColor: theme.colors.card2 }]}
+        style={[styles.galleryTrigger, { backgroundColor: theme.colors.card2 }]}
         onPress={() => setGalleryVisible(true)}
       >
         <Icons.Ionicons name="images" size={20} color={theme.colors.light} />
@@ -1530,7 +1531,7 @@ const styles = StyleSheet.create({
   // ── Section & Inputs ──
   section: { marginBottom: 20 },
   sectionLabel: {
-    fontSize: 11,
+    fontSize: 16,
     fontWeight: "800",
     letterSpacing: 0.5,
     textTransform: "uppercase",
