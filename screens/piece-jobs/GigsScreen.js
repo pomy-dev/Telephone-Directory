@@ -1481,10 +1481,6 @@ const GigsScreen = ({ navigation }) => {
             if (loadingGigs && jobs.length > 0) {
               return (
                 <View style={{ paddingVertical: 30, alignItems: "center" }}>
-                  <ActivityIndicator
-                    size="small"
-                    color={theme.colors.primary || "#000"}
-                  />
                   <Text style={[styles.emptySubtitle, { marginTop: 10 }]}>
                     fetching more jobs....
                   </Text>
