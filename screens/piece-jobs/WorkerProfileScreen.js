@@ -23,9 +23,19 @@ import {
   getWorkerProfileClient,
 } from "../../service/Supabase-Fuctions";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 const { width, height } = Dimensions.get("window");
-const THUMB_SIZE = (width - 48 - 16) / 3;
+// Responsive grid: 1 column per ~120px, min 2, max 5
+const NUM_COLS = Math.min(5, Math.max(2, Math.floor(width / 120)));
+const GRID_PADDING = 12; // card inner padding
+const GRID_GAP = 2; // gap between thumbs
+const THUMB_SIZE = Math.min(
+  80, // max height cap
+  Math.floor((width - GRID_PADDING * 2 - GRID_GAP * (NUM_COLS - 1)) / NUM_COLS),
+);
+
+
 
 const WorkerProfileScreen = ({ route }) => {
   const { user, isWorker } = React.useContext(AuthContext);
@@ -37,8 +47,9 @@ const WorkerProfileScreen = ({ route }) => {
   const [lightboxVisible, setLightboxVisible] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [carouselIndex, setCarouselIndex] = useState(0);
+  const insets = useSafeAreaInsets();
 
-  React.useEffect(() => { }, []);
+  React.useEffect(() => {}, []);
 
   React.useEffect(() => {
     const fetchWorkerData = async () => {
@@ -72,7 +83,12 @@ const WorkerProfileScreen = ({ route }) => {
 
   if (loading) {
     return (
-      <View style={[styles.centerState, { backgroundColor: theme.colors.background }]}>
+      <View
+        style={[
+          styles.centerState,
+          { backgroundColor: theme.colors.background },
+        ]}
+      >
         <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     );
@@ -80,9 +96,20 @@ const WorkerProfileScreen = ({ route }) => {
 
   if (!worker) {
     return (
-      <View style={[styles.centerState, { backgroundColor: theme.colors.background }]}>
-        <Icons.Ionicons name="person-circle-outline" size={56} color={theme.colors.sub_text} />
-        <Text style={[styles.emptyText, { color: theme.colors.sub_text }]}>Profile not found</Text>
+      <View
+        style={[
+          styles.centerState,
+          { backgroundColor: theme.colors.background },
+        ]}
+      >
+        <Icons.Ionicons
+          name="person-circle-outline"
+          size={56}
+          color={theme.colors.sub_text}
+        />
+        <Text style={[styles.emptyText, { color: theme.colors.sub_text }]}>
+          Profile not found
+        </Text>
       </View>
     );
   }
@@ -92,31 +119,69 @@ const WorkerProfileScreen = ({ route }) => {
       ? worker.location?.address
       : worker.location || "Eswatini";
 
-  const handleEmail = () => Linking.openURL(`mailto:${worker.contact_options?.email}`);
-  const handleWhatsApp = () => Linking.openURL(`whatsapp://send?phone=${worker.contact_options?.whatsapp}`);
-  const handleSocial = (platform) => Linking.openURL(worker[platform] || "https://facebook.com");
+  const handleEmail = () =>
+    Linking.openURL(`mailto:${worker.contact_options?.email}`);
+  const handleWhatsApp = () =>
+    Linking.openURL(
+      `whatsapp://send?phone=${worker.contact_options?.whatsapp}`,
+    );
+  const handleSocial = (platform) =>
+    Linking.openURL(worker[platform] || "https://facebook.com");
   const handleCall = () => Linking.openURL(`tel:${worker.phone}`);
-  const openLightbox = (index) => { setLightboxIndex(index); setLightboxVisible(true); };
+  const openLightbox = (index) => {
+    setLightboxIndex(index);
+    setLightboxVisible(true);
+  };
 
-  const hasImages = worker.experience_images && worker.experience_images.length > 0;
+  const hasImages =
+    worker.experience_images && worker.experience_images.length > 0;
   const hasProfile = worker.worker_pp && worker.worker_pp.length > 0;
   const hasSkills = worker.skills && worker.skills.length > 0;
   const hasDocs = worker.documents && worker.documents.length > 0;
 
   const SOCIAL_CHANNELS = [
-    { key: "whatsapp", icon: "logo-whatsapp", color: "#25D366", bg: isDarkMode ? "#052e16" : "#dcfce7", handler: handleWhatsApp },
-    { key: "email", icon: "mail", color: "#EA4335", bg: isDarkMode ? "#450a0a" : "#fee2e2", handler: handleEmail },
-    { key: "facebook", icon: "logo-facebook", color: "#1877F2", bg: isDarkMode ? "#172554" : "#dbeafe", handler: () => handleSocial("facebook") },
-    { key: "instagram", icon: "logo-instagram", color: "#E4405F", bg: isDarkMode ? "#4a044e" : "#fce7f3", handler: () => handleSocial("instagram") },
-  ].filter(s => worker.contact_options?.[s.key]);
+    {
+      key: "whatsapp",
+      icon: "logo-whatsapp",
+      color: "#25D366",
+      bg: isDarkMode ? "#052e16" : "#dcfce7",
+      handler: handleWhatsApp,
+    },
+    {
+      key: "email",
+      icon: "mail",
+      color: "#EA4335",
+      bg: isDarkMode ? "#450a0a" : "#fee2e2",
+      handler: handleEmail,
+    },
+    {
+      key: "facebook",
+      icon: "logo-facebook",
+      color: "#1877F2",
+      bg: isDarkMode ? "#172554" : "#dbeafe",
+      handler: () => handleSocial("facebook"),
+    },
+    {
+      key: "instagram",
+      icon: "logo-instagram",
+      color: "#E4405F",
+      bg: isDarkMode ? "#4a044e" : "#fce7f3",
+      handler: () => handleSocial("instagram"),
+    },
+  ].filter((s) => worker.contact_options?.[s.key]);
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={["top"]}>
-      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+      edges={["top"]}
+    >
+      <StatusBar
+        barStyle={isDarkMode ? "light-content" : "dark-content"}
+        backgroundColor={theme.colors.background}
+      />
       <SecondaryNav title={"Freelancer Profile"} />
 
       <ScrollView showsVerticalScrollIndicator={false}>
-
         {/* ── HERO CAROUSEL ── */}
         {hasImages && (
           <View>
@@ -129,8 +194,14 @@ const WorkerProfileScreen = ({ route }) => {
               scrollAnimationDuration={5000}
               onSnapToItem={setCarouselIndex}
               renderItem={({ item, index }) => (
-                <TouchableOpacity activeOpacity={0.92} onPress={() => openLightbox(index)}>
-                  <Image source={{ uri: item.url || item }} style={styles.heroImage} />
+                <TouchableOpacity
+                  activeOpacity={0.92}
+                  onPress={() => openLightbox(index)}
+                >
+                  <Image
+                    source={{ uri: item.url || item }}
+                    style={styles.heroImage}
+                  />
                 </TouchableOpacity>
               )}
             />
@@ -141,7 +212,12 @@ const WorkerProfileScreen = ({ route }) => {
                     key={i}
                     style={[
                       styles.dot,
-                      { backgroundColor: i === carouselIndex ? theme.colors.primary : theme.colors.border },
+                      {
+                        backgroundColor:
+                          i === carouselIndex
+                            ? theme.colors.primary
+                            : theme.colors.border,
+                      },
                     ]}
                   />
                 ))}
@@ -151,49 +227,98 @@ const WorkerProfileScreen = ({ route }) => {
         )}
 
         <View style={styles.pagePad}>
-
           {/* ── IDENTITY CARD ── */}
-          <View style={[styles.menuCard, { backgroundColor: theme.colors.card }]}>
+          {/* <View style={[styles.menuCard, { backgroundColor: theme.colors.card }]}> */}
+          <View>
             <View style={styles.heroContent}>
               <View style={styles.avatarContainer}>
-                <View style={[styles.avatar, { backgroundColor: theme.colors.background, borderColor: theme.colors.border }]}>
+                <View
+                  style={[
+                    styles.avatar,
+                    {
+                      backgroundColor: theme.colors.background,
+                      borderColor: theme.colors.border,
+                    },
+                  ]}
+                >
                   {hasProfile ? (
                     <Image
-                      source={{ uri: worker.worker_pp[0].url || worker.worker_pp[0] }}
+                      source={{
+                        uri: worker.worker_pp[0].url || worker.worker_pp[0],
+                      }}
                       style={styles.avatarImg}
                     />
                   ) : (
-                    <Text style={[styles.avatarInitial, { color: theme.colors.text }]}>
+                    <Text
+                      style={[
+                        styles.avatarInitial,
+                        { color: theme.colors.text },
+                      ]}
+                    >
                       {worker.name?.charAt(0)?.toUpperCase()}
                     </Text>
                   )}
                 </View>
-                <View style={[styles.onlineIndicator, { borderColor: theme.colors.card }]}>
+                <View
+                  style={[
+                    styles.onlineIndicator,
+                    { borderColor: theme.colors.card },
+                  ]}
+                >
                   <Icons.Ionicons name="ellipse" size={10} color="#10b981" />
                 </View>
               </View>
 
               <View style={styles.profileInfo}>
-                <Text style={[styles.workerName, { color: theme.colors.text }]}>{worker.name}</Text>
+                <Text style={[styles.workerName, { color: theme.colors.text }]}>
+                  {worker.name}
+                </Text>
                 <View style={styles.locationRow}>
-                  <Icons.Ionicons name="location-sharp" size={13} color={theme.colors.indicator} />
-                  <Text style={[styles.locationText, { color: theme.colors.sub_text }]}>{locationString}</Text>
+                  <Icons.Ionicons
+                    name="location-sharp"
+                    size={13}
+                    color={theme.colors.indicator}
+                  />
+                  <Text
+                    style={[
+                      styles.locationText,
+                      { color: theme.colors.sub_text },
+                    ]}
+                  >
+                    {locationString}
+                  </Text>
                 </View>
                 <View style={styles.likesBadge}>
-                  <Icons.Ionicons name="thumbs-up" size={13} color="#10b981" />
-                  <Text style={[styles.likesText, { color: theme.colors.sub_text }]}>{worker.likes || 0} likes</Text>
+                  <Icons.Ionicons
+                    name="thumbs-up"
+                    size={13}
+                    color={theme.colors.card2}
+                  />
+                  <Text
+                    style={[styles.likesText, { color: theme.colors.sub_text }]}
+                  >
+                    {worker.likes || 0} likes
+                  </Text>
                 </View>
               </View>
             </View>
 
             {SOCIAL_CHANNELS.length > 0 && (
               <>
-                <View style={[styles.divider, { backgroundColor: theme.colors.border, marginLeft: 0 }]} />
+                <View
+                  style={[
+                    styles.divider,
+                    { backgroundColor: theme.colors.border, marginLeft: 0 },
+                  ]}
+                />
                 <View style={styles.socialRow}>
-                  {SOCIAL_CHANNELS.map(s => (
+                  {SOCIAL_CHANNELS.map((s) => (
                     <TouchableOpacity
                       key={s.key}
-                      style={[styles.menuIconContainer, { backgroundColor: s.bg, borderColor: "transparent" }]}
+                      style={[
+                        styles.menuIconContainer,
+                        { backgroundColor: s.bg, borderColor: "transparent" },
+                      ]}
                       onPress={s.handler}
                       activeOpacity={0.7}
                     >
@@ -207,11 +332,16 @@ const WorkerProfileScreen = ({ route }) => {
 
           {/* ── ABOUT ── */}
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: theme.colors.sub_text }]}>About</Text>
-            <View style={[styles.menuCard, { backgroundColor: theme.colors.card }]}>
+            <Text
+              style={[styles.sectionTitle, { color: theme.colors.sub_text }]}
+            >
+              About
+            </Text>
+            <View>
               <View style={styles.bioRow}>
                 <Text style={[styles.bioText, { color: theme.colors.text }]}>
-                  {worker.bio || "No detailed biography provided. This professional is verified and ready for work."}
+                  {worker.bio ||
+                    "No detailed biography provided. This professional is verified and ready for work."}
                 </Text>
               </View>
             </View>
@@ -220,24 +350,53 @@ const WorkerProfileScreen = ({ route }) => {
           {/* ── SERVICES ── */}
           {hasSkills && (
             <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: theme.colors.sub_text }]}>Services Offered</Text>
-              <View style={[styles.menuCard, { backgroundColor: theme.colors.card }]}>
+              <Text
+                style={[styles.sectionTitle, { color: theme.colors.sub_text }]}
+              >
+                Services Offered
+              </Text>
+              <View
+                style={[
+                  styles.menuCard,
+                  { backgroundColor: theme.colors.card },
+                ]}
+              >
                 {worker.skills.map((skill, index) => (
                   <React.Fragment key={index}>
                     <View style={styles.menuItem}>
                       <View style={styles.menuItemLeft}>
-                        <View style={[styles.menuIconContainer, {
-                          backgroundColor: theme.colors.card2,
-                          borderColor: theme.colors.card2,
-                        }]}>
-                          <Icons.Ionicons name="checkmark-circle-outline" size={20} color={theme.colors.card} />
+                        <View
+                          style={[
+                            styles.menuIconContainer,
+                            {
+                              backgroundColor: theme.colors.card2,
+                              borderColor: theme.colors.card2,
+                            },
+                          ]}
+                        >
+                          <Icons.Ionicons
+                            name="checkmark-circle-outline"
+                            size={20}
+                            color={"#fff"}
+                          />
                         </View>
-                        <Text style={[styles.menuItemTitle, { color: theme.colors.text }]}>{skill}</Text>
+                        <Text
+                          style={[
+                            styles.menuItemTitle,
+                            { color: theme.colors.text },
+                          ]}
+                        >
+                          {skill}
+                        </Text>
                       </View>
-      
                     </View>
                     {index < worker.skills.length - 1 && (
-                      <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
+                      <View
+                        style={[
+                          styles.divider,
+                          { backgroundColor: theme.colors.border },
+                        ]}
+                      />
                     )}
                   </React.Fragment>
                 ))}
@@ -248,8 +407,17 @@ const WorkerProfileScreen = ({ route }) => {
           {/* ── QUALIFICATIONS ── */}
           {hasDocs && (
             <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: theme.colors.sub_text }]}>Qualifications</Text>
-              <View style={[styles.menuCard, { backgroundColor: theme.colors.card }]}>
+              <Text
+                style={[styles.sectionTitle, { color: theme.colors.sub_text }]}
+              >
+                Qualifications
+              </Text>
+              <View
+                style={[
+                  styles.menuCard,
+                  { backgroundColor: theme.colors.card },
+                ]}
+              >
                 {worker.documents.map((doc, index) => (
                   <React.Fragment key={index}>
                     <TouchableOpacity
@@ -258,23 +426,54 @@ const WorkerProfileScreen = ({ route }) => {
                       activeOpacity={0.7}
                     >
                       <View style={styles.menuItemLeft}>
-                        <View style={[styles.menuIconContainer, {
-                          backgroundColor: theme.colors.card2,
-                          borderColor:theme.colors.card2,
-                        }]}>
-                          <Icons.Ionicons name="document-text-outline" size={20} color={theme.colors.card} />
+                        <View
+                          style={[
+                            styles.menuIconContainer,
+                            {
+                              backgroundColor: theme.colors.card2,
+                              borderColor: theme.colors.card2,
+                            },
+                          ]}
+                        >
+                          <Icons.Ionicons
+                            name="document-text-outline"
+                            size={20}
+                            color={theme.colors.card}
+                          />
                         </View>
                         <View style={{ flex: 1 }}>
-                          <Text style={[styles.menuItemTitle, { color: theme.colors.text }]} numberOfLines={1}>
+                          <Text
+                            style={[
+                              styles.menuItemTitle,
+                              { color: theme.colors.text },
+                            ]}
+                            numberOfLines={1}
+                          >
                             {doc.name || `Document ${index + 1}`}
                           </Text>
-                          <Text style={[styles.docSub, { color: theme.colors.sub_text }]}>Tap to open</Text>
+                          <Text
+                            style={[
+                              styles.docSub,
+                              { color: theme.colors.sub_text },
+                            ]}
+                          >
+                            Tap to open
+                          </Text>
                         </View>
                       </View>
-                      <Icons.Feather name="external-link" size={16} color={theme.colors.sub_text} />
+                      <Icons.Feather
+                        name="external-link"
+                        size={16}
+                        color={theme.colors.sub_text}
+                      />
                     </TouchableOpacity>
                     {index < worker.documents.length - 1 && (
-                      <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
+                      <View
+                        style={[
+                          styles.divider,
+                          { backgroundColor: theme.colors.border },
+                        ]}
+                      />
                     )}
                   </React.Fragment>
                 ))}
@@ -286,29 +485,57 @@ const WorkerProfileScreen = ({ route }) => {
           {hasImages && (
             <View style={styles.section}>
               <View style={styles.sectionRow}>
-                <Text style={[styles.sectionTitle, { color: theme.colors.sub_text }]}>Portfolio</Text>
-                <View style={[styles.countBadge, { backgroundColor:theme.colors.card2}]}>
-                  <Text style={[styles.countText, {color: "#fff"}]}>{worker.experience_images.length} photos</Text>
+                <Text
+                  style={[
+                    styles.sectionTitle,
+                    { color: theme.colors.sub_text },
+                  ]}
+                >
+                  Portfolio
+                </Text>
+                <View
+                  style={[
+                    styles.countBadge,
+                    { backgroundColor: theme.colors.card2 },
+                  ]}
+                >
+                  <Text style={[styles.countText, { color: "#fff" }]}>
+                    {worker.experience_images.length} photos
+                  </Text>
                 </View>
               </View>
-              <View style={[styles.menuCard, { backgroundColor: theme.colors.card, padding: 12 }]}>
-                <View style={styles.portfolioGrid}>
+
+              <View
+                style={[
+                  styles.menuCard,
+                  { backgroundColor: theme.colors.card, padding: GRID_PADDING },
+                ]}
+              >
+                <View style={[styles.portfolioGrid, { gap: GRID_GAP }]}>
                   {worker.experience_images.map((img, index) => (
                     <TouchableOpacity
                       key={index}
                       onPress={() => openLightbox(index)}
                       activeOpacity={0.85}
-                      style={[styles.portfolioThumbWrap, { width: THUMB_SIZE, height: THUMB_SIZE }]}
+                      style={[
+                        styles.portfolioThumbWrap,
+                        { width: THUMB_SIZE, height: THUMB_SIZE },
+                      ]}
                     >
-                      <Image source={{ uri: img?.url || img }} style={styles.portfolioThumb} />
+                      <Image
+                        source={{ uri: img?.url || img }}
+                        style={styles.portfolioThumb}
+                      />
                       {index === 0 && (
-                        <View style={[styles.mainBadge, { backgroundColor: theme.colors.primary }]}>
+                        <View
+                          style={[
+                            styles.mainBadge,
+                            { backgroundColor: theme.colors.primary },
+                          ]}
+                        >
                           <Text style={styles.mainBadgeText}>MAIN</Text>
                         </View>
                       )}
-                      <View style={styles.expandOverlay}>
-                        <Icons.Ionicons name="expand-outline" size={14} color="#fff" />
-                      </View>
                     </TouchableOpacity>
                   ))}
                 </View>
@@ -318,21 +545,41 @@ const WorkerProfileScreen = ({ route }) => {
 
           {/* ── TRUST NOTICE ── */}
           <View style={styles.section}>
-            <View style={[styles.menuCard, {
-              backgroundColor: isDarkMode ? "#052e16" : "#f0fdf4",
-              borderWidth: 1,
-              borderColor: isDarkMode ? "#14532d" : "#bbf7d0",
-            }]}>
+            <View
+              style={[
+                styles.menuCard,
+                {
+                  backgroundColor: isDarkMode ? "#052e16" : "#f0fdf4",
+                  borderWidth: 1,
+                  borderColor: isDarkMode ? "#14532d" : "#bbf7d0",
+                },
+              ]}
+            >
               <View style={styles.menuItem}>
                 <View style={styles.menuItemLeft}>
-                  <View style={[styles.menuIconContainer, {
-                    backgroundColor: isDarkMode ? "#14532d" : "#dcfce7",
-                    borderColor: "transparent",
-                  }]}>
-                    <Icons.Ionicons name="shield-checkmark-outline" size={20} color="#10b981" />
+                  <View
+                    style={[
+                      styles.menuIconContainer,
+                      {
+                        backgroundColor: isDarkMode ? "#14532d" : "#dcfce7",
+                        borderColor: "transparent",
+                      },
+                    ]}
+                  >
+                    <Icons.Ionicons
+                      name="shield-checkmark-outline"
+                      size={20}
+                      color="#10b981"
+                    />
                   </View>
-                  <Text style={[styles.trustText, { color: isDarkMode ? "#86efac" : "#166534" }]}>
-                    Always meet in public places and{"\n"}never pay upfront for services.
+                  <Text
+                    style={[
+                      styles.trustText,
+                      { color: isDarkMode ? "#86efac" : "#166534" },
+                    ]}
+                  >
+                    Always meet in public places and{"\n"}never pay upfront for
+                    services.
                   </Text>
                 </View>
               </View>
@@ -344,12 +591,31 @@ const WorkerProfileScreen = ({ route }) => {
       </ScrollView>
 
       {/* ── BOTTOM ACTION BAR ── */}
-      <View style={[styles.bottomBar, { backgroundColor: theme.colors.card, borderTopColor: theme.colors.border }]}>
+      <View
+        style={[
+          styles.bottomBar,
+          {
+            backgroundColor: theme.colors.card,
+            borderTopColor: theme.colors.border,
+            paddingBottom: insets.bottom > 0 ? insets.bottom + 7 : 18,
+          },
+        ]}
+      >
         <TouchableOpacity
-          style={[styles.smsBtn, { borderColor: theme.colors.border, backgroundColor: theme.colors.background }]}
+          style={[
+            styles.smsBtn,
+            {
+              borderColor: theme.colors.border,
+              backgroundColor: theme.colors.background,
+            },
+          ]}
           onPress={() => Linking.openURL(`sms:${worker.phone}`)}
         >
-          <Icons.Ionicons name="chatbubble-outline" size={22} color={theme.colors.text} />
+          <Icons.Ionicons
+            name="chatbubble-outline"
+            size={22}
+            color={theme.colors.text}
+          />
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.callBtn, { backgroundColor: theme.colors.primary }]}
@@ -361,9 +627,17 @@ const WorkerProfileScreen = ({ route }) => {
       </View>
 
       {/* ── LIGHTBOX MODAL ── */}
-      <Modal visible={lightboxVisible} transparent animationType="fade" statusBarTranslucent>
+      <Modal
+        visible={lightboxVisible}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+      >
         <View style={styles.lightboxOverlay}>
-          <TouchableOpacity style={styles.lightboxClose} onPress={() => setLightboxVisible(false)}>
+          <TouchableOpacity
+            style={styles.lightboxClose}
+            onPress={() => setLightboxVisible(false)}
+          >
             <Icons.Ionicons name="close" size={26} color="#fff" />
           </TouchableOpacity>
           <View style={styles.lightboxCounter}>
@@ -380,7 +654,11 @@ const WorkerProfileScreen = ({ route }) => {
             onSnapToItem={(i) => setLightboxIndex(i)}
             renderItem={({ item }) => (
               <View style={styles.lightboxImgWrap}>
-                <Image source={{ uri: item?.url || item }} style={styles.lightboxImg} resizeMode="contain" />
+                <Image
+                  source={{ uri: item?.url || item }}
+                  style={styles.lightboxImg}
+                  resizeMode="contain"
+                />
               </View>
             )}
           />
@@ -392,11 +670,21 @@ const WorkerProfileScreen = ({ route }) => {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
-  centerState: { flex: 1, justifyContent: "center", alignItems: "center", gap: 12 },
+  centerState: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 12,
+  },
   emptyText: { fontSize: 15, fontWeight: "600" },
 
   heroImage: { width, height: 220, resizeMode: "cover" },
-  dotRow: { flexDirection: "row", justifyContent: "center", gap: 5, paddingVertical: 10 },
+  dotRow: {
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 5,
+    paddingVertical: 10,
+  },
   dot: { width: 6, height: 6, borderRadius: 3 },
 
   pagePad: { paddingHorizontal: 16, paddingTop: 16 },
@@ -406,7 +694,12 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     overflow: "hidden",
     ...Platform.select({
-      ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6 },
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.06,
+        shadowRadius: 6,
+      },
       android: { elevation: 1 },
     }),
   },
@@ -415,46 +708,79 @@ const styles = StyleSheet.create({
   heroContent: { flexDirection: "row", alignItems: "center", padding: 20 },
   avatarContainer: { position: "relative" },
   avatar: {
-    width: 72, height: 72, borderRadius: 36,
-    justifyContent: "center", alignItems: "center",
-    borderWidth: 2, overflow: "hidden",
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+    overflow: "hidden",
   },
   avatarImg: { width: "100%", height: "100%", borderRadius: 36 },
   avatarInitial: { fontSize: 26, fontWeight: "800" },
   onlineIndicator: {
-    position: "absolute", bottom: 2, right: 2,
-    borderRadius: 10, borderWidth: 2, padding: 1,
+    position: "absolute",
+    bottom: 2,
+    right: 2,
+    borderRadius: 10,
+    borderWidth: 2,
+    padding: 1,
   },
   profileInfo: { flex: 1, marginLeft: 16 },
   workerName: { fontSize: 20, fontWeight: "700", marginBottom: 4 },
-  locationRow: { flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 6 },
+  locationRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginBottom: 6,
+  },
   locationText: { fontSize: 13, fontWeight: "500" },
   likesBadge: { flexDirection: "row", alignItems: "center", gap: 5 },
   likesText: { fontSize: 12, fontWeight: "600" },
 
-  socialRow: { flexDirection: "row", gap: 10, paddingHorizontal: 20, paddingVertical: 14 },
+  socialRow: {
+    flexDirection: "row",
+    gap: 10,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+  },
 
   // ── Section — mirrors SettingsScreen section ──
   section: { marginTop: 24 },
   sectionRow: {
-    flexDirection: "row", alignItems: "center",
-    justifyContent: "space-between", marginBottom: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 8,
   },
   sectionTitle: {
-    fontSize: 13, fontWeight: "700",
-    textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 8,
+    fontSize: 13,
+    fontWeight: "700",
+    textTransform: "uppercase",
+    letterSpacing: 0.8,
+    marginBottom: 8,
   },
 
   // ── Menu row — mirrors SettingsScreen menuItem exactly ──
   menuItem: {
-    flexDirection: "row", alignItems: "center",
+    flexDirection: "row",
+    alignItems: "center",
     justifyContent: "space-between",
-    paddingHorizontal: 20, paddingVertical: 14,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
   },
-  menuItemLeft: { flexDirection: "row", alignItems: "center", gap: 16, flex: 1 },
+  menuItemLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+    flex: 1,
+  },
   menuIconContainer: {
-    width: 44, height: 44, borderRadius: 12,
-    justifyContent: "center", alignItems: "center",
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
     borderWidth: 1,
   },
   menuItemTitle: { fontSize: 15, fontWeight: "600" },
@@ -469,23 +795,48 @@ const styles = StyleSheet.create({
 
   // ── Count badge — mirrors SettingsScreen countBadge ──
   countBadge: {
-    paddingHorizontal: 10, paddingVertical: 4,
-    borderRadius: 12, minWidth: 28, alignItems: "center",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    minWidth: 28,
+    alignItems: "center",
   },
   countText: { fontSize: 13, fontWeight: "700", color: "#3b82f6" },
 
   // ── Portfolio ──
-  portfolioGrid: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
-  portfolioThumbWrap: { borderRadius: 10, overflow: "hidden", position: "relative" },
-  portfolioThumb: { width: "100%", height: "100%", resizeMode: "cover" },
+  portfolioGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    // gap is set inline from GRID_GAP so it matches the thumb calculation exactly
+  },
+  portfolioThumbWrap: {
+    borderRadius: 2,
+    overflow: "hidden",
+    position: "relative",
+    // width + height come from THUMB_SIZE inline — no fixed values here
+  },
+  portfolioThumb: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
+  },
+
   mainBadge: {
-    position: "absolute", top: 5, left: 5,
-    paddingHorizontal: 5, paddingVertical: 2, borderRadius: 4,
+    position: "absolute",
+    top: 5,
+    left: 5,
+    paddingHorizontal: 5,
+    paddingVertical: 2,
+    borderRadius: 4,
   },
   mainBadgeText: { color: "#fff", fontSize: 8, fontWeight: "900" },
   expandOverlay: {
-    position: "absolute", bottom: 5, right: 5,
-    backgroundColor: "rgba(0,0,0,0.45)", borderRadius: 6, padding: 3,
+    position: "absolute",
+    bottom: 5,
+    right: 5,
+    backgroundColor: "rgba(0,0,0,0.45)",
+    borderRadius: 6,
+    padding: 3,
   },
 
   trustText: { flex: 1, fontSize: 13, fontWeight: "500", lineHeight: 19 },
@@ -493,37 +844,64 @@ const styles = StyleSheet.create({
   // ── Bottom bar ──
   bottomBar: {
     flexDirection: "row",
-    paddingHorizontal: 16, paddingTop: 12,
-    paddingBottom: Platform.OS === "ios" ? 28 : 16,
-    borderTopWidth: 0.5, gap: 12,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    borderTopWidth: 0.5,
+    gap: 12,
   },
+
   smsBtn: {
-    width: 52, height: 52, borderRadius: 14,
-    borderWidth: 1, justifyContent: "center", alignItems: "center",
+    width: 52,
+    height: 52,
+    borderRadius: 14,
+    borderWidth: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
   callBtn: {
-    flex: 1, flexDirection: "row", alignItems: "center",
-    justifyContent: "center", borderRadius: 14, height: 52, gap: 8,
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 14,
+    height: 52,
+    gap: 8,
   },
   callBtnText: { color: "#fff", fontSize: 15, fontWeight: "700" },
 
   // ── Lightbox ──
   lightboxOverlay: {
-    flex: 1, backgroundColor: "rgba(0,0,0,0.96)",
-    justifyContent: "center", alignItems: "center",
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.96)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   lightboxClose: {
-    position: "absolute", top: Platform.OS === "ios" ? 56 : 40, right: 20,
-    zIndex: 10, backgroundColor: "rgba(255,255,255,0.12)",
-    borderRadius: 20, padding: 8,
+    position: "absolute",
+    top: Platform.OS === "ios" ? 56 : 40,
+    right: 20,
+    zIndex: 10,
+    backgroundColor: "rgba(255,255,255,0.12)",
+    borderRadius: 20,
+    padding: 8,
   },
   lightboxCounter: {
-    position: "absolute", top: Platform.OS === "ios" ? 60 : 44, left: 20,
-    zIndex: 10, backgroundColor: "rgba(255,255,255,0.12)",
-    borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6,
+    position: "absolute",
+    top: Platform.OS === "ios" ? 60 : 44,
+    left: 20,
+    zIndex: 10,
+    backgroundColor: "rgba(255,255,255,0.12)",
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
   },
   lightboxCounterText: { color: "#fff", fontSize: 13, fontWeight: "700" },
-  lightboxImgWrap: { width, height, justifyContent: "center", alignItems: "center" },
+  lightboxImgWrap: {
+    width,
+    height,
+    justifyContent: "center",
+    alignItems: "center",
+  },
   lightboxImg: { width, height: height * 0.75 },
 });
 

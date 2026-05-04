@@ -96,7 +96,6 @@ const ProfilePreview = ({ form, setGalleryVisible, handleCall, theme }) => {
 
       <TouchableOpacity
         style={[styles.galleryTrigger, { backgroundColor: theme.colors.card2 }]}
-        style={[styles.galleryTrigger, { backgroundColor: theme.colors.card2 }]}
         onPress={() => setGalleryVisible(true)}
       >
         <Icons.Ionicons name="images" size={20} color={theme.colors.light} />
