@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   Dimensions,
   Linking,
-  Share,
+  Modal,
   Platform,
   StatusBar,
   ActivityIndicator,
@@ -24,7 +24,8 @@ import {
 } from "../../service/Supabase-Fuctions";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const { width } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window");
+const THUMB_SIZE = (width - 48 - 16) / 3;
 
 const WorkerProfileScreen = ({ route }) => {
   const { user, isWorker } = React.useContext(AuthContext);
@@ -33,6 +34,9 @@ const WorkerProfileScreen = ({ route }) => {
   const [worker, setWorker] = useState(route.params?.worker || null);
   const { theme, isDarkMode } = React.useContext(AppContext);
   const [loading, setLoading] = useState(!route.params?.worker);
+  const [lightboxVisible, setLightboxVisible] = useState(false);
+  const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [carouselIndex, setCarouselIndex] = useState(0);
 
   React.useEffect(() => { }, []);
 
@@ -42,14 +46,13 @@ const WorkerProfileScreen = ({ route }) => {
         setLoading(true);
         try {
           const response = await getWorkerProfileClient(workerIdFromRoute);
-
           if (response && response.success && response.data) {
             setWorker(response.data);
           } else if (response && !response.data) {
             setWorker(null);
           }
         } catch (error) {
-          console.log("Error fetching worker profile isues:", error);
+          console.log("Error fetching worker profile:", error);
         } finally {
           setLoading(false);
         }
@@ -64,443 +67,464 @@ const WorkerProfileScreen = ({ route }) => {
         }
       }
     };
-
     fetchWorkerData();
   }, [workerIdFromRoute]);
 
-  // 3. Handle Loading State
   if (loading) {
     return (
-      <View
-        style={[
-          styles.container,
-          {
-            justifyContent: "center",
-            backgroundColor: theme.colors.background,
-          },
-        ]}
-      >
+      <View style={[styles.centerState, { backgroundColor: theme.colors.background }]}>
         <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     );
   }
 
-  // 4. Handle Not Found State
   if (!worker) {
     return (
-      <View
-        style={[
-          styles.container,
-          { justifyContent: "center", alignItems: "center" },
-        ]}
-      >
-        <Text style={{ color: theme.colors.text }}>
-          Worker profile not found.
-        </Text>
+      <View style={[styles.centerState, { backgroundColor: theme.colors.background }]}>
+        <Icons.Ionicons name="person-circle-outline" size={56} color={theme.colors.sub_text} />
+        <Text style={[styles.emptyText, { color: theme.colors.sub_text }]}>Profile not found</Text>
       </View>
     );
   }
 
-  // --- DATA FIXES ---
   const locationString =
     typeof worker.location === "object"
       ? worker.location?.address
       : worker.location || "Eswatini";
 
-  // --- CONTACT HANDLERS ---
-  const handleEmail = () =>
-    Linking.openURL(`mailto:${worker.contact_options?.email}`);
-
-  const handleWhatsApp = () =>
-    Linking.openURL(
-      `whatsapp://send?phone=${worker.contact_options?.whatsapp}`,
-    );
-
-  const handleSocial = (platform) => {
-    // Logic to open social media links if they exist in your worker object
-    const url = worker[platform] || "https://facebook.com";
-    Linking.openURL(url);
-  };
-
+  const handleEmail = () => Linking.openURL(`mailto:${worker.contact_options?.email}`);
+  const handleWhatsApp = () => Linking.openURL(`whatsapp://send?phone=${worker.contact_options?.whatsapp}`);
+  const handleSocial = (platform) => Linking.openURL(worker[platform] || "https://facebook.com");
   const handleCall = () => Linking.openURL(`tel:${worker.phone}`);
+  const openLightbox = (index) => { setLightboxIndex(index); setLightboxVisible(true); };
 
-  // SMART LOGIC: Only true if images array exists and has content
   const hasImages = worker.experience_images && worker.experience_images.length > 0;
   const hasProfile = worker.worker_pp && worker.worker_pp.length > 0;
   const hasSkills = worker.skills && worker.skills.length > 0;
+  const hasDocs = worker.documents && worker.documents.length > 0;
+
+  const SOCIAL_CHANNELS = [
+    { key: "whatsapp", icon: "logo-whatsapp", color: "#25D366", bg: isDarkMode ? "#052e16" : "#dcfce7", handler: handleWhatsApp },
+    { key: "email", icon: "mail", color: "#EA4335", bg: isDarkMode ? "#450a0a" : "#fee2e2", handler: handleEmail },
+    { key: "facebook", icon: "logo-facebook", color: "#1877F2", bg: isDarkMode ? "#172554" : "#dbeafe", handler: () => handleSocial("facebook") },
+    { key: "instagram", icon: "logo-instagram", color: "#E4405F", bg: isDarkMode ? "#4a044e" : "#fce7f3", handler: () => handleSocial("instagram") },
+  ].filter(s => worker.contact_options?.[s.key]);
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={["top"]}>
       <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
       <SecondaryNav title={"Freelancer Profile"} />
 
-      {/* BODY CONTENT */}
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        style={styles.scrollView}
-      >
-        {/* SMART HERO SECTION: Only renders if images exist */}
+      <ScrollView showsVerticalScrollIndicator={false}>
+
+        {/* ── HERO CAROUSEL ── */}
         {hasImages && (
-          <Carousel
-            loop={worker.experience_images?.length > 1} width={width} height={200} autoPlay={worker.experience_images.length > 1}
-            data={worker.experience_images} scrollAnimationDuration={5000}
-            renderItem={({ item }) => (
-              <Image source={{ uri: item.url || item }} style={styles.heroImage} />
-            )}
-          />
-        )}
-
-        <View style={styles.profileInfoContainer}>
-          {/* NAME & REPUTATION */}
-          <View style={styles.mainRow}>
-            <View style={styles.avatarSquare}>
-              {hasProfile ? (
-                <Image
-                  source={{
-                    uri: worker.worker_pp[0].url || worker.worker_pp[0],
-                  }}
-                  style={{
-                    objectFit: "cover",
-                    borderRaduis: 6,
-                    height: "100%",
-                    width: "100%",
-                  }}
-                />
-              ) : (
-                <Text style={styles.avatarText}>{worker.name?.charAt(0)}</Text>
+          <View>
+            <Carousel
+              loop={worker.experience_images?.length > 1}
+              width={width}
+              height={220}
+              autoPlay={worker.experience_images.length > 1}
+              data={worker.experience_images}
+              scrollAnimationDuration={5000}
+              onSnapToItem={setCarouselIndex}
+              renderItem={({ item, index }) => (
+                <TouchableOpacity activeOpacity={0.92} onPress={() => openLightbox(index)}>
+                  <Image source={{ uri: item.url || item }} style={styles.heroImage} />
+                </TouchableOpacity>
               )}
-            </View>
-            <View style={styles.nameGroup}>
-              <Text style={[styles.workerName, { color: theme.colors.text }]}>{worker.name}</Text>
-              <View style={styles.locationRow}>
-                <Icons.Ionicons
-                  name="location-sharp"
-                  size={14}
-                  color={theme.colors.indicator}
-                />
-                <Text style={[styles.locationText, { color: theme.colors.text }]} >{locationString}</Text>
-              </View>
-            </View>
-            <View style={styles.statsBadge}>
-              <Icons.Ionicons name="thumbs-up" size={16} color={theme.colors.indicator} />
-              <Text style={styles.statsText}>{worker.likes}</Text>
-            </View>
-          </View>
-
-          {/* NEW: SOCIAL & CONTACT BUTTONS SECTION */}
-          <View style={styles.socialContainer}>
-            {worker.contact_options?.whatsapp && (
-              <TouchableOpacity
-                style={[styles.socialIconBtn, { backgroundColor: '#f0f4ff' }]}
-                onPress={handleWhatsApp}
-              >
-                <Icons.Ionicons
-                  name="logo-whatsapp"
-                  size={22}
-                  color="#25D366"
-                />
-              </TouchableOpacity>
-            )}
-
-            {worker.contact_options?.email && (
-              <TouchableOpacity
-
-                style={[styles.socialIconBtn, { backgroundColor: '#f0f4ff' }]}
-                onPress={handleEmail}
-              >
-                <Icons.Ionicons name="mail" size={22} color="#EA4335" />
-              </TouchableOpacity>
-            )}
-
-            {worker.contact_options?.facebook && (
-              <TouchableOpacity
-                style={[styles.socialIconBtn, { backgroundColor: '#f0f4ff' }]}
-                onPress={() => handleSocial("facebook")}
-              >
-                <Icons.Ionicons
-                  name="logo-facebook"
-                  size={22}
-                  color="#1877F2"
-                />
-              </TouchableOpacity>
-            )}
-
-            {worker.contact_options?.instagram && (
-              <TouchableOpacity
-                style={[styles.socialIconBtn, { backgroundColor: '#f0f4ff' }]}
-                onPress={() => handleSocial("instagram")}
-              >
-                <Icons.Ionicons
-                  name="logo-instagram"
-                  size={22}
-                  color="#E4405F"
-                />
-              </TouchableOpacity>
-            )}
-          </View>
-
-          <View style={styles.divider} />
-
-          {/* ABOUT / BIO */}
-          <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>About the Professional</Text>
-          <Text style={[styles.bioText, { color: theme.colors.text }]} >
-            {worker.bio ||
-              "No detailed biography provided. This professional is verified and ready for work."}
-          </Text>
-
-          {/* SERVICES LIST */}
-          {hasSkills && (
-            <>
-              <Text style={[styles.sectionTitle, { marginTop: 24, color: theme.colors.text }]} >
-                Services Offered
-              </Text>
-              <View style={styles.skillsList}>
-                {worker.skills.map((skill, index) => (
-                  <View key={index} style={styles.skillItem}>
-                    <View style={styles.skillNumberContainer}>
-                      <Text style={styles.skillNumber}  >{index + 1}.</Text>
-                    </View>
-                    <Text style={[styles.skillValue, { color: theme.colors.text }]}>{skill}</Text>
-                  </View>
+            />
+            {worker.experience_images.length > 1 && (
+              <View style={styles.dotRow}>
+                {worker.experience_images.map((_, i) => (
+                  <View
+                    key={i}
+                    style={[
+                      styles.dot,
+                      { backgroundColor: i === carouselIndex ? theme.colors.primary : theme.colors.border },
+                    ]}
+                  />
                 ))}
               </View>
-            </>
+            )}
+          </View>
+        )}
+
+        <View style={styles.pagePad}>
+
+          {/* ── IDENTITY CARD ── */}
+          <View style={[styles.menuCard, { backgroundColor: theme.colors.card }]}>
+            <View style={styles.heroContent}>
+              <View style={styles.avatarContainer}>
+                <View style={[styles.avatar, { backgroundColor: theme.colors.background, borderColor: theme.colors.border }]}>
+                  {hasProfile ? (
+                    <Image
+                      source={{ uri: worker.worker_pp[0].url || worker.worker_pp[0] }}
+                      style={styles.avatarImg}
+                    />
+                  ) : (
+                    <Text style={[styles.avatarInitial, { color: theme.colors.text }]}>
+                      {worker.name?.charAt(0)?.toUpperCase()}
+                    </Text>
+                  )}
+                </View>
+                <View style={[styles.onlineIndicator, { borderColor: theme.colors.card }]}>
+                  <Icons.Ionicons name="ellipse" size={10} color="#10b981" />
+                </View>
+              </View>
+
+              <View style={styles.profileInfo}>
+                <Text style={[styles.workerName, { color: theme.colors.text }]}>{worker.name}</Text>
+                <View style={styles.locationRow}>
+                  <Icons.Ionicons name="location-sharp" size={13} color={theme.colors.indicator} />
+                  <Text style={[styles.locationText, { color: theme.colors.sub_text }]}>{locationString}</Text>
+                </View>
+                <View style={styles.likesBadge}>
+                  <Icons.Ionicons name="thumbs-up" size={13} color="#10b981" />
+                  <Text style={[styles.likesText, { color: theme.colors.sub_text }]}>{worker.likes || 0} likes</Text>
+                </View>
+              </View>
+            </View>
+
+            {SOCIAL_CHANNELS.length > 0 && (
+              <>
+                <View style={[styles.divider, { backgroundColor: theme.colors.border, marginLeft: 0 }]} />
+                <View style={styles.socialRow}>
+                  {SOCIAL_CHANNELS.map(s => (
+                    <TouchableOpacity
+                      key={s.key}
+                      style={[styles.menuIconContainer, { backgroundColor: s.bg, borderColor: "transparent" }]}
+                      onPress={s.handler}
+                      activeOpacity={0.7}
+                    >
+                      <Icons.Ionicons name={s.icon} size={20} color={s.color} />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </>
+            )}
+          </View>
+
+          {/* ── ABOUT ── */}
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: theme.colors.sub_text }]}>About</Text>
+            <View style={[styles.menuCard, { backgroundColor: theme.colors.card }]}>
+              <View style={styles.bioRow}>
+                <Text style={[styles.bioText, { color: theme.colors.text }]}>
+                  {worker.bio || "No detailed biography provided. This professional is verified and ready for work."}
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* ── SERVICES ── */}
+          {hasSkills && (
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: theme.colors.sub_text }]}>Services Offered</Text>
+              <View style={[styles.menuCard, { backgroundColor: theme.colors.card }]}>
+                {worker.skills.map((skill, index) => (
+                  <React.Fragment key={index}>
+                    <View style={styles.menuItem}>
+                      <View style={styles.menuItemLeft}>
+                        <View style={[styles.menuIconContainer, {
+                          backgroundColor: theme.colors.card2,
+                          borderColor: theme.colors.card2,
+                        }]}>
+                          <Icons.Ionicons name="checkmark-circle-outline" size={20} color={theme.colors.card} />
+                        </View>
+                        <Text style={[styles.menuItemTitle, { color: theme.colors.text }]}>{skill}</Text>
+                      </View>
+      
+                    </View>
+                    {index < worker.skills.length - 1 && (
+                      <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
+                    )}
+                  </React.Fragment>
+                ))}
+              </View>
+            </View>
           )}
 
-          {/* TRUST BOX */}
-          <View style={[styles.trustBox, { backgroundColor: isDarkMode ? 'rgba(0,0,0,0.5)' : theme.colors.sub_card }]}>
-            <Icons.Ionicons name="shield-checkmark" size={20} color="#10b981" />
-            <Text style={[styles.trustText, { color: '#666' }]}>
-              Always meet in public places and never pay upfront for services.
-            </Text>
+          {/* ── QUALIFICATIONS ── */}
+          {hasDocs && (
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: theme.colors.sub_text }]}>Qualifications</Text>
+              <View style={[styles.menuCard, { backgroundColor: theme.colors.card }]}>
+                {worker.documents.map((doc, index) => (
+                  <React.Fragment key={index}>
+                    <TouchableOpacity
+                      style={styles.menuItem}
+                      onPress={() => doc?.url && Linking.openURL(doc.url)}
+                      activeOpacity={0.7}
+                    >
+                      <View style={styles.menuItemLeft}>
+                        <View style={[styles.menuIconContainer, {
+                          backgroundColor: theme.colors.card2,
+                          borderColor:theme.colors.card2,
+                        }]}>
+                          <Icons.Ionicons name="document-text-outline" size={20} color={theme.colors.card} />
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={[styles.menuItemTitle, { color: theme.colors.text }]} numberOfLines={1}>
+                            {doc.name || `Document ${index + 1}`}
+                          </Text>
+                          <Text style={[styles.docSub, { color: theme.colors.sub_text }]}>Tap to open</Text>
+                        </View>
+                      </View>
+                      <Icons.Feather name="external-link" size={16} color={theme.colors.sub_text} />
+                    </TouchableOpacity>
+                    {index < worker.documents.length - 1 && (
+                      <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
+                    )}
+                  </React.Fragment>
+                ))}
+              </View>
+            </View>
+          )}
+
+          {/* ── PORTFOLIO ── */}
+          {hasImages && (
+            <View style={styles.section}>
+              <View style={styles.sectionRow}>
+                <Text style={[styles.sectionTitle, { color: theme.colors.sub_text }]}>Portfolio</Text>
+                <View style={[styles.countBadge, { backgroundColor:theme.colors.card2}]}>
+                  <Text style={[styles.countText, {color: "#fff"}]}>{worker.experience_images.length} photos</Text>
+                </View>
+              </View>
+              <View style={[styles.menuCard, { backgroundColor: theme.colors.card, padding: 12 }]}>
+                <View style={styles.portfolioGrid}>
+                  {worker.experience_images.map((img, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      onPress={() => openLightbox(index)}
+                      activeOpacity={0.85}
+                      style={[styles.portfolioThumbWrap, { width: THUMB_SIZE, height: THUMB_SIZE }]}
+                    >
+                      <Image source={{ uri: img?.url || img }} style={styles.portfolioThumb} />
+                      {index === 0 && (
+                        <View style={[styles.mainBadge, { backgroundColor: theme.colors.primary }]}>
+                          <Text style={styles.mainBadgeText}>MAIN</Text>
+                        </View>
+                      )}
+                      <View style={styles.expandOverlay}>
+                        <Icons.Ionicons name="expand-outline" size={14} color="#fff" />
+                      </View>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </View>
+            </View>
+          )}
+
+          {/* ── TRUST NOTICE ── */}
+          <View style={styles.section}>
+            <View style={[styles.menuCard, {
+              backgroundColor: isDarkMode ? "#052e16" : "#f0fdf4",
+              borderWidth: 1,
+              borderColor: isDarkMode ? "#14532d" : "#bbf7d0",
+            }]}>
+              <View style={styles.menuItem}>
+                <View style={styles.menuItemLeft}>
+                  <View style={[styles.menuIconContainer, {
+                    backgroundColor: isDarkMode ? "#14532d" : "#dcfce7",
+                    borderColor: "transparent",
+                  }]}>
+                    <Icons.Ionicons name="shield-checkmark-outline" size={20} color="#10b981" />
+                  </View>
+                  <Text style={[styles.trustText, { color: isDarkMode ? "#86efac" : "#166534" }]}>
+                    Always meet in public places and{"\n"}never pay upfront for services.
+                  </Text>
+                </View>
+              </View>
+            </View>
           </View>
+
+          <View style={{ height: 16 }} />
         </View>
       </ScrollView>
 
-      {/* FIXED BOTTOM ACTION BAR - Moved outside ScrollView, removed absolute positioning */}
-      <View style={[styles.bottomBar, { backgroundColor: theme.colors.sub_card, borderTopColor: theme.colors.sub_card, }]}>
+      {/* ── BOTTOM ACTION BAR ── */}
+      <View style={[styles.bottomBar, { backgroundColor: theme.colors.card, borderTopColor: theme.colors.border }]}>
         <TouchableOpacity
-          style={styles.messageBtn}
+          style={[styles.smsBtn, { borderColor: theme.colors.border, backgroundColor: theme.colors.background }]}
           onPress={() => Linking.openURL(`sms:${worker.phone}`)}
         >
-          <Icons.Ionicons name="mail-outline" size={24} color="#d40606ff" />
+          <Icons.Ionicons name="chatbubble-outline" size={22} color={theme.colors.text} />
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.callBtn, { backgroundColor: theme.colors.card }]} onPress={handleCall}>
-          <Text style={[styles.callBtnText, { color: theme.colors.text }]}>CONTACT NOW</Text>
-          <Icons.Ionicons name="call" size={18} style={[{ color: theme.colors.text }]} />
+        <TouchableOpacity
+          style={[styles.callBtn, { backgroundColor: theme.colors.primary }]}
+          onPress={handleCall}
+        >
+          <Icons.Ionicons name="call" size={18} color="#fff" />
+          <Text style={styles.callBtnText}>Contact Now</Text>
         </TouchableOpacity>
       </View>
+
+      {/* ── LIGHTBOX MODAL ── */}
+      <Modal visible={lightboxVisible} transparent animationType="fade" statusBarTranslucent>
+        <View style={styles.lightboxOverlay}>
+          <TouchableOpacity style={styles.lightboxClose} onPress={() => setLightboxVisible(false)}>
+            <Icons.Ionicons name="close" size={26} color="#fff" />
+          </TouchableOpacity>
+          <View style={styles.lightboxCounter}>
+            <Text style={styles.lightboxCounterText}>
+              {lightboxIndex + 1} / {worker.experience_images?.length}
+            </Text>
+          </View>
+          <Carousel
+            loop={worker.experience_images?.length > 1}
+            width={width}
+            height={height}
+            defaultIndex={lightboxIndex}
+            data={worker.experience_images}
+            onSnapToItem={(i) => setLightboxIndex(i)}
+            renderItem={({ item }) => (
+              <View style={styles.lightboxImgWrap}>
+                <Image source={{ uri: item?.url || item }} style={styles.lightboxImg} resizeMode="contain" />
+              </View>
+            )}
+          />
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  container: { flex: 1 },
+  centerState: { flex: 1, justifyContent: "center", alignItems: "center", gap: 12 },
+  emptyText: { fontSize: 15, fontWeight: "600" },
 
+  heroImage: { width, height: 220, resizeMode: "cover" },
+  dotRow: { flexDirection: "row", justifyContent: "center", gap: 5, paddingVertical: 10 },
+  dot: { width: 6, height: 6, borderRadius: 3 },
+
+  pagePad: { paddingHorizontal: 16, paddingTop: 16 },
+
+  // ── Card — mirrors SettingsScreen menuCard exactly ──
+  menuCard: {
+    borderRadius: 16,
+    overflow: "hidden",
+    ...Platform.select({
+      ios: { shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 6 },
+      android: { elevation: 1 },
+    }),
   },
-  headerNav: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    height: 60,
-    backgroundColor: "#fff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#f1f5f9",
+
+  // ── Identity ──
+  heroContent: { flexDirection: "row", alignItems: "center", padding: 20 },
+  avatarContainer: { position: "relative" },
+  avatar: {
+    width: 72, height: 72, borderRadius: 36,
+    justifyContent: "center", alignItems: "center",
+    borderWidth: 2, overflow: "hidden",
   },
-  backBtn: {
-    zIndex: 10, // Ensure button stays clickable above the absolute title
-    padding: 4,
+  avatarImg: { width: "100%", height: "100%", borderRadius: 36 },
+  avatarInitial: { fontSize: 26, fontWeight: "800" },
+  onlineIndicator: {
+    position: "absolute", bottom: 2, right: 2,
+    borderRadius: 10, borderWidth: 2, padding: 1,
   },
-  headerTitleContainer: {
-    ...StyleSheet.absoluteFillObject, // Fills the whole header
-    justifyContent: "center",
-    alignItems: "center",
-    zIndex: 1, // Sits behind the back button
-  },
-  headerTitle: {
-    fontSize: 13,
-    fontWeight: "800",
-    textTransform: "uppercase",
-    letterSpacing: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  heroImage: {
-    width: width,
-    height: 200,
-    backgroundColor: "#f8fafc",
-    resizeMode: "cover",
-    objectFit: "cover",
-  },
-  profileInfoContainer: {
-    padding: 20,
-  },
-  mainRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  avatarSquare: {
-    width: 60,
-    height: 60,
-    backgroundColor: "#000",
-    justifyContent: "center",
-    alignItems: "center",
-    borderRadius: 6,
-  },
-  avatarText: {
-    color: "#fff",
-    fontSize: 28,
-    fontWeight: "bold",
-  },
-  nameGroup: {
-    flex: 1,
-    marginLeft: 15,
-  },
-  workerName: {
-    fontSize: 24,
-    fontWeight: "900",
-    letterSpacing: -0.5,
-  },
-  locationRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginTop: 4,
-  },
-  locationText: {
-    fontSize: 14,
-    color: "#64748b",
-    fontWeight: "600",
-    marginLeft: 4,
-  },
-  statsBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#f0f4ff",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: "#dcfce7",
-  },
-  statsText: {
-    marginLeft: 6,
-    fontWeight: "900",
-    color: "#166534",
-    fontSize: 14,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: "#f1f5f9",
-    marginVertical: 25,
+  profileInfo: { flex: 1, marginLeft: 16 },
+  workerName: { fontSize: 20, fontWeight: "700", marginBottom: 4 },
+  locationRow: { flexDirection: "row", alignItems: "center", gap: 4, marginBottom: 6 },
+  locationText: { fontSize: 13, fontWeight: "500" },
+  likesBadge: { flexDirection: "row", alignItems: "center", gap: 5 },
+  likesText: { fontSize: 12, fontWeight: "600" },
+
+  socialRow: { flexDirection: "row", gap: 10, paddingHorizontal: 20, paddingVertical: 14 },
+
+  // ── Section — mirrors SettingsScreen section ──
+  section: { marginTop: 24 },
+  sectionRow: {
+    flexDirection: "row", alignItems: "center",
+    justifyContent: "space-between", marginBottom: 8,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: "700",
-    color: "#64748b",
-    textTransform: "uppercase",
-    letterSpacing: 1,
-    marginBottom: 4,
+    fontSize: 13, fontWeight: "700",
+    textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 8,
   },
-  bioText: {
-    fontSize: 14,
-    color: "#334155",
-    lineHeight: 24,
-    fontWeight: "450",
-  },
-  skillsList: {
-    gap: 2,
-  },
-  skillItem: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-  },
-  skillNumberContainer: {
-    width: 28,
-  },
-  skillNumber: {
-    fontSize: 16,
-    fontWeight: "800",
-    color: "#10b981",
-  },
-  skillValue: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: "600",
-    color: "#1e293b",
-    lineHeight: 22,
-  },
-  trustBox: {
-    marginTop: 70,
-    marginBottom: 70,
-    padding: 16,
-    backgroundColor: "#f8fafc",
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: "#e2e8f0",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  trustText: {
-    flex: 1,
-    fontSize: 12,
-    lineHeight: 18,
-    fontWeight: "500",
-  },
-  bottomBar: {
-    backgroundColor: "#fff",
-    flexDirection: "row",
-    padding: 16,
-    paddingBottom: Platform.OS === "ios" ? 30 : 60,
-    borderTopWidth: 1,
 
-    gap: 12,
+  // ── Menu row — mirrors SettingsScreen menuItem exactly ──
+  menuItem: {
+    flexDirection: "row", alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20, paddingVertical: 14,
   },
-  messageBtn: {
-    width: 58,
-    height: 58,
+  menuItemLeft: { flexDirection: "row", alignItems: "center", gap: 16, flex: 1 },
+  menuIconContainer: {
+    width: 44, height: 44, borderRadius: 12,
+    justifyContent: "center", alignItems: "center",
     borderWidth: 1,
-    borderColor: "#666",
-    justifyContent: "center",
-    alignItems: "center",
-    borderRadius: 6,
+  },
+  menuItemTitle: { fontSize: 15, fontWeight: "600" },
+  skillIndex: { fontSize: 13, fontWeight: "700" },
+  docSub: { fontSize: 12, marginTop: 2 },
+
+  // ── Divider — mirrors SettingsScreen divider ──
+  divider: { height: 1, marginLeft: 76 },
+
+  bioRow: { paddingHorizontal: 20, paddingVertical: 16 },
+  bioText: { fontSize: 14, lineHeight: 22 },
+
+  // ── Count badge — mirrors SettingsScreen countBadge ──
+  countBadge: {
+    paddingHorizontal: 10, paddingVertical: 4,
+    borderRadius: 12, minWidth: 28, alignItems: "center",
+  },
+  countText: { fontSize: 13, fontWeight: "700", color: "#3b82f6" },
+
+  // ── Portfolio ──
+  portfolioGrid: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+  portfolioThumbWrap: { borderRadius: 10, overflow: "hidden", position: "relative" },
+  portfolioThumb: { width: "100%", height: "100%", resizeMode: "cover" },
+  mainBadge: {
+    position: "absolute", top: 5, left: 5,
+    paddingHorizontal: 5, paddingVertical: 2, borderRadius: 4,
+  },
+  mainBadgeText: { color: "#fff", fontSize: 8, fontWeight: "900" },
+  expandOverlay: {
+    position: "absolute", bottom: 5, right: 5,
+    backgroundColor: "rgba(0,0,0,0.45)", borderRadius: 6, padding: 3,
+  },
+
+  trustText: { flex: 1, fontSize: 13, fontWeight: "500", lineHeight: 19 },
+
+  // ── Bottom bar ──
+  bottomBar: {
+    flexDirection: "row",
+    paddingHorizontal: 16, paddingTop: 12,
+    paddingBottom: Platform.OS === "ios" ? 28 : 16,
+    borderTopWidth: 0.5, gap: 12,
+  },
+  smsBtn: {
+    width: 52, height: 52, borderRadius: 14,
+    borderWidth: 1, justifyContent: "center", alignItems: "center",
   },
   callBtn: {
-    flex: 1,
-    backgroundColor: "#000",
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    borderRadius: 6,
-    gap: 10,
+    flex: 1, flexDirection: "row", alignItems: "center",
+    justifyContent: "center", borderRadius: 14, height: 52, gap: 8,
   },
-  callBtnText: {
-    color: "#fff",
-    fontSize: 15,
-    fontWeight: "900",
-    letterSpacing: 1,
-  },
-  // SOCIAL BUTTONS STYLES
-  socialContainer: {
-    flexDirection: "row",
-    marginTop: 20,
-    gap: 10,
-  },
-  socialIconBtn: {
-    width: 45,
-    height: 45,
-    borderRadius: 6,
-    // borderWidth: 1,
-    // borderColor: "#f1f5f9",
-    backgroundColor: "#f8fafc",
-    justifyContent: "center",
-    alignItems: "center",
-  },
+  callBtnText: { color: "#fff", fontSize: 15, fontWeight: "700" },
 
-  divider: { height: 1, backgroundColor: "#f1f5f9", marginVertical: 25 },
+  // ── Lightbox ──
+  lightboxOverlay: {
+    flex: 1, backgroundColor: "rgba(0,0,0,0.96)",
+    justifyContent: "center", alignItems: "center",
+  },
+  lightboxClose: {
+    position: "absolute", top: Platform.OS === "ios" ? 56 : 40, right: 20,
+    zIndex: 10, backgroundColor: "rgba(255,255,255,0.12)",
+    borderRadius: 20, padding: 8,
+  },
+  lightboxCounter: {
+    position: "absolute", top: Platform.OS === "ios" ? 60 : 44, left: 20,
+    zIndex: 10, backgroundColor: "rgba(255,255,255,0.12)",
+    borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6,
+  },
+  lightboxCounterText: { color: "#fff", fontSize: 13, fontWeight: "700" },
+  lightboxImgWrap: { width, height, justifyContent: "center", alignItems: "center" },
+  lightboxImg: { width, height: height * 0.75 },
 });
 
 export default WorkerProfileScreen;
