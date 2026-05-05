@@ -711,17 +711,16 @@ const JobDetailScreen = ({ route, navigation }) => {
 
             <TouchableOpacity
               onPress={handleSubmit}
-              style={styles.submitButton}
+              style={[styles.submitButton, { backgroundColor: theme.colors.indicator }]}
             >
-              <Icons.Feather name="send" color={"#fff"} size={24} />
-              <Text style={styles.submitButtonText}>Submit Application</Text>
-              {isSubmitting && (
-                <ActivityIndicator
-                  size={15}
-                  color="#fff"
-                  style={{ marginLeft: 10 }}
-                />
+
+              {isSubmitting ? (
+                <ActivityIndicator size={24} color="#fff" />
+              ) : (
+                <Icons.Feather name="send" color={"#fff"} size={24} />
               )}
+              <Text style={styles.submitButtonText}>Submit Application</Text>
+
             </TouchableOpacity>
           </BottomSheetView>
         </BottomSheetModal>
@@ -962,9 +961,8 @@ const styles = StyleSheet.create({
   submitButton: {
     flexDirection: "row",
     justifyContent: "center",
-    backgroundColor: "#000",
     padding: 15,
-    borderRadius: 70,
+    borderRadius: 30,
     alignItems: "center",
   },
   submitButtonText: {

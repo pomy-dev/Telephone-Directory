@@ -420,10 +420,7 @@ const JobInboxScreen = ({ route, navigation }) => {
       <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
 
       <View style={[styles.header, { borderColor: theme.colors.background }]}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backBtn}
-        >
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Icons.Ionicons name="arrow-back" size={24} color={theme.colors.text} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: theme.colors.text, }]}>{gigSelection === 'applied' ? 'Track Gigs Applied-for' : `Inbox for Gig`}</Text>
