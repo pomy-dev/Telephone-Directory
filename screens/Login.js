@@ -444,7 +444,7 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   googleBtn: {
-    maxHeight: 30,
+    height: 60,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',

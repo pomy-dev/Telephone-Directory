@@ -36,7 +36,8 @@ import { MoreDropdown } from "../../components/moreDropDown";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { isConnected } from "../../utils/checkNetworkBlocker";
 import NetInfo from "@react-native-community/netinfo";
-import { formatCurrency } from "../../utils/currencyFormater";
+import { formatCurrency } from "../../utils/callFunctions";
+import { format } from "date-fns";
 
 const MEDIA_HEIGHT = 180;
 const { height, width } = Dimensions.get("window");
@@ -188,10 +189,10 @@ const mapDatabaseToUI = (dbGigs, userLocation = null) => {
         phone: job.postedby?.phone,
       },
       postedTime: job.created_at
-        ? new Date(job.created_at).toLocaleDateString()
+        ? format(job.created_at, 'dd-MM-yyyy') //new Date(job.created_at).toLocaleDateString()
         : "Just now",
       images: displayImages, // Empty array if no images
-      distance:null,
+      distance: null,
     };
   });
 };
@@ -673,6 +674,7 @@ const GigsScreen = ({ navigation }) => {
       !item.images[0].includes("via.placeholder.com");
 
     const handlePressGig = async (item) => {
+      // console.log("Gig details:", item);
       if (user) {
         await logUserActivity({
           userId: user.uid,
@@ -761,7 +763,7 @@ const GigsScreen = ({ navigation }) => {
                 {item.location}
               </Text>
             </View>
-        
+
           </View>
 
           <View
@@ -1142,6 +1144,8 @@ const GigsScreen = ({ navigation }) => {
     );
   }
 
+  // console.log(jobs[0])
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={["top"]}>
       <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
@@ -1259,7 +1263,7 @@ const GigsScreen = ({ navigation }) => {
                 <View
                   style={[
                     styles.searchBar2,
-                    { backgroundColor: theme.colors.card },
+                    { backgroundColor: isDarkMode ? theme.colors.card : '#f0f4ff' },
                   ]}
                 >
                   <Icons.Ionicons name="search" size={20} color={theme.colors.sub_text} />

@@ -318,14 +318,13 @@ const NotificationListScreen = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 16,
+    paddingHorizontal: 16,
   },
   headerContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     marginBottom: 16,
-    paddingTop: 20,
   },
   header: {
     fontSize: 24,

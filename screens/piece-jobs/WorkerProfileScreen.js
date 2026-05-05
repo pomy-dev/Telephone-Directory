@@ -49,7 +49,7 @@ const WorkerProfileScreen = ({ route }) => {
   const [carouselIndex, setCarouselIndex] = useState(0);
   const insets = useSafeAreaInsets();
 
-  React.useEffect(() => {}, []);
+  React.useEffect(() => { }, []);
 
   React.useEffect(() => {
     const fetchWorkerData = async () => {
@@ -121,13 +121,17 @@ const WorkerProfileScreen = ({ route }) => {
 
   const handleEmail = () =>
     Linking.openURL(`mailto:${worker.contact_options?.email}`);
+
   const handleWhatsApp = () =>
     Linking.openURL(
       `whatsapp://send?phone=${worker.contact_options?.whatsapp}`,
     );
+
   const handleSocial = (platform) =>
     Linking.openURL(worker[platform] || "https://facebook.com");
+
   const handleCall = () => Linking.openURL(`tel:${worker.phone}`);
+
   const openLightbox = (index) => {
     setLightboxIndex(index);
     setLightboxVisible(true);
@@ -438,7 +442,7 @@ const WorkerProfileScreen = ({ route }) => {
                           <Icons.Ionicons
                             name="document-text-outline"
                             size={20}
-                            color={theme.colors.card}
+                            color={theme.colors.text}
                           />
                         </View>
                         <View style={{ flex: 1 }}>

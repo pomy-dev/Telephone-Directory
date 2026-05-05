@@ -742,7 +742,7 @@ export default function TransportationListScreen({ navigation }) {
     return (
         <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
             <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
-            <View style={{ height: height * 0.06 }} />
+            <View style={{ height: height * 0.03 }} />
 
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 10 }}>
                 <TouchableOpacity onPress={() => navigation.goBack()}>

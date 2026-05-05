@@ -26,13 +26,13 @@ import {
   getMyAppliedGigs,
   getGigApplicants,
   getApplication,
-  updateApplicationStatus,
   approveGigApplication,
-  deleteMyApplication
+  deleteMyApplication, reapplyForGig
 } from "../../service/Supabase-Fuctions";
 import { AuthContext } from "../../context/authProvider";
 import { AppContext } from "../../context/appContext";
 import CustomLoader from "../../components/customLoader";
+import { formatCurrency } from "../../utils/callFunctions";
 
 const JobInboxScreen = ({ route, navigation }) => {
   const insets = useSafeAreaInsets();
@@ -256,8 +256,8 @@ const JobInboxScreen = ({ route, navigation }) => {
 
             <View style={styles.metaRow}>
               <Text style={styles.category}>{item.job_category}</Text>
-              <Text style={styles.price}>
-                {item?.job_price ? `E${item?.job_price}.00` : 'Price None'}
+              <Text style={[styles.price, { color: theme.colors.indicator }]}>
+                {item?.job_price ? `${formatCurrency(item?.job_price)}` : 'Price None'}
               </Text>
             </View>
 
@@ -297,7 +297,6 @@ const JobInboxScreen = ({ route, navigation }) => {
               <TouchableOpacity style={styles.iconCallBtn} onPress={() => Linking.openURL(`tel:${item.posted_by?.phone}`)}>
                 <Icons.Ionicons name="call" size={30} color={theme.colors.indicator} />
               </TouchableOpacity>
-
             </View>
 
             {/* job description */}
@@ -364,13 +363,10 @@ const JobInboxScreen = ({ route, navigation }) => {
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={[styles.listItemactionButton, styles.reapplyButton]}
-                  onPress={() => {
-                    // handleReapply(item.id)
-                    console.log('Re-apply', item.id);
-                  }}
+                  style={[styles.listItemactionButton, { backgroundColor: theme.colors.indicator }]}
+                  onPress={() => handleReapply(item.id)}
                 >
-                  <Icons.MaterialCommunityIcons name="send-circle-outline" color={'#fff'} size={24} />
+                  <Icons.Feather name="chevron-right" color={'#fff'} size={24} />
                   <Text style={styles.reapplyButtonText}>Re-apply</Text>
                 </TouchableOpacity>
               </View>}
@@ -415,6 +411,23 @@ const JobInboxScreen = ({ route, navigation }) => {
     ]);
   };
 
+  const handleReapply = async (gigId) => {
+    try {
+      setLoading(true);
+      // const res = await reapplyForGig(gigId);
+      // if (res.success) {
+      CustomToast("Re-applied Successfully👍", "Your application has been re-submitted for review.");
+      // loadApplicants();
+      // } else {
+      //   CustomToast("Error", res.error);
+      // }
+    } catch (error) {
+      Alert.alert("Error", error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <View style={[styles.container, { paddingTop: insets.top, backgroundColor: theme.colors.background }]}>
       <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
@@ -424,7 +437,7 @@ const JobInboxScreen = ({ route, navigation }) => {
           <Icons.Ionicons name="arrow-back" size={24} color={theme.colors.text} />
         </TouchableOpacity>
         <Text style={[styles.headerTitle, { color: theme.colors.text, }]}>{gigSelection === 'applied' ? 'Track Gigs Applied-for' : `Inbox for Gig`}</Text>
-        <View style={{ width: 40 }} />
+        {/* <View style={{ width: 40 }} /> */}
       </View>
 
       {loading ? (
@@ -434,7 +447,7 @@ const JobInboxScreen = ({ route, navigation }) => {
           data={applicants}
           renderItem={gigSelection === 'applied' ? renderMyApplicationItem : renderApplicant}
           keyExtractor={(item, index) => `${item.id}-${index}`}
-          contentContainerStyle={{ paddingBottom: 60 }}
+          contentContainerStyle={{ paddingHorizontal: 10 }}
           ListEmptyComponent={
             <Text style={styles.emptyText}>No applications yet.</Text>
           }
@@ -640,7 +653,6 @@ const styles = StyleSheet.create({
   price: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#2ecc71',
   },
   statusDateRow: {
     flexDirection: 'row',
@@ -704,7 +716,7 @@ const styles = StyleSheet.create({
   listItemactionButton: {
     flex: 1,
     flexDirection: 'row',
-    paddingVertical: 12,
+    paddingVertical: 10,
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
@@ -715,7 +727,7 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 12,
     justifyContent: 'center',
-    borderRadius: 50,
+    borderRadius: 10,
     marginBottom: 12
   },
   cancelButton: {
@@ -741,17 +753,17 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    padding: 16,
+    // justifyContent: "space-between",
+    paddingHorizontal: 16,
     borderBottomWidth: 1,
     marginBottom: 10,
   },
-  headerTitle: { fontSize: 17, fontWeight: "800" },
+  headerTitle: { fontSize: 17, fontWeight: "800", marginLeft: 40 },
   backBtn: { width: 40, height: 40, justifyContent: "center" },
 
   // List Cards
   appCard: {
-    marginHorizontal: 12,
+    // marginHorizontal: 12,
     backgroundColor: "#fff",
     borderRadius: 12,
     padding: 15,

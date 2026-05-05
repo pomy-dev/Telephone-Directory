@@ -448,7 +448,7 @@ export default function TransportationDetailsScreen({ navigation, route }) {
             <View style={styles.featuresGrid}>
               {vehicle?.vehicle_features?.map((feature, index) => (
                 <View key={index} style={styles.featureItem}>
-                  <Ionicons name="checkmark-circle" size={18} color="#10b981" />
+                  <Ionicons name="checkmark-circle" size={18} color={theme.colors.indicator} />
                   <Text
                     style={[
                       styles.featureText,
@@ -487,9 +487,9 @@ export default function TransportationDetailsScreen({ navigation, route }) {
                       <Ionicons
                         name="checkmark-circle"
                         size={16}
-                        color="#10b981"
+                        color={theme.colors.indicator}
                       />
-                      <Text style={styles.verifiedText}>Verified</Text>
+                      <Text style={[styles.verifiedText, { color: theme.colors.indicator }]}>Verified</Text>
                     </View>
                   )}
                 </View>
@@ -549,7 +549,7 @@ export default function TransportationDetailsScreen({ navigation, route }) {
             <View style={styles.certificationsContainer}>
               {vehicle.vehicle_certifications?.insurance && (
                 <View style={styles.certificationItem}>
-                  <Ionicons name="shield-checkmark" size={20} color="#10b981" />
+                  <Ionicons name="shield-checkmark" size={20} color={theme.colors.indicator} />
                   <Text
                     style={[
                       styles.certificationText,
@@ -562,7 +562,7 @@ export default function TransportationDetailsScreen({ navigation, route }) {
               )}
               {vehicle?.vehicle_certifications?.license && (
                 <View style={styles.certificationItem}>
-                  <Ionicons name="document-text" size={20} color="#10b981" />
+                  <Ionicons name="document-text" size={20} color={theme.colors.indicator} />
                   <Text
                     style={[
                       styles.certificationText,
@@ -575,7 +575,7 @@ export default function TransportationDetailsScreen({ navigation, route }) {
               )}
               {vehicle.boarder_crossing && (
                 <View style={styles.certificationItem}>
-                  <Ionicons name="globe" size={20} color="#10b981" />
+                  <Ionicons name="globe" size={20} color={theme.colors.indicator} />
                   <Text
                     style={[
                       styles.certificationText,
@@ -603,7 +603,7 @@ export default function TransportationDetailsScreen({ navigation, route }) {
       </ScrollView>
 
       {/* Action Buttons */}
-      <View style={[styles.footer, { backgroundColor: theme.colors.card }]}>
+      <View style={[styles.footer, { backgroundColor: theme.colors.card, borderTopColor: theme.colors.border }]}>
         <TouchableOpacity
           style={[
             styles.shareButton,
@@ -628,8 +628,6 @@ export default function TransportationDetailsScreen({ navigation, route }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f8fafc",
-    paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 0,
   },
   errorContainer: {
     flex: 1,
@@ -942,7 +940,6 @@ const styles = StyleSheet.create({
   },
   verifiedText: {
     fontSize: 12,
-    color: "#10b981",
     fontWeight: "600",
   },
   ratingContainer: {
@@ -1036,12 +1033,9 @@ const styles = StyleSheet.create({
   },
   footer: {
     flexDirection: "row",
-    paddingBottom: 50,
-    paddingTop: 10,
+    paddingVertical: 10,
     paddingHorizontal: 10,
-    backgroundColor: "#fff",
     borderTopWidth: 1,
-    borderTopColor: "#e2e8f0",
     gap: 12,
   },
   shareButton: {

@@ -477,8 +477,7 @@ export default function BookTransportationScreen({ navigation, route }) {
 
 const styles = StyleSheet.create({
     container: {
-        flex: 1,
-        paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
+        flex: 1
     },
     scrollView: {
         flex: 1,
@@ -641,7 +640,7 @@ const styles = StyleSheet.create({
     },
     footer: {
         paddingVertical: 10,
-        marginBottom: 40,
+        // marginBottom: 40,
         marginHorizontal: 10,
     },
     submitButton: {

@@ -1177,7 +1177,7 @@ export default function FinancialHubScreen({ route, navigation }) {
     <View
       style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
-      <View style={{ height: 25 }} />
+      {/* <View style={{ height: 25 }} /> */}
 
       {Header()}
 

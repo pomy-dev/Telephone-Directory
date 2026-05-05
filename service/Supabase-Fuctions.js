@@ -1,5 +1,5 @@
 import { supabase } from "./Supabase-Client";
-import { RECOMMENDATION_FUNC_API_KEY , RECOMMENDATION_FUNC_URL ,RECOMMENDATION_LOG_FUNC_URL, RECOMMENDATION_GET_REC_FUNC_URL} from "../config/env";
+import { RECOMMENDATION_FUNC_API_KEY, RECOMMENDATION_FUNC_URL, RECOMMENDATION_LOG_FUNC_URL, RECOMMENDATION_GET_REC_FUNC_URL } from "../config/env";
 import { UploadImage, uploadImages, uploadAttachments } from "../service/uploadFiles";
 import { CustomToast } from "../components/customToast";
 
@@ -306,8 +306,8 @@ export async function fetchOpenGigsCount() {
  * Shuffles an array in place using the Fisher-Yates algorithm.
  */
 const shuffleArray = (array) => {
-  if (array?.length > 0 ) {
-    
+  if (array?.length > 0) {
+
     const shuffled = [...array]; // Create a copy to avoid mutating the original
     for (let i = shuffled.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -353,7 +353,7 @@ export async function getPomyGigs(filters = {}) {
     return {
       success: true,
       // Apply shuffle here if requested
-      data:  shuffleArray(resultData),
+      data: shuffleArray(resultData),
     };
   } catch (error) {
     console.error("Error fetching gigs:", error);
@@ -816,6 +816,27 @@ export async function applyForGig(formData) {
   }
 }
 
+/** re-apply for a gig job */
+
+export async function reapplyForGig(gigId) {
+  try {
+    // update the status to 're-applied' for the existing application
+    const { data, error } = await supabase.rpc("reapply_for_pomy_gig", {
+      p_job_id: gigId,
+    });
+
+    if (error) throw error;
+
+    return {
+      success: true,
+      data: data[0],
+    };
+  } catch (error) {
+    console.error("Error re-applying for gig:", error);
+    return { success: false, error: error.message };
+  }
+}
+
 /** fetch gigs applied for */
 export async function getMyAppliedGigs(userEmail) {
   console.log("Fetching applied gigs for user:", userEmail);
@@ -945,17 +966,17 @@ export async function deleteMyApplication(appId, userEmail) {
  * Fetches recommendations from the Universal Engine.
  * Handles both personalized data and discovery fallbacks automatically.
  */
-export const getPersonalizedRecommendations = async ({ 
-  userId, 
-  limit = 10 
+export const getPersonalizedRecommendations = async ({
+  userId,
+  limit = 10
 }) => {
   try {
     // 1. Call the Universal Edge Function Gateway
     const response = await fetch(RECOMMENDATION_GET_REC_FUNC_URL, {
       method: 'POST',
-      headers: { 
+      headers: {
         'Content-Type': 'application/json',
-        'FUNC_API_KEY': RECOMMENDATION_FUNC_API_KEY 
+        'FUNC_API_KEY': RECOMMENDATION_FUNC_API_KEY
       },
       body: JSON.stringify({
         user_id: userId,
@@ -970,7 +991,7 @@ export const getPersonalizedRecommendations = async ({
 
     const result = await response.json();
 
-    
+
     if (result.recommendations && result.recommendations.length > 0) {
       // We check the first item to see if the whole list is personalized or fallback
       const isPersonalized = result.recommendations[0].is_personalized;
@@ -984,27 +1005,27 @@ export const getPersonalizedRecommendations = async ({
       }
 
 
-      return { 
-        success: true, 
+      return {
+        success: true,
         // data: result.recommendations, 
-        data: shuffledData, 
-        type: isPersonalized ? 'personalized' : 'discovery' 
+        data: shuffledData,
+        type: isPersonalized ? 'personalized' : 'discovery'
       };
     }
 
     // 2. HARD FALLBACK: Only if the Engine returns absolutely nothing (very rare)
-    return { 
-      success: true, 
-      data: [], 
-      type: 'empty' 
+    return {
+      success: true,
+      data: [],
+      type: 'empty'
     };
 
   } catch (error) {
     console.error("Recommendation Fetch Error:", error.message);
-    return { 
-      success: false, 
-      data: [], 
-      error: error.message 
+    return {
+      success: false,
+      data: [],
+      error: error.message
     };
   }
 };
@@ -1032,18 +1053,18 @@ export const getPersonalizedRecommendations = async ({
 //   }
 // }
 
-export const logUserActivity = async ({itemId, userId ,itemType, action}) => {
+export const logUserActivity = async ({ itemId, userId, itemType, action }) => {
   await fetch(RECOMMENDATION_LOG_FUNC_URL, {
     method: 'POST',
-    headers: { 
+    headers: {
       'Content-Type': 'application/json',
-      'FUNC_API_KEY': RECOMMENDATION_FUNC_API_KEY 
+      'FUNC_API_KEY': RECOMMENDATION_FUNC_API_KEY
     },
     body: JSON.stringify({
       user_id: userId,
       item_id: itemId,
       item_type: itemType,
-      activity_type: action, 
+      activity_type: action,
       origin: 'firebase business link'
     })
   });
@@ -1092,19 +1113,19 @@ export async function syncUserProfile(firebaseUser) {
   if (!firebaseUser) return null;
 
   try {
-    
+
     await fetch(RECOMMENDATION_FUNC_URL, {
-    method: 'POST',
-    headers: { 
-      'Content-Type': 'application/json',
-      'FUNC_API_KEY':  RECOMMENDATION_FUNC_API_KEY
-    },
-    body: JSON.stringify({
-      user_id: firebaseUser.uid,      
-      origin: 'firebase business link',   
-      name: firebaseUser.displayName   
-    })
-  });
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'FUNC_API_KEY': RECOMMENDATION_FUNC_API_KEY
+      },
+      body: JSON.stringify({
+        user_id: firebaseUser.uid,
+        origin: 'firebase business link',
+        name: firebaseUser.displayName
+      })
+    });
 
 
     if (error) throw error;

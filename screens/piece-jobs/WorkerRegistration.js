@@ -98,14 +98,14 @@ const ProfilePreview = ({ form, setGalleryVisible, handleCall, theme }) => {
         style={[styles.galleryTrigger, { backgroundColor: theme.colors.card2 }]}
         onPress={() => setGalleryVisible(true)}
       >
-        <Icons.Ionicons name="images" size={20} color={theme.colors.light} />
+        <Icons.Ionicons name="images" size={20} color='#fff' />
         <Text style={[styles.galleryTriggerText, { color: "#fff" }]}>
           View Portfolio ({form.experience_images?.length || 0})
         </Text>
         <Icons.Ionicons
           name="chevron-forward"
           size={16}
-          color={theme.colors.sub_text}
+          color='#fff'
         />
       </TouchableOpacity>
 
@@ -299,7 +299,7 @@ const ProfilePreview = ({ form, setGalleryVisible, handleCall, theme }) => {
                   <Icons.Ionicons
                     name="checkmark-circle"
                     size={18}
-                    color="#10b981"
+                    color={theme.colors.indicator}
                   />
                   <Text
                     style={[styles.skillText, { color: theme.colors.text }]}
@@ -385,7 +385,7 @@ const ProfileForm = ({
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingHorizontal: 24 },
+          { paddingHorizontal: 10 },
         ]}
         keyboardShouldPersistTaps="handled"
         ref={scrollRef}
@@ -543,11 +543,11 @@ const ProfileForm = ({
                 <TouchableOpacity
                   style={[
                     styles.galleryAddThumb,
-                    
+
                     {
                       borderColor: theme.colors.card2,
                       backgroundColor: theme.colors.card2,
-            
+
                     },
                   ]}
                   onPress={() => pickImage(true)}
@@ -582,7 +582,7 @@ const ProfileForm = ({
                   style={{ flex: 1 }}
                 >
                   {form.experience_images &&
-                  form.experience_images.length > 0 ? (
+                    form.experience_images.length > 0 ? (
                     form.experience_images.map((img, index) => (
                       <TouchableOpacity
                         key={`gallery-${index}`}
@@ -750,12 +750,12 @@ const ProfileForm = ({
               <Icons.Ionicons
                 name="cloud-upload"
                 size={20}
-                color={theme.colors.text}
+                color='#fff'
               />
               <Text
                 style={[
                   styles.uploadDocBtnText,
-                  { color: theme.colors.text },
+                  { color: '#fff' },
                 ]}
               >
                 Upload Document
@@ -777,7 +777,7 @@ const ProfileForm = ({
                   <Icons.Ionicons
                     name="document-text"
                     size={20}
-                    color={theme.colors.primary}
+                    color={theme.colors.indicator}
                   />
                   <Text
                     style={[styles.docName, { color: theme.colors.text }]}
@@ -798,9 +798,7 @@ const ProfileForm = ({
           </View>
         )}
 
-        <View
-          style={[styles.divider, { backgroundColor: theme.colors.border }]}
-        />
+        <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
 
         {/* ── 6. Professional Bio ── */}
         <View style={styles.section}>
@@ -1114,12 +1112,12 @@ const WorkerRegistration = ({ navigation }) => {
         const newImages = result.assets.map((asset) => asset);
         isGallery
           ? setForm((prev) => ({
-              ...prev,
-              experience_images: [
-                ...(prev.experience_images || []),
-                ...newImages,
-              ],
-            }))
+            ...prev,
+            experience_images: [
+              ...(prev.experience_images || []),
+              ...newImages,
+            ],
+          }))
           : setForm((prev) => ({ ...prev, worker_pp: [...newImages] }));
       }
     } catch (err) {

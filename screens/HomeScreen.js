@@ -363,7 +363,7 @@ export default function HomeScreen({ navigation }) {
               <Icons.Ionicons
                 name="chatbubble-ellipses"
                 size={24}
-                color={theme.colors.primary}
+                color={isDarkMode ? '#fff' : theme.colors.primary}
               />
             </View>
             <View style={{ flex: 1, marginLeft: 12 }}>
@@ -379,7 +379,7 @@ export default function HomeScreen({ navigation }) {
             <Icons.Ionicons name="chevron-forward" size={20} color="#64748b" />
           </TouchableOpacity>
         </View>
-        {<View style={{ height: 100 }} />}
+        {<View style={{ height: 30 }} />}
       </ScrollView>
     </SafeAreaView>
   );

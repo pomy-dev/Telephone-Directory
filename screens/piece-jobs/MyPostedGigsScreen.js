@@ -11,6 +11,7 @@ import { AuthContext } from "../../context/authProvider";
 import { Icons } from "../../constants/Icons";
 import SecondaryNav from "../../components/SecondaryNav";
 import { AppContext } from "../../context/appContext";
+import { formatCurrency } from '../../utils/callFunctions';
 
 const { width } = Dimensions.get('window');
 
@@ -47,8 +48,9 @@ const MyPostedGigsScreen = ({ navigation }) => {
           style: "destructive",
           onPress: () => confirmDelete(gig.id)
         },
-        { text: "Cancel", style: "cancel" }
-      ]
+        { text: "Cancel", style: 'cancel' }
+      ],
+      { cancelable: true }
     );
   };
 
@@ -87,7 +89,7 @@ const MyPostedGigsScreen = ({ navigation }) => {
 
           <View style={styles.priceRow}>
             <Icons.Ionicons name="cash-outline" size={16} color={theme.colors.indicator} />
-            <Text style={[styles.priceText, { color: theme.colors.text, }]}>E{item.job_price}</Text>
+            <Text style={[styles.priceText, { color: theme.colors.text, }]}>{formatCurrency(item.job_price)}</Text>
           </View>
         </View>
 
@@ -156,7 +158,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     borderWidth: 1,
     borderColor: '#e0e0e0',
-    borderRadius: 4, // Sharper edges
+    borderRadius: 10, // Sharper edges
     padding: 16,
     // Flat look with subtle shadow
     shadowColor: "#000",

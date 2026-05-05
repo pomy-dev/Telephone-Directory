@@ -219,7 +219,7 @@ export default function PostTransportationScreen({ navigation, route }) {
         >
             <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
                 <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
-                <View style={{ height: 20 }} />
+                {/* <View style={{ height: 20 }} /> */}
                 <SecondaryNav
                     title="For Hires"
                     rightIcon='train-outline'
@@ -569,7 +569,7 @@ export default function PostTransportationScreen({ navigation, route }) {
                     {/* ==================== STEP 5: Review & Post ==================== */}
                     {currentStep === 6 && (
                         <View style={styles.step}>
-                            <View style={styles.reviewCard}>
+                            <View style={[styles.reviewCard, { backgroundColor: theme.colors.card }]}>
                                 <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 16 }}>
                                     {formData.images.map((img, i) => (
                                         <Image key={i} source={{ uri: img.uri || img.url || img }} style={styles.reviewImage} />
@@ -652,7 +652,7 @@ const styles = StyleSheet.create({
     addImageText: { marginTop: 8, color: '#64748b', fontSize: 13 },
 
     reviewTitle: { fontSize: 20, fontWeight: '700', textAlign: 'center', marginBottom: 20 },
-    reviewCard: { backgroundColor: '#f8fafc', padding: 20, borderRadius: 20, marginBottom: 20 },
+    reviewCard: { padding: 20, borderRadius: 20, marginBottom: 20 },
     reviewImage: { width: 100, height: 100, borderRadius: 12, marginRight: 10 },
     reviewText: { fontSize: 15, marginVertical: 4, color: '#1e293b' },
     bold: { fontWeight: '700' },
@@ -721,7 +721,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row', gap: 10, paddingHorizontal: 16,
         paddingVertical: 10,
         borderTopWidth: 1, borderColor: '#e2e8f0',
-        marginBottom: height * 0.07
+        // marginBottom: height * 0.07
     },
     backBtn: { flex: 1, padding: 16, backgroundColor: '#f1f5f9', borderRadius: 12, alignItems: 'center' },
     backText: { color: '#64748b', fontWeight: '600' },

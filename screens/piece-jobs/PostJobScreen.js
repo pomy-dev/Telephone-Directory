@@ -520,7 +520,7 @@ const PostGigScreen = ({ navigation }) => {
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, paddingTop: Platform.OS === "android" ? StatusBar.currentHeight : 30 },
+    container: { flex: 1 },
     // content: { flex: 1 },
     form: { flex: 1, padding: 20 },
 
@@ -756,7 +756,6 @@ const styles = StyleSheet.create({
         paddingVertical: 5,
         borderTopWidth: 1,
         borderTopColor: "#f0f0f0",
-        marginBottom: Platform.OS === "android" ? StatusBar.currentHeight + 20 : 0,
     },
     buttonRow: { flexDirection: "row", gap: 12 },
     backButton: {

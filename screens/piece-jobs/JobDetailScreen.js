@@ -4,7 +4,6 @@ import {
   StyleSheet,
   ScrollView,
   Image,
-  Modal,
   Alert,
   ActivityIndicator,
   TouchableOpacity,
@@ -13,7 +12,6 @@ import {
   Linking,
   Dimensions,
   Share,
-  KeyboardAvoidingView,
 } from "react-native";
 import {
   BottomSheetModal,
@@ -36,6 +34,7 @@ import {
 } from "../../service/Supabase-Fuctions";
 import { AppContext } from "../../context/appContext";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { formatCurrency } from "../../utils/callFunctions";
 
 const mapJobData = (rawJob) => {
   if (!rawJob) return {};
@@ -61,9 +60,7 @@ const mapJobData = (rawJob) => {
   }
 
   // DATE FORMATTING LOGIC
-  const rawDate = rawJob.created_at;
-  console.log(rawJob.created_at);
-  const formattedDate = new Date(rawDate).toLocaleDateString(); // Result: "2026-02-03"
+  const rawDate = rawJob.postedTime;
 
   return {
     ...rawJob,
@@ -82,7 +79,7 @@ const mapJobData = (rawJob) => {
       locationData?.address || rawJob.location || "Location not specified",
     postedBy: postedByData ||
       rawJob.postedBy || { name: "Poster", email: "", phone: "" },
-    postedTime: formattedDate,
+    postedTime: rawDate,
     applications: rawJob.application_count || 0,
   };
 };
@@ -270,10 +267,7 @@ const JobDetailScreen = ({ route, navigation }) => {
         behavior={Platform.OS === "ios" ? "padding" : "height"}
         style={styles.container}
       >
-        <StatusBar
-          barStyle={isDarkMode ? "light-content" : "dark-content"}
-          backgroundColor={theme.colors.background}
-        />
+        <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
         <SecondaryNav
           title="Job Details"
           rightIcon="share-social-outline"
@@ -306,8 +300,8 @@ const JobDetailScreen = ({ route, navigation }) => {
               <Text style={[styles.title, { color: theme.colors.text }]}>
                 {job.title}
               </Text>
-              <Text style={[styles.price, { color: theme.colors.success }]}>
-                E{job.price}
+              <Text style={[styles.price, { color: theme.colors.indicator }]}>
+                {formatCurrency(job.price)}
               </Text>
             </View>
 
@@ -373,7 +367,7 @@ const JobDetailScreen = ({ route, navigation }) => {
                     <Icons.Ionicons
                       name="checkmark-circle"
                       size={20}
-                      color="#10b981"
+                      color={theme.colors.indicator}
                     />
                     <Text style={styles.requirementText}>{requirement}</Text>
                   </View>
@@ -521,7 +515,7 @@ const JobDetailScreen = ({ route, navigation }) => {
             setAttachments([]);
           }}
           backgroundStyle={{ backgroundColor: isDarkMode ? "#666" : "#fff" }}
-          handleIndicatorStyle={{ backgroundColor: theme.colors.text }}
+          handleIndicatorStyle={{ backgroundColor: theme.colors.sub_text }}
           enablePanDownToClose
           keyboardBehavior={Platform.OS === "ios" ? "extend" : "interactive"}
           android_keyboardInputMode="adjustResize"
@@ -720,7 +714,6 @@ const JobDetailScreen = ({ route, navigation }) => {
                 <Icons.Feather name="send" color={"#fff"} size={24} />
               )}
               <Text style={styles.submitButtonText}>Submit Application</Text>
-
             </TouchableOpacity>
           </BottomSheetView>
         </BottomSheetModal>
@@ -867,7 +860,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderTopWidth: 1,
-    marginBottom: 50,
+    // marginBottom: 50,
   },
   applyButton: {
     paddingVertical: 16,
@@ -962,7 +955,8 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "center",
     padding: 15,
-    borderRadius: 30,
+    marginTop: 30,
+    borderRadius: 10,
     alignItems: "center",
   },
   submitButtonText: {
