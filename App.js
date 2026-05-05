@@ -2,10 +2,7 @@
 import "react-native-gesture-handler";
 import React, { useContext, useState, useEffect } from "react";
 import { View, Text, StyleSheet, StatusBar, Platform } from "react-native";
-import {
-  SafeAreaProvider,
-  useSafeAreaInsets,
-} from "react-native-safe-area-context";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import {
   NavigationContainer,
   useNavigationContainerRef,
