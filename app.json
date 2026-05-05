@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "newArchEnabled": true,
+    // "newArchEnabled": true,
     // "scheme": "com.pld.phonebook.auth0",
     "splash": {
       "image": "./assets/splash-icon.png",
@@ -56,7 +56,7 @@
         "android.permission.READ_MEDIA_IMAGES",
         "ACCESS_NETWORK_STATE"
       ],
-      "edgeToEdgeEnabled": true,
+      // "edgeToEdgeEnabled": true,
       "package": "com.pld.phonebook",
       "googleServicesFile": "./google-services.json",
       "config": {
@@ -116,10 +116,7 @@
         "expo-navigation-bar",
         {
           "backgroundColor": "#000000",
-          "barStyle": "light",
-          "visibility": "visible",
-          "behavior": "inset-swipe",
-          "position": "relative"
+          "barStyle": "light"
         }
       ],
       [
@@ -147,10 +144,7 @@
     "extra": {
       "expo-navigation-bar": {
         "backgroundColor": "#000000",
-        "barStyle": "light",
-        "visibility": "visible",
-        "behavior": "inset-swipe",
-        "position": "relative"
+        "barStyle": "light"
       },
       "eas": {
         "projectId": "eea20e72-3755-4405-b8f9-b97f8e47704b"

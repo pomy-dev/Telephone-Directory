@@ -140,10 +140,10 @@ export default function HomeScreen({ navigation }) {
     const hour = now.getHours();
     let greeting = "";
 
-    if (hour >= 5 && hour < 12) greeting = "Morning";
-    else if (hour >= 12 && hour < 17) greeting = "Afternoon";
-    else if (hour >= 17 && hour < 21) greeting = "Evening";
-    else greeting = "Night";
+    if (hour >= 5 && hour < 12) greeting = "Morning 👋";
+    else if (hour >= 12 && hour < 17) greeting = "Afternoon 🙃";
+    else if (hour >= 17 && hour < 21) greeting = "Evening 🥱";
+    else greeting = "Night 😏";
 
     setGreetingText(greeting);
     setNots(notifications);
@@ -327,7 +327,7 @@ export default function HomeScreen({ navigation }) {
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.greetingSection}>
           <Text style={[styles.greetingText, { color: theme.colors.text }]}>
-            Good {greetingText} 👋
+            Good {greetingText}
           </Text>
           <Text style={styles.startingText}>{startingText}</Text>
         </View>

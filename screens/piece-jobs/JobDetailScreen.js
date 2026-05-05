@@ -1263,9 +1263,8 @@ const styles = StyleSheet.create({
   submitButton: {
     flexDirection: "row",
     justifyContent: "center",
-    backgroundColor: "#000",
     padding: 15,
-    borderRadius: 70,
+    borderRadius: 30,
     alignItems: "center",
   },
   submitButtonText: {

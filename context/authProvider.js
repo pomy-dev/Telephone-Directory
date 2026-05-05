@@ -99,21 +99,12 @@ export const AuthProvider = ({ children }) => {
     const signInResult = await GoogleSignin.signIn();
 
     // Try the new style of google-sign in result, from v13+ of that module
-    let idToken = signInResult.data?.idToken;
-    if (!idToken) {
-      // if you are using older versions of google-signin, try old style result
-      idToken = signInResult.idToken;
-    }
-    if (!idToken) {
-      throw new Error("No ID token found");
-    }
+    let idToken = signInResult.data?.idToken || signInResult.idToken;
 
-    console.log("User", signInResult.data?.user);
+    if (!idToken) throw new Error("No ID token found");
 
     // Create a Google credential with the token
-    const googleCredential = GoogleAuthProvider.credential(
-      signInResult.data.idToken,
-    );
+    const googleCredential = GoogleAuthProvider.credential(idToken);
 
     // Sign-in the user with the credential
     return signInWithCredential(getAuth(), googleCredential);
