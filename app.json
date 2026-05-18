@@ -2,18 +2,17 @@
   "expo": {
     "name": "Business Link",
     "slug": "Business-Link",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    // "newArchEnabled": true,
-    // "scheme": "com.pld.phonebook.auth0",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "ios": {
+      "buildNumber": "4",
       "supportsTablet": true,
       "bundleIdentifier": "com.pld.phonebook",
       "googleServicesFile": "./GoogleService-Info.plist",
@@ -33,6 +32,7 @@
       }
     },
     "android": {
+      "versionCode": 4,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -56,7 +56,6 @@
         "android.permission.READ_MEDIA_IMAGES",
         "ACCESS_NETWORK_STATE"
       ],
-      // "edgeToEdgeEnabled": true,
       "package": "com.pld.phonebook",
       "googleServicesFile": "./google-services.json",
       "config": {
