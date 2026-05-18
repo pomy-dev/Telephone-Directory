@@ -138,7 +138,8 @@
       "@react-native-firebase/app",
       "@react-native-firebase/auth",
       "expo-asset",
-      "expo-font"
+      "expo-font",
+      "@react-native-community/datetimepicker"
     ],
     "extra": {
       "expo-navigation-bar": {
