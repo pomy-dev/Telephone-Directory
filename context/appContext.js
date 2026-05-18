@@ -1,6 +1,8 @@
 // AppContext.js
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as ScreenOrientation from 'expo-screen-orientation';
+
 import { CustomDarkTheme, CustomLightTheme } from '../constants/theme';
 import { fetchNotifications } from '../service/getApi';
 import { getMyAppliedGigsThatApproved } from '../service/Supabase-Fuctions';
@@ -16,6 +18,10 @@ export const AppProvider = ({ children }) => {
   const [isOnline, setIsOnline] = useState(true);
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // ==================== NEW: Orientation State ====================
+  const [orientation, setOrientation] = useState('PORTRAIT'); // PORTRAIT or LANDSCAPE
+  // ============================================================
 
   // Load persisted state + fetch fresh notifications and user data
   useEffect(() => {
@@ -45,6 +51,61 @@ export const AppProvider = ({ children }) => {
     };
     loadSettings();
   }, []);
+
+  // ==================== ORIENTATION SETUP ====================
+  useEffect(() => {
+    let subscription;
+
+    const setupOrientation = async () => {
+      try {
+        // Allow the app to rotate freely
+        await ScreenOrientation.unlockAsync();
+
+        // Get initial orientation
+        const initial = await ScreenOrientation.getOrientationAsync();
+        setOrientation(getOrientationLabel(initial));
+
+        // Listen for orientation changes
+        subscription = ScreenOrientation.addOrientationChangeListener((event) => {
+          const newOrientation = getOrientationLabel(event.orientationInfo.orientation);
+          setOrientation(newOrientation);
+        });
+      } catch (error) {
+        console.log('Orientation setup error:', error);
+      }
+    };
+
+    setupOrientation();
+
+    // Cleanup
+    return () => {
+      if (subscription) {
+        subscription.remove();
+      }
+      // Optional: Lock back to portrait when app is closed
+      // ScreenOrientation.lockAsync(ScreenOrientation.OrientationLock.PORTRAIT);
+    };
+  }, []);
+
+  const getOrientationLabel = (ori) => {
+    // Group portrait-up and portrait-down as PORTRAIT
+    if (
+      ori === ScreenOrientation.Orientation.PORTRAIT_UP ||
+      ori === ScreenOrientation.Orientation.PORTRAIT_DOWN
+    ) {
+      return 'PORTRAIT';
+    }
+    return 'LANDSCAPE';
+  };
+
+  // Optional: Helper function to lock orientation for specific screens
+  const lockOrientation = async (lockType) => {
+    try {
+      await ScreenOrientation.lockAsync(lockType);
+    } catch (error) {
+      console.log('Failed to lock orientation:', error);
+    }
+  };
 
   // Fetch and merge notifications whenever relevant state changes
   useEffect(() => {
@@ -194,6 +255,9 @@ export const AppProvider = ({ children }) => {
         theme,
         notifications,
         addNotification,
+        orientation,
+        isLandscape: orientation === 'LANDSCAPE',
+        lockOrientation,
       }}
     >
       {children}
