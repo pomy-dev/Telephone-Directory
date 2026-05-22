@@ -300,7 +300,7 @@ export default function BookTransportationScreen({ navigation, route }) {
                     <View style={styles.detailsRow}>
                         <View style={[styles.inputGroup, { flex: 1 }]}>
                             <Text style={[styles.label, { color: theme.colors.sub_text }]}>
-                                Retrieval Date * <Text style={styles.required}>({vehicle.operating_days?.join(', ')})</Text>
+                                Retrieval Date *
                             </Text>
                             <TouchableOpacity
                                 style={[styles.input, { backgroundColor: isDarkMode ? '#666' : '#fff', borderWidth: 1, borderColor: '#dddd', padding: 12 }, errors.bookingDate && styles.inputError]}
@@ -310,7 +310,7 @@ export default function BookTransportationScreen({ navigation, route }) {
                                     {formData.bookingDate || 'YYYY-MM-DD'}
                                 </Text>
                             </TouchableOpacity>
-                            {errors.bookingDate && <Text style={styles.errorText}>{errors.bookingDate}</Text>}
+                            {errors.bookingDate ? <Text style={styles.errorText}>{errors.bookingDate}</Text> : <Text style={styles.required}>({vehicle.operating_days?.join(', ')})</Text>}
                         </View>
 
                         {/* Date Picker Modal */}
@@ -340,7 +340,7 @@ export default function BookTransportationScreen({ navigation, route }) {
 
                         <View style={[styles.inputGroup, { flex: 1 }]}>
                             <Text style={[styles.label, { color: theme.colors.sub_text }]}>
-                                Retrieval Time * <Text style={styles.required}>({vehicle.operating_start} - {vehicle.operating_end})</Text>
+                                Retrieval Time *
                             </Text>
                             <TextInput
                                 style={[styles.input, { color: theme.colors.sub_text, backgroundColor: isDarkMode ? '#666' : '#fff' }, errors.bookingTime && styles.inputError]}
@@ -348,7 +348,7 @@ export default function BookTransportationScreen({ navigation, route }) {
                                 value={formData.bookingTime}
                                 onChangeText={(value) => handleInputChange('bookingTime', value)}
                             />
-                            {errors.bookingTime && <Text style={styles.errorText}>{errors.bookingTime}</Text>}
+                            {errors.bookingTime ? <Text style={styles.errorText}>{errors.bookingTime}</Text> : <Text style={styles.required}>({vehicle.operating_start} - {vehicle.operating_end})</Text>}
                         </View>
                     </View>
 

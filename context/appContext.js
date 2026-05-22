@@ -167,7 +167,7 @@ export const AppProvider = ({ children }) => {
 
         setNotifications(merged);
       } catch (err) {
-        console.log('Error fetching notifications:', err);
+        console.error('Error fetching notifications:', err);
       }
     };
 

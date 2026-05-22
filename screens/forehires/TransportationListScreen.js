@@ -500,13 +500,11 @@ export default function TransportationListScreen({ navigation }) {
 
         // Prepare the email body with vehicle details
         const body = `
-            Hello,
+            Hello, I'm interested in the following fore-hire:
 
-            I'm interested in the following fore-hire:
-
-            ${'='.repeat(50)}
+            ${'='.repeat(30)}
             VEHICLE DETAILS:
-            ${'='.repeat(50)}
+            ${'='.repeat(30)}
             • Type: ${getTypeLabel(vehicle?.vehicle_type)}
             • Registration: ${vehicle?.registration || 'N/A'}
             • Category: ${vehicle.vehicle_category?.replace(/_/g, ' ')}
@@ -514,7 +512,7 @@ export default function TransportationListScreen({ navigation }) {
             • Capacity: ${vehicle.vehicle_capacity || 'N/A'} ${vehicle.vehicle_capacity && 'seats'}
             • Location: ${vehicle?.location?.address || vehicle.location?.area || 'N/A'}
             • Owner: ${vehicle?.owner_info?.driver || vehicle?.owner_info?.name || 'N/A'}
-            ${'='.repeat(50)}`.trim();
+            ${'='.repeat(30)}`.trim();
 
         // Encode the subject and body for URL
         const encodedSubject = encodeURIComponent(subject);
