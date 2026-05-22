@@ -108,6 +108,7 @@ const JobInboxScreen = ({ route, navigation }) => {
   };
 
   const handleHire = async (applicationId, workerName) => {
+    console.log('Worker Id', applicationId)
     Alert.alert("Confirm Hire", `Hiring ${workerName} will close this job and notify other applicants they were not selected.`, [
       { text: "Cancel", style: "cancel" },
       {
@@ -150,6 +151,8 @@ const JobInboxScreen = ({ route, navigation }) => {
       });
     };
 
+    const applicantName = applicantData?.name ? applicantData?.name : applicantData?.phone || applicantData?.email || "Unknown Worker";
+
     return (
       <View style={[styles.appCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.card }]}>
         <TouchableOpacity
@@ -168,12 +171,12 @@ const JobInboxScreen = ({ route, navigation }) => {
 
             <View style={{ flex: 1, marginLeft: 12 }}>
               <Text style={[styles.name, { color: theme.colors.text, }]}>
-                {applicantData?.name ? applicantData?.name : applicantData?.phone || applicantData?.email || "Unknown Worker"}
+                {applicantName}
               </Text>
 
               <Text style={[styles.contactText, { color: theme.colors.indicator }]}>{applicantData?.email}</Text>
               <Text style={[styles.dateText, { color: theme.colors.text, }]}>
-                {` Applied at: ${formatDate(item.created_at)}`}
+                {` Applied at: ${formatDate(item.applied_at)}`}
               </Text>
             </View>
 
@@ -198,14 +201,15 @@ const JobInboxScreen = ({ route, navigation }) => {
           <TouchableOpacity
             style={[
               styles.hireBtn,
-              item.status === "approved" && styles.hiredBtnDisabled,
+              item.application_status === "approved" && styles.hiredBtnDisabled,
             ]}
             onPress={() => {
-              item.status === "approved" ?
+              item.application_status === "approved" ?
                 CustomToast("Approved!", "This worker has already been hired for this job.")
                 :
-                handleHire(item.id, applicantData?.displayName)
+                handleHire(item.application_id, applicantName)
             }}
+            disabled={item.application_status === "approved"}
           >
             <Text style={styles.hireBtnText}>
               {item.status === "approved" ? "Worker Hired" : "Hire Now"}

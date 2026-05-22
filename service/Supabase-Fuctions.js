@@ -740,6 +740,7 @@ export async function approveGigApplication(applicationId) {
     });
 
     if (error) throw error;
+    console.log('Job details:', data)
 
     return {
       success: true,

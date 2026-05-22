@@ -159,7 +159,6 @@ const CATEGORIES = [
   },
 ];
 
-
 const mapDatabaseToUI = (dbGigs, userLocation = null) => {
   return dbGigs.map((job) => {
     const lat = job.job_location?.latitude || 0;
@@ -398,7 +397,7 @@ const GigsScreen = ({ navigation }) => {
     };
   }, []);
 
-  //-------------this code is correct for inial mount  , parked because of network checks
+  //-------------this code is correct for inial mount, parked because of network checks
   // useEffect(() => {
   //   loadUserLocation();
   //   setLoadingWorkers(true);

@@ -101,19 +101,58 @@ export default function TransportationDetailsScreen({ navigation, route }) {
     }
   };
 
-  const handleEmail = () => {
-    if (
-      (vehicle.vehicle_type === "minibus" ||
-        vehicle.vehicle_type === "bus" ||
-        vehicle.vehicle_type === "sprinter" ||
-        vehicle.vehicle_type === "schoolbus" ||
-        vehicle.vehicle_type === "staffbus") &&
-      vehicle.vehicle_category === "public_transport"
+  const handleEmail = (vehicle) => {
+    // Prepare the email subject
+    const subject = `Inquiry about ${vehicle.vehicle_make} ${vehicle.vehicle_model}`;
+
+    // Prepare the email body with vehicle details
+    const body = `
+              Hello, I'm interested in the following fore-hire:
+  
+              ${'='.repeat(30)}
+              VEHICLE DETAILS:
+              ${'='.repeat(30)}
+              • Type: ${getTypeLabel(vehicle?.vehicle_type)}
+              • Registration: ${vehicle?.registration || 'N/A'}
+              • Category: ${vehicle.vehicle_category?.replace(/_/g, ' ')}
+              • Make/Model: ${vehicle?.vehicle_make} ${vehicle?.vehicle_model}
+              • Capacity: ${vehicle.vehicle_capacity || 'N/A'} ${vehicle.vehicle_capacity && 'seats'}
+              • Location: ${vehicle?.location?.address || vehicle.location?.area || 'N/A'}
+              • Owner: ${vehicle?.owner_info?.driver || vehicle?.owner_info?.name || 'N/A'}
+              ${'='.repeat(30)}`.trim();
+
+    // Encode the subject and body for URL
+    const encodedSubject = encodeURIComponent(subject);
+    const encodedBody = encodeURIComponent(body);
+
+    let emailAddress;
+
+    if ((vehicle.vehicle_type === 'minibus'
+      || vehicle.vehicle_type === 'bus'
+      || vehicle.vehicle_type === 'sprinter'
+      || vehicle.vehicle_type === 'schoolbus'
+      || vehicle.vehicle_type === 'staffbus')
+      && vehicle.vehicle_category === 'public_transport'
     ) {
-      Linking.openURL(`mailto:indabukocalculus@gmail.com`);
+      emailAddress = `indabukocalculus@gmail.com`;
     } else {
-      Linking.openURL(`mailto:${vehicle.owner_info?.email}`);
+      emailAddress = vehicle.owner_info?.email;
     }
+
+    // Only proceed if we have an email address
+    if (!emailAddress) {
+      Alert.alert('Error', 'No email address available for this vehicle.');
+      return;
+    }
+
+    // Construct the mailto URL with subject and body
+    const mailtoUrl = `mailto:${emailAddress}?subject=${encodedSubject}&body=${encodedBody}`;
+
+    // Open the email client
+    Linking.openURL(mailtoUrl).catch(err => {
+      console.error('Error opening email:', err);
+      Alert.alert('Error', 'Could not open email client. Please make sure you have an email app installed.');
+    });
   };
 
   const handleSMS = async () => {
