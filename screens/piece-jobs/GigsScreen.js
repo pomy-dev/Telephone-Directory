@@ -224,6 +224,7 @@ const GigsScreen = ({ navigation }) => {
   const { user, isWorker } = React.useContext(AuthContext);
   const { theme, isDarkMode } = React.useContext(AppContext);
   const realtimeCallbackRef = useRef(null);
+  const [realtimeNonce, setRealtimeNonce] = useState(0);
   const [userLocation, setUserLocation] = useState(null);
   const [jobs, setJobs] = useState([]);
   const [workerVotes, setWorkerVotes] = useState({});
@@ -235,6 +236,7 @@ const GigsScreen = ({ navigation }) => {
   // GIG FILTERS
   const [gigSearch, setGigSearch] = useState("");
   const [gigCategory, setGigCategory] = useState("all");
+
 
   // WORKER FILTERS
   const [workerSearch, setWorkerSearch] = useState("");
@@ -317,6 +319,10 @@ const GigsScreen = ({ navigation }) => {
     },
   ];
 
+
+ 
+
+
   // 1. Move this function ABOVE your useEffect calls
   const loadUserLocation = async () => {
     try {
@@ -335,92 +341,84 @@ const GigsScreen = ({ navigation }) => {
     }
   };
 
+
+  
+  // 2. Setup structural tracking references to bypass stale state scopes
+  const viewModeRef = useRef(viewMode);
   const gigCategoryRef = useRef(gigCategory);
+  const gigSearchRef = useRef(gigSearch);
 
-  useEffect(() => {
-    gigCategoryRef.current = gigCategory;
-  }, [gigCategory]);
+  useEffect(() => { viewModeRef.current = viewMode; }, [viewMode]);
+  useEffect(() => { gigCategoryRef.current = gigCategory; }, [gigCategory]);
+  useEffect(() => { gigSearchRef.current = gigSearch; }, [gigSearch]);
 
+
+  // 3. Isolated memory tracking engine
   const handleRealtimeGigUpdate = (payload) => {
     if (!payload) return;
+    console.log("Processing safe real-time event sync:", payload.eventType);
 
-    console.log(
-      "REALTIME EVENT:",
-      payload.eventType,
-      payload?.new?.id || payload?.old?.id,
-    );
-
-    // DELETE
+    // Case A: Handle Item Removal
     if (payload.eventType === "DELETE") {
-      setJobs((prevJobs) =>
-        prevJobs.filter((job) => String(job.id) !== String(payload.old.id)),
-      );
-
+      setJobs((prevJobs) => {
+        const remaining = prevJobs.filter((job) => String(job.id) !== String(payload.old.id));
+        return remaining;
+      });
+      setRealtimeNonce((prev) => prev + 1);
       return;
     }
 
-    if (!payload.new) return;
+    // Process raw database item structure through your mapping engine
+    const rawRow = payload.new;
+    if (!rawRow) return;
 
-    const mappedRowArray = mapDatabaseToUI([payload.new], userLocation);
-
-    if (!mappedRowArray.length) return;
-
+    // mapDatabaseToUI expects an array structure, pass raw row inside bracket markers
+    const mappedRowArray = mapDatabaseToUI([rawRow], userLocation);
+    if (!mappedRowArray || mappedRowArray.length === 0) return;
     const synchronizedJob = mappedRowArray[0];
 
+    // Modify active screen state arrays in place
     setJobs((prevJobs) => {
-      const existingIndex = prevJobs.findIndex(
-        (job) => String(job.id) === String(synchronizedJob.id),
-      );
-
-      // UPDATE
-      if (existingIndex !== -1) {
-        const cloned = [...prevJobs];
-
-        cloned[existingIndex] = {
-          ...prevJobs[existingIndex],
-          ...synchronizedJob,
-        };
-
-        return cloned;
+      // Case B: New Item Insertion
+      if (payload.eventType === "INSERT") {
+        if (
+          gigCategoryRef.current === "all" ||
+          String(synchronizedJob.job_category).toLowerCase() === String(gigCategoryRef.current).toLowerCase()
+        ) {
+          const checkExists = prevJobs.some((job) => String(job.id) === String(synchronizedJob.id));
+          if (checkExists) return prevJobs;
+          return [synchronizedJob, ...prevJobs];
+        }
+        return prevJobs;
       }
 
-      // INSERT
-      if (
-        gigCategoryRef.current === "all" ||
-        synchronizedJob.category === gigCategoryRef.current
-      ) {
-        return [synchronizedJob, ...prevJobs];
+      // Case C: Real-time Row Attribute Update
+      if (payload.eventType === "UPDATE") {
+        console.log(`Updating UI Card item with ID ${synchronizedJob.id} matching against dataset list...`);
+        return prevJobs.map((job) => 
+          String(job.id) === String(synchronizedJob.id) ? synchronizedJob : job
+        );
       }
 
       return prevJobs;
     });
-  };
 
-  useEffect(() => {
-    realtimeCallbackRef.current = (payload) => {
-      if (viewMode.current === "gigs") {
-        handleRealtimeGigUpdate(payload);
-      }
-    };
-  });
+    // CRITICAL: Increment execution token to force visual FlatList invalidation layout pass
+    setRealtimeNonce((prev) => prev + 1);
+  };
+ 
+
+
 
   //this code controll the fecthing of data based on network connection
   const wasOffline = useRef(false);
 
   useEffect(() => {
-    // 1. Define the logic to run when state changes
+    // 1. NetInfo Tracking Logic Definition
     const onNetworkChange = (state) => {
-      // 1. Determine current state
-      const isNowConnected = !!(
-        state.isConnected && state.isInternetReachable !== false
-      );
+      const isNowConnected = !!(state.isConnected && state.isInternetReachable !== false);
 
-      // 3. THE BRIDGE: Only trigger if we moved from true OFFLINE to true ONLINE
       if (wasOffline.current === true && isNowConnected === true) {
-        console.log("---------------------------------------");
-        console.log("RECONNECTION DETECTED: AUTO-REFRESHING");
-        console.log("---------------------------------------");
-
         loadUserLocation();
         setLoadingWorkers(true);
         loadWorkers(true);
@@ -428,76 +426,135 @@ const GigsScreen = ({ navigation }) => {
         loadWorkerVotes();
       }
 
-      // 4. SYNC UI
       setIsOffline(!isNowConnected);
       setCheckingConnection(false);
-
-      // 5. UPDATE MEMORY LAST: Save the current state for the NEXT event
       wasOffline.current = !isNowConnected;
     };
 
-    // 2. Subscribe to NetInfo (it passes the 'state' automatically)
     const unsubscribeNet = NetInfo.addEventListener(onNetworkChange);
 
-    // 3. Handle AppState (Returning to app)
     const unsubscribeApp = AppState.addEventListener(
       "change",
       async (nextState) => {
         if (nextState === "active") {
           const state = await NetInfo.fetch();
-
           onNetworkChange(state);
         }
       },
     );
 
-    // 4. Initial Load
+    // 2. Run initial execution loads
     const initializeData = async () => {
       const state = await NetInfo.fetch();
-      onNetworkChange(state); // Set initial offline/online status
-
-      // Always load data on mount
+      onNetworkChange(state);
       loadUserLocation();
       setLoadingWorkers(true);
       loadWorkers(true);
       fetchLiveGigs(false);
       loadWorkerVotes();
     };
-
     initializeData();
 
+    // 3. Mount real-time subscription engine instance channels
+    let activeChannel = null;
     try {
       activeChannel = subscribeToGigsScreen((payload) => {
-        // ✅ Always calls the latest handler via the ref — never stale
-        realtimeCallbackRef.current?.(payload);
+        // Enforce synchronization constraints exclusively when viewing the gigs window context
+        if (viewModeRef.current === "gigs") {
+          handleRealtimeGigUpdate(payload);
+        }
       });
-    } catch (err) {
-      console.log("Realtime setup error:", err);
+    } catch (realtimeErr) {
+      console.log("Realtime pipeline registration crash caught silently:", realtimeErr.message);
     }
 
+    // 4. Secure clean-up drops
     return () => {
-      if (subscription) supabase.removeChannel(subscription);
+      if (activeChannel) {
+        console.log("Removing real-time channels securely...");
+        supabase.removeChannel(activeChannel);
+      }
       unsubscribeNet();
       unsubscribeApp.remove();
     };
-  }, []);
+  }, []); 
 
-  //-------------this code is correct for inial mount  , parked because of network checks
+  // use effect before creating new use effect for realtime update of the ui
   // useEffect(() => {
-  //   loadUserLocation();
-  //   setLoadingWorkers(true);
-  //   loadWorkers(true);
-  //   fetchLiveGigs(true);
-  //   loadWorkerVotes();
+  //   // 1. Define the logic to run when state changes
+  //   const onNetworkChange = (state) => {
+  //     // 1. Determine current state
+  //     const isNowConnected = !!(
+  //       state.isConnected && state.isInternetReachable !== false
+  //     );
 
-  //   const subscription = subscribeToGigs(() => {
-  //     if (viewMode === "gigs") fetchLiveGigs(false);
-  //   });
+  //     // 3. THE BRIDGE: Only trigger if we moved from true OFFLINE to true ONLINE
+  //     if (wasOffline.current === true && isNowConnected === true) {
+  //       console.log("---------------------------------------");
+  //       console.log("RECONNECTION DETECTED: AUTO-REFRESHING");
+  //       console.log("---------------------------------------");
+
+  //       loadUserLocation();
+  //       setLoadingWorkers(true);
+  //       loadWorkers(true);
+  //       fetchLiveGigs(false);
+  //       loadWorkerVotes();
+  //     }
+
+  //     // 4. SYNC UI
+  //     setIsOffline(!isNowConnected);
+  //     setCheckingConnection(false);
+
+  //     // 5. UPDATE MEMORY LAST: Save the current state for the NEXT event
+  //     wasOffline.current = !isNowConnected;
+  //   };
+
+  //   // 2. Subscribe to NetInfo (it passes the 'state' automatically)
+  //   const unsubscribeNet = NetInfo.addEventListener(onNetworkChange);
+
+  //   // 3. Handle AppState (Returning to app)
+  //   const unsubscribeApp = AppState.addEventListener(
+  //     "change",
+  //     async (nextState) => {
+  //       if (nextState === "active") {
+  //         const state = await NetInfo.fetch();
+
+  //         onNetworkChange(state);
+  //       }
+  //     },
+  //   );
+
+  //   // 4. Initial Load
+  //   const initializeData = async () => {
+  //     const state = await NetInfo.fetch();
+  //     onNetworkChange(state); // Set initial offline/online status
+
+  //     // Always load data on mount
+  //     loadUserLocation();
+  //     setLoadingWorkers(true);
+  //     loadWorkers(true);
+  //     fetchLiveGigs(false);
+  //     loadWorkerVotes();
+  //   };
+
+  //   initializeData();
+
+  //   try {
+  //     activeChannel = subscribeToGigsScreen((payload) => {
+  //       // ✅ Always calls the latest handler via the ref — never stale
+  //       realtimeCallbackRef.current?.(payload);
+  //     });
+  //   } catch (err) {
+  //     console.log("Realtime setup error:", err);
+  //   }
 
   //   return () => {
   //     if (subscription) supabase.removeChannel(subscription);
+  //     unsubscribeNet();
+  //     unsubscribeApp.remove();
   //   };
   // }, []);
+
 
   useEffect(() => {
     if (viewMode === "gigs") {
@@ -1578,7 +1635,9 @@ const GigsScreen = ({ navigation }) => {
         <FlatList
           data={jobs}
           renderItem={renderJobCard}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => String(item.id)}
+          extraData={realtimeNonce}
+          // keyExtractor={(item) => item.id}
           contentContainerStyle={styles.jobsList}
           showsVerticalScrollIndicator={false}
           onRefresh={() => fetchLiveGigs(false)}
@@ -1620,6 +1679,7 @@ const GigsScreen = ({ navigation }) => {
             }
             return <View style={{ height: 40 }} />;
           }}
+          removeClippedSubviews={true}
           initialNumToRender={10}
           maxToRenderPerBatch={10}
         />
