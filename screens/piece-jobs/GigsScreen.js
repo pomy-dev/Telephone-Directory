@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import React, {
+  useState,
+  useEffect,
+  useRef,
+  useMemo,
+  useCallback,
+} from "react";
 import {
   View,
   Text,
@@ -25,7 +31,7 @@ import { Icons } from "../../constants/Icons";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {
   getPomyGigs,
-  subscribeToGigs,
+  subscribeToGigsScreen,
   logUserActivity,
   fetchPomyWorkers,
 } from "../../service/Supabase-Fuctions";
@@ -159,7 +165,6 @@ const CATEGORIES = [
   },
 ];
 
-
 const mapDatabaseToUI = (dbGigs, userLocation = null) => {
   return dbGigs.map((job) => {
     const lat = job.job_location?.latitude || 0;
@@ -189,7 +194,7 @@ const mapDatabaseToUI = (dbGigs, userLocation = null) => {
         phone: job.postedby?.phone,
       },
       postedTime: job.created_at
-        ? format(job.created_at, 'dd-MM-yyyy') //new Date(job.created_at).toLocaleDateString()
+        ? format(job.created_at, "dd-MM-yyyy") //new Date(job.created_at).toLocaleDateString()
         : "Just now",
       images: displayImages, // Empty array if no images
       distance: null,
@@ -218,6 +223,7 @@ const GigsScreen = ({ navigation }) => {
   const [isOffline, setIsOffline] = useState(false);
   const { user, isWorker } = React.useContext(AuthContext);
   const { theme, isDarkMode } = React.useContext(AppContext);
+  const realtimeCallbackRef = useRef(null);
   const [userLocation, setUserLocation] = useState(null);
   const [jobs, setJobs] = useState([]);
   const [workerVotes, setWorkerVotes] = useState({});
@@ -289,7 +295,11 @@ const GigsScreen = ({ navigation }) => {
       icon: "FontAwesome6",
       iconName: "list-check",
       onPress: () =>
-        navigation.navigate("JobInbox", { gigSelection: "applied", gigId: null, appId: null }),
+        navigation.navigate("JobInbox", {
+          gigSelection: "applied",
+          gigId: null,
+          appId: null,
+        }),
     },
     {
       title: "My Posted Gigs",
@@ -300,7 +310,9 @@ const GigsScreen = ({ navigation }) => {
     {
       title: isWorker ? "My Worker Profile" : "Become a Worker",
       icon: isWorker ? "Ionicons" : "MaterialCommunityIcons",
-      iconName: isWorker ? "person-circle-outline" : "briefcase-account-outline",
+      iconName: isWorker
+        ? "person-circle-outline"
+        : "briefcase-account-outline",
       onPress: () => navigation.navigate("WorkerRegistration"),
     },
   ];
@@ -323,6 +335,75 @@ const GigsScreen = ({ navigation }) => {
     }
   };
 
+  const gigCategoryRef = useRef(gigCategory);
+
+  useEffect(() => {
+    gigCategoryRef.current = gigCategory;
+  }, [gigCategory]);
+
+  const handleRealtimeGigUpdate = (payload) => {
+    if (!payload) return;
+
+    console.log(
+      "REALTIME EVENT:",
+      payload.eventType,
+      payload?.new?.id || payload?.old?.id,
+    );
+
+    // DELETE
+    if (payload.eventType === "DELETE") {
+      setJobs((prevJobs) =>
+        prevJobs.filter((job) => String(job.id) !== String(payload.old.id)),
+      );
+
+      return;
+    }
+
+    if (!payload.new) return;
+
+    const mappedRowArray = mapDatabaseToUI([payload.new], userLocation);
+
+    if (!mappedRowArray.length) return;
+
+    const synchronizedJob = mappedRowArray[0];
+
+    setJobs((prevJobs) => {
+      const existingIndex = prevJobs.findIndex(
+        (job) => String(job.id) === String(synchronizedJob.id),
+      );
+
+      // UPDATE
+      if (existingIndex !== -1) {
+        const cloned = [...prevJobs];
+
+        cloned[existingIndex] = {
+          ...prevJobs[existingIndex],
+          ...synchronizedJob,
+        };
+
+        return cloned;
+      }
+
+      // INSERT
+      if (
+        gigCategoryRef.current === "all" ||
+        synchronizedJob.category === gigCategoryRef.current
+      ) {
+        return [synchronizedJob, ...prevJobs];
+      }
+
+      return prevJobs;
+    });
+  };
+
+  useEffect(() => {
+    realtimeCallbackRef.current = (payload) => {
+      if (viewMode.current === "gigs") {
+        handleRealtimeGigUpdate(payload);
+      }
+    };
+  });
+
   //this code controll the fecthing of data based on network connection
   const wasOffline = useRef(false);
 
@@ -333,7 +414,6 @@ const GigsScreen = ({ navigation }) => {
       const isNowConnected = !!(
         state.isConnected && state.isInternetReachable !== false
       );
-
 
       // 3. THE BRIDGE: Only trigger if we moved from true OFFLINE to true ONLINE
       if (wasOffline.current === true && isNowConnected === true) {
@@ -366,7 +446,6 @@ const GigsScreen = ({ navigation }) => {
         if (nextState === "active") {
           const state = await NetInfo.fetch();
 
-
           onNetworkChange(state);
         }
       },
@@ -387,9 +466,14 @@ const GigsScreen = ({ navigation }) => {
 
     initializeData();
 
-    const subscription = subscribeToGigs(() => {
-      if (viewMode === "gigs") fetchLiveGigs(false);
-    });
+    try {
+      activeChannel = subscribeToGigsScreen((payload) => {
+        // ✅ Always calls the latest handler via the ref — never stale
+        realtimeCallbackRef.current?.(payload);
+      });
+    } catch (err) {
+      console.log("Realtime setup error:", err);
+    }
 
     return () => {
       if (subscription) supabase.removeChannel(subscription);
@@ -538,17 +622,17 @@ const GigsScreen = ({ navigation }) => {
       prev.map((w) =>
         w.id === workerId
           ? {
-            ...w,
-            likes: Math.max((w.likes || 0) + likeChange, 0),
-            dislikes: Math.max((w.dislikes || 0) + dislikeChange, 0),
-          }
+              ...w,
+              likes: Math.max((w.likes || 0) + likeChange, 0),
+              dislikes: Math.max((w.dislikes || 0) + dislikeChange, 0),
+            }
           : w,
       ),
     );
   };
 
   const handlePostGig = () => {
-    navigation.navigate('PostJobScreen');
+    navigation.navigate("PostJobScreen");
   };
 
   const toggleSheet = (open) => {
@@ -739,7 +823,9 @@ const GigsScreen = ({ navigation }) => {
             >
               {item.title}
             </Text>
-            <Text style={[styles.jobPrice, { color: theme.colors.text }]}>{formatCurrency(item.price)}</Text>
+            <Text style={[styles.jobPrice, { color: theme.colors.text }]}>
+              {formatCurrency(item.price)}
+            </Text>
           </View>
 
           {hasImage ? (
@@ -758,12 +844,15 @@ const GigsScreen = ({ navigation }) => {
 
           <View style={styles.jobFooter}>
             <View style={styles.locationContainer}>
-              <Icons.Ionicons name="location-outline" size={14} color={theme.colors.indicator} />
+              <Icons.Ionicons
+                name="location-outline"
+                size={14}
+                color={theme.colors.indicator}
+              />
               <Text style={styles.locationText} numberOfLines={1}>
                 {item.location}
               </Text>
             </View>
-
           </View>
 
           <View
@@ -910,7 +999,11 @@ const GigsScreen = ({ navigation }) => {
               {item.name}
             </Text>
             <View style={styles.locationRow}>
-              <Icons.Ionicons name="location-sharp" size={12} color={theme.colors.indicator} />
+              <Icons.Ionicons
+                name="location-sharp"
+                size={12}
+                color={theme.colors.indicator}
+              />
               <Text style={[styles.locationText, { color: theme.colors.text }]}>
                 {locationString}
               </Text>
@@ -1064,7 +1157,11 @@ const GigsScreen = ({ navigation }) => {
                     : "thumbs-up-outline"
                 }
                 size={18}
-                color={workerVotes[item.id] === "like" ? theme.colors.indicator : "#64748b"}
+                color={
+                  workerVotes[item.id] === "like"
+                    ? theme.colors.indicator
+                    : "#64748b"
+                }
               />
               <Text style={styles.voteCount}>{item.likes || 0}</Text>
             </TouchableOpacity>
@@ -1089,7 +1186,10 @@ const GigsScreen = ({ navigation }) => {
           </View>
 
           <TouchableOpacity
-            style={[styles.blackActionBtn, { backgroundColor: theme.colors.indicator }]}
+            style={[
+              styles.blackActionBtn,
+              { backgroundColor: theme.colors.indicator },
+            ]}
             onPress={() => Linking.openURL(`tel:${item.phone}`)}
           >
             <Icons.Ionicons name="call" size={16} color="#fff" />
@@ -1147,8 +1247,14 @@ const GigsScreen = ({ navigation }) => {
   // console.log(jobs[0])
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={["top"]}>
-      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+      edges={["top"]}
+    >
+      <StatusBar
+        barStyle={isDarkMode ? "light-content" : "dark-content"}
+        backgroundColor={theme.colors.background}
+      />
 
       {/* Custom Modern Header */}
       <View style={styles.customHeader}>
@@ -1164,10 +1270,7 @@ const GigsScreen = ({ navigation }) => {
         {/* SEARCH BAR */}
         <View style={{ backgroundColor: theme.colors.background }}>
           <View
-            style={[
-              styles.searchBar,
-              { backgroundColor: theme.colors.card },
-            ]}
+            style={[styles.searchBar, { backgroundColor: theme.colors.card }]}
           >
             <Icons.Ionicons
               name="search"
@@ -1183,26 +1286,26 @@ const GigsScreen = ({ navigation }) => {
             </TouchableOpacity>
             {((viewMode === "gigs" && gigSearch.length > 0) ||
               (viewMode === "workers" && workerSearch.length > 0)) && (
-                <TouchableOpacity
-                  style={{
-                    position: "absolute",
-                    right: 20,
-                    paddingHorizontal: 5,
-                    paddingVertical: 3,
-                    backgroundColor: "#f0f4ff",
-                    borderRadius: 10,
-                  }}
-                  onPress={() => {
-                    viewMode === "gigs" ? setGigSearch("") : setWorkerSearch("");
-                  }}
-                >
-                  <Icons.Ionicons
-                    name="close"
-                    size={18}
-                    color={theme.colors.sub_text}
-                  />
-                </TouchableOpacity>
-              )}
+              <TouchableOpacity
+                style={{
+                  position: "absolute",
+                  right: 20,
+                  paddingHorizontal: 5,
+                  paddingVertical: 3,
+                  backgroundColor: "#f0f4ff",
+                  borderRadius: 10,
+                }}
+                onPress={() => {
+                  viewMode === "gigs" ? setGigSearch("") : setWorkerSearch("");
+                }}
+              >
+                <Icons.Ionicons
+                  name="close"
+                  size={18}
+                  color={theme.colors.sub_text}
+                />
+              </TouchableOpacity>
+            )}
           </View>
         </View>
 
@@ -1226,7 +1329,7 @@ const GigsScreen = ({ navigation }) => {
           <Animated.View
             style={[
               styles.sheetContainer,
-              { backgroundColor: isDarkMode ? '#3c3c3cff' : theme.colors.card },
+              { backgroundColor: isDarkMode ? "#3c3c3cff" : theme.colors.card },
               {
                 transform: [
                   {
@@ -1263,10 +1366,18 @@ const GigsScreen = ({ navigation }) => {
                 <View
                   style={[
                     styles.searchBar2,
-                    { backgroundColor: isDarkMode ? theme.colors.card : '#f0f4ff' },
+                    {
+                      backgroundColor: isDarkMode
+                        ? theme.colors.card
+                        : "#f0f4ff",
+                    },
                   ]}
                 >
-                  <Icons.Ionicons name="search" size={20} color={theme.colors.sub_text} />
+                  <Icons.Ionicons
+                    name="search"
+                    size={20}
+                    color={theme.colors.sub_text}
+                  />
                   <TextInput
                     style={[styles.searchInput2, { color: theme.colors.text }]}
                     numberOfLines={1}
@@ -1275,10 +1386,15 @@ const GigsScreen = ({ navigation }) => {
                     placeholderTextColor={theme.colors.sub_text}
                     value={viewMode === "gigs" ? gigSearch : workerSearch}
                     onChangeText={(text) =>
-                      viewMode === "gigs" ? setGigSearch(text) : setWorkerSearch(text)
+                      viewMode === "gigs"
+                        ? setGigSearch(text)
+                        : setWorkerSearch(text)
                     }
                     returnKeyType="search"
-                    onSubmitEditing={() => { loadWorkers(true); setSheetVisible(false); }}
+                    onSubmitEditing={() => {
+                      loadWorkers(true);
+                      setSheetVisible(false);
+                    }}
                   />
                 </View>
 
@@ -1292,10 +1408,12 @@ const GigsScreen = ({ navigation }) => {
                       style={[
                         styles.categoryButton,
                         viewMode === "gigs"
-                          ? gigCategory === cat.id &&
-                          { backgroundColor: theme.colors.indicator }
-                          : workerCategory === cat.id &&
-                          { backgroundColor: theme.colors.indicator },
+                          ? gigCategory === cat.id && {
+                              backgroundColor: theme.colors.indicator,
+                            }
+                          : workerCategory === cat.id && {
+                              backgroundColor: theme.colors.indicator,
+                            },
                       ]}
                       onPress={() => {
                         viewMode === "gigs"
@@ -1322,9 +1440,9 @@ const GigsScreen = ({ navigation }) => {
                           styles.categoryText,
                           viewMode === "gigs"
                             ? gigCategory === cat.id &&
-                            styles.categoryTextActive
+                              styles.categoryTextActive
                             : workerCategory === cat.id &&
-                            styles.categoryTextActive,
+                              styles.categoryTextActive,
                         ]}
                       >
                         {cat.name}
@@ -1344,76 +1462,82 @@ const GigsScreen = ({ navigation }) => {
         <View style={styles.selectedCategoryRow}>
           {viewMode === "gigs"
             ? gigCategory !== "all" && (
-              <View
-                style={[
-                  styles.selectedCategoryPill,
-                  { backgroundColor: theme.colors.sub_card },
-                ]}
-              >
-                <Text
+                <View
                   style={[
-                    styles.selectedCategoryText,
-                    { color: theme.colors.text },
+                    styles.selectedCategoryPill,
+                    { backgroundColor: theme.colors.sub_card },
                   ]}
-                  numberOfLines={1}
                 >
-                  {gigCategory}
-                </Text>
-              </View>
-            )
+                  <Text
+                    style={[
+                      styles.selectedCategoryText,
+                      { color: theme.colors.text },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {gigCategory}
+                  </Text>
+                </View>
+              )
             : workerCategory !== "all" && (
-              <View
-                style={[
-                  styles.selectedCategoryPill,
-                  { backgroundColor: theme.colors.sub_card },
-                ]}
-              >
-                <Text
+                <View
                   style={[
-                    styles.selectedCategoryText,
-                    { color: theme.colors.text },
+                    styles.selectedCategoryPill,
+                    { backgroundColor: theme.colors.sub_card },
                   ]}
-                  numberOfLines={1}
                 >
-                  {workerCategory}
-                </Text>
-              </View>
-            )}
+                  <Text
+                    style={[
+                      styles.selectedCategoryText,
+                      { color: theme.colors.text },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {workerCategory}
+                  </Text>
+                </View>
+              )}
           {viewMode === "gigs"
             ? gigCategory !== "all" && (
-              <TouchableOpacity
-                onPress={() => setGigCategory("all")}
-                style={styles.clearButton}
-              >
-                <Icons.Ionicons
-                  name="close-circle"
-                  size={20}
-                  color={theme.colors.sub_text}
-                />
-              </TouchableOpacity>
-            )
+                <TouchableOpacity
+                  onPress={() => setGigCategory("all")}
+                  style={styles.clearButton}
+                >
+                  <Icons.Ionicons
+                    name="close-circle"
+                    size={20}
+                    color={theme.colors.sub_text}
+                  />
+                </TouchableOpacity>
+              )
             : workerCategory !== "all" && (
-              <TouchableOpacity
-                onPress={() => setWorkerCategory("all")}
-                style={styles.clearButton}
-              >
-                <Icons.Ionicons
-                  name="close-circle"
-                  size={20}
-                  color={theme.colors.sub_text}
-                />
-              </TouchableOpacity>
-            )}
+                <TouchableOpacity
+                  onPress={() => setWorkerCategory("all")}
+                  style={styles.clearButton}
+                >
+                  <Icons.Ionicons
+                    name="close-circle"
+                    size={20}
+                    color={theme.colors.sub_text}
+                  />
+                </TouchableOpacity>
+              )}
         </View>
 
         {/* ─── TOGGLE BUTTONS ─── */}
         <View
-          style={[styles.toggleContainer, { backgroundColor: theme.colors.card }]}
+          style={[
+            styles.toggleContainer,
+            { backgroundColor: theme.colors.card },
+          ]}
         >
           <TouchableOpacity
             style={[
               styles.toggleButton,
-              { backgroundColor: viewMode === "gigs" ? theme.colors.card2 : 'transparent' },
+              {
+                backgroundColor:
+                  viewMode === "gigs" ? theme.colors.card2 : "transparent",
+              },
             ]}
             onPress={() => setViewMode("gigs")}
           >
@@ -1430,7 +1554,10 @@ const GigsScreen = ({ navigation }) => {
           <TouchableOpacity
             style={[
               styles.toggleButton,
-              { backgroundColor: viewMode === "workers" ? theme.colors.card2 : 'transparent' },
+              {
+                backgroundColor:
+                  viewMode === "workers" ? theme.colors.card2 : "transparent",
+              },
             ]}
             onPress={() => setViewMode("workers")}
           >
@@ -1493,7 +1620,6 @@ const GigsScreen = ({ navigation }) => {
             }
             return <View style={{ height: 40 }} />;
           }}
-          removeClippedSubviews={true}
           initialNumToRender={10}
           maxToRenderPerBatch={10}
         />
@@ -1614,11 +1740,15 @@ const styles = StyleSheet.create({
     borderRadius: 70,
     paddingHorizontal: 12,
     height: height * 0.07,
-    gap: 8, paddingRight: 20
+    gap: 8,
+    paddingRight: 20,
   },
   searchInput2: {
-    position: 'absolute',
-    left: 35, top: 0, right: 0, bottom: 0
+    position: "absolute",
+    left: 35,
+    top: 0,
+    right: 0,
+    bottom: 0,
   },
   searchInput: {
     // flex: 1,
@@ -1637,8 +1767,8 @@ const styles = StyleSheet.create({
   categorySet: {
     flexDirection: "row",
     flexWrap: "wrap",
-    alignItems: 'center',
-    justifyContent: 'space-evenly',
+    alignItems: "center",
+    justifyContent: "space-evenly",
     marginTop: 12,
     paddingBottom: 20,
   },
@@ -1651,7 +1781,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     borderRadius: 20,
     backgroundColor: "#f0f4ff",
-    marginRight: 5
+    marginRight: 5,
   },
   categoryButtonActive: {
     backgroundColor: "#000",
