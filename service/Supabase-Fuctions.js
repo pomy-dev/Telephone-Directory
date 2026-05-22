@@ -1,6 +1,15 @@
 import { supabase } from "./Supabase-Client";
-import { RECOMMENDATION_FUNC_API_KEY, RECOMMENDATION_FUNC_URL, RECOMMENDATION_LOG_FUNC_URL, RECOMMENDATION_GET_REC_FUNC_URL } from "../config/env";
-import { UploadImage, uploadImages, uploadAttachments } from "../service/uploadFiles";
+import {
+  RECOMMENDATION_FUNC_API_KEY,
+  RECOMMENDATION_FUNC_URL,
+  RECOMMENDATION_LOG_FUNC_URL,
+  RECOMMENDATION_GET_REC_FUNC_URL,
+} from "../config/env";
+import {
+  UploadImage,
+  uploadImages,
+  uploadAttachments,
+} from "../service/uploadFiles";
 import { CustomToast } from "../components/customToast";
 
 export async function subscribeRealtime() {
@@ -102,7 +111,7 @@ export async function addForhire(formData) {
 
   const { data, error } = await supabase.rpc("save_forehire_listing", {
     p_type: formData?.type,
-    p_agent_phone: '+26876957019',
+    p_agent_phone: "+26876957019",
     p_category: formData?.category,
     p_make: formData?.make,
     p_model: formData?.model,
@@ -128,12 +137,12 @@ export async function addForhire(formData) {
 }
 
 export async function editForhire(id, formData) {
-  if (!id) throw new Error('vehicle token could not be determined!!');
+  if (!id) throw new Error("vehicle token could not be determined!!");
 
   const { data, error } = await supabase.rpc("update_forehire_listing", {
     p_id: id,
     p_type: formData?.type,
-    p_agent_phone: '+26876957019',
+    p_agent_phone: "+26876957019",
     p_category: formData?.category,
     p_make: formData?.make,
     p_model: formData?.model,
@@ -160,13 +169,16 @@ export async function editForhire(id, formData) {
 
 export async function deleteForhire(vehicle, vehicleId) {
   const { error } = await supabase
-    .from('pomy_forhire_transport')
+    .from("pomy_forhire_transport")
     .delete()
-    .eq('id', vehicleId)
+    .eq("id", vehicleId);
 
   if (error) throw new Error(error.message);
 
-  CustomToast('Successfully Removed', `${vehicle.vehicle_make} ${vehicle.vehicle_model} got unlisted.`);
+  CustomToast(
+    "Successfully Removed",
+    `${vehicle.vehicle_make} ${vehicle.vehicle_model} got unlisted.`,
+  );
 }
 
 export async function getForHireTransport() {
@@ -307,7 +319,6 @@ export async function fetchOpenGigsCount() {
  */
 const shuffleArray = (array) => {
   if (array?.length > 0) {
-
     const shuffled = [...array]; // Create a copy to avoid mutating the original
     for (let i = shuffled.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
@@ -375,6 +386,39 @@ export const subscribeToGigs = (onCallback) => {
     .subscribe();
 };
 
+export const subscribeToGigsScreen = (onCallback) => {
+  const existing = supabase
+    .getChannels()
+    .find((c) => c.topic === "realtime:gigs-changes");
+
+  if (existing) {
+    supabase.removeChannel(existing);
+  }
+
+  const channel = supabase.channel("gigs-changes");
+
+  channel.on(
+    "postgres_changes",
+    {
+      event: "*",
+      schema: "public",
+      table: "pomy_gigs",
+    },
+    (payload) => {
+      console.log("Change received!", payload);
+
+      // IMPORTANT
+      onCallback(payload);
+    },
+  );
+
+  channel.subscribe((status) => {
+    console.log("Realtime subscription status:", status);
+  });
+
+  return channel;
+};
+
 /** Fetch all applications for a specific gig */
 export async function getGigApplicants(gigId) {
   try {
@@ -397,7 +441,7 @@ export async function getApplication(appId) {
     const { data, error } = await supabase
       .from("pomy_gig_application_summary") // Updated to your new table name
       .select("*")
-      .eq("application_id", appId)
+      .eq("application_id", appId);
 
     if (error) throw error;
     return { success: true, data };
@@ -423,20 +467,20 @@ export async function registerAsWorker(workerData) {
     const uploadedImages =
       workerData.experience_images?.length > 0
         ? await uploadImages(
-          "worker_portfolios",
-          "images",
-          workerData.experience_images,
-        )
+            "worker_portfolios",
+            "images",
+            workerData.experience_images,
+          )
         : [];
 
     // 2. Upload Documents (Qualifications)
     const uploadedDocs =
       workerData.documents?.length > 0
         ? await uploadAttachments(
-          "worker_docs",
-          "attachments",
-          workerData.documents,
-        )
+            "worker_docs",
+            "attachments",
+            workerData.documents,
+          )
         : [];
 
     const { data, error } = await supabase
@@ -510,9 +554,9 @@ export async function getWorkerProfileClient(id) {
  * @param {Object} [filters.location] - JSONB object for location matching
  * @param {number} [filters.pageSize] - Number of records per page (max 100)
  * @param {Object} [filters.cursor] - The cursor from the last record of the previous page
- * 
- * 
- *    
+ *
+ *
+ *
  */
 export const fetchPomyWorkers = async ({
   searchTerm = "",
@@ -522,7 +566,6 @@ export const fetchPomyWorkers = async ({
   pageSize = 10,
   cursor = null,
 }) => {
-
   try {
     const { data, error } = await supabase.rpc("get_pomy_workers", {
       p_search_term: searchTerm || null,
@@ -544,7 +587,6 @@ export const fetchPomyWorkers = async ({
     }
 
     if (!data) {
-
       return { workers: [], hasMore: false, lastVisible: null };
     }
 
@@ -556,9 +598,9 @@ export const fetchPomyWorkers = async ({
       lastVisible:
         data.length > 0
           ? {
-            id: data[data.length - 1].id,
-            created_at: data[data.length - 1].created_at,
-          }
+              id: data[data.length - 1].id,
+              created_at: data[data.length - 1].created_at,
+            }
           : null,
     };
   } catch (err) {
@@ -608,9 +650,7 @@ export async function updateWorkerProfile(uid, updateData) {
 
     // Profile picture(s)
     const existingPP = workerProfile?.filter((item) => !isLocalFile(item));
-    const toUploadPP = workerProfile
-      ?.filter(isLocalFile)
-      .map((i) => i);
+    const toUploadPP = workerProfile?.filter(isLocalFile).map((i) => i);
 
     if (toUploadPP.length > 0) {
       const uploadedPP = await uploadImages(
@@ -629,9 +669,7 @@ export async function updateWorkerProfile(uid, updateData) {
       ?.filter(isRemoteUrl)
       .map((i) => i);
 
-    const toUploadPortfolio = portfolioImgs
-      ?.filter(isLocalFile)
-      .map((i) => i);
+    const toUploadPortfolio = portfolioImgs?.filter(isLocalFile).map((i) => i);
 
     if (toUploadPortfolio.length > 0) {
       const uploadedPortfolio = await uploadImages(
@@ -842,10 +880,9 @@ export async function reapplyForGig(gigId) {
 export async function getMyAppliedGigs(userEmail) {
   console.log("Fetching applied gigs for user:", userEmail);
   try {
-    const { data, error } = await supabase.rpc(
-      "get_gigs_i_applied_for",
-      { p_email: userEmail.trim() }
-    )
+    const { data, error } = await supabase.rpc("get_gigs_i_applied_for", {
+      p_email: userEmail.trim(),
+    });
 
     if (error) throw error;
 
@@ -859,10 +896,9 @@ export async function getMyAppliedGigs(userEmail) {
 export async function getMyAppliedGigsThatApproved(userEmail) {
   console.log("Fetching applied gigs for user:", userEmail);
   try {
-    const { data, error } = await supabase.rpc(
-      "get_user_related_gigs",
-      { p_email: userEmail.trim() }
-    )
+    const { data, error } = await supabase.rpc("get_user_related_gigs", {
+      p_email: userEmail.trim(),
+    });
 
     if (error) throw error;
 
@@ -889,8 +925,8 @@ export async function getApprovedGigs(userEmail) {
   }
 }
 
-/** 
- * approve application 
+/**
+ * approve application
  */
 export async function approveApplication(applicationId) {
   try {
@@ -930,7 +966,6 @@ export async function deleteMyApplication(appId, userEmail) {
   }
 }
 
-
 /**
  * Fetches recommendations. If personalized fails (new user), fetches random ones.
  * this is the old function for the first recomendation
@@ -969,21 +1004,21 @@ export async function deleteMyApplication(appId, userEmail) {
  */
 export const getPersonalizedRecommendations = async ({
   userId,
-  limit = 10
+  limit = 10,
 }) => {
   try {
     // 1. Call the Universal Edge Function Gateway
     const response = await fetch(RECOMMENDATION_GET_REC_FUNC_URL, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'FUNC_API_KEY': RECOMMENDATION_FUNC_API_KEY
+        "Content-Type": "application/json",
+        FUNC_API_KEY: RECOMMENDATION_FUNC_API_KEY,
       },
       body: JSON.stringify({
         user_id: userId,
-        origin: 'firebase business link',
-        limit: limit
-      })
+        origin: "firebase business link",
+        limit: limit,
+      }),
     });
 
     if (!response.ok) {
@@ -991,7 +1026,6 @@ export const getPersonalizedRecommendations = async ({
     }
 
     const result = await response.json();
-
 
     if (result.recommendations && result.recommendations.length > 0) {
       // We check the first item to see if the whole list is personalized or fallback
@@ -1005,12 +1039,11 @@ export const getPersonalizedRecommendations = async ({
         [shuffledData[i], shuffledData[j]] = [shuffledData[j], shuffledData[i]];
       }
 
-
       return {
         success: true,
-        // data: result.recommendations, 
+        // data: result.recommendations,
         data: shuffledData,
-        type: isPersonalized ? 'personalized' : 'discovery'
+        type: isPersonalized ? "personalized" : "discovery",
       };
     }
 
@@ -1018,15 +1051,14 @@ export const getPersonalizedRecommendations = async ({
     return {
       success: true,
       data: [],
-      type: 'empty'
+      type: "empty",
     };
-
   } catch (error) {
     console.error("Recommendation Fetch Error:", error.message);
     return {
       success: false,
       data: [],
-      error: error.message
+      error: error.message,
     };
   }
 };
@@ -1056,18 +1088,18 @@ export const getPersonalizedRecommendations = async ({
 
 export const logUserActivity = async ({ itemId, userId, itemType, action }) => {
   await fetch(RECOMMENDATION_LOG_FUNC_URL, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
-      'FUNC_API_KEY': RECOMMENDATION_FUNC_API_KEY
+      "Content-Type": "application/json",
+      FUNC_API_KEY: RECOMMENDATION_FUNC_API_KEY,
     },
     body: JSON.stringify({
       user_id: userId,
       item_id: itemId,
       item_type: itemType,
       activity_type: action,
-      origin: 'firebase business link'
-    })
+      origin: "firebase business link",
+    }),
   });
 };
 
@@ -1104,30 +1136,24 @@ export const logUserActivity = async ({ itemId, userId, itemType, action }) => {
 //   }
 // }
 
-
-
-
-
 // this is the function user to sysnc the user to the old database  for recomendation
 // -- before the universal recommendation engine ------------
 export async function syncUserProfile(firebaseUser) {
   if (!firebaseUser) return null;
 
   try {
-
     await fetch(RECOMMENDATION_FUNC_URL, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'FUNC_API_KEY': RECOMMENDATION_FUNC_API_KEY
+        "Content-Type": "application/json",
+        FUNC_API_KEY: RECOMMENDATION_FUNC_API_KEY,
       },
       body: JSON.stringify({
         user_id: firebaseUser.uid,
-        origin: 'firebase business link',
-        name: firebaseUser.displayName
-      })
+        origin: "firebase business link",
+        name: firebaseUser.displayName,
+      }),
     });
-
 
     if (error) throw error;
     return { success: true, data: data["nice"] };
@@ -1137,23 +1163,20 @@ export async function syncUserProfile(firebaseUser) {
   }
 }
 
-
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
-//this is the service for collection the user feed back  about the application : 
+//this is the service for collection the user feed back  about the application :
 export const submitFeedback = async (firebaseUid, rating, message) => {
-  const { data, error } = await supabase
-    .from('app_feedback')
-    .insert([
-      {
-        user_id: firebaseUid, // This is the Firebase user.uid
-        rating: rating,
-        message: message,
-        app_version: '1.0.0' // Hardcode or use expo-constants
-      }
-    ]);
+  const { data, error } = await supabase.from("app_feedback").insert([
+    {
+      user_id: firebaseUid, // This is the Firebase user.uid
+      rating: rating,
+      message: message,
+      app_version: "1.0.0", // Hardcode or use expo-constants
+    },
+  ]);
 
   if (error) throw error;
   return data;
