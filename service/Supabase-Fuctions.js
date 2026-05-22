@@ -11,6 +11,39 @@ import {
   uploadAttachments,
 } from "../service/uploadFiles";
 import { CustomToast } from "../components/customToast";
+import * as Notifications from "expo-notifications";
+import Constants from "expo-constants";
+import { Platform } from "react-native";
+
+
+export async function registerForPushNotifications(user) {
+  const { status } = await Notifications.requestPermissionsAsync();
+
+  if (status !== "granted") {
+    return null;
+  }
+
+  const tokenResult = await Notifications.getExpoPushTokenAsync({
+    projectId: Constants.expoConfig.extra.eas.projectId,
+  });
+
+  const expoPushToken = tokenResult.data;
+
+  await supabase.from("push_tokens").upsert(
+    {
+      user_email: user?.email || null,
+      expo_push_token: expoPushToken,
+      platform: Platform.OS,
+      notifications_enabled: true,
+      updated_at: new Date().toISOString(),
+    },
+    {
+      onConflict: "expo_push_token",
+    }
+  );
+
+  return expoPushToken;
+}
 
 export async function subscribeRealtime() {
   const channel = supabase
@@ -467,20 +500,20 @@ export async function registerAsWorker(workerData) {
     const uploadedImages =
       workerData.experience_images?.length > 0
         ? await uploadImages(
-            "worker_portfolios",
-            "images",
-            workerData.experience_images,
-          )
+          "worker_portfolios",
+          "images",
+          workerData.experience_images,
+        )
         : [];
 
     // 2. Upload Documents (Qualifications)
     const uploadedDocs =
       workerData.documents?.length > 0
         ? await uploadAttachments(
-            "worker_docs",
-            "attachments",
-            workerData.documents,
-          )
+          "worker_docs",
+          "attachments",
+          workerData.documents,
+        )
         : [];
 
     const { data, error } = await supabase
@@ -598,9 +631,9 @@ export const fetchPomyWorkers = async ({
       lastVisible:
         data.length > 0
           ? {
-              id: data[data.length - 1].id,
-              created_at: data[data.length - 1].created_at,
-            }
+            id: data[data.length - 1].id,
+            created_at: data[data.length - 1].created_at,
+          }
           : null,
     };
   } catch (err) {
