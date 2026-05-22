@@ -438,8 +438,7 @@ export const subscribeToGigsScreen = (onCallback) => {
       table: "pomy_gigs",
     },
     (payload) => {
-      console.log("Change received!", payload);
-
+      
       // IMPORTANT
       onCallback(payload);
     },

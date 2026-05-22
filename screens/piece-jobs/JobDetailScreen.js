@@ -92,8 +92,7 @@ const JobDetailScreen = ({ route, navigation }) => {
   const from = route.params?.from || "direct";
   const [validationError, setValidationError] = useState("");
 
-  // 4. Update the user check to be safe (postedBy will now always exist)
-  const isOwner = user?.email === job?.postedBy?.email;
+ 
 
   // Check if there are valid images (not placeholders)
   const hasImages =
@@ -101,7 +100,6 @@ const JobDetailScreen = ({ route, navigation }) => {
     job.images.length > 0 &&
     !job.images[0].includes("via.placeholder.com");
 
-  const [modalVisible, setModalVisible] = useState(false);
   const [phone, setPhone] = useState("");
   const [expertiseInput, setExpertiseInput] = useState("");
   const [expertises, setExpertises] = useState([]);
@@ -319,7 +317,7 @@ const JobDetailScreen = ({ route, navigation }) => {
       throw err;
     } finally {
       setIsSubmitting(false);
-      setModalVisible(false);
+      ref.current?.dismiss();
       setPhone("");
       setExpertises([]);
       setAttachments([]);
