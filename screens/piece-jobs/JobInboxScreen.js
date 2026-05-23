@@ -152,6 +152,8 @@ const JobInboxScreen = ({ route, navigation }) => {
     };
 
     const applicantName = applicantData?.name ? applicantData?.name : applicantData?.phone || applicantData?.email || "Unknown Worker";
+    const applicationId = item.application_id || item.id;
+    const applicationStatus = item.application_status || item.status || "pending";
 
     return (
       <View style={[styles.appCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.card }]}>
@@ -201,18 +203,18 @@ const JobInboxScreen = ({ route, navigation }) => {
           <TouchableOpacity
             style={[
               styles.hireBtn,
-              item.application_status === "approved" && styles.hiredBtnDisabled,
+              applicationStatus === "approved" && styles.hiredBtnDisabled,
             ]}
             onPress={() => {
-              item.application_status === "approved" ?
+              applicationStatus === "approved" ?
                 CustomToast("Approved!", "This worker has already been hired for this job.")
                 :
-                handleHire(item.application_id, applicantName)
+                handleHire(applicationId, applicantName)
             }}
-            disabled={item.application_status === "approved"}
+            disabled={applicationStatus === "approved"}
           >
             <Text style={styles.hireBtnText}>
-              {item.status === "approved" ? "Worker Hired" : "Hire Now"}
+              {applicationStatus === "approved" ? "Worker Hired" : "Hire Now"}
             </Text>
           </TouchableOpacity>
         </View>
