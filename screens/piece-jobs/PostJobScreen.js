@@ -94,11 +94,11 @@ const PostGigScreen = ({ navigation, route }) => {
   });
   const [locationLoading, setLocationLoading] = useState(false);
   const [requirements, setRequirements] = useState(
-    editGigData ? editGigData.job_requirements : [""],
+    editGigData ? editGigData?.job_requirements : [],
   );
   const [newRequirement, setNewRequirement] = useState("");
   const [images, setImages] = useState(
-    editGigData ? editGigData.job_images || [] : [],
+    editGigData ? editGigData?.job_images || [] : [],
   );
   const [uploading, setUploading] = useState(false);
   const [isSubmiting, setIsSubmiting] = useState(false);
@@ -107,6 +107,7 @@ const PostGigScreen = ({ navigation, route }) => {
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
+    console.log(editGigData)
     setShuffledCategories(shuffleArray(CATEGORIES));
   }, []);
 
@@ -168,7 +169,7 @@ const PostGigScreen = ({ navigation, route }) => {
         mediaTypes: ["images"],
       });
       if (!result.canceled) {
-        const newImgs = result.assets.map((a) => a.uri);
+        const newImgs = result.assets.map((a) => a);
 
         if (newImgs.length + images.length > 8) {
           Alert.alert("Limit Exceeded", "You can only upload up to 8 photos.");
@@ -265,11 +266,11 @@ const PostGigScreen = ({ navigation, route }) => {
             longitude: location?.longitude,
           },
           postedby: {
-          name: user?.displayName.trim(),
-          phone: phone?.trim(),
-          email: user?.email.trim(),
-          user_id: user?.uid,
-        },
+            name: user?.displayName.trim(),
+            phone: phone?.trim(),
+            email: user?.email.trim(),
+            user_id: user?.uid,
+          },
         };
         const result = await updateGigDetails(editGigData.id, finalPayload);
 
@@ -366,7 +367,10 @@ const PostGigScreen = ({ navigation, route }) => {
                 style={[
                   styles.addRequirementButton,
                   newRequirement.trim() === "" &&
-                    styles.addRequirementButtonDisabled,
+                  styles.addRequirementButtonDisabled,
+                  {
+                    backgroundColor: theme.colors.indicator,
+                  }
                 ]}
                 onPress={addRequirement}
                 disabled={newRequirement.trim() === ""}
@@ -502,7 +506,7 @@ const PostGigScreen = ({ navigation, route }) => {
                 {images.map((img, index) => (
                   <View key={index} style={styles.imagePreviewWrapper}>
                     <Image
-                      source={{ uri: img }}
+                      source={{ uri: img.uri || img.url }}
                       style={styles.imagePreview}
                       resizeMode="cover"
                     />
@@ -706,7 +710,7 @@ const PostGigScreen = ({ navigation, route }) => {
               style={[
                 styles.stepLabel,
                 index <= step &&
-                  (styles.stepLabelActive,
+                (styles.stepLabelActive,
                   { color: isDarkMode ? "#fff" : "#000" }),
               ]}
             >
@@ -888,7 +892,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   addRequirementButton: {
-    backgroundColor: "#000",
     paddingHorizontal: 20,
     paddingVertical: 14,
     borderRadius: 12,
