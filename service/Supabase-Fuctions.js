@@ -529,20 +529,20 @@ export async function registerAsWorker(workerData) {
     const uploadedImages =
       workerData.experience_images?.length > 0
         ? await uploadImages(
-            "worker_portfolios",
-            "images",
-            workerData.experience_images,
-          )
+          "worker_portfolios",
+          "images",
+          workerData.experience_images,
+        )
         : [];
 
     // 2. Upload Documents (Qualifications)
     const uploadedDocs =
       workerData.documents?.length > 0
         ? await uploadAttachments(
-            "worker_docs",
-            "attachments",
-            workerData.documents,
-          )
+          "worker_docs",
+          "attachments",
+          workerData.documents,
+        )
         : [];
 
     const { data, error } = await supabase
@@ -660,9 +660,9 @@ export const fetchPomyWorkers = async ({
       lastVisible:
         data.length > 0
           ? {
-              id: data[data.length - 1].id,
-              created_at: data[data.length - 1].created_at,
-            }
+            id: data[data.length - 1].id,
+            created_at: data[data.length - 1].created_at,
+          }
           : null,
     };
   } catch (err) {

@@ -6,13 +6,12 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
+    // "splash": {
+    //   "image": "./assets/splash-icon.png",
+    //   "resizeMode": "contain",
+    //   "backgroundColor": "#ffffff"
+    // },
     "ios": {
-      "buildNumber": "4",
       "supportsTablet": true,
       "bundleIdentifier": "com.pld.phonebook",
       "googleServicesFile": "./GoogleService-Info.plist",
@@ -32,7 +31,6 @@
       }
     },
     "android": {
-      "versionCode": 4,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -65,7 +63,7 @@
       }
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/adaptive-icon.png"
     },
     "plugins": [
       [
@@ -115,7 +113,7 @@
         "expo-navigation-bar",
         {
           "backgroundColor": "#000000",
-          "barStyle": "light"
+          "style": "light"
         }
       ],
       [
