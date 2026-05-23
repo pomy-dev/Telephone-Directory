@@ -15,7 +15,6 @@ import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
 import { Platform } from "react-native";
 
-
 export async function registerForPushNotifications(user) {
   const { status } = await Notifications.requestPermissionsAsync();
 
@@ -39,7 +38,7 @@ export async function registerForPushNotifications(user) {
     },
     {
       onConflict: "expo_push_token",
-    }
+    },
   );
 
   return expoPushToken;
@@ -336,6 +335,38 @@ export async function submitGig(jobData) {
   }
 }
 
+//-----------------------------------------------------------------------------
+// SERVICE FUNCTION TO UPDATE GIG DETAILS
+//-----------------------------------------------------------------------------
+export async function updateGigDetails(gigId, gigData) {
+  if (!gigId) throw new Error("Gig ID is required for updates");
+
+  try {
+    const { data, error } = await supabase
+      .from("pomy_gigs")
+      .update({
+        ...gigData,
+        updated_at: new Date().toISOString(), // Automatically append timestamp
+      })
+      .eq("id", gigId)
+      .select();
+
+    if (error) throw error;
+
+    return {
+      success: true,
+      data: data[0],
+      message: "Gig updated successfully",
+    };
+  } catch (error) {
+    console.error("Update Gig Service Error:", error);
+    return {
+      success: false,
+      error: error.message || "Failed to update gig details",
+    };
+  }
+}
+
 /**
  * Get All Posted gigs count
  */
@@ -438,7 +469,6 @@ export const subscribeToGigsScreen = (onCallback) => {
       table: "pomy_gigs",
     },
     (payload) => {
-      
       // IMPORTANT
       onCallback(payload);
     },
@@ -499,20 +529,20 @@ export async function registerAsWorker(workerData) {
     const uploadedImages =
       workerData.experience_images?.length > 0
         ? await uploadImages(
-          "worker_portfolios",
-          "images",
-          workerData.experience_images,
-        )
+            "worker_portfolios",
+            "images",
+            workerData.experience_images,
+          )
         : [];
 
     // 2. Upload Documents (Qualifications)
     const uploadedDocs =
       workerData.documents?.length > 0
         ? await uploadAttachments(
-          "worker_docs",
-          "attachments",
-          workerData.documents,
-        )
+            "worker_docs",
+            "attachments",
+            workerData.documents,
+          )
         : [];
 
     const { data, error } = await supabase
@@ -630,9 +660,9 @@ export const fetchPomyWorkers = async ({
       lastVisible:
         data.length > 0
           ? {
-            id: data[data.length - 1].id,
-            created_at: data[data.length - 1].created_at,
-          }
+              id: data[data.length - 1].id,
+              created_at: data[data.length - 1].created_at,
+            }
           : null,
     };
   } catch (err) {
@@ -810,7 +840,7 @@ export async function approveGigApplication(applicationId) {
     });
 
     if (error) throw error;
-    console.log('Job details:', data)
+    console.log("Job details:", data);
 
     return {
       success: true,

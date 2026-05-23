@@ -44,6 +44,11 @@ const MyPostedGigsScreen = ({ navigation }) => {
       `Options for "${gig.job_title}"`,
       [
         {
+          text: "Update Post",
+          style: "destructive",
+          onPress:() => navigation.navigate("PostJobScreen", { gig: gig })
+        },
+        {
           text: "Delete Post",
           style: "destructive",
           onPress: () => confirmDelete(gig.id)

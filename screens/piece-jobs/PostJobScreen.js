@@ -1,783 +1,1038 @@
-"use client"
+"use client";
 
-import React, { useState, useEffect, useContext } from "react"
+import React, { useState, useEffect, useContext } from "react";
 import {
-    View,
-    Text,
-    StyleSheet,
-    ScrollView,
-    TouchableOpacity,
-    Alert,
-    Image,
-    Platform, Dimensions,
-    StatusBar, KeyboardAvoidingView,
-    ActivityIndicator,
-} from "react-native"
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Alert,
+  Image,
+  Platform,
+  Dimensions,
+  StatusBar,
+  KeyboardAvoidingView,
+  ActivityIndicator,
+} from "react-native";
 import { TextInput } from "react-native-paper";
-import * as ImagePicker from 'expo-image-picker';
-import { Ionicons } from "@expo/vector-icons"
-import * as Location from "expo-location"
+import * as ImagePicker from "expo-image-picker";
+import { Ionicons } from "@expo/vector-icons";
+import * as Location from "expo-location";
 import { CustomToast } from "../../components/customToast";
-import SecondaryNav from "../../components/SecondaryNav"
+import SecondaryNav from "../../components/SecondaryNav";
 import { AuthContext } from "../../context/authProvider";
-import { submitGig } from "../../service/Supabase-Fuctions";
+import { submitGig, updateGigDetails } from "../../service/Supabase-Fuctions";
 import { AppContext } from "../../context/appContext";
 
-const CATEGORIES = ["Transporting", "Fixing", "Construction", "Artisan", "Cleaning",
-    "Groundsman", "LandScaping", "Beauty & Care", "Gardening", "Fabric & Fashion", "Property-Gard",
-    "Pets & Animals", "Tech", "Engineering", "Media", "Catering", "Educating", "Baby-Sitter"];
+const CATEGORIES = [
+  "Transporting",
+  "Fixing",
+  "Construction",
+  "Artisan",
+  "Cleaning",
+  "Groundsman",
+  "LandScaping",
+  "Beauty & Care",
+  "Gardening",
+  "Fabric & Fashion",
+  "Property-Gard",
+  "Pets & Animals",
+  "Tech",
+  "Engineering",
+  "Media",
+  "Catering",
+  "Educating",
+  "Baby-Sitter",
+];
 
 const STEPS = ["Job Details", "Description", "Photos", "Contacts"];
-const { width } = Dimensions.get('window')
+const { width } = Dimensions.get("window");
 
-const PostGigScreen = ({ navigation }) => {
-    const { theme, isDarkMode } = useContext(AppContext)
-    const { user } = React.useContext(AuthContext)
-    const [step, setStep] = useState(0)
+const PostGigScreen = ({ navigation, route }) => {
+  const { theme, isDarkMode } = useContext(AppContext);
+  const { user } = React.useContext(AuthContext);
+  const [step, setStep] = useState(0);
 
-    // Shuffle function
-    const shuffleArray = (array) => {
-        const shuffled = [...array];
-        for (let i = shuffled.length - 1; i > 0; i--) {
-            const j = Math.floor(Math.random() * (i + 1));
-            [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-        }
-        return shuffled;
-    };
+  const [loading, setLoading] = useState(false);
 
-    const [shuffledCategories, setShuffledCategories] = useState(CATEGORIES);
+  // Check if we are in Edit Mode
+  const editGigData = route?.params?.gig || null;
+  const isEditMode = !!editGigData;
 
-    // Form fields
-    const [title, setTitle] = useState("")
-    const [description, setDescription] = useState("")
-    const [category, setCategory] = useState("")
-    const [price, setPrice] = useState("")
-    const [phone, setPhone] = useState("")
-    const [location, setLocation] = useState({
-        address: "",
-        latitude: "",
-        longitude: "",
-    })
-    const [locationLoading, setLocationLoading] = useState(false)
-    const [requirements, setRequirements] = useState([])
-    const [newRequirement, setNewRequirement] = useState("")
-    const [images, setImages] = useState([])
-    const [uploading, setUploading] = useState(false)
-    const [isSubmiting, setIsSubmiting] = useState(false)
-
-    // Errors
-    const [errors, setErrors] = useState({})
-
-    useEffect(() => {
-        setShuffledCategories(shuffleArray(CATEGORIES));
-    }, []);
-
-    const validateCurrentStep = () => {
-        const newErrors = {}
-        if (!user || user === null) {
-            Alert.alert("Not Logged In", "It seems you are not logged in. Please log in to post a gig.")
-        }
-        if (step === 0) {
-            if (!title.trim()) newErrors.title = "Job title is required"
-        }
-        if (step === 1) {
-            if (!description.trim()) newErrors.description = "Description is required"
-            if (!category) newErrors.category = "Please select a category"
-            if (!price.trim() || isNaN(Number(price))) newErrors.price = "Valid budget (R) is required"
-        }
-        if (step === 3) {
-            if (!phone.trim()) newErrors.phone = "Phone number is required"
-            if (!location.address.trim()) newErrors.location = "Local address is required"
-        }
-        setErrors(newErrors)
-        return Object.keys(newErrors).length === 0
+  // Shuffle function
+  const shuffleArray = (array) => {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
+    return shuffled;
+  };
 
-    const nextStep = () => {
-        if (validateCurrentStep()) {
-            if (step < STEPS.length - 1) setStep(step + 1)
-            else handlePostGig()
+  const [shuffledCategories, setShuffledCategories] = useState(CATEGORIES);
+
+  // Form fields
+
+  const [title, setTitle] = useState(editGigData ? editGigData.job_title : "");
+  const [description, setDescription] = useState(
+    editGigData ? editGigData.job_description : "",
+  );
+  const [category, setCategory] = useState(
+    editGigData ? editGigData.job_category : "",
+  );
+  const [price, setPrice] = useState(
+    editGigData ? String(editGigData.job_price) : "",
+  );
+  const [phone, setPhone] = useState(
+    editGigData ? editGigData.postedby?.phone : user?.phoneNumber || "",
+  );
+  const [location, setLocation] = useState({
+    address: editGigData ? editGigData.job_location?.address : "",
+    latitude: "",
+    longitude: "",
+  });
+  const [locationLoading, setLocationLoading] = useState(false);
+  const [requirements, setRequirements] = useState(
+    editGigData ? editGigData.job_requirements : [""],
+  );
+  const [newRequirement, setNewRequirement] = useState("");
+  const [images, setImages] = useState(
+    editGigData ? editGigData.job_images || [] : [],
+  );
+  const [uploading, setUploading] = useState(false);
+  const [isSubmiting, setIsSubmiting] = useState(false);
+
+  // Errors
+  const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    setShuffledCategories(shuffleArray(CATEGORIES));
+  }, []);
+
+  const validateCurrentStep = () => {
+    const newErrors = {};
+    if (!user || user === null) {
+      Alert.alert(
+        "Not Logged In",
+        "It seems you are not logged in. Please log in to post a gig.",
+      );
+    }
+    if (step === 0) {
+      if (!title.trim()) newErrors.title = "Job title is required";
+    }
+    if (step === 1) {
+      if (!description.trim())
+        newErrors.description = "Description is required";
+      if (!category) newErrors.category = "Please select a category";
+      if (!price.trim() || isNaN(Number(price)))
+        newErrors.price = "Valid budget (R) is required";
+    }
+    if (step === 3) {
+      if (!phone.trim()) newErrors.phone = "Phone number is required";
+      if (!location.address.trim())
+        newErrors.location = "Local address is required";
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const nextStep = () => {
+    if (validateCurrentStep()) {
+      if (step < STEPS.length - 1) setStep(step + 1);
+      else handlePostGig();
+    }
+  };
+
+  const prevStep = () => {
+    if (step > 0) setStep(step - 1);
+  };
+
+  const addRequirement = () => {
+    if (newRequirement.trim() === "") return;
+    setRequirements([...requirements, newRequirement.trim()]);
+    setNewRequirement("");
+  };
+
+  const removeRequirement = (index) => {
+    setRequirements(requirements.filter((_, i) => i !== index));
+  };
+
+  const pickImages = async () => {
+    try {
+      setUploading(true);
+      const result = await ImagePicker.launchImageLibraryAsync({
+        allowsMultipleSelection: true,
+        quality: 0.8,
+        selectionLimit: 8,
+        mediaTypes: ["images"],
+      });
+      if (!result.canceled) {
+        const newImgs = result.assets.map((a) => a.uri);
+
+        if (newImgs.length + images.length > 8) {
+          Alert.alert("Limit Exceeded", "You can only upload up to 8 photos.");
+        } else {
+          setImages([...images, ...newImgs]);
         }
+      }
+    } catch (e) {
+      console.log(e.message);
+    } finally {
+      setUploading(false);
     }
+  };
 
-    const prevStep = () => {
-        if (step > 0) setStep(step - 1)
+  const removeImage = (id) => {
+    setImages(images.filter((img) => img.id !== id));
+  };
+
+  const fetchCurrentLocation = async () => {
+    setLocationLoading(true);
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== "granted") {
+        Alert.alert(
+          "Permission Denied",
+          "Location access is required to auto-fill your location.",
+        );
+        return;
+      }
+
+      const loc = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+
+      setLocation({
+        ...location,
+        latitude: loc.coords.latitude.toFixed(6),
+        longitude: loc.coords.longitude.toFixed(6),
+      });
+    } catch (error) {
+      console.error(error);
+      Alert.alert(
+        "Error",
+        "Could not fetch location. Please try again or enter manually.",
+      );
+    } finally {
+      setLocationLoading(false);
     }
+  };
 
-    const addRequirement = () => {
-        if (newRequirement.trim() === "") return
-        setRequirements([...requirements, newRequirement.trim()])
-        setNewRequirement("")
+  useEffect(() => {
+    if (step === 3 && !location) {
+      fetchCurrentLocation();
     }
+  }, [step]);
 
-    const removeRequirement = (index) => {
-        setRequirements(requirements.filter((_, i) => i !== index))
-    }
+  const handlePostGig = async () => {
+    if (!validateCurrentStep()) return;
 
-    const pickImages = async () => {
-        try {
-            setUploading(true)
-            const result = await ImagePicker.launchImageLibraryAsync({
-                allowsMultipleSelection: true,
-                quality: 0.8,
-                selectionLimit: 8,
-                mediaTypes: ['images'],
-            });
-            if (!result.canceled) {
-                const newImgs = result.assets.map(a => a.uri);
+    try {
+      setLoading(true);
+      setIsSubmiting(true);
 
-                if ((newImgs.length + images.length) > 8) {
-                    Alert.alert("Limit Exceeded", "You can only upload up to 8 photos.")
-                } else {
-                    setImages([...images, ...newImgs]);
-                }
-            }
-        } catch (e) {
-            console.log(e.message)
-        } finally {
-            setUploading(false)
+      const jobData = {
+        title,
+        description,
+        category,
+        price: Number(price),
+        postedBy: {
+          name: user?.displayName.trim(),
+          phone: phone?.trim(),
+          email: user?.email.trim(),
+          user_id: user?.uid,
+        },
+        locationSpot: location || { latitude: "", longitude: "" },
+        requirements,
+        photos: images,
+        status: "open",
+      };
+
+      if (isEditMode) {
+        // UPDATE TARGETED RECORD
+
+        const finalPayload = {
+          job_title: title,
+          job_price: Number(price),
+          job_category: category,
+          job_description: description,
+          job_requirements: requirements.filter((r) => r.trim() !== ""),
+          job_images: images,
+          job_location: {
+            address: location.address,
+            latitude: location?.latitude,
+            longitude: location?.longitude,
+          },
+          postedby: {
+          name: user?.displayName.trim(),
+          phone: phone?.trim(),
+          email: user?.email.trim(),
+          user_id: user?.uid,
+        },
+        };
+        const result = await updateGigDetails(editGigData.id, finalPayload);
+
+        if (result.success) {
+          CustomToast("Gig updated successfully!", "success");
         }
+      } else {
+        const { success, data } = await submitGig(jobData);
+
+        if (success) CustomToast("Success👍", "Your gig has been posted!");
+        else throw new Error("Failed to post gig");
+      }
+
+      // Go back to the dashboard context
+      navigation.goBack();
+    } catch (err) {
+      console.error("Error posting job:", err);
+      Alert.alert(
+        "Error",
+        "There was an error posting your gig. Please try again.",
+      );
+    } finally {
+      setLoading(false);
+      setStep(0);
+      setTitle("");
+      setDescription("");
+      setCategory("");
+      setPrice("");
+      setPhone("");
+      setLocation({ address: "", latitude: "", longitude: "" });
+      setRequirements([]);
+      setImages([]);
+      setErrors({});
+      setIsSubmiting(false);
     }
+  };
 
-    const removeImage = (id) => {
-        setImages(images.filter(img => img.id !== id))
-    }
+  const renderStepContent = () => {
+    switch (step) {
+      case 0:
+        return (
+          <>
+            <Text style={[styles.label, { color: theme.colors.text }]}>
+              Job Title *
+            </Text>
+            <TextInput
+              style={[
+                styles.input,
+                { backgroundColor: isDarkMode ? "#666" : "#fafafa" },
+              ]}
+              label="e.g., Help Moving Furniture"
+              mode="outlined"
+              theme={{ roundness: 12 }}
+              value={title}
+              onChangeText={setTitle}
+            />
+            {errors.title && (
+              <Text style={styles.errorText}>{errors.title}</Text>
+            )}
 
-    const fetchCurrentLocation = async () => {
-        setLocationLoading(true)
-        try {
-            const { status } = await Location.requestForegroundPermissionsAsync()
-            if (status !== "granted") {
-                Alert.alert("Permission Denied", "Location access is required to auto-fill your location.")
-                return
-            }
-
-            const loc = await Location.getCurrentPositionAsync({
-                accuracy: Location.Accuracy.Balanced,
-            })
-
-            setLocation({
-                ...location,
-                latitude: loc.coords.latitude.toFixed(6),
-                longitude: loc.coords.longitude.toFixed(6),
-            })
-        } catch (error) {
-            console.error(error)
-            Alert.alert("Error", "Could not fetch location. Please try again or enter manually.")
-        } finally {
-            setLocationLoading(false)
-        }
-    }
-
-    useEffect(() => {
-        if (step === 3 && !location) {
-            fetchCurrentLocation()
-        }
-    }, [step])
-
-    const handlePostGig = async () => {
-        if (!validateCurrentStep()) return
-
-        try {
-            setIsSubmiting(true)
-
-            const jobData = {
-                title,
-                description,
-                category,
-                price: Number(price),
-                postedBy: { name: user?.displayName.trim(), phone: phone?.trim(), email: user?.email.trim(), user_id: user?.uid },
-                locationSpot: location || { latitude: "", longitude: "" },
-                requirements,
-                photos: images,
-                status: "open"
-            }
-
-            const { success, data } = await submitGig(jobData);
-
-            if (success)
-                CustomToast("Success👍", "Your gig has been posted!")
-            else
-                throw new Error("Failed to post gig")
-
-        } catch (err) {
-            console.error("Error posting job:", err)
-            Alert.alert("Error", "There was an error posting your gig. Please try again.")
-        } finally {
-            setStep(0)
-            setTitle("")
-            setDescription("")
-            setCategory("")
-            setPrice("")
-            setPhone("")
-            setLocation({ address: "", latitude: "", longitude: "" })
-            setRequirements([])
-            setImages([])
-            setErrors({})
-            setIsSubmiting(false)
-        }
-    }
-
-    const renderStepContent = () => {
-        switch (step) {
-            case 0:
-                return (
-                    <>
-                        <Text style={[styles.label, { color: theme.colors.text }]}>Job Title *</Text>
-                        <TextInput
-                            style={[styles.input, { backgroundColor: isDarkMode ? "#666" : "#fafafa" }]}
-                            label="e.g., Help Moving Furniture"
-                            mode="outlined"
-                            theme={{ roundness: 12 }}
-                            value={title}
-                            onChangeText={setTitle}
-                        />
-                        {errors.title && <Text style={styles.errorText}>{errors.title}</Text>}
-
-                        {/* add and remove requirements */}
-                        <Text style={[styles.label, { marginTop: 28, color: theme.colors.text }]}>Requirements (optional)</Text>
-                        <Text style={styles.helperText}>
-                            List specific needs (e.g., "Need own bakkie", "Must arrive before 10am", "2 strong helpers")
-                        </Text>
-
-                        <View style={styles.requirementInputRow}>
-                            <TextInput
-                                style={[styles.input, { backgroundColor: isDarkMode ? "#666" : "#fafafa", flex: 1, marginRight: 12 }]}
-                                label="Add a requirement..."
-                                mode="outlined"
-                                theme={{ roundness: 12 }}
-                                value={newRequirement}
-                                onChangeText={setNewRequirement}
-                                onSubmitEditing={addRequirement}
-                                returnKeyType="done"
-                            />
-                            <TouchableOpacity
-                                style={[
-                                    styles.addRequirementButton,
-                                    newRequirement.trim() === "" && styles.addRequirementButtonDisabled,
-                                ]}
-                                onPress={addRequirement}
-                                disabled={newRequirement.trim() === ""}
-                            >
-                                <Text style={styles.addRequirementButtonText}>Add</Text>
-                            </TouchableOpacity>
-                        </View>
-
-                        {requirements.length > 0 && (
-                            <View style={styles.requirementsList}>
-                                {requirements.map((req, index) => (
-                                    <View key={index} style={styles.requirementChip}>
-                                        <Text style={styles.requirementChipText}>{req}</Text>
-                                        <TouchableOpacity
-                                            onPress={() => removeRequirement(index)}
-                                            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                                        >
-                                            <Ionicons name="close-circle" size={20} color="#ef4444" />
-                                        </TouchableOpacity>
-                                    </View>
-                                ))}
-                            </View>
-                        )}
-                    </>
-                )
-
-            case 1:
-                return (
-                    <>
-                        <Text style={[styles.label, { color: theme.colors.text }]}>Description *</Text>
-                        <TextInput
-                            style={[styles.input, styles.textArea, { backgroundColor: isDarkMode ? "#666" : "#fafafa" }]}
-                            label="Put description of Job..."
-                            theme={{ roundness: 12 }}
-                            mode="outlined"
-                            value={description}
-                            onChangeText={setDescription}
-                            multiline
-                            numberOfLines={6}
-                            textAlignVertical="top"
-                        />
-                        {errors.description && <Text style={styles.errorText}>{errors.description}</Text>}
-
-                        <Text style={[styles.label, { marginTop: 24, color: theme.colors.text }]}>Category *</Text>
-                        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoriesScroll}>
-                            {shuffledCategories.map((cat) => (
-                                <TouchableOpacity
-                                    key={cat}
-                                    style={[styles.categoryChip, category === cat && styles.categoryChipActive]}
-                                    onPress={() => setCategory(cat)}
-                                >
-                                    <Text style={[styles.categoryChipText, category === cat && styles.categoryChipTextActive]}>
-                                        {cat}
-                                    </Text>
-                                </TouchableOpacity>
-                            ))}
-                        </ScrollView>
-                        {errors.category && <Text style={styles.errorText}>{errors.category}</Text>}
-
-                        <Text style={[styles.label, { marginTop: 16, color: theme.colors.text }]}>Budget (R) *</Text>
-                        <View style={styles.priceInputContainer}>
-                            <Text style={styles.currencySymbol}>E</Text>
-                            <TextInput
-                                style={[styles.priceInput, { backgroundColor: isDarkMode ? '#666' : '#fff' }]}
-                                label="0"
-                                theme={{ roundness: 12 }}
-                                mode="outlined"
-                                value={price}
-                                onChangeText={setPrice}
-                                keyboardType="numeric"
-                            />
-                        </View>
-                        {errors.price && <Text style={styles.errorText}>{errors.price}</Text>}
-                    </>
-                )
-
-            case 2:
-                return (
-                    <>
-                        <Text style={styles.label}>Add Photos (optional, up to 8)</Text>
-                        <Text style={styles.helperText}>
-                            This may help bring clear view about the nature of the gig to potential helpers.
-                        </Text>
-                        {images.length > 0 ? (
-                            <ScrollView
-                                horizontal
-                                showsHorizontalScrollIndicator={false}
-                                style={styles.imagePreviewScroll}
-                                contentContainerStyle={styles.imagePreviewContainer}
-                            >
-                                {images.map((img, index) => (
-                                    <View key={index} style={styles.imagePreviewWrapper}>
-                                        <Image
-                                            source={{ uri: img }}
-                                            style={styles.imagePreview}
-                                            resizeMode="cover"
-                                        />
-                                        <TouchableOpacity
-                                            style={styles.removeImageButton}
-                                            onPress={() => removeImage(img.id)}
-                                        >
-                                            <Ionicons name="close-circle" size={28} color="#ef4444" />
-                                        </TouchableOpacity>
-                                    </View>
-                                ))}
-
-                                {/* Add more button inside scroll when < 8 */}
-                                {images.length < 8 && (
-                                    <TouchableOpacity
-                                        style={styles.addMoreButton}
-                                        onPress={pickImages}
-                                        disabled={uploading}
-                                    >
-                                        {uploading ? (
-                                            <ActivityIndicator color="#000" />
-                                        ) : (
-                                            <>
-                                                <Ionicons name="add" size={32} color="#666" />
-                                                <Text style={styles.addMoreText}>Add</Text>
-                                            </>
-                                        )}
-                                    </TouchableOpacity>
-                                )}
-                            </ScrollView>
-                        ) : (
-                            /* Empty state */
-                            <TouchableOpacity
-                                style={styles.imageUploadPlaceholder}
-                                onPress={pickImages}
-                                disabled={uploading}
-                            >
-                                {uploading ? (
-                                    <ActivityIndicator size="large" color="#000" />
-                                ) : (
-                                    <>
-                                        <Ionicons name="images-outline" size={48} color="#999" />
-                                        <Text style={styles.placeholderText}>Tap to add photos</Text>
-                                        <Text style={styles.placeholderSubText}>Up to 8 photos • Max 10MB each</Text>
-                                    </>
-                                )}
-                            </TouchableOpacity>
-                        )}
-
-                        {/* Always show "Add more" button below when we have images but < 8 */}
-                        {images.length > 0 && images.length < 8 && (
-                            <TouchableOpacity
-                                style={[styles.addMoreSmallButton, { marginTop: 16 }]}
-                                onPress={pickImages}
-                                disabled={uploading}
-                            >
-                                <Ionicons name="add-circle-outline" size={20} color="#000" />
-                                <Text style={styles.addMoreSmallText}>Add more photos</Text>
-                            </TouchableOpacity>
-                        )}
-                    </>
-                )
-
-            case 3:
-                return (
-                    <>
-                        <Text style={[styles.label, { color: theme.colors.text }]}>Phone Number *</Text>
-                        <TextInput
-                            style={[styles.input, { backgroundColor: isDarkMode ? '#666' : '#fff' }]}
-                            label="e.g. +268 1234 5678"
-                            mode="outlined"
-                            theme={{ roundness: 12 }}
-                            value={phone}
-                            onChangeText={setPhone}
-                            keyboardType="phone-pad"
-                        />
-                        {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
-
-                        <Text style={[styles.label, { marginTop: 24, color: theme.colors.text }]}>Local Address *</Text>
-                        <TextInput
-                            style={[styles.input, { backgroundColor: isDarkMode ? '#666' : '#fff' }]}
-                            label="e.g. Manzini nearby"
-                            mode="outlined"
-                            theme={{ roundness: 12 }}
-                            value={location.address}
-                            onChangeText={(text) => setLocation(prev => ({ ...prev, address: text }))}
-                            keyboardType="default"
-                        />
-                        {errors.location && <Text style={styles.errorText}>{errors.location}</Text>}
-
-                        <View style={styles.locationSection}>
-                            <Text style={[styles.label, { color: theme.colors.text }]}>Location Co-ordinates</Text>
-                            {locationLoading ? (
-                                <ActivityIndicator size="small" color={theme.colors.indicator} />
-                            ) : (location.latitude !== '' && location.longitude !== '') ? (
-                                <Text style={[styles.locationText, { color: theme.colors.sub_text }]}>
-                                    {location.latitude}, {location.longitude}
-                                </Text>
-                            ) : (
-                                <Text style={[styles.locationText, { color: theme.colors.sub_text }]}>Not fetched yet</Text>
-                            )}
-                            <TouchableOpacity onPress={fetchCurrentLocation}
-                                style={styles.locationBtn}
-                                disabled={locationLoading}>
-                                <Text style={styles.retryText}>Get/Refresh co-ordinates</Text>
-                            </TouchableOpacity>
-                        </View>
-
-                        <View style={styles.infoBox}>
-                            <Ionicons name="information-circle" size={20} color="#3b82f6" />
-                            <Text style={styles.infoText}>
-                                Your location helps service providers find you easier. It's automatically added when permitted.
-                            </Text>
-                        </View>
-                    </>
-                )
-
-            default:
-                return null
-        }
-    }
-
-    return (
-        <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-            <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
-            <SecondaryNav title="Post a Gig" onBackPress={() => navigation.goBack()} />
-
-            {/* Progress Stepper */}
-            <View style={[styles.stepper, { backgroundColor: theme.colors.card }]}>
-                {STEPS.map((s, index) => (
-                    <View key={s} style={styles.stepItem}>
-                        <View style={[styles.stepCircle, index <= step && styles.stepCircleActive]}>
-                            <Text style={[styles.stepNumber, index <= step && styles.stepNumberActive]}>
-                                {index + 1}
-                            </Text>
-                        </View>
-                        <Text style={[styles.stepLabel, index <= step && (styles.stepLabelActive, { color: isDarkMode ? '#fff' : "#000", })]}>{s}</Text>
-                    </View>
-                ))}
-            </View>
-
-
-            <KeyboardAvoidingView style={styles.form}
-                behavior={Platform.OS === "ios" ? "padding" : "height"}
+            {/* add and remove requirements */}
+            <Text
+              style={[
+                styles.label,
+                { marginTop: 28, color: theme.colors.text },
+              ]}
             >
-                <ScrollView showsVerticalScrollIndicator={false}>
-                    {renderStepContent()}
-                </ScrollView>
-            </KeyboardAvoidingView>
+              Requirements (optional)
+            </Text>
+            <Text style={styles.helperText}>
+              List specific needs (e.g., "Need own bakkie", "Must arrive before
+              10am", "2 strong helpers")
+            </Text>
 
-            <View style={[styles.footer, { backgroundColor: theme.colors.card }]}>
-                <View style={styles.buttonRow}>
-                    {step > 0 && (
-                        <TouchableOpacity style={styles.backButton} onPress={prevStep}>
-                            <Text style={[styles.backButtonText, { color: theme.colors.text }]}>Back</Text>
-                        </TouchableOpacity>
-                    )}
-
-                    <TouchableOpacity style={[styles.nextButton, { backgroundColor: theme.colors.primary }]} onPress={nextStep} disabled={isSubmiting}>
-                        <Text style={styles.nextButtonText}>
-                            {step === STEPS.length - 1 ? "Post Gig" : "Next"}
-                        </Text>
-                        {isSubmiting && <ActivityIndicator color="#fff" style={{ marginLeft: 10 }} />}
-                    </TouchableOpacity>
-                </View>
+            <View style={styles.requirementInputRow}>
+              <TextInput
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: isDarkMode ? "#666" : "#fafafa",
+                    flex: 1,
+                    marginRight: 12,
+                  },
+                ]}
+                label="Add a requirement..."
+                mode="outlined"
+                theme={{ roundness: 12 }}
+                value={newRequirement}
+                onChangeText={setNewRequirement}
+                onSubmitEditing={addRequirement}
+                returnKeyType="done"
+              />
+              <TouchableOpacity
+                style={[
+                  styles.addRequirementButton,
+                  newRequirement.trim() === "" &&
+                    styles.addRequirementButtonDisabled,
+                ]}
+                onPress={addRequirement}
+                disabled={newRequirement.trim() === ""}
+              >
+                <Text style={styles.addRequirementButtonText}>Add</Text>
+              </TouchableOpacity>
             </View>
+
+            {requirements.length > 0 && (
+              <View style={styles.requirementsList}>
+                {requirements.map((req, index) => (
+                  <View key={index} style={styles.requirementChip}>
+                    <Text style={styles.requirementChipText}>{req}</Text>
+                    <TouchableOpacity
+                      onPress={() => removeRequirement(index)}
+                      hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                    >
+                      <Ionicons name="close-circle" size={20} color="#ef4444" />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            )}
+          </>
+        );
+
+      case 1:
+        return (
+          <>
+            <Text style={[styles.label, { color: theme.colors.text }]}>
+              Description *
+            </Text>
+            <TextInput
+              style={[
+                styles.input,
+                styles.textArea,
+                { backgroundColor: isDarkMode ? "#666" : "#fafafa" },
+              ]}
+              label="Put description of Job..."
+              theme={{ roundness: 12 }}
+              mode="outlined"
+              value={description}
+              onChangeText={setDescription}
+              multiline
+              numberOfLines={6}
+              textAlignVertical="top"
+            />
+            {errors.description && (
+              <Text style={styles.errorText}>{errors.description}</Text>
+            )}
+
+            <Text
+              style={[
+                styles.label,
+                { marginTop: 24, color: theme.colors.text },
+              ]}
+            >
+              Category *
+            </Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.categoriesScroll}
+            >
+              {shuffledCategories.map((cat) => (
+                <TouchableOpacity
+                  key={cat}
+                  style={[
+                    styles.categoryChip,
+                    category === cat && styles.categoryChipActive,
+                  ]}
+                  onPress={() => setCategory(cat)}
+                >
+                  <Text
+                    style={[
+                      styles.categoryChipText,
+                      category === cat && styles.categoryChipTextActive,
+                    ]}
+                  >
+                    {cat}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            {errors.category && (
+              <Text style={styles.errorText}>{errors.category}</Text>
+            )}
+
+            <Text
+              style={[
+                styles.label,
+                { marginTop: 16, color: theme.colors.text },
+              ]}
+            >
+              Budget (R) *
+            </Text>
+            <View style={styles.priceInputContainer}>
+              <Text style={styles.currencySymbol}>E</Text>
+              <TextInput
+                style={[
+                  styles.priceInput,
+                  { backgroundColor: isDarkMode ? "#666" : "#fff" },
+                ]}
+                label="0"
+                theme={{ roundness: 12 }}
+                mode="outlined"
+                value={price}
+                onChangeText={setPrice}
+                keyboardType="numeric"
+              />
+            </View>
+            {errors.price && (
+              <Text style={styles.errorText}>{errors.price}</Text>
+            )}
+          </>
+        );
+
+      case 2:
+        return (
+          <>
+            <Text style={styles.label}>Add Photos (optional, up to 8)</Text>
+            <Text style={styles.helperText}>
+              This may help bring clear view about the nature of the gig to
+              potential helpers.
+            </Text>
+            {images.length > 0 ? (
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.imagePreviewScroll}
+                contentContainerStyle={styles.imagePreviewContainer}
+              >
+                {images.map((img, index) => (
+                  <View key={index} style={styles.imagePreviewWrapper}>
+                    <Image
+                      source={{ uri: img }}
+                      style={styles.imagePreview}
+                      resizeMode="cover"
+                    />
+                    <TouchableOpacity
+                      style={styles.removeImageButton}
+                      onPress={() => removeImage(img.id)}
+                    >
+                      <Ionicons name="close-circle" size={28} color="#ef4444" />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+
+                {/* Add more button inside scroll when < 8 */}
+                {images.length < 8 && (
+                  <TouchableOpacity
+                    style={styles.addMoreButton}
+                    onPress={pickImages}
+                    disabled={uploading}
+                  >
+                    {uploading ? (
+                      <ActivityIndicator color="#000" />
+                    ) : (
+                      <>
+                        <Ionicons name="add" size={32} color="#666" />
+                        <Text style={styles.addMoreText}>Add</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                )}
+              </ScrollView>
+            ) : (
+              /* Empty state */
+              <TouchableOpacity
+                style={styles.imageUploadPlaceholder}
+                onPress={pickImages}
+                disabled={uploading}
+              >
+                {uploading ? (
+                  <ActivityIndicator size="large" color="#000" />
+                ) : (
+                  <>
+                    <Ionicons name="images-outline" size={48} color="#999" />
+                    <Text style={styles.placeholderText}>
+                      Tap to add photos
+                    </Text>
+                    <Text style={styles.placeholderSubText}>
+                      Up to 8 photos • Max 10MB each
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            )}
+
+            {/* Always show "Add more" button below when we have images but < 8 */}
+            {images.length > 0 && images.length < 8 && (
+              <TouchableOpacity
+                style={[styles.addMoreSmallButton, { marginTop: 16 }]}
+                onPress={pickImages}
+                disabled={uploading}
+              >
+                <Ionicons name="add-circle-outline" size={20} color="#000" />
+                <Text style={styles.addMoreSmallText}>Add more photos</Text>
+              </TouchableOpacity>
+            )}
+          </>
+        );
+
+      case 3:
+        return (
+          <>
+            <Text style={[styles.label, { color: theme.colors.text }]}>
+              Phone Number *
+            </Text>
+            <TextInput
+              style={[
+                styles.input,
+                { backgroundColor: isDarkMode ? "#666" : "#fff" },
+              ]}
+              label="e.g. +268 1234 5678"
+              mode="outlined"
+              theme={{ roundness: 12 }}
+              value={phone}
+              onChangeText={setPhone}
+              keyboardType="phone-pad"
+            />
+            {errors.phone && (
+              <Text style={styles.errorText}>{errors.phone}</Text>
+            )}
+
+            <Text
+              style={[
+                styles.label,
+                { marginTop: 24, color: theme.colors.text },
+              ]}
+            >
+              Local Address *
+            </Text>
+            <TextInput
+              style={[
+                styles.input,
+                { backgroundColor: isDarkMode ? "#666" : "#fff" },
+              ]}
+              label="e.g. Manzini nearby"
+              mode="outlined"
+              theme={{ roundness: 12 }}
+              value={location.address}
+              onChangeText={(text) =>
+                setLocation((prev) => ({ ...prev, address: text }))
+              }
+              keyboardType="default"
+            />
+            {errors.location && (
+              <Text style={styles.errorText}>{errors.location}</Text>
+            )}
+
+            <View style={styles.locationSection}>
+              <Text style={[styles.label, { color: theme.colors.text }]}>
+                Location Co-ordinates
+              </Text>
+              {locationLoading ? (
+                <ActivityIndicator
+                  size="small"
+                  color={theme.colors.indicator}
+                />
+              ) : location.latitude !== "" && location.longitude !== "" ? (
+                <Text
+                  style={[
+                    styles.locationText,
+                    { color: theme.colors.sub_text },
+                  ]}
+                >
+                  {location.latitude}, {location.longitude}
+                </Text>
+              ) : (
+                <Text
+                  style={[
+                    styles.locationText,
+                    { color: theme.colors.sub_text },
+                  ]}
+                >
+                  Not fetched yet
+                </Text>
+              )}
+              <TouchableOpacity
+                onPress={fetchCurrentLocation}
+                style={styles.locationBtn}
+                disabled={locationLoading}
+              >
+                <Text style={styles.retryText}>Get/Refresh co-ordinates</Text>
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.infoBox}>
+              <Ionicons name="information-circle" size={20} color="#3b82f6" />
+              <Text style={styles.infoText}>
+                Your location helps service providers find you easier. It's
+                automatically added when permitted.
+              </Text>
+            </View>
+          </>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <View
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+    >
+      <StatusBar
+        barStyle={isDarkMode ? "light-content" : "dark-content"}
+        backgroundColor={theme.colors.background}
+      />
+      <SecondaryNav
+        title={isEditMode ? "Update Gig Details" : "Post New Gig"}
+        onBackPress={() => navigation.goBack()}
+      />
+
+      {/* Progress Stepper */}
+      <View style={[styles.stepper, { backgroundColor: theme.colors.card }]}>
+        {STEPS.map((s, index) => (
+          <View key={s} style={styles.stepItem}>
+            <View
+              style={[
+                styles.stepCircle,
+                index <= step && styles.stepCircleActive,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.stepNumber,
+                  index <= step && styles.stepNumberActive,
+                ]}
+              >
+                {index + 1}
+              </Text>
+            </View>
+            <Text
+              style={[
+                styles.stepLabel,
+                index <= step &&
+                  (styles.stepLabelActive,
+                  { color: isDarkMode ? "#fff" : "#000" }),
+              ]}
+            >
+              {s}
+            </Text>
+          </View>
+        ))}
+      </View>
+
+      <KeyboardAvoidingView
+        style={styles.form}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {renderStepContent()}
+        </ScrollView>
+      </KeyboardAvoidingView>
+
+      <View style={[styles.footer, { backgroundColor: theme.colors.card }]}>
+        <View style={styles.buttonRow}>
+          {step > 0 && (
+            <TouchableOpacity style={styles.backButton} onPress={prevStep}>
+              <Text
+                style={[styles.backButtonText, { color: theme.colors.text }]}
+              >
+                Back
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          <TouchableOpacity
+            style={[
+              styles.nextButton,
+              { backgroundColor: theme.colors.primary },
+            ]}
+            onPress={nextStep}
+            disabled={isSubmiting}
+          >
+            <Text style={styles.nextButtonText}>
+              {step === STEPS.length - 1
+                ? loading
+                  ? "Saving..."
+                  : isEditMode
+                    ? "Save Changes"
+                    : "Post Job Now"
+                : "Next"}
+            </Text>
+            {isSubmiting && (
+              <ActivityIndicator color="#fff" style={{ marginLeft: 10 }} />
+            )}
+          </TouchableOpacity>
         </View>
-    );
-}
+      </View>
+    </View>
+  );
+};
 
 const styles = StyleSheet.create({
-    container: { flex: 1 },
-    // content: { flex: 1 },
-    form: { flex: 1, padding: 20 },
+  container: { flex: 1 },
+  // content: { flex: 1 },
+  form: { flex: 1, padding: 20 },
 
-    stepper: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        paddingHorizontal: 20,
-        paddingVertical: 16,
-        borderBottomWidth: 1,
-        borderBottomColor: "#f0f0f0",
-    },
-    stepItem: { alignItems: "center", flex: 1 },
-    stepCircle: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        backgroundColor: "#dddd",
-        justifyContent: "center",
-        alignItems: "center",
-        marginBottom: 6,
-    },
-    stepCircleActive: { backgroundColor: "#003366" },
-    stepNumber: { color: "#666", fontWeight: "600" },
-    stepNumberActive: { color: "#fff" },
-    stepLabel: { fontSize: 12, color: "#666", textAlign: "center" },
-    stepLabelActive: { fontWeight: "600" },
+  stepper: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#f0f0f0",
+  },
+  stepItem: { alignItems: "center", flex: 1 },
+  stepCircle: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: "#dddd",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 6,
+  },
+  stepCircleActive: { backgroundColor: "#003366" },
+  stepNumber: { color: "#666", fontWeight: "600" },
+  stepNumberActive: { color: "#fff" },
+  stepLabel: { fontSize: 12, color: "#666", textAlign: "center" },
+  stepLabelActive: { fontWeight: "600" },
 
-    label: { fontSize: 16, fontWeight: "600", marginBottom: 8 },
-    input: {
-        paddingHorizontal: 5,
-        fontSize: 16,
-    },
-    textArea: { minHeight: 100, paddingTop: 14 },
+  label: { fontSize: 16, fontWeight: "600", marginBottom: 8 },
+  input: {
+    paddingHorizontal: 5,
+    fontSize: 16,
+  },
+  textArea: { minHeight: 100, paddingTop: 14 },
 
-    categoryChipText: {
-        fontSize: 14,
-        fontWeight: "500",
-        color: "#555",
-        textAlign: 'center',
-    },
+  categoryChipText: {
+    fontSize: 14,
+    fontWeight: "500",
+    color: "#555",
+    textAlign: "center",
+  },
 
-    categoriesScroll: { marginTop: 8 },
-    categoryChip: {
-        paddingHorizontal: 18,
-        paddingVertical: 8,
-        borderRadius: 24,
-        backgroundColor: "#f0f4ff",
-        marginRight: 12,
-        borderWidth: 1,
-        borderColor: "#f0f4ff",
-    },
-    categoryChipActive: { backgroundColor: "#003366", borderColor: "#003366" },
-    categoryChipTextActive: { color: "#fff" },
+  categoriesScroll: { marginTop: 8 },
+  categoryChip: {
+    paddingHorizontal: 18,
+    paddingVertical: 8,
+    borderRadius: 24,
+    backgroundColor: "#f0f4ff",
+    marginRight: 12,
+    borderWidth: 1,
+    borderColor: "#f0f4ff",
+  },
+  categoryChipActive: { backgroundColor: "#003366", borderColor: "#003366" },
+  categoryChipTextActive: { color: "#fff" },
 
-    priceInputContainer: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: 'space-between',
-        borderWidth: 1,
-        borderColor: "#d0d0d0",
-        borderRadius: 12,
-        paddingLeft: 16,
-        backgroundColor: "#ccc",
-    },
-    currencySymbol: { fontSize: 20, fontWeight: "700", color: "#000", marginRight: 10 },
-    priceInput: { flex: 1, fontSize: 18 },
+  priceInputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderWidth: 1,
+    borderColor: "#d0d0d0",
+    borderRadius: 12,
+    paddingLeft: 16,
+    backgroundColor: "#ccc",
+  },
+  currencySymbol: {
+    fontSize: 20,
+    fontWeight: "700",
+    color: "#000",
+    marginRight: 10,
+  },
+  priceInput: { flex: 1, fontSize: 18 },
 
-    imageButton: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-        borderWidth: 2,
-        borderColor: "#d0d0d0",
-        borderStyle: "dashed",
-        borderRadius: 12,
-        paddingVertical: 24,
-        marginTop: 24,
-        gap: 10,
-    },
-    imageButtonText: { fontSize: 16, fontWeight: "500", color: "#555" },
+  imageButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 2,
+    borderColor: "#d0d0d0",
+    borderStyle: "dashed",
+    borderRadius: 12,
+    paddingVertical: 24,
+    marginTop: 24,
+    gap: 10,
+  },
+  imageButtonText: { fontSize: 16, fontWeight: "500", color: "#555" },
 
-    locationSection: { marginTop: 20, marginBottom: 16 },
-    locationText: { fontSize: 16, marginVertical: 8 },
-    retryText: { color: "#3b82f6", fontWeight: "500" },
-    locationBtn: {
-        width: width * 0.5, alignItems: 'center', justifyContent: 'center',
-        paddingHorizontal: 10, paddingVertical: 5, borderRadius: 70, backgroundColor: '#f0f4ff'
-    },
+  locationSection: { marginTop: 20, marginBottom: 16 },
+  locationText: { fontSize: 16, marginVertical: 8 },
+  retryText: { color: "#3b82f6", fontWeight: "500" },
+  locationBtn: {
+    width: width * 0.5,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 70,
+    backgroundColor: "#f0f4ff",
+  },
 
-    infoBox: {
-        flexDirection: "row",
-        alignItems: "center",
-        backgroundColor: "#f0f7ff",
-        padding: 14,
-        borderRadius: 12,
-        gap: 12,
-        marginTop: 16,
-    },
-    infoText: { flex: 1, fontSize: 14, color: "#2563eb", lineHeight: 20 },
+  infoBox: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f0f7ff",
+    padding: 14,
+    borderRadius: 12,
+    gap: 12,
+    marginTop: 16,
+  },
+  infoText: { flex: 1, fontSize: 14, color: "#2563eb", lineHeight: 20 },
 
-    helperText: {
-        fontSize: 13,
-        color: "#ddd",
-        marginBottom: 12,
-        lineHeight: 18,
-    },
-    requirementInputRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        marginBottom: 16,
-    },
-    addRequirementButton: {
-        backgroundColor: "#000",
-        paddingHorizontal: 20,
-        paddingVertical: 14,
-        borderRadius: 12,
-    },
-    addRequirementButtonDisabled: {
-        backgroundColor: "#d0d0d0",
-    },
-    addRequirementButtonText: {
-        color: "#fff",
-        fontWeight: "600",
-        fontSize: 15,
-    },
-    requirementsList: {
-        flexDirection: "row",
-        flexWrap: "wrap",
-        marginTop: 8,
-        gap: 10,
-    },
-    requirementChip: {
-        flexDirection: "row",
-        alignItems: "center",
-        backgroundColor: "#f1f1f1",
-        paddingHorizontal: 14,
-        paddingVertical: 8,
-        borderRadius: 20,
-        gap: 6,
-    },
-    requirementChipText: {
-        fontSize: 14,
-        color: "#333",
-        maxWidth: 220, // prevents very long items from breaking layout
-    },
+  helperText: {
+    fontSize: 13,
+    color: "#ddd",
+    marginBottom: 12,
+    lineHeight: 18,
+  },
+  requirementInputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 16,
+  },
+  addRequirementButton: {
+    backgroundColor: "#000",
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    borderRadius: 12,
+  },
+  addRequirementButtonDisabled: {
+    backgroundColor: "#d0d0d0",
+  },
+  addRequirementButtonText: {
+    color: "#fff",
+    fontWeight: "600",
+    fontSize: 15,
+  },
+  requirementsList: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    marginTop: 8,
+    gap: 10,
+  },
+  requirementChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f1f1f1",
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    gap: 6,
+  },
+  requirementChipText: {
+    fontSize: 14,
+    color: "#333",
+    maxWidth: 220, // prevents very long items from breaking layout
+  },
 
-    imageUploadPlaceholder: {
-        height: 160,
-        borderWidth: 2,
-        borderColor: "#d0d0d0",
-        borderStyle: "dashed",
-        borderRadius: 16,
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundColor: "#f9f9f9",
-        marginTop: 12,
-    },
-    placeholderText: {
-        fontSize: 16,
-        fontWeight: "500",
-        color: "#555",
-        marginTop: 12,
-    },
-    placeholderSubText: {
-        fontSize: 13,
-        color: "#888",
-        marginTop: 4,
-    },
+  imageUploadPlaceholder: {
+    height: 160,
+    borderWidth: 2,
+    borderColor: "#d0d0d0",
+    borderStyle: "dashed",
+    borderRadius: 16,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f9f9f9",
+    marginTop: 12,
+  },
+  placeholderText: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#555",
+    marginTop: 12,
+  },
+  placeholderSubText: {
+    fontSize: 13,
+    color: "#888",
+    marginTop: 4,
+  },
 
-    imagePreviewScroll: {
-        marginTop: 16,
-        height: 140,
-    },
-    imagePreviewContainer: {
-        paddingTop: 6,
-        paddingRight: 16,
-    },
-    imagePreviewWrapper: {
-        marginRight: 12,
-        position: "relative",
-    },
-    imagePreview: {
-        width: 120,
-        height: 120,
-        borderRadius: 12,
-        backgroundColor: "#eee",
-    },
-    removeImageButton: {
-        position: "absolute",
-        top: -8,
-        right: -8,
-        backgroundColor: "white",
-        borderRadius: 14,
-    },
+  imagePreviewScroll: {
+    marginTop: 16,
+    height: 140,
+  },
+  imagePreviewContainer: {
+    paddingTop: 6,
+    paddingRight: 16,
+  },
+  imagePreviewWrapper: {
+    marginRight: 12,
+    position: "relative",
+  },
+  imagePreview: {
+    width: 120,
+    height: 120,
+    borderRadius: 12,
+    backgroundColor: "#eee",
+  },
+  removeImageButton: {
+    position: "absolute",
+    top: -8,
+    right: -8,
+    backgroundColor: "white",
+    borderRadius: 14,
+  },
 
-    addMoreButton: {
-        width: 120,
-        height: 120,
-        borderRadius: 12,
-        borderWidth: 2,
-        borderColor: "#d0d0d0",
-        borderStyle: "dashed",
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundColor: "#f9f9f9",
-    },
-    addMoreText: {
-        fontSize: 14,
-        color: "#666",
-        marginTop: 4,
-    },
+  addMoreButton: {
+    width: 120,
+    height: 120,
+    borderRadius: 12,
+    borderWidth: 2,
+    borderColor: "#d0d0d0",
+    borderStyle: "dashed",
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#f9f9f9",
+  },
+  addMoreText: {
+    fontSize: 14,
+    color: "#666",
+    marginTop: 4,
+  },
 
-    addMoreSmallButton: {
-        flexDirection: "row",
-        alignItems: "center",
-        justifyContent: "center",
-        paddingVertical: 12,
-        paddingHorizontal: 20,
-        borderWidth: 1,
-        borderColor: "#000",
-        borderRadius: 12,
-        alignSelf: "flex-start",
-        gap: 8,
-    },
-    addMoreSmallText: {
-        fontSize: 15,
-        fontWeight: "500",
-        color: "#000",
-    },
+  addMoreSmallButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderWidth: 1,
+    borderColor: "#000",
+    borderRadius: 12,
+    alignSelf: "flex-start",
+    gap: 8,
+  },
+  addMoreSmallText: {
+    fontSize: 15,
+    fontWeight: "500",
+    color: "#000",
+  },
 
-    footer: {
-        paddingHorizontal: 16,
-        paddingVertical: 5,
-        borderTopWidth: 1,
-        borderTopColor: "#f0f0f0",
-    },
-    buttonRow: { flexDirection: "row", gap: 12 },
-    backButton: {
-        flex: 1,
-        paddingVertical: 16,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: "#d0d0d0",
-        alignItems: "center",
-    },
-    backButtonText: { fontSize: 16, fontWeight: "600" },
-    nextButton: {
-        flex: 2,
-        flexDirection: "row",
-        justifyContent: "center",
-        paddingVertical: 16,
-        borderRadius: 12,
-        alignItems: "center",
-    },
-    nextButtonText: { fontSize: 16, fontWeight: "600", color: "#fff" },
+  footer: {
+    paddingHorizontal: 16,
+    paddingVertical: 5,
+    borderTopWidth: 1,
+    borderTopColor: "#f0f0f0",
+  },
+  buttonRow: { flexDirection: "row", gap: 12 },
+  backButton: {
+    flex: 1,
+    paddingVertical: 16,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: "#d0d0d0",
+    alignItems: "center",
+  },
+  backButtonText: { fontSize: 16, fontWeight: "600" },
+  nextButton: {
+    flex: 2,
+    flexDirection: "row",
+    justifyContent: "center",
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: "center",
+  },
+  nextButtonText: { fontSize: 16, fontWeight: "600", color: "#fff" },
 
-    errorText: { color: "#ef4444", fontSize: 14, marginTop: 6 },
-})
+  errorText: { color: "#ef4444", fontSize: 14, marginTop: 6 },
+});
 
-export default PostGigScreen
+export default PostGigScreen;
