@@ -319,10 +319,6 @@ const GigsScreen = ({ navigation }) => {
     },
   ];
 
-
- 
-
-
   // 1. Move this function ABOVE your useEffect calls
   const loadUserLocation = async () => {
     try {
@@ -340,8 +336,6 @@ const GigsScreen = ({ navigation }) => {
       setUserLocation({ lat: -26.4833, lng: 31.3667 });
     }
   };
-
-
   
   // 2. Setup structural tracking references to bypass stale state scopes
   const viewModeRef = useRef(viewMode);
@@ -406,9 +400,6 @@ const GigsScreen = ({ navigation }) => {
     // CRITICAL: Increment execution token to force visual FlatList invalidation layout pass
     setRealtimeNonce((prev) => prev + 1);
   };
- 
-
-
 
   //this code controll the fecthing of data based on network connection
   const wasOffline = useRef(false);

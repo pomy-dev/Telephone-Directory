@@ -23,7 +23,7 @@ const BankLogo = ({ source, name, size = isTablet ? 100 : 80 }) => {
 
   const initials = name
     .split(" ")
-    .map((word) => word[0])
+    ?.map((word) => word[0])
     .slice(0, 2)
     .join("")
     .toUpperCase();
@@ -282,7 +282,7 @@ export default function FinancialDetailsScreen({ route, navigation }) {
           <Dialog.Icon icon="google-maps" color={theme.colors.indicator} size={40} />
           <Dialog.Title style={{ textAlign: 'center', color: theme.colors.text }}>Choose Branch</Dialog.Title>
           <Dialog.Content>
-            {branches.map((branch, index) => (
+            {branches?.map((branch, index) => (
               <React.Fragment key={index}>
                 <TouchableOpacity style={{ flexDirection: 'row', justifyContent: 'flex-start', gap: 5, alignItems: 'center' }}
                   onPress={() => { hideDialog(); handleDirections(branch); }}>
@@ -479,7 +479,7 @@ export default function FinancialDetailsScreen({ route, navigation }) {
 
         {data?.benefits?.length > 0 && (
           <View style={[styles.highlightsCard, { backgroundColor: theme.colors.sub_card }]}>
-            {data?.benefits.map((benefit, i) => (
+            {data?.benefits?.map((benefit, i) => (
               <HighlightItem key={i} theme={theme} label={`Benefit ${i + 1}`} value={benefit} />
             ))}
           </View>
@@ -487,7 +487,7 @@ export default function FinancialDetailsScreen({ route, navigation }) {
 
         {data?.eligibility?.length > 0 && (
           <CollapsibleSection theme={theme} title="Eligibility Requirements" initiallyOpen={true}>
-            {data?.eligibility.map((el, index) => (
+            {data?.eligibility?.map((el, index) => (
               <Text key={index} style={[styles.bullet, { color: theme.colors.sub_text }]}>• {el}</Text>
             ))}
           </CollapsibleSection>)}
@@ -523,7 +523,7 @@ export default function FinancialDetailsScreen({ route, navigation }) {
 
         {data?.termsAndConditions?.length > 0 && (
           <SectionCard theme={theme} title="Terms & Conditions">
-            {data?.termsAndConditions.map((term, i) => (
+            {data?.termsAndConditions?.map((term, i) => (
               <Text key={i} style={[styles.paragraph, { color: theme.colors.sub_text }]}>
                 {term}
               </Text>
@@ -532,7 +532,7 @@ export default function FinancialDetailsScreen({ route, navigation }) {
         )}
 
         <SectionCard theme={theme} title="How to Join">
-          {data?.applicationSteps.map((step, index) => (
+          {data?.applicationSteps?.map((step, index) => (
             <Text key={index} style={[styles.paragraph, { color: theme.colors.sub_text }]}>• {step}</Text>
           ))}
         </SectionCard>
@@ -643,7 +643,7 @@ export default function FinancialDetailsScreen({ route, navigation }) {
           <View style={[styles.reviewForm, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
             <Text style={[styles.formLabel, { color: theme.colors.text }]}>Your Rating</Text>
             <View style={styles.starContainer}>
-              {[1, 2, 3, 4, 5].map((star) => (
+              {[1, 2, 3, 4, 5]?.map((star) => (
                 <TouchableOpacity key={star} onPress={() => setRating(star)} activeOpacity={0.7}>
                   <Icons.Ionicons
                     name={star <= rating ? "star" : "star-outline"}
@@ -690,7 +690,7 @@ export default function FinancialDetailsScreen({ route, navigation }) {
                 <View style={styles.reviewHeader}>
                   <Text style={[styles.reviewerName, { color: theme.colors.text }]}>{review?.reviewerName || review?.reviewerEmail}</Text>
                   <View style={styles.reviewStars}>
-                    {[1, 2, 3, 4, 5].map((star) => (
+                    {[1, 2, 3, 4, 5]?.map((star) => (
                       <Icons.Ionicons
                         key={star}
                         name={star <= review.rating ? "star" : "star-outline"}

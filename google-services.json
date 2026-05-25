@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "200364606139-453b13h8vkv6i5f03hcf885c3nvc4kv0.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.pld.phonebook",
+            "certificate_hash": "410a01dd7c889429ba6e7c1d7abef72b24feef22"
+          }
+        },
+        {
           "client_id": "200364606139-5e1vhkcjea2pg541lnj7rfc9tb5d657i.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {

@@ -211,7 +211,7 @@ const WorkerProfileScreen = ({ route }) => {
             />
             {worker.experience_images.length > 1 && (
               <View style={styles.dotRow}>
-                {worker.experience_images.map((_, i) => (
+                {worker.experience_images?.map((_, i) => (
                   <View
                     key={i}
                     style={[
@@ -316,7 +316,7 @@ const WorkerProfileScreen = ({ route }) => {
                   ]}
                 />
                 <View style={styles.socialRow}>
-                  {SOCIAL_CHANNELS.map((s) => (
+                  {SOCIAL_CHANNELS?.map((s) => (
                     <TouchableOpacity
                       key={s.key}
                       style={[
@@ -365,7 +365,7 @@ const WorkerProfileScreen = ({ route }) => {
                   { backgroundColor: theme.colors.card },
                 ]}
               >
-                {worker.skills.map((skill, index) => (
+                {worker.skills?.map((skill, index) => (
                   <React.Fragment key={index}>
                     <View style={styles.menuItem}>
                       <View style={styles.menuItemLeft}>
@@ -422,7 +422,7 @@ const WorkerProfileScreen = ({ route }) => {
                   { backgroundColor: theme.colors.card },
                 ]}
               >
-                {worker.documents.map((doc, index) => (
+                {worker.documents?.map((doc, index) => (
                   <React.Fragment key={index}>
                     <TouchableOpacity
                       style={styles.menuItem}
@@ -516,7 +516,7 @@ const WorkerProfileScreen = ({ route }) => {
                 ]}
               >
                 <View style={[styles.portfolioGrid, { gap: GRID_GAP }]}>
-                  {worker.experience_images.map((img, index) => (
+                  {worker.experience_images?.map((img, index) => (
                     <TouchableOpacity
                       key={index}
                       onPress={() => openLightbox(index)}

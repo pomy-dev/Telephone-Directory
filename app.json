@@ -2,16 +2,12 @@
   "expo": {
     "name": "Business Link",
     "slug": "Business-Link",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    // "splash": {
-    //   "image": "./assets/splash-icon.png",
-    //   "resizeMode": "contain",
-    //   "backgroundColor": "#ffffff"
-    // },
     "ios": {
+      "buildNumber": "9",
       "supportsTablet": true,
       "bundleIdentifier": "com.pld.phonebook",
       "googleServicesFile": "./GoogleService-Info.plist",
@@ -19,18 +15,18 @@
         "UIBackgroundModes": [
           "remote-notification"
         ],
-        "NSCameraUsageDescription": "Needed to scan pamphlets",
+        "NSCameraUsageDescription": "$(PRODUCT_NAME) needs access to your Camera.",
         "NSPhotoLibraryAddUsageDescription": "Allow this app to save images to your photo library.",
         "ITSAppUsesNonExemptEncryption": false,
         "NSLocationWhenInUseUsageDescription": "Allow $(PRODUCT_NAME) to use your location",
-        "NSLocationAlwaysUsageDescription": "Allow $(PRODUCT_NAME) to use your location",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "Allow $(PRODUCT_NAME) to use your location"
+        "NSMicrophoneUsageDescription": "$(PRODUCT_NAME) needs access to your Microphone."
       },
       "config": {
         "googleMapsApiKey": "AIzaSyD-tfJ9-YxVddtDWtx01lhTMpXBlT3s4aU"
       }
     },
     "android": {
+      "versionCode": 9,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -38,9 +34,6 @@
       "permissions": [
         "android.permission.ACCESS_COARSE_LOCATION",
         "android.permission.ACCESS_FINE_LOCATION",
-        "android.permission.FOREGROUND_SERVICE",
-        "android.permission.FOREGROUND_SERVICE_LOCATION",
-        "android.permission.ACCESS_BACKGROUND_LOCATION",
         "android.permission.RECEIVE_BOOT_COMPLETED",
         "android.permission.VIBRATE",
         "com.google.android.c2dm.permission.RECEIVE",
@@ -52,7 +45,7 @@
         "android.permission.ACCESS_MEDIA_LOCATION",
         "android.permission.READ_MEDIA_AUDIO",
         "android.permission.READ_MEDIA_IMAGES",
-        "ACCESS_NETWORK_STATE"
+        "android.permission.ACCESS_NETWORK_STATE"
       ],
       "package": "com.pld.phonebook",
       "googleServicesFile": "./google-services.json",
@@ -69,7 +62,8 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location."
+          "locationWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location.",
+          "isAndroidBackgroundLocationEnabled": false
         }
       ],
       [
@@ -142,12 +136,11 @@
     "extra": {
       "expo-navigation-bar": {
         "backgroundColor": "#000000",
-        "barStyle": "light"
+        "style": "light"
       },
       "eas": {
-        "projectId": "eea20e72-3755-4405-b8f9-b97f8e47704b"
+        "projectId": "03dcce6c-eb8e-4ede-8abe-12c1b2fcd575"
       }
-    },
-    "owner": "indabuko"
+    }
   }
 }
