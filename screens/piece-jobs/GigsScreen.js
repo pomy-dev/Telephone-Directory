@@ -299,6 +299,7 @@ const GigsScreen = ({ navigation }) => {
       onPress: () =>
         navigation.navigate("JobInbox", {
           gigSelection: "applied",
+          appStatus: null,
           gigId: null,
           appId: null,
         }),
@@ -336,7 +337,7 @@ const GigsScreen = ({ navigation }) => {
       setUserLocation({ lat: -26.4833, lng: 31.3667 });
     }
   };
-  
+
   // 2. Setup structural tracking references to bypass stale state scopes
   const viewModeRef = useRef(viewMode);
   const gigCategoryRef = useRef(gigCategory);
@@ -389,7 +390,7 @@ const GigsScreen = ({ navigation }) => {
       // Case C: Real-time Row Attribute Update
       if (payload.eventType === "UPDATE") {
         console.log(`Updating UI Card item with ID ${synchronizedJob.id} matching against dataset list...`);
-        return prevJobs.map((job) => 
+        return prevJobs.map((job) =>
           String(job.id) === String(synchronizedJob.id) ? synchronizedJob : job
         );
       }
@@ -468,84 +469,7 @@ const GigsScreen = ({ navigation }) => {
       unsubscribeNet();
       unsubscribeApp.remove();
     };
-  }, []); 
-
-  // use effect before creating new use effect for realtime update of the ui
-  // useEffect(() => {
-  //   // 1. Define the logic to run when state changes
-  //   const onNetworkChange = (state) => {
-  //     // 1. Determine current state
-  //     const isNowConnected = !!(
-  //       state.isConnected && state.isInternetReachable !== false
-  //     );
-
-  //     // 3. THE BRIDGE: Only trigger if we moved from true OFFLINE to true ONLINE
-  //     if (wasOffline.current === true && isNowConnected === true) {
-  //       console.log("---------------------------------------");
-  //       console.log("RECONNECTION DETECTED: AUTO-REFRESHING");
-  //       console.log("---------------------------------------");
-
-  //       loadUserLocation();
-  //       setLoadingWorkers(true);
-  //       loadWorkers(true);
-  //       fetchLiveGigs(false);
-  //       loadWorkerVotes();
-  //     }
-
-  //     // 4. SYNC UI
-  //     setIsOffline(!isNowConnected);
-  //     setCheckingConnection(false);
-
-  //     // 5. UPDATE MEMORY LAST: Save the current state for the NEXT event
-  //     wasOffline.current = !isNowConnected;
-  //   };
-
-  //   // 2. Subscribe to NetInfo (it passes the 'state' automatically)
-  //   const unsubscribeNet = NetInfo.addEventListener(onNetworkChange);
-
-  //   // 3. Handle AppState (Returning to app)
-  //   const unsubscribeApp = AppState.addEventListener(
-  //     "change",
-  //     async (nextState) => {
-  //       if (nextState === "active") {
-  //         const state = await NetInfo.fetch();
-
-  //         onNetworkChange(state);
-  //       }
-  //     },
-  //   );
-
-  //   // 4. Initial Load
-  //   const initializeData = async () => {
-  //     const state = await NetInfo.fetch();
-  //     onNetworkChange(state); // Set initial offline/online status
-
-  //     // Always load data on mount
-  //     loadUserLocation();
-  //     setLoadingWorkers(true);
-  //     loadWorkers(true);
-  //     fetchLiveGigs(false);
-  //     loadWorkerVotes();
-  //   };
-
-  //   initializeData();
-
-  //   try {
-  //     activeChannel = subscribeToGigsScreen((payload) => {
-  //       // ✅ Always calls the latest handler via the ref — never stale
-  //       realtimeCallbackRef.current?.(payload);
-  //     });
-  //   } catch (err) {
-  //     console.log("Realtime setup error:", err);
-  //   }
-
-  //   return () => {
-  //     if (subscription) supabase.removeChannel(subscription);
-  //     unsubscribeNet();
-  //     unsubscribeApp.remove();
-  //   };
-  // }, []);
-
+  }, []);
 
   useEffect(() => {
     if (viewMode === "gigs") {
@@ -670,10 +594,10 @@ const GigsScreen = ({ navigation }) => {
       prev.map((w) =>
         w.id === workerId
           ? {
-              ...w,
-              likes: Math.max((w.likes || 0) + likeChange, 0),
-              dislikes: Math.max((w.dislikes || 0) + dislikeChange, 0),
-            }
+            ...w,
+            likes: Math.max((w.likes || 0) + likeChange, 0),
+            dislikes: Math.max((w.dislikes || 0) + dislikeChange, 0),
+          }
           : w,
       ),
     );
@@ -1292,8 +1216,6 @@ const GigsScreen = ({ navigation }) => {
     );
   }
 
-  // console.log(jobs[0])
-
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: theme.colors.background }]}
@@ -1334,26 +1256,26 @@ const GigsScreen = ({ navigation }) => {
             </TouchableOpacity>
             {((viewMode === "gigs" && gigSearch.length > 0) ||
               (viewMode === "workers" && workerSearch.length > 0)) && (
-              <TouchableOpacity
-                style={{
-                  position: "absolute",
-                  right: 20,
-                  paddingHorizontal: 5,
-                  paddingVertical: 3,
-                  backgroundColor: "#f0f4ff",
-                  borderRadius: 10,
-                }}
-                onPress={() => {
-                  viewMode === "gigs" ? setGigSearch("") : setWorkerSearch("");
-                }}
-              >
-                <Icons.Ionicons
-                  name="close"
-                  size={18}
-                  color={theme.colors.sub_text}
-                />
-              </TouchableOpacity>
-            )}
+                <TouchableOpacity
+                  style={{
+                    position: "absolute",
+                    right: 20,
+                    paddingHorizontal: 5,
+                    paddingVertical: 3,
+                    backgroundColor: "#f0f4ff",
+                    borderRadius: 10,
+                  }}
+                  onPress={() => {
+                    viewMode === "gigs" ? setGigSearch("") : setWorkerSearch("");
+                  }}
+                >
+                  <Icons.Ionicons
+                    name="close"
+                    size={18}
+                    color={theme.colors.sub_text}
+                  />
+                </TouchableOpacity>
+              )}
           </View>
         </View>
 
@@ -1457,11 +1379,11 @@ const GigsScreen = ({ navigation }) => {
                         styles.categoryButton,
                         viewMode === "gigs"
                           ? gigCategory === cat.id && {
-                              backgroundColor: theme.colors.indicator,
-                            }
+                            backgroundColor: theme.colors.indicator,
+                          }
                           : workerCategory === cat.id && {
-                              backgroundColor: theme.colors.indicator,
-                            },
+                            backgroundColor: theme.colors.indicator,
+                          },
                       ]}
                       onPress={() => {
                         viewMode === "gigs"
@@ -1488,9 +1410,9 @@ const GigsScreen = ({ navigation }) => {
                           styles.categoryText,
                           viewMode === "gigs"
                             ? gigCategory === cat.id &&
-                              styles.categoryTextActive
+                            styles.categoryTextActive
                             : workerCategory === cat.id &&
-                              styles.categoryTextActive,
+                            styles.categoryTextActive,
                         ]}
                       >
                         {cat.name}
@@ -1510,66 +1432,66 @@ const GigsScreen = ({ navigation }) => {
         <View style={styles.selectedCategoryRow}>
           {viewMode === "gigs"
             ? gigCategory !== "all" && (
-                <View
+              <View
+                style={[
+                  styles.selectedCategoryPill,
+                  { backgroundColor: theme.colors.sub_card },
+                ]}
+              >
+                <Text
                   style={[
-                    styles.selectedCategoryPill,
-                    { backgroundColor: theme.colors.sub_card },
+                    styles.selectedCategoryText,
+                    { color: theme.colors.text },
                   ]}
+                  numberOfLines={1}
                 >
-                  <Text
-                    style={[
-                      styles.selectedCategoryText,
-                      { color: theme.colors.text },
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {gigCategory}
-                  </Text>
-                </View>
-              )
+                  {gigCategory}
+                </Text>
+              </View>
+            )
             : workerCategory !== "all" && (
-                <View
+              <View
+                style={[
+                  styles.selectedCategoryPill,
+                  { backgroundColor: theme.colors.sub_card },
+                ]}
+              >
+                <Text
                   style={[
-                    styles.selectedCategoryPill,
-                    { backgroundColor: theme.colors.sub_card },
+                    styles.selectedCategoryText,
+                    { color: theme.colors.text },
                   ]}
+                  numberOfLines={1}
                 >
-                  <Text
-                    style={[
-                      styles.selectedCategoryText,
-                      { color: theme.colors.text },
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {workerCategory}
-                  </Text>
-                </View>
-              )}
+                  {workerCategory}
+                </Text>
+              </View>
+            )}
           {viewMode === "gigs"
             ? gigCategory !== "all" && (
-                <TouchableOpacity
-                  onPress={() => setGigCategory("all")}
-                  style={styles.clearButton}
-                >
-                  <Icons.Ionicons
-                    name="close-circle"
-                    size={20}
-                    color={theme.colors.sub_text}
-                  />
-                </TouchableOpacity>
-              )
+              <TouchableOpacity
+                onPress={() => setGigCategory("all")}
+                style={styles.clearButton}
+              >
+                <Icons.Ionicons
+                  name="close-circle"
+                  size={20}
+                  color={theme.colors.sub_text}
+                />
+              </TouchableOpacity>
+            )
             : workerCategory !== "all" && (
-                <TouchableOpacity
-                  onPress={() => setWorkerCategory("all")}
-                  style={styles.clearButton}
-                >
-                  <Icons.Ionicons
-                    name="close-circle"
-                    size={20}
-                    color={theme.colors.sub_text}
-                  />
-                </TouchableOpacity>
-              )}
+              <TouchableOpacity
+                onPress={() => setWorkerCategory("all")}
+                style={styles.clearButton}
+              >
+                <Icons.Ionicons
+                  name="close-circle"
+                  size={20}
+                  color={theme.colors.sub_text}
+                />
+              </TouchableOpacity>
+            )}
         </View>
 
         {/* ─── TOGGLE BUTTONS ─── */}

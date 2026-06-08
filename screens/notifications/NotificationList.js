@@ -40,7 +40,7 @@ const NotificationListScreen = ({ navigation, route }) => {
   }, [selectedNotificationId, notifications, filterType]);
 
   const handleNotificationPress = (item) => {
-    navigation.navigate("JobInbox", { gigSelection: "notif", gigId: null, appId: item.application_id })
+    navigation.navigate("JobInbox", { gigSelection: "notif", gigId: null, appStatus: item.application_status, appId: item.application_id })
   };
 
   const renderCategoryIcon = (category) => {

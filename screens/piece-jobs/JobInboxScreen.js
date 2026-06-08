@@ -36,7 +36,7 @@ import { formatCurrency } from "../../utils/callFunctions";
 
 const JobInboxScreen = ({ route, navigation }) => {
   const insets = useSafeAreaInsets();
-  const { gigSelection, gigId, appId } = route.params
+  const { gigSelection, appStatus, gigId, appId } = route.params
   const [applicants, setApplicants] = useState([]);
   const [loading, setLoading] = useState(true);
   const { user } = React.useContext(AuthContext);
@@ -88,9 +88,9 @@ const JobInboxScreen = ({ route, navigation }) => {
     console.log(`Loading applicants of selection: ${gigSelection}`);
     try {
       setLoading(true);
-
       const res = gigSelection === 'applied'
-        ? await getMyAppliedGigs(user.email) : gigSelection === 'notif'
+        ? await getMyAppliedGigs(user.email)
+        : gigSelection === 'notif'
           ? await getApplication(appId) : await getGigApplicants(gigId);
 
       if (res.success) {
@@ -442,8 +442,7 @@ const JobInboxScreen = ({ route, navigation }) => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
           <Icons.Ionicons name="arrow-back" size={24} color={theme.colors.text} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: theme.colors.text, }]}>{gigSelection === 'applied' ? 'Track Gigs Applied-for' : `Inbox for Gig`}</Text>
-        {/* <View style={{ width: 40 }} /> */}
+        <Text style={[styles.headerTitle, { color: theme.colors.text, }]}>{gigSelection === 'applied' ? 'Track Gigs Applied-for' : (gigSelection === 'notif' && appStatus === 'approved') ? 'Track Gigs Applied-for' : `Inbox for Gig`}</Text>
       </View>
 
       {loading ? (
@@ -451,7 +450,7 @@ const JobInboxScreen = ({ route, navigation }) => {
       ) : (
         <FlatList
           data={applicants}
-          renderItem={gigSelection === 'applied' ? renderMyApplicationItem : renderApplicant}
+          renderItem={gigSelection === 'applied' ? renderMyApplicationItem : (gigSelection === 'notif' && appStatus === 'approved') ? renderMyApplicationItem : renderApplicant}
           keyExtractor={(item, index) => `${item.id}-${index}`}
           contentContainerStyle={{ paddingHorizontal: 10 }}
           ListEmptyComponent={

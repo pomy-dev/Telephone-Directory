@@ -181,7 +181,7 @@ export default function LoginScreen({ navigation }) {
           {/* Title */}
           <Text style={[styles.title, { color: theme.colors.text }]}>Welcome Back</Text>
           <Text style={[styles.subtitle, { color: theme.colors.textSecondary }]}>
-            Sign in to continue to <Text style={{ fontWeight: '700' }}>Busines Link</Text>
+            Sign in to continue to <Text style={{ fontWeight: '700' }}>Yatolla</Text>
           </Text>
 
           {/* Google Login */}

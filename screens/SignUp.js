@@ -88,7 +88,7 @@ export default function SignupScreen({ navigation }) {
           {/* Title */}
           <Text style={[styles.title, { color: theme.colors.text }]}>Create Account</Text>
           <Text style={[styles.subtitle, { color: theme.colors.sub_text }]}>
-            Join <Text style={{ fontWeight: '700' }}>Business Link</Text> today
+            Join <Text style={{ fontWeight: '700' }}>Yatolla</Text> today
           </Text>
 
           {/* Inputs */}

@@ -28,7 +28,7 @@ const SplashScreen = ({ onConnectionSuccess }) => {
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
-      
+
       <View style={styles.backgroundElements}>
         <View
           style={[
@@ -57,7 +57,7 @@ const SplashScreen = ({ onConnectionSuccess }) => {
           />
         </View>
         <Text style={[styles.appName, { color: theme.colors.text }]}>
-          Business Link
+          Yatolla
         </Text>
         <Text style={[styles.tagline, { color: theme.colors.sub_text }]}>
           Connect. Discover. Grow.

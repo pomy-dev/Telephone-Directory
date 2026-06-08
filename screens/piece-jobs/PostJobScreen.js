@@ -126,8 +126,8 @@ const PostGigScreen = ({ navigation, route }) => {
       if (!description.trim())
         newErrors.description = "Description is required";
       if (!category) newErrors.category = "Please select a category";
-      if (!price.trim() || isNaN(Number(price)))
-        newErrors.price = "Valid budget (R) is required";
+      // if (!price.trim() || isNaN(Number(price)))
+      //   newErrors.price = "Valid budget (R) is required";
     }
     if (step === 3) {
       if (!phone.trim()) newErrors.phone = "Phone number is required";
@@ -882,7 +882,7 @@ const styles = StyleSheet.create({
 
   helperText: {
     fontSize: 13,
-    color: "#ddd",
+    color: "#666",
     marginBottom: 12,
     lineHeight: 18,
   },
