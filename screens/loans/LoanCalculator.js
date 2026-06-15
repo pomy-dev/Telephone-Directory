@@ -71,7 +71,6 @@ export default function LoanCalculator({ navigation, route }) {
 
   return (
     <View style={styles.container}>
-      <View style={{ height: 25 }} />
       <SecondaryNav title="Loan Calculator" />
 
       <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
