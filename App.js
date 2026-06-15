@@ -17,6 +17,7 @@ import { configureGoogleSignin } from "./utils/callFunctions";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
+import { checkForAppUpdate } from './service/appUpdateService';
 
 // this is feed back form for the app for data collection
 import { FeedbackSystem } from "./components/FeedbackSystem";
@@ -287,6 +288,10 @@ function AppContent() {
     }
 
     configureGoogleSignin();
+  }, []);
+
+  useEffect(() => {
+    checkForAppUpdate();
   }, []);
 
   const toastConfig = {
