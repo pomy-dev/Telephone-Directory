@@ -19,9 +19,6 @@
         "UIBackgroundModes": [
           "remote-notification"
         ],
-        "LSApplicationQueriesSchemes": [
-          "itms-apps"
-        ],
         "NSCameraUsageDescription": "$(PRODUCT_NAME) needs access to your Camera.",
         "NSPhotoLibraryAddUsageDescription": "Allow this app to save images to your photo library.",
         "ITSAppUsesNonExemptEncryption": false,

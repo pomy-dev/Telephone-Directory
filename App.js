@@ -17,7 +17,8 @@ import { configureGoogleSignin } from "./utils/callFunctions";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { checkForAppUpdate } from './service/appUpdateService';
+import { checkForAppUpdate } from './service/appUpdateChecker';
+import UpdateScreen from "./components/appUpdateScreen";
 
 // this is feed back form for the app for data collection
 import { FeedbackSystem } from "./components/FeedbackSystem";
@@ -291,7 +292,24 @@ function AppContent() {
   }, []);
 
   useEffect(() => {
-    checkForAppUpdate();
+    const appStatus = checkForAppUpdate();
+
+    if (appStatus.forceUpdate) {
+      <UpdateScreen
+        version={config.latestVersion}
+        playStoreUrl={config.playStoreUrl}
+        forceUpdate={true}
+      />;
+    }
+
+    if (appStatus.optionalUpdate) {
+      <UpdateScreen
+        version={config.latestVersion}
+        playStoreUrl={config.playStoreUrl}
+        forceUpdate={false}
+        onLater={() => setShowUpdate(false)}
+      />;
+    }
   }, []);
 
   const toastConfig = {

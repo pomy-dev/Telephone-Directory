@@ -1,6 +1,35 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useQuery } from '@realm/react';
 import { API_BASE_URL } from "../config/env";
+import * as Application from 'expo-application';
+
+// ===================== App Updates Check ===================== //
+export async function getAppVersionInfo() {
+  try {
+    const currentBuild = Number(
+      Application.nativeBuildVersion
+    );
+
+    const response = await fetch(
+      `${API_BASE_URL}/api/yatolla-config`,
+      {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+
+    const config = await response.json();
+    console.log(config);
+
+    return {
+      currentBuild,
+      config,
+    };
+  } catch (error) {
+    console.log(error);
+    return null;
+  }
+}
 
 // ==================== Sacco Functions ==================== //
 export const fetchSaccosPaginated = async (page = 1, limit = 20) => {

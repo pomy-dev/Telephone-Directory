@@ -25,6 +25,7 @@ const SplashScreen = ({ onConnectionSuccess }) => {
     }, 1000);
   }, []);
 
+
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
