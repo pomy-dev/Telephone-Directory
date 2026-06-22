@@ -11,13 +11,13 @@ import Toast from "react-native-toast-message";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { Provider as PaperProvider } from "react-native-paper";
 import * as Notifications from "expo-notifications";
-import * as NavigationBar from "expo-navigation-bar";
+import { NavigationBar } from "expo-navigation-bar";
 import { RealmProvider } from "@realm/react";
 import { configureGoogleSignin } from "./utils/callFunctions";
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import { checkForAppUpdate } from './service/appUpdateChecker';
+import { checkForAppUpdates } from './service/appUpdateChecker';
 import UpdateScreen from "./components/appUpdateScreen";
 
 // this is feed back form for the app for data collection
@@ -284,15 +284,17 @@ function AppContent() {
 
   useEffect(() => {
     if (Platform.OS === "android") {
-      NavigationBar.setBackgroundColorAsync("#000000"); // Dark background
-      NavigationBar.setButtonStyleAsync("light");      // White buttons
+      // NavigationBar.setBackgroundColorAsync("#000000"); // Dark background
+      // NavigationBar.setButtonStyleAsync("light");      // White buttons
+      <NavigationBar style={isDarkMode ? "#000" : "#000"} />;
+
     }
 
     configureGoogleSignin();
   }, []);
 
   useEffect(() => {
-    const appStatus = checkForAppUpdate();
+    const appStatus = checkForAppUpdates();
 
     if (appStatus.forceUpdate) {
       <UpdateScreen
