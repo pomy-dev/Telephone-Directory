@@ -2,15 +2,10 @@
   "expo": {
     "name": "Yatolla",
     "slug": "Business-Link",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.pld.phonebook",
@@ -63,6 +58,18 @@
     },
     "plugins": [
       [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#ffffff",
+          "image": "./assets/splash-icon.png",
+          "dark": {
+            "image": "./assets/splash-icon-dark.png",
+            "backgroundColor": "#000000"
+          },
+          "imageWidth": 200
+        }
+      ],
+      [
         "expo-location",
         {
           "locationWhenInUsePermission": "Allow $(PRODUCT_NAME) to use your location.",
@@ -111,7 +118,7 @@
         {
           "backgroundColor": "#000000",
           "style": "light",
-          "enforceContrast": false
+          "enforceContrast": true
         }
       ],
       [

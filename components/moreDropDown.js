@@ -44,8 +44,8 @@ export const MoreDropdown = ({ items }) => {
 
   return (
     <>
-      <TouchableOpacity onPress={open} activeOpacity={0.7} style={styles.anchor}>
-        <Icons.Entypo name="dots-three-vertical" size={24} color={textColor} />
+      <TouchableOpacity onPress={open} activeOpacity={0.7} style={[styles.anchor, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+        <Icons.Ionicons name="menu" size={24} color={textColor} />
       </TouchableOpacity>
 
       <Modal transparent visible={visible} animationType="none" onRequestClose={close}>
@@ -104,6 +104,13 @@ export const MoreDropdown = ({ items }) => {
 const styles = StyleSheet.create({
   anchor: {
     padding: 4,
+    borderRadius: 50,
+    borderWidth: 1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    elevation: 2,
   },
   overlay: {
     flex: 1,

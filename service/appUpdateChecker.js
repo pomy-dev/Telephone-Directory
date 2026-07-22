@@ -27,6 +27,6 @@ export async function checkForAppUpdates() {
   };
 }
 
-export function openStore(url) {
-  Linking.openURL(url);
+export async function openStore(url) {
+  await Linking.openURL(url);
 }

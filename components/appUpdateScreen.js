@@ -2,14 +2,17 @@ import React from "react";
 import {
   View,
   Text,
+  Image,
   StyleSheet,
   TouchableOpacity,
   Linking,
-  SafeAreaView,
   StatusBar,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { AppContext } from "../context/appContext";
+import { openStore } from "../service/appUpdateChecker";
 import { Icons } from "../constants/Icons";
+import { Images } from "../constants/Images";
 
 export default function UpdateScreen({
   version,
@@ -21,24 +24,28 @@ export default function UpdateScreen({
 
   const handleUpdate = async () => {
     try {
-      await Linking.openURL(playStoreUrl);
+      await openStore(playStoreUrl);
     } catch (error) {
       console.log("Failed to open store:", error);
     }
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
 
       <View style={styles.content}>
         {/* Icon */}
         <View style={styles.iconContainer}>
-          <Icons.Ionicons name="cloud-download-outline" size={70} color="#4F8EF7" />
+          {/* replace with your image */}
+          <Image
+            source={Images.appLogo}
+            style={{ width: 80, height: 80 }}
+          />
         </View>
 
         {/* Title */}
-        <Text style={styles.title}>
+        <Text style={[styles.title, { color: theme.colors.text }]}>
           {forceUpdate ? "Update Required" : "Update Available"}
         </Text>
 
@@ -59,7 +66,7 @@ export default function UpdateScreen({
         {/* Buttons */}
         <View style={styles.buttonContainer}>
           <TouchableOpacity
-            style={styles.updateButton}
+            style={[styles.updateButton, { backgroundColor: theme.colors.indicator }]}
             onPress={handleUpdate}
           >
             <Icons.Ionicons name="arrow-down-circle-outline" size={20} color="#fff" />
@@ -86,10 +93,7 @@ export default function UpdateScreen({
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#0B1220",
-  },
+  container: { flex: 1 },
 
   content: {
     flex: 1,
@@ -108,7 +112,6 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 26,
     fontWeight: "700",
-    color: "#fff",
     marginBottom: 10,
     textAlign: "center",
   },
@@ -142,7 +145,6 @@ const styles = StyleSheet.create({
 
   updateButton: {
     flexDirection: "row",
-    backgroundColor: "#4F8EF7",
     paddingVertical: 14,
     borderRadius: 12,
     justifyContent: "center",

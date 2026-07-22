@@ -1,7 +1,7 @@
 // App.js
 import "react-native-gesture-handler";
 import React, { useContext, useState, useEffect } from "react";
-import { View, Text, StyleSheet, StatusBar, Platform } from "react-native";
+import { View, Text, StyleSheet, StatusBar, Platform, Modal } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import {
   NavigationContainer,
@@ -75,6 +75,7 @@ import {
   GeoPoint,
   Review,
 } from "./models/Entity";
+import { set } from "date-fns";
 
 // Configure notification handler
 Notifications.setNotificationHandler({
@@ -232,6 +233,8 @@ function AppContent() {
   const { user } = useContext(AuthContext);
   const [isAppReady, setIsAppReady] = useState(false);
   const navigationRef = useNavigationContainerRef();
+  const [showUpdate, setShowUpdate] = useState(false);
+  const [updateInfo, setUpdateInfo] = useState(null);
 
   // Notification observer logic
   useEffect(() => {
@@ -283,35 +286,43 @@ function AppContent() {
   }, [navigationRef, notificationsEnabled, addNotification]);
 
   useEffect(() => {
-    if (Platform.OS === "android") {
-      // NavigationBar.setBackgroundColorAsync("#000000"); // Dark background
-      // NavigationBar.setButtonStyleAsync("light");      // White buttons
-      <NavigationBar style={isDarkMode ? "#000" : "#000"} />;
+    // if (Platform.OS === "android") {
+    // NavigationBar.setBackgroundColorAsync("#000000"); // Dark background
+    // NavigationBar.setButtonStyleAsync("light");      // White buttons
+    //   <NavigationBar style="auto" />;
 
-    }
+    // }
 
     configureGoogleSignin();
   }, []);
 
   useEffect(() => {
-    const appStatus = checkForAppUpdates();
+    const appUpdateCheck = (async () => {
+      const appStatus = await checkForAppUpdates();
 
-    if (appStatus.forceUpdate) {
-      <UpdateScreen
-        version={config.latestVersion}
-        playStoreUrl={config.playStoreUrl}
-        forceUpdate={true}
-      />;
-    }
+      if (!appStatus) return;
 
-    if (appStatus.optionalUpdate) {
-      <UpdateScreen
-        version={config.latestVersion}
-        playStoreUrl={config.playStoreUrl}
-        forceUpdate={false}
-        onLater={() => setShowUpdate(false)}
-      />;
-    }
+      if (appStatus.forceUpdate) {
+        setUpdateInfo({
+          latestVersion: appStatus.latestVersion,
+          playStoreUrl: appStatus.playStoreUrl,
+          forceUpdate: true,
+        });
+        setShowUpdate(true);
+        return;
+      }
+
+      if (appStatus.optionalUpdate) {
+        setUpdateInfo({
+          latestVersion: appStatus.latestVersion,
+          playStoreUrl: appStatus.playStoreUrl,
+          forceUpdate: false,
+        });
+        setShowUpdate(true);
+      }
+    });
+
+    appUpdateCheck();
   }, []);
 
   const toastConfig = {
@@ -344,6 +355,21 @@ function AppContent() {
 
   return (
     <SafeAreaProvider>
+      <Modal
+        visible={showUpdate && !!updateInfo}
+        animationType="slide"
+        transparent={false}
+        onRequestClose={() => {
+          if (!updateInfo?.forceUpdate) setShowUpdate(false);
+        }}
+      >
+        <UpdateScreen
+          version={updateInfo?.latestVersion}
+          playStoreUrl={updateInfo?.playStoreUrl}
+          forceUpdate={updateInfo?.forceUpdate}
+          onLater={updateInfo?.forceUpdate ? undefined : () => setShowUpdate(false)}
+        />
+      </Modal>
       <RealmProvider
         schemaVersion={2}
         schema={[
@@ -526,6 +552,7 @@ function AppContent() {
           </GestureHandlerRootView>
         )}
       </RealmProvider>
+      <NavigationBar style="auto" />;
     </SafeAreaProvider>
   );
 }

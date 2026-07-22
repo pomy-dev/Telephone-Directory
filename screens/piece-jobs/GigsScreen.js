@@ -1279,11 +1279,6 @@ const GigsScreen = ({ navigation }) => {
           </View>
         </View>
 
-        {/* Options Handle */}
-        <Pressable onPress={() => toggleSheet(true)}>
-          <Icons.Ionicons name="options" size={30} color={theme.colors.text} />
-        </Pressable>
-
         {/* More Handle */}
         <MoreDropdown items={moreItems} />
       </View>
