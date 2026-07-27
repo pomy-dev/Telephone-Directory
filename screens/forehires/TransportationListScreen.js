@@ -14,6 +14,7 @@ import {
     RefreshControl,
     ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Icons } from '../../constants/Icons';
 import {
     BottomSheetModal, BottomSheetScrollView, BottomSheetView, BottomSheetBackdrop
@@ -738,9 +739,8 @@ export default function TransportationListScreen({ navigation }) {
 
     // ────── JSX ──────
     return (
-        <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
             <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
-            <View style={{ height: height * 0.03 }} />
 
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 10 }}>
                 <TouchableOpacity onPress={() => navigation.goBack()}>
@@ -767,7 +767,6 @@ export default function TransportationListScreen({ navigation }) {
                     <Icons.Ionicons name='options-outline' size={24} color={theme.colors.text} />
                 </TouchableOpacity>
             </View>
-
 
             {(sortByCategory !== 'All' || sortByBorderCrossing !== 'All') && (
                 <View style={[styles.activeFiltersBar, { backgroundColor: theme.colors.card }]}>
@@ -854,7 +853,7 @@ export default function TransportationListScreen({ navigation }) {
             ) : (
                 <>
                     {/* Main Content */}
-                    <ScrollView ref={scrollViewRef} showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 30 }}
+                    <ScrollView ref={scrollViewRef} showsVerticalScrollIndicator={false}
                         refreshControl={
                             <RefreshControl
                                 refreshing={isRefreshing}
@@ -901,7 +900,7 @@ export default function TransportationListScreen({ navigation }) {
                 renderBackdrop={renderBackdrop}
                 onClose={() => optionSheetRef.current?.dismiss()}
             />
-        </View>
+        </SafeAreaView>
     );
 }
 

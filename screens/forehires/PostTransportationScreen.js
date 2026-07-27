@@ -4,6 +4,7 @@ import {
     TouchableOpacity, StatusBar, Platform, Image,
     Dimensions, Alert, ActivityIndicator, KeyboardAvoidingView
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { TextInput } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
 import { CustomToast } from '../../components/customToast';
@@ -217,7 +218,7 @@ export default function PostTransportationScreen({ navigation, route }) {
             behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
             keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : -80} // tweak if needed
         >
-            <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+            <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
                 <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
                 {/* <View style={{ height: 20 }} /> */}
                 <SecondaryNav
@@ -607,7 +608,7 @@ export default function PostTransportationScreen({ navigation, route }) {
                         </TouchableOpacity>
                     </View>
                 ) : null}
-            </View>
+            </SafeAreaView>
         </KeyboardAvoidingView>
     );
 }
@@ -720,8 +721,7 @@ const styles = StyleSheet.create({
     footer: {
         flexDirection: 'row', gap: 10, paddingHorizontal: 16,
         paddingVertical: 10,
-        borderTopWidth: 1, borderColor: '#e2e8f0',
-        // marginBottom: height * 0.07
+        borderTopWidth: 1, borderColor: '#e2e8f0'
     },
     backBtn: { flex: 1, padding: 16, backgroundColor: '#f1f5f9', borderRadius: 12, alignItems: 'center' },
     backText: { color: '#64748b', fontWeight: '600' },

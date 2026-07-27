@@ -11,6 +11,7 @@ import {
     Alert,
     ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { TextInput } from 'react-native-paper';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Icons } from '../../constants/Icons';
@@ -229,7 +230,7 @@ export default function BookTransportationScreen({ navigation, route }) {
     }
 
     return (
-        <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
             <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
             <SecondaryNav title={`Book ${vehicle.vehicle_type.toUpperCase()} ${vehicle.vehicle_make} ${vehicle.vehicle_model}`} />
 
@@ -471,7 +472,7 @@ export default function BookTransportationScreen({ navigation, route }) {
                     }
                 </TouchableOpacity>
             </View>
-        </View>
+        </SafeAreaView>
     );
 }
 

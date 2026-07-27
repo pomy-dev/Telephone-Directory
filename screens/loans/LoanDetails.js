@@ -3,6 +3,7 @@ import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, Image,
   Dimensions, Linking, StatusBar, Share, Platform, Alert
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Dialog, Portal, Divider, Button } from 'react-native-paper';
 import { LinearGradient } from 'expo-linear-gradient';
 import BottomSheet, { BottomSheetTextInput, BottomSheetScrollView } from "@gorhom/bottom-sheet"; // Ensure this package is installed
@@ -64,7 +65,7 @@ const CollapsibleSection = ({ theme, title, children, initiallyOpen = false }) =
   const [open, setOpen] = React.useState(initiallyOpen);
 
   return (
-    <View style={[styles.sectionCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+    <SafeAreaView style={[styles.sectionCard, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
       <TouchableOpacity
         style={styles.collapsibleHeader}
         onPress={() => setOpen(!open)}
@@ -78,7 +79,7 @@ const CollapsibleSection = ({ theme, title, children, initiallyOpen = false }) =
         />
       </TouchableOpacity>
       {open && <View style={[styles.sectionContentFixed, { color: theme.colors.sub_text }]}>{children}</View>}
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -140,9 +141,6 @@ export default function FinancialDetailsScreen({ route, navigation }) {
     const total = reviewsList.reduce((sum, review) => sum + (parseFloat(review.rating) || 0), 0);
     return parseFloat((total / reviewsList?.length).toFixed(1));
   }, [reviews, data?.reviews]);
-
-
-
 
   //this use effect is fetching data? when comming from recomendation
   React.useEffect(() => {

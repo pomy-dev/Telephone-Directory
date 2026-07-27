@@ -92,7 +92,7 @@ const JobDetailScreen = ({ route, navigation }) => {
   const from = route.params?.from || "direct";
   const [validationError, setValidationError] = useState("");
 
- 
+
 
   // Check if there are valid images (not placeholders)
   const hasImages =
@@ -347,326 +347,383 @@ const JobDetailScreen = ({ route, navigation }) => {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1 }} edges={["top"]}>
-      <View
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={styles.container}
-      >
-        <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
-        <SecondaryNav
-          title="Job Details"
-          rightIcon="share-social-outline"
-          onRightPress={handleShareJob}
-          onBackPress={() => navigation.goBack()}
-        />
+    <SafeAreaView
+      // behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={styles.container}
+    >
+      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
+      <SecondaryNav
+        title="Job Details"
+        rightIcon="share-social-outline"
+        onRightPress={handleShareJob}
+        onBackPress={() => navigation.goBack()}
+      />
 
-        <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-          {hasImages ? (
-            /* SHOW CAROUSEL IF IMAGES EXIST */
-            <View style={{ height: 200 }}>
-              <Carousel
-                loop
-                width={width}
-                height={200}
-                autoPlay={true}
-                data={job.images}
-                scrollAnimationDuration={2000}
-                renderItem={({ item }) => (
-                  <Image source={{ uri: item }} style={styles.image} />
-                )}
-              />
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {hasImages ? (
+          /* SHOW CAROUSEL IF IMAGES EXIST */
+          <View style={{ height: 200 }}>
+            <Carousel
+              loop
+              width={width}
+              height={200}
+              autoPlay={true}
+              data={job.images}
+              scrollAnimationDuration={2000}
+              renderItem={({ item }) => (
+                <Image source={{ uri: item }} style={styles.image} />
+              )}
+            />
+          </View>
+        ) : (
+          <View></View>
+        )}
+
+        <View style={styles.detailsContainer}>
+          <View style={styles.header}>
+            <Text style={[styles.title, { color: theme.colors.text }]}>
+              {job.title}
+            </Text>
+            <Text style={[styles.price, { color: theme.colors.indicator }]}>
+              {formatCurrency(job.price)}
+            </Text>
+          </View>
+
+          <View
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <View style={styles.categoryBadge}>
+              <Text style={styles.categoryText}>{job.category}</Text>
             </View>
-          ) : (
-            <View></View>
+
+            {user?.email === job.postedBy?.email && (
+              <Text style={[styles.metaText]}>
+                Candidates Applied:{job.applications}
+              </Text>
+            )}
+          </View>
+
+          <View style={styles.metaRow}>
+            <View style={styles.metaItem}>
+              <Icons.Ionicons name="person-outline" size={16} color="#666" />
+              <Text style={styles.metaText}>
+                Posted by {job.postedBy?.name}
+              </Text>
+            </View>
+            <View style={styles.metaItem}>
+              <Icons.Ionicons name="time-outline" size={16} color="#666" />
+              <Text style={styles.metaText}>{job.postedTime}</Text>
+            </View>
+          </View>
+
+          <View style={styles.locationRow}>
+            <Icons.Ionicons name="location" size={20} color="#ef4444" />
+            <Text
+              style={[styles.locationText, { color: theme.colors.sub_text }]}
+            >
+              {job.location}
+            </Text>
+            {job.distance && (
+              <Text style={styles.distanceText}>
+                ({job.distance.toFixed(1)} km away)
+              </Text>
+            )}
+          </View>
+
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+              Description
+            </Text>
+            <Text style={styles.description}>{job.description}</Text>
+          </View>
+
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
+              Requirements
+            </Text>
+            {job.requirements?.length > 0 ? (
+              job.requirements.map((requirement, index) => (
+                <View key={index} style={styles.requirementItem}>
+                  <Icons.Ionicons
+                    name="checkmark-circle"
+                    size={20}
+                    color={theme.colors.indicator}
+                  />
+                  <Text style={styles.requirementText}>{requirement}</Text>
+                </View>
+              ))
+            ) : (
+              <View style={styles.requirementEmpty}>
+                <Icons.Ionicons
+                  name="alert-circle"
+                  size={20}
+                  color="#ef4444"
+                />
+                <Text style={styles.requirementText}>
+                  No specific requirements listed.
+                </Text>
+              </View>
+            )}
+          </View>
+
+          {user?.email === job?.postedBy?.email && (
+            <View style={{ height: 30 }} />
           )}
 
-          <View style={styles.detailsContainer}>
-            <View style={styles.header}>
-              <Text style={[styles.title, { color: theme.colors.text }]}>
-                {job.title}
-              </Text>
-              <Text style={[styles.price, { color: theme.colors.indicator }]}>
-                {formatCurrency(job.price)}
-              </Text>
-            </View>
-
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "space-between",
-              }}
-            >
-              <View style={styles.categoryBadge}>
-                <Text style={styles.categoryText}>{job.category}</Text>
-              </View>
-
-              {user?.email === job.postedBy?.email && (
-                <Text style={[styles.metaText]}>
-                  Candidates Applied:{job.applications}
+          {user?.email !== job?.postedBy?.email && (
+            <>
+              <View style={styles.section}>
+                <Text
+                  style={[styles.sectionTitle, { color: theme.colors.text }]}
+                >
+                  Connect Via
                 </Text>
-              )}
-            </View>
 
-            <View style={styles.metaRow}>
-              <View style={styles.metaItem}>
-                <Icons.Ionicons name="person-outline" size={16} color="#666" />
-                <Text style={styles.metaText}>
-                  Posted by {job.postedBy?.name}
-                </Text>
-              </View>
-              <View style={styles.metaItem}>
-                <Icons.Ionicons name="time-outline" size={16} color="#666" />
-                <Text style={styles.metaText}>{job.postedTime}</Text>
-              </View>
-            </View>
-
-            <View style={styles.locationRow}>
-              <Icons.Ionicons name="location" size={20} color="#ef4444" />
-              <Text
-                style={[styles.locationText, { color: theme.colors.sub_text }]}
-              >
-                {job.location}
-              </Text>
-              {job.distance && (
-                <Text style={styles.distanceText}>
-                  ({job.distance.toFixed(1)} km away)
-                </Text>
-              )}
-            </View>
-
-            <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-                Description
-              </Text>
-              <Text style={styles.description}>{job.description}</Text>
-            </View>
-
-            <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: theme.colors.text }]}>
-                Requirements
-              </Text>
-              {job.requirements?.length > 0 ? (
-                job.requirements.map((requirement, index) => (
-                  <View key={index} style={styles.requirementItem}>
-                    <Icons.Ionicons
-                      name="checkmark-circle"
-                      size={20}
-                      color={theme.colors.indicator}
-                    />
-                    <Text style={styles.requirementText}>{requirement}</Text>
-                  </View>
-                ))
-              ) : (
-                <View style={styles.requirementEmpty}>
+                <TouchableOpacity
+                  onPress={handleCall}
+                  style={[
+                    styles.contactButton,
+                    { backgroundColor: theme.colors.indicator },
+                  ]}
+                >
                   <Icons.Ionicons
-                    name="alert-circle"
+                    name="call-outline"
                     size={20}
-                    color="#ef4444"
+                    color="#fff"
                   />
-                  <Text style={styles.requirementText}>
-                    No specific requirements listed.
+                  <Text style={styles.contactButtonText}>
+                    Call {job.postedBy?.name}
                   </Text>
-                </View>
-              )}
-            </View>
+                </TouchableOpacity>
 
-            {user?.email === job?.postedBy?.email && (
-              <View style={{ height: 30 }} />
-            )}
-
-            {user?.email !== job?.postedBy?.email && (
-              <>
-                <View style={styles.section}>
-                  <Text
-                    style={[styles.sectionTitle, { color: theme.colors.text }]}
-                  >
-                    Connect Via
-                  </Text>
-
+                <View
+                  style={{
+                    flexDirection: "row",
+                    gap: 12,
+                    alignItems: "center",
+                  }}
+                >
                   <TouchableOpacity
-                    onPress={handleCall}
+                    onPress={handleSMS}
                     style={[
-                      styles.contactButton,
-                      { backgroundColor: theme.colors.indicator },
+                      styles.contactButtonSecondary,
+                      {
+                        borderColor: theme.colors.disabled,
+                        flex: 1,
+                        backgroundColor: isDarkMode ? "#666" : "#fff",
+                      },
                     ]}
                   >
                     <Icons.Ionicons
-                      name="call-outline"
+                      name="chatbubble-outline"
                       size={20}
-                      color="#fff"
+                      color="#4381f3ff"
                     />
-                    <Text style={styles.contactButtonText}>
-                      Call {job.postedBy?.name}
+                    <Text
+                      style={[
+                        styles.contactButtonTextSecondary,
+                        { color: theme.colors.text },
+                      ]}
+                    >
+                      Send Message
                     </Text>
                   </TouchableOpacity>
-
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      gap: 12,
-                      alignItems: "center",
-                    }}
+                  <TouchableOpacity
+                    onPress={handleEmail}
+                    style={[
+                      styles.contactButtonSecondary,
+                      {
+                        borderColor: theme.colors.disabled,
+                        flex: 1,
+                        backgroundColor: isDarkMode ? "#666" : "#fff",
+                      },
+                    ]}
                   >
-                    <TouchableOpacity
-                      onPress={handleSMS}
+                    <Icons.Ionicons
+                      name="mail-outline"
+                      size={20}
+                      color="#fb2121ff"
+                    />
+                    <Text
                       style={[
-                        styles.contactButtonSecondary,
-                        {
-                          borderColor: theme.colors.disabled,
-                          flex: 1,
-                          backgroundColor: isDarkMode ? "#666" : "#fff",
-                        },
+                        styles.contactButtonTextSecondary,
+                        { color: theme.colors.text },
                       ]}
                     >
-                      <Icons.Ionicons
-                        name="chatbubble-outline"
-                        size={20}
-                        color="#4381f3ff"
-                      />
-                      <Text
-                        style={[
-                          styles.contactButtonTextSecondary,
-                          { color: theme.colors.text },
-                        ]}
-                      >
-                        Send Message
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      onPress={handleEmail}
-                      style={[
-                        styles.contactButtonSecondary,
-                        {
-                          borderColor: theme.colors.disabled,
-                          flex: 1,
-                          backgroundColor: isDarkMode ? "#666" : "#fff",
-                        },
-                      ]}
-                    >
-                      <Icons.Ionicons
-                        name="mail-outline"
-                        size={20}
-                        color="#fb2121ff"
-                      />
-                      <Text
-                        style={[
-                          styles.contactButtonTextSecondary,
-                          { color: theme.colors.text },
-                        ]}
-                      >
-                        Send Email
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
+                      Send Email
+                    </Text>
+                  </TouchableOpacity>
                 </View>
-              </>
-            )}
-          </View>
-        </ScrollView>
+              </View>
+            </>
+          )}
+        </View>
+      </ScrollView>
 
-        {user?.email !== job?.postedBy?.email && (
-          <View
+      {user?.email !== job?.postedBy?.email && (
+        <View
+          style={[
+            styles.footer,
+            {
+              backgroundColor: theme.colors.card,
+              borderTopColor: theme.colors.border,
+            },
+          ]}
+        >
+          <TouchableOpacity
             style={[
-              styles.footer,
-              {
-                backgroundColor: theme.colors.card,
-                borderTopColor: theme.colors.border,
-              },
+              styles.applyButton,
+              { backgroundColor: theme.colors.primary },
             ]}
+            onPress={openSheet}
           >
-            <TouchableOpacity
+            <Text style={styles.applyButtonText}>Apply for this Gig</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      <BottomSheetModal
+        ref={ref}
+        index={0}
+        snapPoints={["40%", "50%", "60%", "70%", "80%", "90%"]}
+        enableDynamicSizing={true}
+        maxDynamicContentSize={Dimensions.get("window").height * 0.95}
+        backdropComponent={renderBackdrop}
+        onDismiss={() => {
+          setPhone("");
+          setExpertises([]);
+          setAttachments([]);
+        }}
+        backgroundStyle={{ backgroundColor: isDarkMode ? "#666" : "#fff" }}
+        handleIndicatorStyle={{ backgroundColor: theme.colors.sub_text }}
+        enablePanDownToClose
+        keyboardBehavior={Platform.OS === "ios" ? "extend" : "interactive"}
+        android_keyboardInputMode="adjustResize"
+        enableContentPanningGesture={true}
+        enableHandlePanningGesture={true}
+      >
+        <BottomSheetScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={[
+            styles.sheetContent,
+            { backgroundColor: theme.colors.card },
+          ]}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* ── Sheet header ── */}
+          <View style={styles.sheetHeader}>
+            <View
               style={[
-                styles.applyButton,
+                styles.sheetTitleIcon,
                 { backgroundColor: theme.colors.primary },
               ]}
-              onPress={openSheet}
             >
-              <Text style={styles.applyButtonText}>Apply for this Gig</Text>
-            </TouchableOpacity>
+              <Icons.Feather name="send" size={20} color={"#fff"} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.sheetTitle, { color: theme.colors.text }]}>
+                Apply for this Gig
+              </Text>
+              <Text
+                style={[
+                  styles.sheetSubtitle,
+                  { color: theme.colors.sub_text },
+                ]}
+              >
+                {job.title}
+              </Text>
+            </View>
           </View>
-        )}
 
-        <BottomSheetModal
-          ref={ref}
-          index={0}
-          snapPoints={["40%", "50%", "60%", "70%", "80%", "90%"]}
-          enableDynamicSizing={true}
-          maxDynamicContentSize={Dimensions.get("window").height * 0.95}
-          backdropComponent={renderBackdrop}
-          onDismiss={() => {
-            setPhone("");
-            setExpertises([]);
-            setAttachments([]);
-          }}
-          backgroundStyle={{ backgroundColor: isDarkMode ? "#666" : "#fff" }}
-          handleIndicatorStyle={{ backgroundColor: theme.colors.sub_text }}
-          enablePanDownToClose
-          keyboardBehavior={Platform.OS === "ios" ? "extend" : "interactive"}
-          android_keyboardInputMode="adjustResize"
-          enableContentPanningGesture={true}
-          enableHandlePanningGesture={true}
-        >
-          <BottomSheetScrollView
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={[
-              styles.sheetContent,
-              { backgroundColor: theme.colors.card },
+          <View
+            style={[
+              styles.sheetDivider,
+              { backgroundColor: theme.colors.border },
             ]}
-            keyboardShouldPersistTaps="handled"
-          >
-            {/* ── Sheet header ── */}
-            <View style={styles.sheetHeader}>
+          />
+
+          {/* ── STEP 1: Contact ── */}
+          <View style={styles.stepBlock}>
+            <View style={styles.stepLabelRow}>
               <View
                 style={[
-                  styles.sheetTitleIcon,
+                  styles.stepBadge,
                   { backgroundColor: theme.colors.primary },
                 ]}
               >
-                <Icons.Feather name="send" size={20} color={"#fff"} />
+                <Text style={styles.stepBadgeText}>1</Text>
               </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.sheetTitle, { color: theme.colors.text }]}>
-                  Apply for this Gig
-                </Text>
-                <Text
-                  style={[
-                    styles.sheetSubtitle,
-                    { color: theme.colors.sub_text },
-                  ]}
-                >
-                  {job.title}
-                </Text>
-              </View>
-            </View>
-
-            <View
-              style={[
-                styles.sheetDivider,
-                { backgroundColor: theme.colors.border },
-              ]}
-            />
-
-            {/* ── STEP 1: Contact ── */}
-            <View style={styles.stepBlock}>
-              <View style={styles.stepLabelRow}>
-                <View
-                  style={[
-                    styles.stepBadge,
-                    { backgroundColor: theme.colors.primary },
-                  ]}
-                >
-                  <Text style={styles.stepBadgeText}>1</Text>
-                </View>
-                <Text style={[styles.stepTitle, { color: theme.colors.text }]}>
-                  Your Contact Number
-                </Text>
-              </View>
-              <Text style={[styles.stepHint, { color: theme.colors.sub_text }]}>
-                So the employer can reach you directly
+              <Text style={[styles.stepTitle, { color: theme.colors.text }]}>
+                Your Contact Number
               </Text>
+            </View>
+            <Text style={[styles.stepHint, { color: theme.colors.sub_text }]}>
+              So the employer can reach you directly
+            </Text>
+            <TextInput
+              label="Phone Number"
+              mode="outlined"
+              theme={{
+                roundness: 12,
+                colors: {
+                  // Label color when NOT focused
+                  onSurfaceVariant: theme.colors.sub_text,
+                },
+              }}
+              value={phone}
+              onChangeText={(v) => {
+                setPhone(v);
+              }}
+              keyboardType="phone-pad"
+              returnKeyType="done"
+              textColor={theme.colors.text}
+              activeOutlineColor={theme.colors.text}
+              style={[styles.input, { backgroundColor: theme.colors.card }]}
+              left={<TextInput.Icon icon="phone" color={theme.colors.text} />}
+              error={submitted && phone.trim() === ""} // ← shows red outline
+            />
+            {submitted && phone.trim() === "" && (
+              <View style={styles.fieldError}>
+                <Icons.Ionicons
+                  name="alert-circle-outline"
+                  size={14}
+                  color="#ef4444"
+                />
+                <Text style={styles.fieldErrorText}>
+                  Phone number is required
+                </Text>
+              </View>
+            )}
+          </View>
+
+          {/* ── STEP 2: Experience / Expertise ── */}
+          <View style={styles.stepBlock}>
+            <View style={styles.stepLabelRow}>
+              <View
+                style={[
+                  styles.stepBadge,
+                  { backgroundColor: theme.colors.primary },
+                ]}
+              >
+                <Text style={styles.stepBadgeText}>2</Text>
+              </View>
+              <Text style={[styles.stepTitle, { color: theme.colors.text }]}>
+                Your Experience & Skills
+              </Text>
+            </View>
+            <Text style={[styles.stepHint, { color: theme.colors.sub_text }]}>
+              Describe what makes you the right fit. Press ↵ or + to add each
+              skill.
+            </Text>
+
+            {/* Input + Add button */}
+            <View style={styles.expertiseInputRow}>
               <TextInput
-                label="Phone Number"
+                label="e.g. 3 years plumbing"
                 mode="outlined"
                 theme={{
                   roundness: 12,
@@ -675,19 +732,51 @@ const JobDetailScreen = ({ route, navigation }) => {
                     onSurfaceVariant: theme.colors.sub_text,
                   },
                 }}
-                value={phone}
-                onChangeText={(v) => {
-                  setPhone(v);
-                }}
-                keyboardType="phone-pad"
+                value={expertiseInput}
+                onChangeText={setExpertiseInput}
+                multiline
+                numberOfLines={3}
                 returnKeyType="done"
+                blurOnSubmit={true}
+                onSubmitEditing={addSkill}
                 textColor={theme.colors.text}
                 activeOutlineColor={theme.colors.text}
-                style={[styles.input, { backgroundColor: theme.colors.card }]}
-                left={<TextInput.Icon icon="phone" color={theme.colors.text} />}
-                error={submitted && phone.trim() === ""} // ← shows red outline
+                style={[
+                  styles.expertiseInput,
+                  { backgroundColor: theme.colors.card },
+                ]}
+                left={
+                  <TextInput.Icon
+                    icon="text-box-outline"
+                    color={theme.colors.text}
+                  />
+                }
+                error={
+                  submitted &&
+                  expertises.length === 0 &&
+                  !expertiseInput.trim()
+                } // ← shows red outline
               />
-              {submitted && phone.trim() === "" && (
+
+              <TouchableOpacity
+                onPress={addSkill}
+                activeOpacity={0.75}
+                disabled={!expertiseInput.trim()}
+                style={[
+                  styles.addSkillBtn,
+                  {
+                    backgroundColor: expertiseInput.trim()
+                      ? theme.colors.primary
+                      : theme.colors.border,
+                  },
+                ]}
+              >
+                <Icons.Ionicons name="add" size={26} color="#fff" />
+              </TouchableOpacity>
+            </View>
+            {submitted &&
+              expertises.length === 0 &&
+              !expertiseInput.trim() && (
                 <View style={styles.fieldError}>
                   <Icons.Ionicons
                     name="alert-circle-outline"
@@ -695,327 +784,236 @@ const JobDetailScreen = ({ route, navigation }) => {
                     color="#ef4444"
                   />
                   <Text style={styles.fieldErrorText}>
-                    Phone number is required
+                    Add at least one skill or experience
                   </Text>
                 </View>
               )}
-            </View>
 
-            {/* ── STEP 2: Experience / Expertise ── */}
-            <View style={styles.stepBlock}>
-              <View style={styles.stepLabelRow}>
-                <View
-                  style={[
-                    styles.stepBadge,
-                    { backgroundColor: theme.colors.primary },
-                  ]}
-                >
-                  <Text style={styles.stepBadgeText}>2</Text>
-                </View>
-                <Text style={[styles.stepTitle, { color: theme.colors.text }]}>
-                  Your Experience & Skills
-                </Text>
-              </View>
-              <Text style={[styles.stepHint, { color: theme.colors.sub_text }]}>
-                Describe what makes you the right fit. Press ↵ or + to add each
-                skill.
-              </Text>
-
-              {/* Input + Add button */}
-              <View style={styles.expertiseInputRow}>
-                <TextInput
-                  label="e.g. 3 years plumbing"
-                  mode="outlined"
-                  theme={{
-                    roundness: 12,
-                    colors: {
-                      // Label color when NOT focused
-                      onSurfaceVariant: theme.colors.sub_text,
-                    },
-                  }}
-                  value={expertiseInput}
-                  onChangeText={setExpertiseInput}
-                  multiline
-                  numberOfLines={3}
-                  returnKeyType="done"
-                  blurOnSubmit={true}
-                  onSubmitEditing={addSkill}
-                  textColor={theme.colors.text}
-                  activeOutlineColor={theme.colors.text}
-                  style={[
-                    styles.expertiseInput,
-                    { backgroundColor: theme.colors.card },
-                  ]}
-                  left={
-                    <TextInput.Icon
-                      icon="text-box-outline"
-                      color={theme.colors.text}
-                    />
-                  }
-                  error={
-                    submitted &&
-                    expertises.length === 0 &&
-                    !expertiseInput.trim()
-                  } // ← shows red outline
-                />
-
-                <TouchableOpacity
-                  onPress={addSkill}
-                  activeOpacity={0.75}
-                  disabled={!expertiseInput.trim()}
-                  style={[
-                    styles.addSkillBtn,
-                    {
-                      backgroundColor: expertiseInput.trim()
-                        ? theme.colors.primary
-                        : theme.colors.border,
-                    },
-                  ]}
-                >
-                  <Icons.Ionicons name="add" size={26} color="#fff" />
-                </TouchableOpacity>
-              </View>
-              {submitted &&
-                expertises.length === 0 &&
-                !expertiseInput.trim() && (
-                  <View style={styles.fieldError}>
+            {/* Chips — wrap to new line, grow naturally */}
+            {expertises.length > 0 && (
+              <View style={styles.chipsWrap}>
+                {expertises.map((exp, index) => (
+                  <View
+                    key={index}
+                    style={[
+                      styles.chip,
+                      {
+                        backgroundColor:
+                          theme.colors.card2 || theme.colors.primary,
+                      },
+                    ]}
+                  >
                     <Icons.Ionicons
-                      name="alert-circle-outline"
-                      size={14}
-                      color="#ef4444"
+                      name="checkmark-circle-outline"
+                      size={13}
+                      color="rgba(255,255,255,0.85)"
+                      style={{ flexShrink: 0 }} // icon never shrinks
                     />
-                    <Text style={styles.fieldErrorText}>
-                      Add at least one skill or experience
+                    <Text
+                      style={styles.chipText}
+                      numberOfLines={2} // max 2 lines, then ellipsis
+                      ellipsizeMode="tail"
+                    >
+                      {exp}
                     </Text>
-                  </View>
-                )}
-
-              {/* Chips — wrap to new line, grow naturally */}
-              {expertises.length > 0 && (
-                <View style={styles.chipsWrap}>
-                  {expertises.map((exp, index) => (
-                    <View
-                      key={index}
-                      style={[
-                        styles.chip,
-                        {
-                          backgroundColor:
-                            theme.colors.card2 || theme.colors.primary,
-                        },
-                      ]}
+                    <TouchableOpacity
+                      onPress={() =>
+                        setExpertises((prev) =>
+                          prev.filter((_, i) => i !== index),
+                        )
+                      }
+                      hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                      style={{ flexShrink: 0 }} // delete icon never shrinks
                     >
                       <Icons.Ionicons
-                        name="checkmark-circle-outline"
-                        size={13}
-                        color="rgba(255,255,255,0.85)"
-                        style={{ flexShrink: 0 }} // icon never shrinks
+                        name="close-circle"
+                        size={17}
+                        color="rgba(255,255,255,0.7)"
                       />
-                      <Text
-                        style={styles.chipText}
-                        numberOfLines={2} // max 2 lines, then ellipsis
-                        ellipsizeMode="tail"
-                      >
-                        {exp}
-                      </Text>
-                      <TouchableOpacity
-                        onPress={() =>
-                          setExpertises((prev) =>
-                            prev.filter((_, i) => i !== index),
-                          )
-                        }
-                        hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
-                        style={{ flexShrink: 0 }} // delete icon never shrinks
-                      >
-                        <Icons.Ionicons
-                          name="close-circle"
-                          size={17}
-                          color="rgba(255,255,255,0.7)"
-                        />
-                      </TouchableOpacity>
-                    </View>
-                  ))}
-                </View>
-              )}
-
-              {/* Empty state nudge */}
-              {expertises.length === 0 && (
-                <View
-                  style={[
-                    styles.emptyChips,
-                    { borderColor: theme.colors.border },
-                  ]}
-                >
-                  <Icons.Ionicons
-                    name="bulb-outline"
-                    size={18}
-                    color={theme.colors.sub_text}
-                  />
-                  <Text
-                    style={[
-                      styles.emptyChipsText,
-                      { color: theme.colors.sub_text },
-                    ]}
-                  >
-                    Your skills will appear here as tags
-                  </Text>
-                </View>
-              )}
-            </View>
-
-            {/* ── STEP 3: Attachments ── */}
-            <View style={styles.stepBlock}>
-              <View style={styles.stepLabelRow}>
-                <View
-                  style={[
-                    styles.stepBadge,
-                    { backgroundColor: theme.colors.primary },
-                  ]}
-                >
-                  <Text style={styles.stepBadgeText}>3</Text>
-                </View>
-                <Text style={[styles.stepTitle, { color: theme.colors.text }]}>
-                  Documents{" "}
-                  <Text
-                    style={[
-                      styles.optionalTag,
-                      { color: theme.colors.sub_text },
-                    ]}
-                  >
-                    (optional)
-                  </Text>
-                </Text>
+                    </TouchableOpacity>
+                  </View>
+                ))}
               </View>
-              <Text style={[styles.stepHint, { color: theme.colors.sub_text }]}>
-                Attach your CV, certificates, or relevant files
-              </Text>
+            )}
 
-              <TouchableOpacity
-                onPress={pickDocuments}
-                activeOpacity={0.75}
+            {/* Empty state nudge */}
+            {expertises.length === 0 && (
+              <View
                 style={[
-                  styles.attachBtn,
-                  {
-                    backgroundColor: "#ccc",
-                    borderColor: "#ccc",
-                  },
+                  styles.emptyChips,
+                  { borderColor: theme.colors.border },
                 ]}
               >
                 <Icons.Ionicons
-                  name="cloud-upload-outline"
-                  size={20}
-                  color={theme.colors.primary}
+                  name="bulb-outline"
+                  size={18}
+                  color={theme.colors.sub_text}
                 />
                 <Text
                   style={[
-                    styles.attachBtnText,
-                    { color: theme.colors.primary },
+                    styles.emptyChipsText,
+                    { color: theme.colors.sub_text },
                   ]}
                 >
-                  Upload Document
+                  Your skills will appear here as tags
                 </Text>
-              </TouchableOpacity>
+              </View>
+            )}
+          </View>
 
-              {/* Attachment items */}
-              {attachments.length > 0 && (
-                <View style={styles.attachList}>
-                  {attachments.map((att, index) => (
-                    <View
-                      key={index}
-                      style={[
-                        styles.attachItem,
-                        {
-                          backgroundColor: theme.colors.card,
-                          borderColor: theme.colors.border,
-                        },
-                      ]}
-                    >
-                      <View
-                        style={[
-                          styles.attachIconWrap,
-                          {
-                            backgroundColor: isDarkMode ? "#172554" : "#eff6ff",
-                          },
-                        ]}
-                      >
-                        {att.mimeType?.startsWith("image/") ? (
-                          <Image
-                            source={{ uri: att.uri }}
-                            style={styles.attachThumb}
-                          />
-                        ) : (
-                          <Icons.Ionicons
-                            name="document-text-outline"
-                            size={22}
-                            color={theme.colors.primary}
-                          />
-                        )}
-                      </View>
-                      <View style={{ flex: 1 }}>
-                        <Text
-                          style={[
-                            styles.attachName,
-                            { color: theme.colors.text },
-                          ]}
-                          numberOfLines={1}
-                        >
-                          {att.name}
-                        </Text>
-                        <Text
-                          style={[
-                            styles.attachSize,
-                            { color: theme.colors.sub_text },
-                          ]}
-                        >
-                          {(att.size / 1024).toFixed(1)} KB
-                        </Text>
-                      </View>
-                      <TouchableOpacity
-                        onPress={() =>
-                          setAttachments((prev) =>
-                            prev.filter((_, i) => i !== index),
-                          )
-                        }
-                        hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
-                      >
-                        <Icons.Ionicons
-                          name="trash-outline"
-                          size={20}
-                          color="#ef4444"
-                        />
-                      </TouchableOpacity>
-                    </View>
-                  ))}
-                </View>
-              )}
+          {/* ── STEP 3: Attachments ── */}
+          <View style={styles.stepBlock}>
+            <View style={styles.stepLabelRow}>
+              <View
+                style={[
+                  styles.stepBadge,
+                  { backgroundColor: theme.colors.primary },
+                ]}
+              >
+                <Text style={styles.stepBadgeText}>3</Text>
+              </View>
+              <Text style={[styles.stepTitle, { color: theme.colors.text }]}>
+                Documents{" "}
+                <Text
+                  style={[
+                    styles.optionalTag,
+                    { color: theme.colors.sub_text },
+                  ]}
+                >
+                  (optional)
+                </Text>
+              </Text>
             </View>
+            <Text style={[styles.stepHint, { color: theme.colors.sub_text }]}>
+              Attach your CV, certificates, or relevant files
+            </Text>
 
-            {/* ── Submit ── */}
             <TouchableOpacity
-              onPress={handleSubmit}
-              activeOpacity={0.85}
-              disabled={isSubmitting}
+              onPress={pickDocuments}
+              activeOpacity={0.75}
               style={[
-                styles.submitBtn,
+                styles.attachBtn,
                 {
-                  backgroundColor: theme.colors.primary,
-                  opacity: isSubmitting ? 0.7 : 1,
+                  backgroundColor: "#ccc",
+                  borderColor: "#ccc",
                 },
               ]}
             >
-              {isSubmitting ? (
-                <ActivityIndicator size={18} color="#fff" />
-              ) : (
-                <Icons.Feather name="send" size={18} color="#fff" />
-              )}
-              <Text style={styles.submitBtnText}>
-                {isSubmitting ? "Submitting..." : "Submit Application"}
+              <Icons.Ionicons
+                name="cloud-upload-outline"
+                size={20}
+                color={theme.colors.primary}
+              />
+              <Text
+                style={[
+                  styles.attachBtnText,
+                  { color: theme.colors.primary },
+                ]}
+              >
+                Upload Document
               </Text>
             </TouchableOpacity>
 
-            <View style={{ height: 32 }} />
-          </BottomSheetScrollView>
-        </BottomSheetModal>
-      </View>
+            {/* Attachment items */}
+            {attachments.length > 0 && (
+              <View style={styles.attachList}>
+                {attachments.map((att, index) => (
+                  <View
+                    key={index}
+                    style={[
+                      styles.attachItem,
+                      {
+                        backgroundColor: theme.colors.card,
+                        borderColor: theme.colors.border,
+                      },
+                    ]}
+                  >
+                    <View
+                      style={[
+                        styles.attachIconWrap,
+                        {
+                          backgroundColor: isDarkMode ? "#172554" : "#eff6ff",
+                        },
+                      ]}
+                    >
+                      {att.mimeType?.startsWith("image/") ? (
+                        <Image
+                          source={{ uri: att.uri }}
+                          style={styles.attachThumb}
+                        />
+                      ) : (
+                        <Icons.Ionicons
+                          name="document-text-outline"
+                          size={22}
+                          color={theme.colors.primary}
+                        />
+                      )}
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text
+                        style={[
+                          styles.attachName,
+                          { color: theme.colors.text },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {att.name}
+                      </Text>
+                      <Text
+                        style={[
+                          styles.attachSize,
+                          { color: theme.colors.sub_text },
+                        ]}
+                      >
+                        {(att.size / 1024).toFixed(1)} KB
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      onPress={() =>
+                        setAttachments((prev) =>
+                          prev.filter((_, i) => i !== index),
+                        )
+                      }
+                      hitSlop={{ top: 16, bottom: 16, left: 16, right: 16 }}
+                    >
+                      <Icons.Ionicons
+                        name="trash-outline"
+                        size={20}
+                        color="#ef4444"
+                      />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            )}
+          </View>
+
+          {/* ── Submit ── */}
+          <TouchableOpacity
+            onPress={handleSubmit}
+            activeOpacity={0.85}
+            disabled={isSubmitting}
+            style={[
+              styles.submitBtn,
+              {
+                backgroundColor: theme.colors.primary,
+                opacity: isSubmitting ? 0.7 : 1,
+              },
+            ]}
+          >
+            {isSubmitting ? (
+              <ActivityIndicator size={18} color="#fff" />
+            ) : (
+              <Icons.Feather name="send" size={18} color="#fff" />
+            )}
+            <Text style={styles.submitBtnText}>
+              {isSubmitting ? "Submitting..." : "Submit Application"}
+            </Text>
+          </TouchableOpacity>
+
+          <View style={{ height: 32 }} />
+        </BottomSheetScrollView>
+      </BottomSheetModal>
     </SafeAreaView>
   );
 };

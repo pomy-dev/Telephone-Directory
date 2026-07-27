@@ -1127,16 +1127,11 @@ const WorkerRegistration = ({ navigation }) => {
     }
   };
 
-  if (fetching) return <CustomLoader />;
-
   return (
-    <SafeAreaView
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
-    >
-      <StatusBar
-        barStyle={isDarkMode ? "light-content" : "dark-content"}
-        backgroundColor={theme.colors.background}
-      />
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
+
+      {fetching && <CustomLoader />}
 
       {/* ── Header ── */}
       <View

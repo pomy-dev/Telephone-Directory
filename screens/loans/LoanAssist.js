@@ -27,6 +27,7 @@ import {
   LayoutAnimation,
   RefreshControl,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import Carousel from "react-native-reanimated-carousel";
 import * as Speech from "expo-speech";
@@ -1174,10 +1175,7 @@ export default function FinancialHubScreen({ route, navigation }) {
   }
 
   return (
-    <View
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
-    >
-      {/* <View style={{ height: 25 }} /> */}
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
 
       {Header()}
 
@@ -1681,7 +1679,7 @@ export default function FinancialHubScreen({ route, navigation }) {
           />
         </View>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 }
 

@@ -1,16 +1,19 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
   View,
   Text,
   StyleSheet,
   TextInput,
+  StatusBar,
   TouchableOpacity,
   Dimensions,
   Keyboard,
   Image,
   ScrollView,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { AppContext } from "../../context/appContext";
 import SecondaryNav from "../../components/SecondaryNav";
 
 const { width, height } = Dimensions.get("window");
@@ -26,6 +29,7 @@ const formatCurrency = (value) => {
 
 export default function LoanCalculator({ navigation, route }) {
   const product = route?.params?.product || null;
+  const { theme, isDarkMode } = useContext(AppContext);
 
   const [principal, setPrincipal] = useState("");
   const [rate, setRate] = useState(product?.interestRateApr?.toString() || "");
@@ -70,39 +74,40 @@ export default function LoanCalculator({ navigation, route }) {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
       <SecondaryNav title="Loan Calculator" />
 
       <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Product Details Header */}
         {product && (
-          <View style={styles.productHeader}>
+          <View style={[styles.productHeader, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
             {getLogoSource() && (
               <Image
                 source={getLogoSource()}
                 style={styles.companyLogo}
-                resizeMode="contain"
+                resizeMode="stretch"
               />
             )}
             <View style={styles.productInfo}>
-              <Text style={styles.companyName} numberOfLines={1}>
+              <Text style={[styles.companyName, { color: theme.colors.sub_text }]} numberOfLines={1}>
                 {product.company?.companyName || product.companyName}
               </Text>
-              <Text style={styles.productName} numberOfLines={1}>
+              <Text style={[styles.productName, { color: theme.colors.text }]} numberOfLines={1}>
                 {product.name}
               </Text>
               <View style={styles.productMetaRow}>
                 <View style={styles.metaItem}>
-                  <Text style={styles.metaLabel}>Interest Rate</Text>
-                  <Text style={styles.metaValue}>{product.interestRateApr}%</Text>
+                  <Text style={[styles.metaLabel, { color: theme.colors.sub_text }]}>Interest Rate</Text>
+                  <Text style={[styles.metaValue, { color: theme.colors.text }]}>{product.interestRateApr}%</Text>
                 </View>
                 <View style={styles.metaItem}>
-                  <Text style={styles.metaLabel}>Max Term</Text>
-                  <Text style={styles.metaValue}>{product.maxDurationMonths} mo</Text>
+                  <Text style={[styles.metaLabel, { color: theme.colors.sub_text }]}>Max Term</Text>
+                  <Text style={[styles.metaValue, { color: theme.colors.text }]}>{product.maxDurationMonths} mo</Text>
                 </View>
                 <View style={styles.metaItem}>
-                  <Text style={styles.metaLabel}>Max Amount</Text>
-                  <Text style={styles.metaValue}>{formatCurrency(product.maxAmount)}</Text>
+                  <Text style={[styles.metaLabel, { color: theme.colors.sub_text }]}>Max Amount</Text>
+                  <Text style={[styles.metaValue, { color: theme.colors.text }]}>{formatCurrency(product.maxAmount)}</Text>
                 </View>
               </View>
             </View>
@@ -110,15 +115,16 @@ export default function LoanCalculator({ navigation, route }) {
         )}
 
         {/* Input Card */}
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>Enter Loan Details</Text>
+        <View style={[styles.card, { backgroundColor: theme.colors.card, borderColor: theme.colors.border }]}>
+          <Text style={[styles.cardTitle, { color: theme.colors.text }]}>Enter Loan Details</Text>
 
           {/* Principal */}
-          <View style={styles.inputRow}>
+          <View style={[styles.inputRow, { backgroundColor: theme.colors.sub_card }]}>
             <Ionicons name="cash-outline" size={20} color="#6B7280" />
             <TextInput
-              style={styles.input}
+              style={[styles.input, { color: theme.colors.text }]}
               placeholder={`Loan Amount (${product ? formatCurrency(product.maxAmount) : "E50,000.00"})`}
+              placeholderTextColor={theme.colors.sub_text}
               keyboardType="numeric"
               value={principal}
               onChangeText={(text) => handleInput(text, setPrincipal)}
@@ -126,10 +132,10 @@ export default function LoanCalculator({ navigation, route }) {
           </View>
 
           {/* Interest Rate */}
-          <View style={styles.inputRow}>
+          <View style={[styles.inputRow, { backgroundColor: theme.colors.sub_card }]}>
             <Ionicons name="trending-up-outline" size={20} color="#6B7280" />
             <TextInput
-              style={styles.input}
+              style={[styles.input, { color: theme.colors.text }]}
               placeholder="Interest Rate % (e.g. 9.5)"
               keyboardType="numeric"
               value={rate}
@@ -140,10 +146,10 @@ export default function LoanCalculator({ navigation, route }) {
           </View>
 
           {/* Term */}
-          <View style={styles.inputRow}>
+          <View style={[styles.inputRow, { backgroundColor: theme.colors.sub_card }]}>
             <Ionicons name="time-outline" size={20} color="#6B7280" />
             <TextInput
-              style={styles.input}
+              style={[styles.input, { color: theme.colors.text }]}
               placeholder={`Term in Months (up to ${product?.maxDurationMonths || 60})`}
               keyboardType="numeric"
               value={termMonths}
@@ -156,24 +162,24 @@ export default function LoanCalculator({ navigation, route }) {
 
         {/* Results Card */}
         {monthlyPayment > 0 && (
-          <View style={styles.resultCard}>
+          <View style={[styles.resultCard, { backgroundColor: theme.colors.card }]}>
             <Text style={styles.resultTitle}>Monthly Repayment</Text>
 
-            <Text style={styles.monthlyPayment}>
+            <Text style={[styles.monthlyPayment, { color: theme.colors.sub_text }]}>
               {formatCurrency(monthlyPayment)}
             </Text>
 
             <View style={styles.resultDetails}>
               <View style={styles.detailItem}>
                 <Text style={styles.detailLabel}>Total Interest</Text>
-                <Text style={styles.detailValue}>
+                <Text style={[styles.detailValue, { color: theme.colors.text }]}>
                   {formatCurrency(totalInterest)}
                 </Text>
               </View>
 
               <View style={styles.detailItem}>
                 <Text style={styles.detailLabel}>Total Payable</Text>
-                <Text style={styles.detailValue}>
+                <Text style={[styles.detailValue, { color: theme.colors.text }]}>
                   {formatCurrency(monthlyPayment * parseFloat(termMonths))}
                 </Text>
               </View>
@@ -197,7 +203,7 @@ export default function LoanCalculator({ navigation, route }) {
           </TouchableOpacity>
         )}
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -207,12 +213,10 @@ const styles = StyleSheet.create({
   scrollContent: { paddingTop: 12 },
 
   productHeader: {
-    backgroundColor: "#FFFFFF",
     borderRadius: 16,
     marginHorizontal: 10,
     padding: 16,
     borderWidth: 1,
-    borderColor: "#E5E7EB",
     marginBottom: 16,
     flexDirection: "row",
     alignItems: "center",
@@ -237,7 +241,6 @@ const styles = StyleSheet.create({
   productName: {
     fontSize: 16,
     fontWeight: "700",
-    color: "#111827",
     marginVertical: 4,
   },
   productMetaRow: {
@@ -301,7 +304,6 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: 16,
-    color: "#111827",
   },
 
   resultCard: {

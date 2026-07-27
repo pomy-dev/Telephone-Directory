@@ -16,12 +16,13 @@ const isTablet = width >= 768;
 
 // 1. WhatsAppPatternFallback responding to theme
 const WhatsAppPatternFallback = () => {
-  const { theme, isDarkMode } = useContext(AppContext);
-  // Use theme primary color or a fallback WhatsApp green
-  const dotColor = isDarkMode ? "#f0f4ff" : "#075E54";
+  const { isDarkMode } = useContext(AppContext);
+
+  // Dotted pattern color based on theme
+  const dotColor = isDarkMode ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.08)"; // Faint dots
 
   return (
-    <View style={[StyleSheet.absoluteFillObject, { backgroundColor: theme.colors.background }]}>
+    <View style={[StyleSheet.absoluteFill, { backgroundColor: isDarkMode ? "#111" : "#f0f0f0" }]}>
       <View style={styles.patternContainer}>
         {[...Array(50)].map((_, i) => (
           <View key={i} style={styles.patternRow}>
@@ -32,7 +33,6 @@ const WhatsAppPatternFallback = () => {
                   styles.patternDot,
                   {
                     backgroundColor: dotColor,
-                    opacity: (i + j) % 3 === 0 ? 0.08 : 0.04
                   },
                 ]}
               />
@@ -40,7 +40,6 @@ const WhatsAppPatternFallback = () => {
           </View>
         ))}
       </View>
-      <View style={[styles.bgOverlay]} />
     </View>
   );
 };
@@ -344,7 +343,7 @@ export default function Chatbot({ navigation, route }) {
             {user.photoURL ? <Avatar.Image source={{ uri: user.photoURL }} size={30} /> : <Avatar.Icon size={30} icon="account" color={'#fff'} />}
             <Text style={{ color: theme.colors.text, fontSize: 16, fontWeight: '200' }}>{user.displayName}</Text>
           </View>
-          <TouchableOpacity onPress={speak} style={{ paddingHorizontal: 10, paddingVertical: 5, alignItems: 'center', borderRadius: 10, backgroundColor: theme.colors.card }}>
+          <TouchableOpacity onPress={speak} style={{ paddingHorizontal: 10, paddingVertical: 5, alignItems: 'center', borderRadius: 50, backgroundColor: theme.colors.card }}>
             {isSpeaking ?
               isPaused ? (
                 <Icons.Ionicons name="play-circle-outline" size={24} color={theme.colors.text} />
@@ -414,10 +413,14 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   keyboardAvoidingView: { flex: 1 },
   chatList: { flex: 1 },
-  bgOverlay: { ...StyleSheet.absoluteFillObject },
-  patternContainer: { flex: 1 },
+  patternContainer: { flex: 1, overflow: 'hidden' }, // Clip dots outside container
   patternRow: { flexDirection: "row" },
-  patternDot: { width: 30, height: 30 },
+  patternDot: {
+    width: 20, // Adjust size of squares
+    height: 20,
+    margin: 2, // Spacing between dots
+    borderRadius: 2, // Slightly rounded corners for dots
+  },
 
   chatList: {
     flex: 1,

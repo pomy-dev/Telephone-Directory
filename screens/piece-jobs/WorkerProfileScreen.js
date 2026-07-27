@@ -22,8 +22,7 @@ import {
   logUserActivity,
   getWorkerProfileClient,
 } from "../../service/Supabase-Fuctions";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
 const { width, height } = Dimensions.get("window");
 // Responsive grid: 1 column per ~120px, min 2, max 5

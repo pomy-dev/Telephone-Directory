@@ -19,7 +19,7 @@ import {
   Animated,
   ScrollView,
 } from "react-native";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
+import {SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { Icons } from "../../constants/Icons";
 import { CustomToast } from "../../components/customToast";
 import {
@@ -435,7 +435,7 @@ const JobInboxScreen = ({ route, navigation }) => {
   };
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: theme.colors.background }]}>
+    <SafeAreaView style={[styles.container, { paddingTop: insets.top, backgroundColor: theme.colors.background }]}>
       <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
 
       <View style={[styles.header, { borderColor: theme.colors.background }]}>
@@ -609,7 +609,7 @@ const JobInboxScreen = ({ route, navigation }) => {
           </View>
         </View>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 };
 

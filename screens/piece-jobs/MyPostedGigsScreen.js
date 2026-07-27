@@ -5,7 +5,7 @@ import {
   View, Text, FlatList, TouchableOpacity, StyleSheet,
   ActivityIndicator, StatusBar, Alert, Dimensions
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from "../../service/Supabase-Client";
 import { AuthContext } from "../../context/authProvider";
 import { Icons } from "../../constants/Icons";
@@ -46,7 +46,7 @@ const MyPostedGigsScreen = ({ navigation }) => {
         {
           text: "Update Post",
           style: "destructive",
-          onPress:() => navigation.navigate("PostJobScreen", { gig: gig })
+          onPress: () => navigation.navigate("PostJobScreen", { gig: gig })
         },
         {
           text: "Delete Post",
@@ -116,7 +116,7 @@ const MyPostedGigsScreen = ({ navigation }) => {
   );
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: theme.colors.background }]}>
+    <SafeAreaView style={[styles.container, { paddingTop: insets.top, backgroundColor: theme.colors.background }]}>
       <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
       <SecondaryNav title={'My Job Posts'} onRightPress={fetchMyGigs} rightIcon={'refresh-outline'} />
 
@@ -136,7 +136,7 @@ const MyPostedGigsScreen = ({ navigation }) => {
           }
         />
       )}
-    </View>
+    </SafeAreaView>
   );
 };
 

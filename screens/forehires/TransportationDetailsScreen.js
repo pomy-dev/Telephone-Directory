@@ -13,6 +13,7 @@ import {
   Dimensions,
   Alert,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { Icons } from "../../constants/Icons";
 import { AppContext } from "../../context/appContext";
@@ -21,7 +22,7 @@ import { getTransportById, deleteForhire } from "../../service/Supabase-Fuctions
 import { AuthContext } from "../../context/authProvider";
 import { CustomToast } from "../../components/customToast";
 
-const { width } = Dimensions.get("window");
+const { width, height } = Dimensions.get("window");
 
 export default function TransportationDetailsScreen({ navigation, route }) {
   const { vehicleData } = route.params;
@@ -234,8 +235,9 @@ export default function TransportationDetailsScreen({ navigation, route }) {
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
+      {/* <View style={{ height: 20 }} /> */}
       <SecondaryNav title={`${vehicle?.vehicle_make} ${vehicle.vehicle_type?.toUpperCase()}`} onRightPress={handleEditVehicle}
         rightIcon={user.email.trim() === vehicle.owner_info?.email?.trim() && 'pencil-outline'} />
 
@@ -660,7 +662,7 @@ export default function TransportationDetailsScreen({ navigation, route }) {
           <Ionicons name="arrow-forward" size={20} color="#fff" />
         </TouchableOpacity>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
