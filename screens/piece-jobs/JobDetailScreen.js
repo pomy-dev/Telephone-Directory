@@ -349,36 +349,41 @@ const JobDetailScreen = ({ route, navigation }) => {
   return (
     <SafeAreaView
       // behavior={Platform.OS === "ios" ? "padding" : "height"}
-      style={styles.container}
-    >
+      style={styles.container}>
       <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
-      <SecondaryNav
-        title="Job Details"
-        rightIcon="share-social-outline"
-        onRightPress={handleShareJob}
-        onBackPress={() => navigation.goBack()}
-      />
+      {hasImages ? (
+        <View style={styles.heroHeader}>
+          <Carousel
+            loop={job.images?.length > 1}
+            width={width}
+            height={300}
+            autoPlay={job.images?.length > 1}
+            data={job.images}
+            scrollAnimationDuration={2000}
+            renderItem={({ item, index }) => (
+              <TouchableOpacity activeOpacity={0.92} onPress={() => openLightbox(index)}>
+                <Image source={{ uri: item.url || item }} style={styles.image} />
+              </TouchableOpacity>
+            )}
+          />
+          <SecondaryNav
+            title="Job Details"
+            containerStyle={styles.heroNav}
+            tintColor="#fff"
+            rightIcon="share-social-outline"
+            onRightPress={handleShareJob}
+            onBackPress={() => navigation.goBack()}
+          />
+        </View>
+      ) : (
+        <SecondaryNav title="Job Details"
+          rightIcon="share-social-outline"
+          onRightPress={handleShareJob}
+          onBackPress={() => navigation.goBack()}
+        />
+      )}
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {hasImages ? (
-          /* SHOW CAROUSEL IF IMAGES EXIST */
-          <View style={{ height: 200 }}>
-            <Carousel
-              loop
-              width={width}
-              height={200}
-              autoPlay={true}
-              data={job.images}
-              scrollAnimationDuration={2000}
-              renderItem={({ item }) => (
-                <Image source={{ uri: item }} style={styles.image} />
-              )}
-            />
-          </View>
-        ) : (
-          <View></View>
-        )}
-
         <View style={styles.detailsContainer}>
           <View style={styles.header}>
             <Text style={[styles.title, { color: theme.colors.text }]}>
@@ -1030,6 +1035,26 @@ const styles = StyleSheet.create({
     height: 300,
     backgroundColor: "#f0f0f0",
   },
+  heroNav: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 2,
+    backgroundColor: "rgba(0,0,0,0.48)",
+  },
+  dotRow: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1,
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 5,
+    paddingVertical: 10,
+  },
+  dot: { width: 6, height: 6, borderRadius: 3 },
   detailsContainer: {
     padding: 16,
   },
@@ -1039,6 +1064,7 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     marginBottom: 12,
   },
+  heroHeader: { height: 300, position: "relative", overflow: "hidden" },
   title: {
     fontSize: 24,
     fontWeight: "700",

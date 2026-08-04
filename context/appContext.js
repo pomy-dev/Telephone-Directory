@@ -35,7 +35,7 @@ export const AppProvider = ({ children }) => {
         if (state && state !== "" && state !== "undefined" && state !== "null") {
           setSelectedState(JSON.parse(state))
         } else {
-          console.log('No state found in storage, setting to Business eSwatini')
+          // console.log('No state found in storage, setting to Business eSwatini')
           setSelectedState('BE');
         }
 

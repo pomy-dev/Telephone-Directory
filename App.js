@@ -228,8 +228,7 @@ export default function App() {
 }
 
 function AppContent() {
-  const { isDarkMode, theme, notificationsEnabled, addNotification } =
-    useContext(AppContext);
+  const { isDarkMode, theme, notificationsEnabled, addNotification } = useContext(AppContext);
   const { user } = useContext(AuthContext);
   const [isAppReady, setIsAppReady] = useState(false);
   const navigationRef = useNavigationContainerRef();
@@ -290,7 +289,6 @@ function AppContent() {
     // NavigationBar.setBackgroundColorAsync("#000000"); // Dark background
     // NavigationBar.setButtonStyleAsync("light");      // White buttons
     //   <NavigationBar style="auto" />;
-
     // }
 
     configureGoogleSignin();
@@ -401,15 +399,8 @@ function AppContent() {
                       {/* Auth Screens */}
                       {!user ? (
                         <>
-                          <Stack.Screen
-                            name="Login"
-                            component={LoginScreen}
-                            options={{ animationEnabled: false }}
-                          />
-                          <Stack.Screen
-                            name="Signup"
-                            component={SignupScreen}
-                          />
+                          <Stack.Screen name="Login" component={LoginScreen} options={{ animationEnabled: false }} />
+                          <Stack.Screen name="Signup" component={SignupScreen} />
                         </>
                       ) : (
                         <>
@@ -423,16 +414,10 @@ function AppContent() {
                           {/* Home Screen */}
                           <Stack.Screen name="Home" component={HomeScreen} />
 
-                          <Stack.Screen
-                            name="Settings"
-                            component={SettingsScreen}
-                          />
+                          <Stack.Screen name="Settings" component={SettingsScreen} />
 
                           {/* Notifications */}
-                          <Stack.Screen
-                            name="Nots"
-                            component={NotificationListScreen}
-                          />
+                          <Stack.Screen name="Nots" component={NotificationListScreen} />
 
                           {/* Business Directory */}
                           {/* <Stack.Screen
@@ -469,74 +454,27 @@ function AppContent() {
                           /> */}
 
                           {/* Piece Jobs  */}
-                          <Stack.Screen
-                            name="GigsScreen"
-                            component={GigsScreen}
-                          />
-                          <Stack.Screen
-                            name="JobDetailScreen"
-                            component={JobDetailScreen}
-                          />
-                          <Stack.Screen
-                            name="PostJobScreen"
-                            component={PostJobScreen}
-                          />
+                          <Stack.Screen name="GigsScreen" component={GigsScreen} />
+                          <Stack.Screen name="JobDetailScreen" component={JobDetailScreen} />
+                          <Stack.Screen name="PostJobScreen" component={PostJobScreen} />
+                          <Stack.Screen name="WorkerRegistration" component={WorkerRegistrationScreen} />
 
-                          <Stack.Screen
-                            name="WorkerRegistration"
-                            component={WorkerRegistrationScreen}
-                          />
-                          <Stack.Screen
-                            name="WorkerProfileScreen"
-                            component={WorkerProfileScreen}
-                          />
-                          <Stack.Screen
-                            name="MyPostedGigs"
-                            component={MyPostedGigsScreen}
-                          />
-                          <Stack.Screen
-                            name="JobInbox"
-                            component={JobInboxScreen}
-                          />
+                          <Stack.Screen name="WorkerProfileScreen" component={WorkerProfileScreen} />
+                          <Stack.Screen name="MyPostedGigs" component={MyPostedGigsScreen} />
+                          <Stack.Screen name="JobInbox" component={JobInboxScreen} />
 
                           {/* transport for hire */}
-                          <Stack.Screen
-                            name="TransportationListScreen"
-                            component={TransportationListScreen}
-                          />
-                          <Stack.Screen
-                            name="TransDetailsScreen"
-                            component={TransportationDetailsScreen}
-                          />
-                          <Stack.Screen
-                            name="PostTransportationScreen"
-                            component={PostTransportationScreen}
-                          />
-                          <Stack.Screen
-                            name="BookTransportationScreen"
-                            component={BookTransportationScreen}
-                          />
+                          <Stack.Screen name="TransportationListScreen" component={TransportationListScreen} />
+                          <Stack.Screen name="TransDetailsScreen" component={TransportationDetailsScreen} />
+                          <Stack.Screen name="PostTransportationScreen" component={PostTransportationScreen} />
+                          <Stack.Screen name="BookTransportationScreen" component={BookTransportationScreen} />
 
                           {/* loan assist */}
-                          <Stack.Screen
-                            name="LoanAssist"
-                            component={LoanAssist}
-                          />
+                          <Stack.Screen name="LoanAssist" component={LoanAssist} />
                           <Stack.Screen name="Chatbot" component={Chatbot} />
-
-                          <Stack.Screen
-                            name="LoanDetails"
-                            component={LoanDetails}
-                          />
-
-                          <Stack.Screen
-                            name="LoanCompare"
-                            component={LoanCompare}
-                          />
-                          <Stack.Screen
-                            name="LoanCalculator"
-                            component={LoanCalculator}
-                          />
+                          <Stack.Screen name="LoanDetails" component={LoanDetails} />
+                          <Stack.Screen name="LoanCompare" component={LoanCompare} />
+                          <Stack.Screen name="LoanCalculator" component={LoanCalculator} />
                         </>
                       )}
                     </Stack.Navigator>

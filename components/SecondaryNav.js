@@ -13,6 +13,8 @@ export default function SecondaryNav({
     rightIcon,
     onRightPress,
     showLocation = false,
+    containerStyle,
+    tintColor,
 }) {
     const { theme } = React.useContext(AppContext)
     const navigation = useNavigation()
@@ -32,23 +34,23 @@ export default function SecondaryNav({
     }
 
     return (
-        <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+        <View style={[styles.container, { backgroundColor: theme.colors.background }, containerStyle]}>
             {/* Left Back Button */}
             <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconButton} activeOpacity={0.7}>
-                <Ionicons name="arrow-back" size={26} color={theme.colors.text} />
+                <Ionicons name="arrow-back" size={26} color={tintColor || theme.colors.text} />
             </TouchableOpacity>
 
             {/* Title or Location */}
             <View style={styles.centerContent}>
                 {showLocation ? (
                     <View style={{ alignItems: "center" }}>
-                        <Text style={[styles.smallLabel, { color: theme.colors.text }]}>Deliver to</Text>
+                        <Text style={[styles.smallLabel, { color: tintColor || theme.colors.text }]}>Deliver to</Text>
                         <Text style={styles.locationText} numberOfLines={1}>
                             {location || "Fetching..."}
                         </Text>
                     </View>
                 ) : (
-                    <Text style={[styles.titleText, { color: theme.colors.text }]} numberOfLines={1}>
+                    <Text style={[styles.titleText, { color: tintColor || theme.colors.text }]} numberOfLines={1}>
                         {title}
                     </Text>
                 )}
@@ -57,7 +59,7 @@ export default function SecondaryNav({
             {/* Right Icon (Optional) */}
             {rightIcon ? (
                 <TouchableOpacity onPress={onRightPress} style={styles.iconButton} activeOpacity={0.7}>
-                    <Ionicons name={rightIcon} size={24} color={theme.colors.text} />
+                    <Ionicons name={rightIcon} size={24} color={tintColor || theme.colors.text} />
                 </TouchableOpacity>
             ) : (
                 <View style={styles.iconPlaceholder} />

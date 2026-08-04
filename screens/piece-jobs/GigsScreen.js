@@ -1661,8 +1661,7 @@ const GigsScreen = ({ navigation }) => {
       )}
 
       {/* FLOATING ACTION BUTTON */}
-      <View style={styles.fabContainer}>
-        {/* Main FAB */}
+      {/* <View style={styles.fabContainer}>
         <Animated.View
           style={{
             transform: [
@@ -1685,7 +1684,7 @@ const GigsScreen = ({ navigation }) => {
             <Icons.AntDesign name="plus" size={24} color="#fff" />
           </TouchableOpacity>
         </Animated.View>
-      </View>
+      </View> */}
     </SafeAreaView>
   );
 };

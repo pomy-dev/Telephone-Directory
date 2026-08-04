@@ -30,7 +30,7 @@ const NUM_COLS = Math.min(5, Math.max(2, Math.floor(width / 120)));
 const GRID_PADDING = 12; // card inner padding
 const GRID_GAP = 2; // gap between thumbs
 const THUMB_SIZE = Math.min(
-  80, // max height cap
+  100, // max height cap
   Math.floor((width - GRID_PADDING * 2 - GRID_GAP * (NUM_COLS - 1)) / NUM_COLS),
 );
 
@@ -178,57 +178,52 @@ const WorkerProfileScreen = ({ route }) => {
       style={[styles.container, { backgroundColor: theme.colors.background }]}
       edges={["top"]}
     >
-      <StatusBar
-        barStyle={isDarkMode ? "light-content" : "dark-content"}
-        backgroundColor={theme.colors.background}
-      />
-      <SecondaryNav title={"Freelancer Profile"} />
+      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
+      {hasImages ? (
+        <View style={styles.heroHeader}>
+          <Carousel
+            loop={worker.experience_images?.length > 1}
+            width={width}
+            height={300}
+            autoPlay={worker.experience_images.length > 1}
+            data={worker.experience_images}
+            scrollAnimationDuration={5000}
+            onSnapToItem={setCarouselIndex}
+            renderItem={({ item, index }) => (
+              <TouchableOpacity activeOpacity={0.92} onPress={() => openLightbox(index)}>
+                <Image source={{ uri: item.url || item }} style={styles.heroImage} />
+              </TouchableOpacity>
+            )}
+          />
+          <SecondaryNav
+            title="Freelancer Profile"
+            containerStyle={styles.heroNav}
+            tintColor="#fff"
+          />
+          {worker.experience_images.length > 1 && (
+            <View style={styles.dotRow}>
+              {worker.experience_images?.map((_, i) => (
+                <View
+                  key={i}
+                  style={[
+                    styles.dot,
+                    {
+                      backgroundColor:
+                        i === carouselIndex
+                          ? theme.colors.primary
+                          : "rgba(255,255,255,0.7)",
+                    },
+                  ]}
+                />
+              ))}
+            </View>
+          )}
+        </View>
+      ) : (
+        <SecondaryNav title="Freelancer Profile" />
+      )}
 
       <ScrollView showsVerticalScrollIndicator={false}>
-        {/* ── HERO CAROUSEL ── */}
-        {hasImages && (
-          <View>
-            <Carousel
-              loop={worker.experience_images?.length > 1}
-              width={width}
-              height={220}
-              autoPlay={worker.experience_images.length > 1}
-              data={worker.experience_images}
-              scrollAnimationDuration={5000}
-              onSnapToItem={setCarouselIndex}
-              renderItem={({ item, index }) => (
-                <TouchableOpacity
-                  activeOpacity={0.92}
-                  onPress={() => openLightbox(index)}
-                >
-                  <Image
-                    source={{ uri: item.url || item }}
-                    style={styles.heroImage}
-                  />
-                </TouchableOpacity>
-              )}
-            />
-            {worker.experience_images.length > 1 && (
-              <View style={styles.dotRow}>
-                {worker.experience_images?.map((_, i) => (
-                  <View
-                    key={i}
-                    style={[
-                      styles.dot,
-                      {
-                        backgroundColor:
-                          i === carouselIndex
-                            ? theme.colors.primary
-                            : theme.colors.border,
-                      },
-                    ]}
-                  />
-                ))}
-              </View>
-            )}
-          </View>
-        )}
-
         <View style={styles.pagePad}>
           {/* ── IDENTITY CARD ── */}
           {/* <View style={[styles.menuCard, { backgroundColor: theme.colors.card }]}> */}
@@ -681,8 +676,22 @@ const styles = StyleSheet.create({
   },
   emptyText: { fontSize: 15, fontWeight: "600" },
 
-  heroImage: { width, height: 220, resizeMode: "cover" },
+  heroImage: { width, height: 300, resizeMode: "cover" },
+  heroHeader: { height: 300, position: "relative", overflow: "hidden" },
+  heroNav: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 2,
+    backgroundColor: "rgba(0,0,0,0.48)",
+  },
   dotRow: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1,
     flexDirection: "row",
     justifyContent: "center",
     gap: 5,
@@ -708,7 +717,7 @@ const styles = StyleSheet.create({
   },
 
   // ── Identity ──
-  heroContent: { flexDirection: "row", alignItems: "center", padding: 20 },
+  heroContent: { flexDirection: "row", alignItems: "center", paddingVertical: 10 },
   avatarContainer: { position: "relative" },
   avatar: {
     width: 72,
@@ -729,7 +738,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     padding: 1,
   },
-  profileInfo: { flex: 1, marginLeft: 16 },
+  profileInfo: { flex: 1, marginLeft: 8 },
   workerName: { fontSize: 20, fontWeight: "700", marginBottom: 4 },
   locationRow: {
     flexDirection: "row",
@@ -744,8 +753,8 @@ const styles = StyleSheet.create({
   socialRow: {
     flexDirection: "row",
     gap: 10,
-    paddingHorizontal: 20,
-    paddingVertical: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
   },
 
   // ── Section — mirrors SettingsScreen section ──

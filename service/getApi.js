@@ -19,8 +19,8 @@ export async function getAppVersionInfo() {
     );
 
     const config = await JSON.parse(await response.text());
-    console.log('App Version Build', config);
-    console.log('Current App Version', currentBuild);
+    // console.log('App Version Build', config);
+    // console.log('Current App Version', currentBuild);
 
     return {
       currentBuild,

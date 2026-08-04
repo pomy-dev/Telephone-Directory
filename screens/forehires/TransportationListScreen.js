@@ -751,7 +751,7 @@ export default function TransportationListScreen({ navigation }) {
                     <Icons.Ionicons name="search" size={20} color={theme.colors.sub_text} />
                     <TextInput
                         style={styles.searchInput}
-                        placeholder="Search make, model, type..."
+                        placeholder="Search make, type..."
                         value={searchQuery}
                         onChangeText={setSearchQuery}
                         placeholderTextColor={theme.colors.sub_text}
@@ -957,7 +957,7 @@ const styles = StyleSheet.create({
     },
 
     searchBar: {
-        flex: 1,
+        // flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
         marginHorizontal: 5,
@@ -965,6 +965,7 @@ const styles = StyleSheet.create({
         borderRadius: 50,
         paddingHorizontal: 10,
         height: 45,
+        width: width * 0.6,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.04,
