@@ -590,6 +590,7 @@ export async function getWorkerProfile(userId) {
     return { success: false, error: error.message };
   }
 }
+
 export async function getWorkerProfileClient(id) {
   try {
     const { data, error } = await supabase
@@ -681,22 +682,61 @@ export const fetchPomyWorkers = async ({
  */
 export async function updateWorkerProfile(uid, updateData) {
   try {
+    const {
+      data: existingProfile,
+      error: fetchError,
+    } = await supabase.from("pomy_workers").select("worker_pp, experience_images, documents")
+      .eq("user_id", uid).single();
+
+    if (fetchError && fetchError.code !== "PGRST116") throw fetchError;
+
+    const previousWorkerProfile = existingProfile?.worker_pp || [];
+    const previousPortfolioImages = existingProfile?.experience_images || [];
+    const previousDocuments = existingProfile?.documents || [];
+
     let workerProfile = updateData.worker_pp || [];
     let portfolioImgs = updateData.experience_images || [];
     let documents = updateData.documents || [];
 
-    console.log(
-      "Worker P.: ",
-      workerProfile,
-      "\nGallery Imgs: ",
-      portfolioImgs,
-      "\nDocuments: ",
-      documents,
-    );
+    const getStoragePath = (item) => {
+      if (!item) return null;
+      if (typeof item === "object" && item.path) return item.path;
+
+      const url = typeof item === "string" ? item : item.url;
+      if (!url || typeof url !== "string") return null;
+
+      const storagePrefix = "/storage/v1/object/public/";
+      try {
+        const parsed = new URL(url);
+        const pathname = parsed.pathname;
+        const index = pathname.indexOf(storagePrefix);
+        if (index === -1) return null;
+        return pathname.slice(index + storagePrefix.length);
+      } catch (err) {
+        const index = url.indexOf(storagePrefix);
+        if (index === -1) return null;
+        return url.slice(index + storagePrefix.length);
+      }
+    };
+
+    const getRemovedStoragePaths = (oldItems = [], newItems = []) => {
+      const oldPaths = (oldItems || [])
+        .map(getStoragePath)
+        .filter(Boolean);
+      const newPaths = new Set(
+        (newItems || []).map(getStoragePath).filter(Boolean),
+      );
+      return [...new Set(oldPaths.filter((path) => !newPaths.has(path)))];
+    };
+
+    const removeStorageObjects = async (bucket, paths = []) => {
+      if (!paths?.length) return;
+      const { error } = await supabase.storage.from(bucket).remove(paths);
+      if (error) console.warn("Supabase storage remove error:", error);
+    };
 
     const isLocalFile = (item) => {
       if (!item) return false;
-      // if (typeof item === "string") return item.startsWith("file://");
       if (typeof item === "object")
         return !!(item.uri && String(item.uri).startsWith("file://"));
       return false;
@@ -704,10 +744,9 @@ export async function updateWorkerProfile(uid, updateData) {
 
     const isRemoteUrl = (item) => {
       if (!item) return false;
-      // if (typeof item === "string") return item.startsWith("https");
       if (typeof item === "object")
         return !!(item.url && String(item.url).startsWith("https"));
-      return false;
+      return typeof item === "string" && item.startsWith("https");
     };
 
     // Profile picture(s)
@@ -725,8 +764,7 @@ export async function updateWorkerProfile(uid, updateData) {
       workerProfile = existingPP;
     }
 
-    // Portfolio images: want array of URL strings
-    // Keep existing remote URLs and append newly uploaded ones
+    // Portfolio images: keep existing remote URLs/objects and append new uploads
     const existingPortfolioUrls = portfolioImgs
       ?.filter(isRemoteUrl)
       .map((i) => i);
@@ -739,16 +777,12 @@ export async function updateWorkerProfile(uid, updateData) {
         "portfolio",
         toUploadPortfolio,
       );
-      // Append newly uploaded images to existing remote URLs
-      const uploadedUrls = uploadedPortfolio.map((img) => img);
-
-      portfolioImgs = [...(existingPortfolioUrls || []), ...uploadedUrls];
+      portfolioImgs = [...(existingPortfolioUrls || []), ...(uploadedPortfolio || [])];
     } else {
       portfolioImgs = existingPortfolioUrls || [];
     }
 
-    // Documents: keep array of objects {url,name,type,...}
-    // Keep existing remote documents and append newly uploaded ones
+    // Documents: keep existing remote docs and append newly uploaded ones
     const existingDocs = documents
       ?.filter(isRemoteUrl)
       .map((i) => (typeof i === "string" ? { url: i } : i));
@@ -763,13 +797,10 @@ export async function updateWorkerProfile(uid, updateData) {
         "certificates",
         toUploadDocs,
       );
-      // Append newly uploaded documents to existing remote documents
       documents = [...(existingDocs || []), ...(uploadedDocs || [])];
     } else {
       documents = existingDocs || [];
     }
-
-    // console.log("Portfolio Img: ", portfolioImgs);
 
     const payload = {
       ...updateData,
@@ -786,6 +817,26 @@ export async function updateWorkerProfile(uid, updateData) {
       .select();
 
     if (error) throw error;
+
+    const removedWorkerProfilePaths = getRemovedStoragePaths(
+      previousWorkerProfile,
+      workerProfile,
+    );
+    const removedPortfolioPaths = getRemovedStoragePaths(
+      previousPortfolioImages,
+      portfolioImgs,
+    );
+    const removedDocumentPaths = getRemovedStoragePaths(
+      previousDocuments,
+      documents,
+    );
+
+    await removeStorageObjects("workers", [
+      ...removedWorkerProfilePaths,
+      ...removedPortfolioPaths,
+      ...removedDocumentPaths,
+    ]);
+
     return { success: true, data: data[0] };
   } catch (error) {
     console.error("Update Error:", error.message);
@@ -918,7 +969,6 @@ export async function applyForGig(formData) {
 }
 
 /** re-apply for a gig job */
-
 export async function reapplyForGig(gigId) {
   try {
     // update the status to 're-applied' for the existing application
@@ -940,7 +990,7 @@ export async function reapplyForGig(gigId) {
 
 /** fetch gigs applied for */
 export async function getMyAppliedGigs(userEmail) {
-  console.log("Fetching applied gigs for user:", userEmail);
+  // console.log("Fetching applied gigs for user:", userEmail);
   try {
     const { data, error } = await supabase.rpc("get_gigs_i_applied_for", {
       p_email: userEmail.trim(),
@@ -956,7 +1006,7 @@ export async function getMyAppliedGigs(userEmail) {
 }
 
 export async function getMyAppliedGigsThatApproved(userEmail) {
-  console.log("Fetching applied gigs for user:", userEmail);
+  // console.log("Fetching applied gigs for user:", userEmail);
   try {
     const { data, error } = await supabase.rpc("get_user_related_gigs", {
       p_email: userEmail.trim(),
@@ -1200,6 +1250,7 @@ export const logUserActivity = async ({ itemId, userId, itemType, action }) => {
 
 // this is the function user to sysnc the user to the old database  for recomendation
 // -- before the universal recommendation engine ------------
+
 export async function syncUserProfile(firebaseUser) {
   if (!firebaseUser) return null;
 
@@ -1230,6 +1281,7 @@ export async function syncUserProfile(firebaseUser) {
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 //this is the service for collection the user feed back  about the application :
+
 export const submitFeedback = async (firebaseUid, rating, message) => {
   const { data, error } = await supabase.from("app_feedback").insert([
     {

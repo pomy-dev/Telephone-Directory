@@ -870,6 +870,9 @@ const ProfileForm = ({
             ))}
           </View>
         </View>
+
+        {/* ── 8. School Association ── */}
+        
       </ScrollView>
 
       {/* Platform picker modal */}
@@ -914,9 +917,9 @@ const ProfileForm = ({
 // MAIN COMPONENT
 // ==========================================
 const WorkerRegistration = ({ navigation }) => {
-  const { user } = useContext(AuthContext);
+  const { user, isWorker, setIsWorker } = useContext(AuthContext);
   const { theme, isDarkMode } = useContext(AppContext);
-  const [isWorker, setIsWorker] = useState(false);
+  // const [isWorker, setIsWorker] = useState(false);
   const [fetching, setFetching] = useState(true);
   const [loading, setLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);

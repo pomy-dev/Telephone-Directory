@@ -42,7 +42,7 @@ export const UploadImage = async (file) => {
 }
 
 export const uploadImages = async (path, subpath, files = []) => {
-  console.log('Path: ', path, '\nSubpath: ', subpath, '\nImages: ', files)
+  // console.log('Path: ', path, '\nSubpath: ', subpath, '\nImages: ', files)
   if (files?.length === 0) return;
 
   // console.log('Files to upload:', files?.length)
@@ -122,7 +122,7 @@ export const uploadImages = async (path, subpath, files = []) => {
 };
 
 export const uploadAttachments = async (path, subpath, files = []) => {
-  console.log('Path: ', path, '\nSubpath: ', subpath, '\nImages: ', files)
+  // console.log('Path: ', path, '\nSubpath: ', subpath, '\nImages: ', files)
   const uploaded = [];
   for (const file of files) {
     if (!file?.uri) continue;

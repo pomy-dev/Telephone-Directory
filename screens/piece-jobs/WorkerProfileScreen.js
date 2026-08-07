@@ -333,7 +333,7 @@ const WorkerProfileScreen = ({ route }) => {
             <Text
               style={[styles.sectionTitle, { color: theme.colors.sub_text }]}
             >
-              About
+              Biography
             </Text>
             <View>
               <View style={styles.bioRow}>
@@ -344,6 +344,9 @@ const WorkerProfileScreen = ({ route }) => {
               </View>
             </View>
           </View>
+
+          {/* ── School Association ── */}
+          
 
           {/* ── SERVICES ── */}
           {hasSkills && (
@@ -604,7 +607,7 @@ const WorkerProfileScreen = ({ route }) => {
             styles.smsBtn,
             {
               borderColor: theme.colors.border,
-              backgroundColor: theme.colors.background,
+              backgroundColor: theme.colors.card2,
             },
           ]}
           onPress={() => Linking.openURL(`sms:${worker.phone}`)}
@@ -612,7 +615,7 @@ const WorkerProfileScreen = ({ route }) => {
           <Icons.Ionicons
             name="chatbubble-outline"
             size={22}
-            color={theme.colors.text}
+            color="#ffff"
           />
         </TouchableOpacity>
         <TouchableOpacity
