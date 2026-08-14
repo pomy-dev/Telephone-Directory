@@ -7,6 +7,12 @@ import appLogo from '../assets/splash-icon.png';
 // empty folder
 import emptyFolder from '../assets/icons/empty.png';
 
+// schools logo
+import gwamile from '../assets/pics/gwamile.jpg';
+import wood from '../assets/pics/wood.jpg';
+import textile from '../assets/pics/textile.jpg';
+import machenic from '../assets/pics/machenic.jpg';
+
 // services
 import forhire from '../assets/icons/forhire.jpg'
 import piecejob from '../assets/icons/piece-jobs.png'
@@ -22,5 +28,8 @@ export const Images = {
 
   // Socials
   google,
+
+  // schools
+  gwamile, machenic, textile, wood,
 
 };

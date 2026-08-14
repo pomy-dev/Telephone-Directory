@@ -199,7 +199,7 @@ export const AuthProvider = ({ children }) => {
 
       setAccessToken(null);
       setUser(null);
-      setLikedProducts({
+      setLikedItems({
         financialProducts: [],
         freelancers: [],
         forehires: []

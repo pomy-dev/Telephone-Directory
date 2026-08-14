@@ -559,6 +559,7 @@ export async function registerAsWorker(workerData) {
           experience_images: uploadedImages.map((img) => img.url), // Array of URLs
           contact_options: workerData.contact_options || {},
           is_available: true,
+          school_associated: { schoolId: "", studentId: "", isLinked: false }
         },
       ])
       .select();
@@ -587,6 +588,23 @@ export async function getWorkerProfile(userId) {
     return { success: true, data: data || null };
   } catch (error) {
     console.error("Fetch Worker Error:", error.message);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getSchoolAssociated(schoolId) {
+  try {
+    const { data, error } = await supabase
+      .from("pomy_schools")
+      .select("*")
+      .eq("id", schoolId)
+      .single();
+
+    if (error && error.code !== "PGRST116") throw error; // PGRST116 is "no rows found"
+
+    return { success: true, data: data || null };
+  } catch (error) {
+    console.error("Fetch school Error:", error.message);
     return { success: false, error: error.message };
   }
 }
@@ -1271,7 +1289,7 @@ export async function syncUserProfile(firebaseUser) {
     if (error) throw error;
     return { success: true, data: data["nice"] };
   } catch (error) {
-    console.error("Error syncing profile:", error.message);
+    console.log("Error syncing profile:", error.message);
     return { success: false, error: error.message };
   }
 }

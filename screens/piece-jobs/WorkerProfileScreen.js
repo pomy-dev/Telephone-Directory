@@ -34,9 +34,7 @@ const THUMB_SIZE = Math.min(
   Math.floor((width - GRID_PADDING * 2 - GRID_GAP * (NUM_COLS - 1)) / NUM_COLS),
 );
 
-
-
-const WorkerProfileScreen = ({ route }) => {
+const WorkerProfileScreen = ({ route, navigation }) => {
   const { user, isWorker } = React.useContext(AuthContext);
   const workerIdFromRoute =
     route.params?.workerId || route.params?.workerID || [];
@@ -345,9 +343,6 @@ const WorkerProfileScreen = ({ route }) => {
             </View>
           </View>
 
-          {/* ── School Association ── */}
-          
-
           {/* ── SERVICES ── */}
           {hasSkills && (
             <View style={styles.section}>
@@ -404,6 +399,84 @@ const WorkerProfileScreen = ({ route }) => {
               </View>
             </View>
           )}
+
+          {/* ── ASSOCIATED SCHOOL ── */}
+          {/* {worker.school && ( */}
+          <View style={styles.schoolAssociationSection}>
+            <View
+              style={[
+                styles.schoolAssociationLine,
+                { backgroundColor: theme.colors.border },
+              ]}
+            />
+
+            <TouchableOpacity
+              activeOpacity={0.75}
+              style={[
+                styles.schoolAssociation,
+                {
+                  backgroundColor: theme.colors.card,
+                  borderColor: theme.colors.border,
+                },
+              ]}
+              onPress={() =>
+                navigation.navigate("AssociatedSchool")
+              }
+            >
+              <View style={styles.schoolAssociationLogo}>
+                {/* {worker.school.logo ? (
+                  <Image
+                    source={{ uri: worker.school.logo }}
+                    style={styles.schoolAssociationLogoImage}
+                  />
+                ) : ( */}
+                <Text
+                  style={[
+                    styles.schoolAssociationInitial,
+                    { color: theme.colors.text },
+                  ]}
+                >
+                  S {/* {worker.school.name?.charAt(0)?.toUpperCase()} */}
+                </Text>
+                {/* )} */}
+              </View>
+
+              <View style={styles.schoolAssociationInfo}>
+                <Text
+                  style={[
+                    styles.schoolAssociationLabel,
+                    { color: theme.colors.sub_text },
+                  ]}
+                >
+                  ASSOCIATED SCHOOL
+                </Text>
+
+                <Text
+                  style={[
+                    styles.schoolAssociationName,
+                    { color: theme.colors.text },
+                  ]}
+                  numberOfLines={1}
+                >
+                  School Academy {/* {worker.school.name} */}
+                </Text>
+              </View>
+
+              <Icons.Feather
+                name="chevron-right"
+                size={18}
+                color={theme.colors.sub_text}
+              />
+            </TouchableOpacity>
+
+            <View
+              style={[
+                styles.schoolAssociationLine,
+                { backgroundColor: theme.colors.border },
+              ]}
+            />
+          </View>
+          {/* )} */}
 
           {/* ── QUALIFICATIONS ── */}
           {hasDocs && (
@@ -665,7 +738,7 @@ const WorkerProfileScreen = ({ route }) => {
           />
         </View>
       </Modal>
-    </SafeAreaView>
+    </SafeAreaView >
   );
 };
 
@@ -703,6 +776,71 @@ const styles = StyleSheet.create({
   dot: { width: 6, height: 6, borderRadius: 3 },
 
   pagePad: { paddingHorizontal: 16, paddingTop: 16 },
+
+  // schools associate
+  schoolAssociationSection: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginTop: 26,
+    marginBottom: 4,
+    gap: 8,
+  },
+
+  schoolAssociationLine: {
+    flex: 1,
+    height: StyleSheet.hairlineWidth,
+  },
+
+  schoolAssociation: {
+    minWidth: "80%",
+    maxWidth: "90%",
+    borderWidth: 1,
+    borderRadius: 50,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  schoolAssociationLogo: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    overflow: "hidden",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 9,
+  },
+
+  schoolAssociationLogoImage: {
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
+  },
+
+  schoolAssociationInitial: {
+    fontSize: 16,
+    fontWeight: "800",
+  },
+
+  schoolAssociationInfo: {
+    flex: 1,
+    justifyContent: "center",
+  },
+
+  schoolAssociationLabel: {
+    fontSize: 8,
+    fontWeight: "700",
+    letterSpacing: 0.6,
+    marginBottom: 1,
+  },
+
+  schoolAssociationName: {
+    fontSize: 13,
+    fontWeight: "700",
+  },
 
   // ── Card — mirrors SettingsScreen menuCard exactly ──
   menuCard: {

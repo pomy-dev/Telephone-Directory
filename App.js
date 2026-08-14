@@ -48,6 +48,7 @@ import WorkerRegistrationScreen from "./screens/piece-jobs/WorkerRegistration";
 import WorkerProfileScreen from "./screens/piece-jobs/WorkerProfileScreen";
 import MyPostedGigsScreen from "./screens/piece-jobs/MyPostedGigsScreen";
 import JobInboxScreen from "./screens/piece-jobs/JobInboxScreen";
+import AssociatedSchoolScreen from "./screens/piece-jobs/AssociatedScreen";
 
 // forehires (transportation)
 import TransportationListScreen from "./screens/forehires/TransportationListScreen";
@@ -462,6 +463,7 @@ function AppContent() {
                           <Stack.Screen name="WorkerProfileScreen" component={WorkerProfileScreen} />
                           <Stack.Screen name="MyPostedGigs" component={MyPostedGigsScreen} />
                           <Stack.Screen name="JobInbox" component={JobInboxScreen} />
+                          <Stack.Screen name="AssociatedSchool" component={AssociatedSchoolScreen} />
 
                           {/* transport for hire */}
                           <Stack.Screen name="TransportationListScreen" component={TransportationListScreen} />
