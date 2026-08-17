@@ -492,7 +492,7 @@ function AppContent() {
           </GestureHandlerRootView>
         )}
       </RealmProvider>
-      <NavigationBar style="auto" />;
+      <NavigationBar style="auto" />
     </SafeAreaProvider>
   );
 }

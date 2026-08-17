@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   Dimensions
 } from "react-native";
 import { Avatar } from "react-native-paper";
+import { getSchoolAssociated, getStudentFromAssociatedSchool } from "../../service/Supabase-Fuctions";
 import { AuthContext } from "../../context/authProvider";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { AppContext } from "../../context/appContext";
@@ -21,6 +22,11 @@ const { width, height } = Dimensions.get("window");
 const AssociatedSchoolScreen = ({ route, navigation }) => {
   const { theme, isDarkMode } = React.useContext(AppContext);
   const { user } = React.useContext(AuthContext);
+  const { schoolId, studentNo } = route.params;
+  const [schoolData, setSchoolData] = useState(null);
+  const [schoolError, setSchoolError] = useState("");
+  const [studentData, setStudentData] = useState(null);
+  const [studentError, setStudentError] = useState("");
 
   const school = {
     id: "school-001",
@@ -76,9 +82,21 @@ const AssociatedSchoolScreen = ({ route, navigation }) => {
       },
     ],
   };
-  // const school = route.params?.school;
 
-  // useEffect(() => { }, []);
+  useEffect(() => {
+    const getSchoolAndStudent = async () => {
+      const schDetails = await getSchoolAssociated(schoolId);
+      const stdDetails = await getStudentFromAssociatedSchool(schoolId, studentNo)
+
+      if (!schDetails) setSchoolError("School details could not be retrieved!");
+      setSchoolData(schDetails);
+
+      if (!stdDetails) setStudentError("Student details could not be found!");
+      setStudentData(stdDetails);
+    };
+
+    getSchoolAndStudent();
+  }, []);
 
   if (!school) {
     return (
@@ -120,13 +138,16 @@ const AssociatedSchoolScreen = ({ route, navigation }) => {
   }
 
   const student = school.student || school.associated_student;
+  const studentRecord = studentData?.data || student || {};
+  const studentAge = getAgeFromBirthDate(studentRecord?.date_of_birth);
 
   const studentInitials = getInitials(
-    student?.fullName ||
-    student?.name ||
-    school.studentName ||
-    "Student",
+    studentRecord?.student_fullname || "Student",
   );
+
+  const schoolName = schoolData?.data?.school_name || school?.name || "School";
+  const schoolErrorMessage = schoolError || "School details could not be returned.";
+  const hasSchoolDataIssue = !!schoolError || !schoolData?.data;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={["top"]} >
@@ -161,7 +182,7 @@ const AssociatedSchoolScreen = ({ route, navigation }) => {
               },
             ]}
           >
-            {school.logo ? (
+            {schoolData?.data?.logo ? (
               <Image
                 source={school.logo}
                 style={styles.schoolLogoImage}
@@ -173,10 +194,31 @@ const AssociatedSchoolScreen = ({ route, navigation }) => {
                   { color: theme.colors.text },
                 ]}
               >
-                {getInitials(school.name)}
+                {getInitials(schoolName)}
               </Text>
             )}
           </View>
+
+          {!!hasSchoolDataIssue && (
+            <View
+              style={[
+                styles.alertBanner,
+                {
+                  backgroundColor: isDarkMode ? "#2a1e1e" : "#fff2f2",
+                  borderColor: isDarkMode ? "#f87171" : "#ef4444",
+                },
+              ]}
+            >
+              <Text
+                style={[
+                  styles.alertText,
+                  { color: isDarkMode ? "#fecaca" : "#991b1b" },
+                ]}
+              >
+                {schoolErrorMessage}
+              </Text>
+            </View>
+          )}
 
           <Text
             style={[
@@ -184,21 +226,21 @@ const AssociatedSchoolScreen = ({ route, navigation }) => {
               { color: theme.colors.text },
             ]}
           >
-            {school.name}
+            {schoolName}
           </Text>
 
-          {!!school.motto && (
+          {!!schoolData?.data?.school_motto && (
             <Text
               style={[
                 styles.schoolMotto,
                 { color: theme.colors.sub_text },
               ]}
             >
-              "{school.motto}"
+              "{schoolData.data?.school_motto}"
             </Text>
           )}
 
-          {!!school.location && (
+          {!!schoolData?.data?.location && (
             <View style={styles.locationRow}>
               <Icons.Ionicons
                 name="location-sharp"
@@ -212,16 +254,16 @@ const AssociatedSchoolScreen = ({ route, navigation }) => {
                   { color: theme.colors.sub_text },
                 ]}
               >
-                {typeof school.location === "object"
-                  ? school.location?.address
-                  : school.location}
+                {typeof schoolData.data?.location === "object"
+                  ? schoolData.data?.location?.address
+                  : schoolData.data?.location}
               </Text>
             </View>
           )}
         </View>
 
         {/* ───────────────── STUDENT ───────────────── */}
-        {student && (
+        {studentData?.data ? (
           <View style={styles.section}>
             <Text
               style={[
@@ -261,37 +303,35 @@ const AssociatedSchoolScreen = ({ route, navigation }) => {
                     ]}
                     numberOfLines={1}
                   >
-                    {student.fullName ||
-                      student.name ||
-                      school.studentName}
+                    {studentRecord?.student_fullname || "Student"}
                   </Text>
 
-                  {!!student.studentNumber && (
+                  {!!(studentRecord?.student_number || studentRecord?.studentNumber) && (
                     <Text
                       style={[
                         styles.studentMeta,
                         { color: theme.colors.sub_text },
                       ]}
                     >
-                      Student No: {student.studentNumber}
+                      Student No: {studentRecord?.student_number}
                     </Text>
                   )}
 
-                  {!!student.age && (
+                  {!!studentAge && (
                     <Text
                       style={[
                         styles.studentMeta,
                         { color: theme.colors.sub_text },
                       ]}
                     >
-                      Age: {student.age}
+                      Age: {studentAge}
                     </Text>
                   )}
                 </View>
               </View>
 
               {/* COURSES */}
-              {student.courses?.length > 0 && (
+              {(studentRecord?.courses?.length > 0 || student?.courses?.length > 0) && (
                 <View style={styles.studentDetail}>
                   <Text
                     style={[
@@ -303,33 +343,35 @@ const AssociatedSchoolScreen = ({ route, navigation }) => {
                   </Text>
 
                   <View style={styles.courseList}>
-                    {student.courses.map((course, index) => (
-                      <View
-                        key={`${course}-${index}`}
-                        style={styles.courseBulletRow}
-                      >
+                    {(studentRecord?.courses || student?.courses || []).map((courseId, index) => {
+                      const course = schoolData.data?.courses.find(c => c.id === courseId);
+                      if (!course) return null;
+                      return (
                         <View
-                          style={[
-                            styles.courseBullet,
-                            {
-                              backgroundColor:
-                                theme.colors.primary,
-                            },
-                          ]}
-                        />
-
-                        <Text
-                          style={[
-                            styles.courseBulletText,
-                            { color: theme.colors.text },
-                          ]}
+                          key={`${course.id}-${index}`}
+                          style={styles.courseBulletRow}
                         >
-                          {typeof course === "string"
-                            ? course
-                            : course.name}
-                        </Text>
-                      </View>
-                    ))}
+                          <View
+                            style={[
+                              styles.courseBullet,
+                              {
+                                backgroundColor:
+                                  theme.colors.primary,
+                              },
+                            ]}
+                          />
+
+                          <Text
+                            style={[
+                              styles.courseBulletText,
+                              { color: theme.colors.text },
+                            ]}
+                          >
+                            {course.course_name || course.name}
+                          </Text>
+                        </View>
+                      );
+                    })}
                   </View>
                 </View>
               )}
@@ -352,7 +394,7 @@ const AssociatedSchoolScreen = ({ route, navigation }) => {
                       { color: theme.colors.text },
                     ]}
                   >
-                    {student.yearAdmitted || "—"}
+                    {studentRecord?.year_admitted || studentRecord?.yearAdmitted || student?.yearAdmitted || "—"}
                   </Text>
                 </View>
 
@@ -372,16 +414,57 @@ const AssociatedSchoolScreen = ({ route, navigation }) => {
                       { color: theme.colors.text },
                     ]}
                   >
-                    {student.yearCompleted || "—"}
+                    {studentRecord?.year_completed || studentRecord?.yearCompleted || student?.yearCompleted || "—"}
                   </Text>
                 </View>
               </View>
             </View>
           </View>
+        ) : (
+          <View
+            style={[
+              styles.emptyStudentState,
+              {
+                backgroundColor: theme.colors.card,
+                borderColor: theme.colors.border,
+              },
+            ]}
+          >
+            <View
+              style={[
+                styles.emptyStudentIcon,
+                { backgroundColor: theme.colors.card2 },
+              ]}
+            >
+              <Icons.Ionicons
+                name="person-outline"
+                size={30}
+                color={theme.colors.text}
+              />
+            </View>
+
+            <Text
+              style={[
+                styles.emptyStudentTitle,
+                { color: theme.colors.text },
+              ]}
+            >
+              No student details available
+            </Text>
+
+            <Text
+              style={[
+                styles.emptyStudentMessage,
+                { color: theme.colors.sub_text },
+              ]}
+            >
+              {studentError || "No student data was returned for this school record."}
+            </Text>
+          </View>
         )}
 
         {/* ───────────────── MISSION ───────────────── */}
-        {!!school.mission && (
+        {!!schoolData?.data?.school_mission && (
           <View style={styles.section}>
             <Text
               style={[
@@ -420,14 +503,14 @@ const AssociatedSchoolScreen = ({ route, navigation }) => {
                   { color: theme.colors.text },
                 ]}
               >
-                {school.mission}
+                {schoolData.data?.school_mission}
               </Text>
             </View>
           </View>
         )}
 
         {/* ───────────────── COURSES ───────────────── */}
-        {school.courses?.length > 0 && (
+        {schoolData?.data?.courses?.length > 0 && (
           <View style={styles.section}>
             <Text
               style={[
@@ -438,7 +521,7 @@ const AssociatedSchoolScreen = ({ route, navigation }) => {
               COURSES OFFERED
             </Text>
 
-            {school.courses.map((course, index) => (
+            {schoolData.data?.courses.map((course, index) => (
               <React.Fragment
                 key={course.id || `${course.name}-${index}`}
               >
@@ -476,7 +559,7 @@ const AssociatedSchoolScreen = ({ route, navigation }) => {
                       numberOfLines={1}
                       ellipsizeMode="tail"
                     >
-                      {course.name}
+                      {course.course_name}
                     </Text>
 
                     <Text
@@ -495,7 +578,7 @@ const AssociatedSchoolScreen = ({ route, navigation }) => {
                   <View style={styles.courseListImageWrapper}>
                     {course.image ? (
                       <Image
-                        source={course.image}
+                        source={{ uri: course.image }}
                         style={styles.courseListImage}
                       />
                     ) : (
@@ -518,7 +601,7 @@ const AssociatedSchoolScreen = ({ route, navigation }) => {
                 </TouchableOpacity>
 
                 {/* DIVIDER */}
-                {index < school.courses.length - 1 && (
+                {index < schoolData.data?.courses.length - 1 && (
                   <View
                     style={[
                       styles.courseListDivider,
@@ -535,6 +618,26 @@ const AssociatedSchoolScreen = ({ route, navigation }) => {
       </ScrollView>
     </SafeAreaView>
   );
+};
+
+const getAgeFromBirthDate = (birthDate) => {
+  if (!birthDate) return null;
+
+  const parsedDate = new Date(birthDate);
+  if (Number.isNaN(parsedDate.getTime())) return null;
+
+  const today = new Date();
+  let age = today.getFullYear() - parsedDate.getFullYear();
+  const hasBirthdayPassed =
+    today.getMonth() > parsedDate.getMonth() ||
+    (today.getMonth() === parsedDate.getMonth() &&
+      today.getDate() >= parsedDate.getDate());
+
+  if (!hasBirthdayPassed) {
+    age -= 1;
+  }
+
+  return age > 0 ? age : 0;
 };
 
 const getInitials = (name = "") => {
@@ -566,6 +669,52 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 15,
     fontWeight: "600",
+  },
+
+  alertBanner: {
+    width: "100%",
+    borderRadius: 12,
+    borderWidth: 1,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 10,
+  },
+
+  alertText: {
+    fontSize: 12,
+    fontWeight: "800",
+    textAlign: "center",
+  },
+
+  emptyStudentState: {
+    marginTop: 18,
+    borderRadius: 18,
+    borderWidth: 1,
+    padding: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+
+  emptyStudentIcon: {
+    width: 58,
+    height: 58,
+    borderRadius: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 12,
+  },
+
+  emptyStudentTitle: {
+    fontSize: 16,
+    fontWeight: "700",
+    textAlign: "center",
+    marginBottom: 6,
+  },
+
+  emptyStudentMessage: {
+    fontSize: 13,
+    textAlign: "center",
+    lineHeight: 18,
   },
 
   /* SCHOOL BANNER */

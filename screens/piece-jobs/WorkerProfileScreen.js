@@ -20,7 +20,7 @@ import { Icons } from "../../constants/Icons";
 import Carousel from "react-native-reanimated-carousel";
 import {
   logUserActivity,
-  getWorkerProfileClient,
+  getWorkerProfileClient, getSchoolAssociated
 } from "../../service/Supabase-Fuctions";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -35,18 +35,16 @@ const THUMB_SIZE = Math.min(
 );
 
 const WorkerProfileScreen = ({ route, navigation }) => {
-  const { user, isWorker } = React.useContext(AuthContext);
-  const workerIdFromRoute =
-    route.params?.workerId || route.params?.workerID || [];
+  const { user } = React.useContext(AuthContext);
+  const workerIdFromRoute = route.params?.workerId || route.params?.workerID || [];
   const [worker, setWorker] = useState(route.params?.worker || null);
+  const [workerSchool, setWorkerSchool] = useState(null);
   const { theme, isDarkMode } = React.useContext(AppContext);
   const [loading, setLoading] = useState(!route.params?.worker);
   const [lightboxVisible, setLightboxVisible] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [carouselIndex, setCarouselIndex] = useState(0);
   const insets = useSafeAreaInsets();
-
-  React.useEffect(() => { }, []);
 
   React.useEffect(() => {
     const fetchWorkerData = async () => {
@@ -75,7 +73,17 @@ const WorkerProfileScreen = ({ route, navigation }) => {
         }
       }
     };
+
+    const fetchWorkerSchool = async () => {
+      const workerDetails = await getWorkerProfileClient(worker?.id);
+      if (workerDetails?.data?.school_associated?.isLinked) {
+        const schoolDetails = await getSchoolAssociated(workerDetails?.data?.school_associated?.schoolId);
+        setWorkerSchool({ school: schoolDetails?.data, student: workerDetails?.data?.school_associated?.studentNo });
+      };
+    }
+
     fetchWorkerData();
+    fetchWorkerSchool();
   }, [workerIdFromRoute]);
 
   if (loading) {
@@ -111,21 +119,18 @@ const WorkerProfileScreen = ({ route, navigation }) => {
     );
   }
 
-  const locationString =
-    typeof worker.location === "object"
-      ? worker.location?.address
-      : worker.location || "Eswatini";
+  const locationString = typeof worker.location === "object"
+    ? worker.location?.address
+    : worker.location || "Eswatini";
 
-  const handleEmail = () =>
-    Linking.openURL(`mailto:${worker.contact_options?.email}`);
+  const handleEmail = () => Linking.openURL(`mailto:${worker.contact_options?.email}`);
 
   const handleWhatsApp = () =>
     Linking.openURL(
       `whatsapp://send?phone=${worker.contact_options?.whatsapp}`,
     );
 
-  const handleSocial = (platform) =>
-    Linking.openURL(worker[platform] || "https://facebook.com");
+  const handleSocial = (platform) => Linking.openURL(worker[platform] || "https://facebook.com");
 
   const handleCall = () => Linking.openURL(`tel:${worker.phone}`);
 
@@ -134,8 +139,7 @@ const WorkerProfileScreen = ({ route, navigation }) => {
     setLightboxVisible(true);
   };
 
-  const hasImages =
-    worker.experience_images && worker.experience_images.length > 0;
+  const hasImages = worker.experience_images && worker.experience_images.length > 0;
   const hasProfile = worker.worker_pp && worker.worker_pp.length > 0;
   const hasSkills = worker.skills && worker.skills.length > 0;
   const hasDocs = worker.documents && worker.documents.length > 0;
@@ -172,10 +176,7 @@ const WorkerProfileScreen = ({ route, navigation }) => {
   ].filter((s) => worker.contact_options?.[s.key]);
 
   return (
-    <SafeAreaView
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
-      edges={["top"]}
-    >
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={["top"]} >
       <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
       {hasImages ? (
         <View style={styles.heroHeader}>
@@ -224,7 +225,6 @@ const WorkerProfileScreen = ({ route, navigation }) => {
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.pagePad}>
           {/* ── IDENTITY CARD ── */}
-          {/* <View style={[styles.menuCard, { backgroundColor: theme.colors.card }]}> */}
           <View>
             <View style={styles.heroContent}>
               <View style={styles.avatarContainer}>
@@ -401,82 +401,82 @@ const WorkerProfileScreen = ({ route, navigation }) => {
           )}
 
           {/* ── ASSOCIATED SCHOOL ── */}
-          {/* {worker.school && ( */}
-          <View style={styles.schoolAssociationSection}>
-            <View
-              style={[
-                styles.schoolAssociationLine,
-                { backgroundColor: theme.colors.border },
-              ]}
-            />
-
-            <TouchableOpacity
-              activeOpacity={0.75}
-              style={[
-                styles.schoolAssociation,
-                {
-                  backgroundColor: theme.colors.card,
-                  borderColor: theme.colors.border,
-                },
-              ]}
-              onPress={() =>
-                navigation.navigate("AssociatedSchool")
-              }
-            >
-              <View style={styles.schoolAssociationLogo}>
-                {/* {worker.school.logo ? (
-                  <Image
-                    source={{ uri: worker.school.logo }}
-                    style={styles.schoolAssociationLogoImage}
-                  />
-                ) : ( */}
-                <Text
-                  style={[
-                    styles.schoolAssociationInitial,
-                    { color: theme.colors.text },
-                  ]}
-                >
-                  S {/* {worker.school.name?.charAt(0)?.toUpperCase()} */}
-                </Text>
-                {/* )} */}
-              </View>
-
-              <View style={styles.schoolAssociationInfo}>
-                <Text
-                  style={[
-                    styles.schoolAssociationLabel,
-                    { color: theme.colors.sub_text },
-                  ]}
-                >
-                  ASSOCIATED SCHOOL
-                </Text>
-
-                <Text
-                  style={[
-                    styles.schoolAssociationName,
-                    { color: theme.colors.text },
-                  ]}
-                  numberOfLines={1}
-                >
-                  School Academy {/* {worker.school.name} */}
-                </Text>
-              </View>
-
-              <Icons.Feather
-                name="chevron-right"
-                size={18}
-                color={theme.colors.sub_text}
+          {workerSchool && (
+            <View style={styles.schoolAssociationSection}>
+              <View
+                style={[
+                  styles.schoolAssociationLine,
+                  { backgroundColor: theme.colors.border },
+                ]}
               />
-            </TouchableOpacity>
 
-            <View
-              style={[
-                styles.schoolAssociationLine,
-                { backgroundColor: theme.colors.border },
-              ]}
-            />
-          </View>
-          {/* )} */}
+              <TouchableOpacity
+                activeOpacity={0.75}
+                style={[
+                  styles.schoolAssociation,
+                  {
+                    backgroundColor: theme.colors.card,
+                    borderColor: theme.colors.border,
+                  },
+                ]}
+                onPress={() =>
+                  navigation.navigate("AssociatedSchool", { schoolId: workerSchool.school?.id, studentNo: workerSchool?.student })
+                }
+              >
+                <View style={styles.schoolAssociationLogo}>
+                  {workerSchool.school?.logo ? (
+                    <Image
+                      source={{ uri: workerSchool.school?.logo }}
+                      style={styles.schoolAssociationLogoImage}
+                    />
+                  ) : (
+                    <Text
+                      style={[
+                        styles.schoolAssociationInitial,
+                        { color: theme.colors.text },
+                      ]}
+                    >
+                      {workerSchool.school?.school_name?.charAt(0)?.toUpperCase()}
+                    </Text>
+                  )}
+                </View>
+
+                <View style={styles.schoolAssociationInfo}>
+                  <Text
+                    style={[
+                      styles.schoolAssociationLabel,
+                      { color: theme.colors.sub_text },
+                    ]}
+                  >
+                    ASSOCIATED SCHOOL
+                  </Text>
+
+                  <Text
+                    style={[
+                      styles.schoolAssociationName,
+                      { color: theme.colors.text },
+                    ]}
+                    numberOfLines={1}
+                  >
+                    {workerSchool.school?.school_name}
+                  </Text>
+                </View>
+
+                <Icons.Feather
+                  name="chevron-right"
+                  size={18}
+                  color={theme.colors.sub_text}
+                />
+              </TouchableOpacity>
+
+              <View
+                style={[
+                  styles.schoolAssociationLine,
+                  { backgroundColor: theme.colors.border },
+                ]}
+              />
+            </View>
+          )}
 
           {/* ── QUALIFICATIONS ── */}
           {hasDocs && (
@@ -512,7 +512,7 @@ const WorkerProfileScreen = ({ route, navigation }) => {
                           <Icons.Ionicons
                             name="document-text-outline"
                             size={20}
-                            color={theme.colors.text}
+                            color="#fff"
                           />
                         </View>
                         <View style={{ flex: 1 }}>
@@ -660,7 +660,7 @@ const WorkerProfileScreen = ({ route, navigation }) => {
             </View>
           </View>
 
-          <View style={{ height: 16 }} />
+          <View style={{ height: height * 0.1 }} />
         </View>
       </ScrollView>
 
@@ -680,7 +680,7 @@ const WorkerProfileScreen = ({ route, navigation }) => {
             styles.smsBtn,
             {
               borderColor: theme.colors.border,
-              backgroundColor: theme.colors.card2,
+              backgroundColor: theme.colors.primary,
             },
           ]}
           onPress={() => Linking.openURL(`sms:${worker.phone}`)}

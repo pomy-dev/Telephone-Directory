@@ -347,7 +347,6 @@ const GigsScreen = ({ navigation }) => {
   useEffect(() => { gigCategoryRef.current = gigCategory; }, [gigCategory]);
   useEffect(() => { gigSearchRef.current = gigSearch; }, [gigSearch]);
 
-
   // 3. Isolated memory tracking engine
   const handleRealtimeGigUpdate = (payload) => {
     if (!payload) return;

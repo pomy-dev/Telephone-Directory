@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect } from "react";
+import React, { useState, useContext, useEffect, useRef, useCallback, useMemo } from "react";
 import {
   View,
   Text,
@@ -17,6 +17,9 @@ import {
   Linking,
   Pressable,
 } from "react-native";
+import {
+  BottomSheetModal, BottomSheetScrollView, BottomSheetView, BottomSheetBackdrop
+} from '@gorhom/bottom-sheet';
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
 import { Icons } from "../../constants/Icons";
@@ -24,7 +27,8 @@ import {
   registerAsWorker,
   updateWorkerProfile,
   getWorkerProfile,
-  getSchoolAssociated,
+  getSchoolAssociated, getAllSchoolsAssociated,
+  getStudentFromAssociatedSchool
 } from "../../service/Supabase-Fuctions";
 import { AuthContext } from "../../context/authProvider";
 import { AppContext } from "../../context/appContext";
@@ -74,13 +78,25 @@ const ProfilePreview = ({ form, setGalleryVisible, handleCall, theme }) => {
   };
 
   useEffect(() => {
+    let isMounted = true;
+
     const loadSchool = async () => {
-      const school = getSchoolAssociated(form.school_associated?.schoolId)
-      setSchool(school)
+      const schoolId = form.school_associated?.schoolId;
+      const result = await getSchoolAssociated(schoolId);
+
+      if (isMounted) setSchool(result?.success ? result.data : null);
     };
 
-    loadSchool();
-  }, [school])
+    if (form.school_associated?.schoolId) {
+      loadSchool();
+    } else {
+      setSchool(null);
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [form.school_associated?.schoolId]);
 
   return (
     <>
@@ -220,9 +236,7 @@ const ProfilePreview = ({ form, setGalleryVisible, handleCall, theme }) => {
             </View>
           </View>
 
-          <View
-            style={[styles.divider, { backgroundColor: theme.colors.border }]}
-          />
+          <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
 
           {/* Bio */}
           <View style={styles.section}>
@@ -237,117 +251,116 @@ const ProfilePreview = ({ form, setGalleryVisible, handleCall, theme }) => {
           </View>
 
           {/* ── School Association ── */}
-          {/* {form.school_associated?.isLinked && ( */}
-          <>
-            <View style={styles.schoolAssociationPreview}>
-              <View
-                style={[
-                  styles.schoolAssociationLine,
-                  {
-                    backgroundColor:
-                      theme.colors.border,
-                  },
-                ]}
-              />
-
-              <View
-                style={[
-                  styles.schoolAssociationBadge,
-                  {
-                    backgroundColor:
-                      theme.colors.card,
-                    borderColor:
-                      theme.colors.border,
-                  },
-                ]}
-              >
+          {form.school_associated?.isLinked && (
+            <>
+              <View style={styles.schoolAssociationPreview}>
                 <View
                   style={[
-                    styles.schoolAssociationIcon,
+                    styles.schoolAssociationLine,
                     {
                       backgroundColor:
-                        theme.colors.card2,
+                        theme.colors.border,
+                    },
+                  ]}
+                />
+
+                <View
+                  style={[
+                    styles.schoolAssociationBadge,
+                    {
+                      backgroundColor:
+                        theme.colors.card,
+                      borderColor:
+                        theme.colors.border,
                     },
                   ]}
                 >
+                  <View
+                    style={[
+                      styles.schoolAssociationIcon,
+                      {
+                        backgroundColor:
+                          theme.colors.card2,
+                      },
+                    ]}
+                  >
+                    {school?.logo
+                      ? (<Image source={{ uri: school?.logo }} style={{ height: "100%", width: "100%", objectFit: "fill" }} />)
+                      : (<Icons.Ionicons name="school-outline" size={18} color="#fff" />)
+                    }
+                  </View>
+
+                  <View
+                    style={styles.schoolAssociationInfo}
+                  >
+                    <Text
+                      style={[
+                        styles.schoolAssociationLabel,
+                        {
+                          color:
+                            theme.colors.sub_text,
+                        },
+                      ]}
+                    >
+                      ASSOCIATED SCHOOL
+                    </Text>
+
+                    <Text
+                      style={[
+                        styles.schoolAssociationName,
+                        {
+                          color: theme.colors.text,
+                        },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {school?.school_name || "Associated School"}
+                    </Text>
+
+                    <Text
+                      style={[
+                        styles.schoolAssociationStudent,
+                        {
+                          color:
+                            theme.colors.sub_text,
+                        },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      Student No:{" "}
+                      {form?.school_associated?.studentNo}
+                    </Text>
+                  </View>
+
                   <Icons.Ionicons
-                    name="school-outline"
-                    size={18}
-                    color="#fff"
+                    name="checkmark-circle"
+                    size={19}
+                    color={theme.colors.indicator}
                   />
                 </View>
 
                 <View
-                  style={styles.schoolAssociationInfo}
-                >
-                  <Text
-                    style={[
-                      styles.schoolAssociationLabel,
-                      {
-                        color:
-                          theme.colors.sub_text,
-                      },
-                    ]}
-                  >
-                    ASSOCIATED SCHOOL
-                  </Text>
-
-                  <Text
-                    style={[
-                      styles.schoolAssociationName,
-                      {
-                        color: theme.colors.text,
-                      },
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {school.school_name || "Associated School"}
-                  </Text>
-
-                  <Text
-                    style={[
-                      styles.schoolAssociationStudent,
-                      {
-                        color:
-                          theme.colors.sub_text,
-                      },
-                    ]}
-                    numberOfLines={1}
-                  >
-                    Student No:{" "}
-                    {form.school_associated.studentNo}
-                  </Text>
-                </View>
-
-                <Icons.Ionicons
-                  name="checkmark-circle"
-                  size={19}
-                  color={theme.colors.indicator}
+                  style={[
+                    styles.schoolAssociationLine,
+                    {
+                      backgroundColor:
+                        theme.colors.border,
+                    },
+                  ]}
                 />
               </View>
 
               <View
                 style={[
-                  styles.schoolAssociationLine,
+                  styles.divider,
                   {
                     backgroundColor:
                       theme.colors.border,
                   },
                 ]}
               />
-            </View>
-
-            <View
-              style={[
-                styles.divider,
-                {
-                  backgroundColor:
-                    theme.colors.border,
-                },
-              ]}
-            />
-          </>
-          {/* // )} */}
+            </>
+          )}
 
           {/* Documents */}
           <View style={styles.section}>
@@ -467,35 +480,50 @@ const ProfileForm = ({
 
   const [schools, setSchools] = useState([]);
   const [schoolsLoading, setSchoolsLoading] = useState(false);
-  const [schoolPickerVisible, setSchoolPickerVisible] = useState(false);
 
   const [studentId, setStudentId] = useState(
-    form.schoolAssociated?.studentNo || ""
+    form.school_associated?.studentNo || ""
   );
 
   const [studentChecking, setStudentChecking] = useState(false);
   const [associationMessage, setAssociationMessage] = useState("");
   const [associationError, setAssociationError] = useState(false);
 
+  const schoolSheetRef = useRef(null);
+  const schoolSnapPoints = useMemo(() => ["55%", "80%"], []);
+
   useEffect(() => {
     loadSchools();
-  }, [schools]);
+  }, []);
+
+  const renderSchoolBackdrop = useCallback(
+    (props) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        opacity={0.5}
+        pressBehavior="close"
+      />
+    ),
+    []
+  );
+
+  const openSchoolPicker = useCallback(() => {
+    schoolSheetRef.current?.present();
+  }, []);
+
+  const closeSchoolPicker = useCallback(() => {
+    schoolSheetRef.current?.dismiss();
+  }, []);
 
   const loadSchools = async () => {
     try {
       setSchoolsLoading(true);
 
-      const { data, error } = await supabase
-        .from("pomy_schools")
-        .select("*")
-        .order("name", { ascending: true });
+      const allSchools = await getAllSchoolsAssociated();
 
-      if (error) {
-        console.error("Error loading schools:", error);
-        return;
-      }
-
-      setSchools(data || []);
+      if (allSchools.success) setSchools(allSchools.data || []);
     } catch (error) {
       console.error("Error loading schools:", error);
     } finally {
@@ -504,7 +532,7 @@ const ProfileForm = ({
   };
 
   const verifySchoolAssociation = async () => {
-    const schoolId = form.schoolAssociated?.schoolId;
+    const schoolId = form.school_associated?.schoolId;
 
     if (!schoolId) {
       setAssociationError(true);
@@ -523,29 +551,18 @@ const ProfileForm = ({
       setAssociationMessage("");
       setAssociationError(false);
 
-      const { data: student, error } = await supabase
-        .from("pomy_school_students")
-        .select("*")
-        .eq("school_id", schoolId)
-        .eq("student_no", studentId.trim())
-        .maybeSingle();
+      const studentData = await getStudentFromAssociatedSchool(schoolId, studentId.trim());
 
-      if (error) {
-        console.error("Student verification error:", error);
+      if (studentData?.error) {
+        console.error("Student verification error:", studentData?.error);
 
         setAssociationError(true);
-        setAssociationMessage(
-          "Unable to verify the student. Please try again."
-        );
-
-        return;
+        setAssociationMessage("Unable to verify the student. Please try again.");
       }
 
-      if (!student) {
+      if (!studentData.data) {
         setAssociationError(true);
-        setAssociationMessage(
-          "Student number was not found for the selected school."
-        );
+        setAssociationMessage("Student number was not found for the selected school.");
 
         setForm((prev) => ({
           ...prev,
@@ -584,7 +601,7 @@ const ProfileForm = ({
   };
 
   const selectSchool = (school) => {
-    setSchoolPickerVisible(false);
+    closeSchoolPicker();
 
     setStudentId("");
     setAssociationMessage("");
@@ -986,85 +1003,86 @@ const ProfileForm = ({
 
         {/* ── 5. Document Upload ── */}
         {isWorker && (
-          <View style={styles.section}>
-            <Text
-              style={[styles.sectionLabel, { color: theme.colors.sub_text }]}
-            >
-              Qualifications & Clearances
-            </Text>
-            <Text style={[styles.helperText, { color: theme.colors.sub_text }]}>
-              Add certificates, licenses, or police clearance
-            </Text>
-            <TouchableOpacity
-              style={[
-                styles.uploadDocBtn,
-                {
-                  backgroundColor: theme.colors.card2,
-                  borderColor: theme.colors.card2,
-                },
-              ]}
-              onPress={pickDocument}
-            >
-              <Icons.Ionicons
-                name="cloud-upload"
-                size={20}
-                color='#fff'
-              />
+          <>
+            <View style={styles.section}>
               <Text
-                style={[
-                  styles.uploadDocBtnText,
-                  { color: '#fff' },
-                ]}
+                style={[styles.sectionLabel, { color: theme.colors.sub_text }]}
               >
-                Upload Document
+                Qualifications & Clearances
               </Text>
-            </TouchableOpacity>
-
-            <View style={styles.docList}>
-              {form.documents?.map((doc, index) => (
-                <View
-                  key={index}
+              <Text style={[styles.helperText, { color: theme.colors.sub_text }]}>
+                Add certificates, licenses, or police clearance
+              </Text>
+              <TouchableOpacity
+                style={[
+                  styles.uploadDocBtn,
+                  {
+                    backgroundColor: theme.colors.card2,
+                    borderColor: theme.colors.card2,
+                  },
+                ]}
+                onPress={pickDocument}
+              >
+                <Icons.Ionicons
+                  name="cloud-upload"
+                  size={20}
+                  color='#fff'
+                />
+                <Text
                   style={[
-                    styles.docItem,
-                    {
-                      backgroundColor: theme.colors.card,
-                      borderColor: theme.colors.border,
-                    },
+                    styles.uploadDocBtnText,
+                    { color: '#fff' },
                   ]}
                 >
-                  <Icons.Ionicons
-                    name="document-text"
-                    size={20}
-                    color={theme.colors.indicator}
-                  />
-                  <Text
-                    style={[styles.docName, { color: theme.colors.text }]}
-                    numberOfLines={1}
-                  >
-                    {doc.name}
-                  </Text>
-                  <TouchableOpacity onPress={() => removeDocument(index)}>
-                    <Icons.Ionicons
-                      name="trash-outline"
-                      size={18}
-                      color="#ef4444"
-                    />
-                  </TouchableOpacity>
-                </View>
-              ))}
-            </View>
-          </View>
-        )}
+                  Upload Document
+                </Text>
+              </TouchableOpacity>
 
-        <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
+              <View style={styles.docList}>
+                {form.documents?.map((doc, index) => (
+                  <View
+                    key={index}
+                    style={[
+                      styles.docItem,
+                      {
+                        backgroundColor: theme.colors.card,
+                        borderColor: theme.colors.border,
+                      },
+                    ]}
+                  >
+                    <Icons.Ionicons
+                      name="document-text"
+                      size={20}
+                      color={theme.colors.indicator}
+                    />
+                    <Text
+                      style={[styles.docName, { color: theme.colors.text }]}
+                      numberOfLines={1}
+                    >
+                      {doc.name}
+                    </Text>
+                    <TouchableOpacity onPress={() => removeDocument(index)}>
+                      <Icons.Ionicons
+                        name="trash-outline"
+                        size={18}
+                        color="#ef4444"
+                      />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            </View>
+            <View style={[styles.divider, { backgroundColor: theme.colors.border }]} />
+          </>
+        )}
 
         {/* ── 6. Professional Bio ── */}
         <View style={styles.section}>
           <Text style={[styles.sectionLabel, { color: theme.colors.sub_text }]}>
-            Professional Bio
+            Biography
           </Text>
           <TextInput
-            label="What makes your service great?"
+            label="How have you come to do what you do?"
             value={form.bio}
             onChangeText={(t) => setForm({ ...form, bio: t })}
             mode="outlined"
@@ -1130,298 +1148,299 @@ const ProfileForm = ({
         </View>
 
         {/* ── 8. School Association ── */}
-        <View style={styles.section}>
-          <Text
-            style={[
-              styles.sectionLabel,
-              { color: theme.colors.sub_text },
-            ]}
-          >
-            School Association
-          </Text>
-
-          <Text
-            style={[
-              styles.helperText,
-              { color: theme.colors.sub_text },
-            ]}
-          >
-            Link profile to a school and verify
-            your student number (optional).
-          </Text>
-
-          {/* SCHOOL SELECTOR */}
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() => setSchoolPickerVisible(true)}
-            style={[
-              styles.schoolSelector,
-              {
-                backgroundColor: theme.colors.card,
-                borderColor: theme.colors.border,
-              },
-            ]}
-          >
-            <View
+        {isWorker && (
+          <View style={[styles.section, { borderTopWidth: 1, borderColor: theme.colors.border, paddingTop: 10 }]}>
+            <Text
               style={[
-                styles.schoolSelectorIcon,
-                {
-                  backgroundColor: theme.colors.card2,
-                },
+                styles.sectionLabel,
+                { color: theme.colors.sub_text },
               ]}
             >
-              <Icons.Ionicons
-                name="school-outline"
-                size={20}
-                color="#fff"
-              />
-            </View>
-
-            <View style={styles.schoolSelectorInfo}>
-              <Text
-                style={[
-                  styles.schoolSelectorLabel,
-                  { color: theme.colors.sub_text },
-                ]}
-              >
-                SCHOOL
-              </Text>
-
-              <Text
-                style={[
-                  styles.schoolSelectorName,
-                  {
-                    color: form.school_associated?.schoolId
-                      ? theme.colors.text
-                      : theme.colors.sub_text,
-                  },
-                ]}
-                numberOfLines={1}
-              >
-                {form.school_associated?.schoolId
-                  ? schools.find(
-                    (school) =>
-                      school.id ===
-                      form.school_associated.schoolId
-                  )?.name || "Selected school"
-                  : "Select a school"}
-              </Text>
-            </View>
-
-            {schoolsLoading ? (
-              <ActivityIndicator
-                size="small"
-                color={theme.colors.primary}
-              />
-            ) : (
-              <Icons.Ionicons
-                name="chevron-down"
-                size={18}
-                color={theme.colors.sub_text}
-              />
-            )}
-          </TouchableOpacity>
-
-          {/* STUDENT NUMBER */}
-          <TextInput
-            label="Student ID / Student Number"
-            value={studentId}
-            onChangeText={(text) => {
-              setStudentId(text);
-
-              // Any modification invalidates a previous verification
-              if (
-                form.school_associated?.isLinked
-              ) {
-                setForm((prev) => ({
-                  ...prev,
-                  school_associated: {
-                    ...prev.school_associated,
-                    studentNo: text,
-                    isLinked: false,
-                  },
-                }));
-              }
-
-              setAssociationMessage("");
-              setAssociationError(false);
-            }}
-            mode="outlined"
-            style={styles.paperInput}
-            theme={{ roundness: 12 }}
-            left={
-              <TextInput.Icon icon="card-account-details-outline" />
-            }
-            right={
-              studentChecking ? (
-                <TextInput.Icon
-                  icon={() => (
-                    <ActivityIndicator
-                      size="small"
-                      color={theme.colors.primary}
-                    />
-                  )}
-                />
-              ) : form.school_associated?.isLinked ? (
-                <TextInput.Icon
-                  icon="check-circle"
-                  color={theme.colors.indicator}
-                />
-              ) : null
-            }
-          />
-
-          {/* VERIFY BUTTON */}
-          <TouchableOpacity
-            activeOpacity={0.8}
-            disabled={
-              studentChecking ||
-              !form.school_associated?.schoolId ||
-              !studentId.trim()
-            }
-            onPress={verifySchoolAssociation}
-            style={[
-              styles.verifyAssociationButton,
-              {
-                backgroundColor:
-                  !form.school_associated?.schoolId ||
-                    !studentId.trim()
-                    ? theme.colors.border
-                    : theme.colors.card2,
-              },
-            ]}
-          >
-            {studentChecking ? (
-              <ActivityIndicator
-                size="small"
-                color="#fff"
-              />
-            ) : (
-              <Icons.Ionicons
-                name={
-                  form.school_associated?.isLinked
-                    ? "checkmark-circle"
-                    : "shield-checkmark-outline"
-                }
-                size={19}
-                color="#fff"
-              />
-            )}
-
-            <Text style={styles.verifyAssociationText}>
-              {form.school_associated?.isLinked
-                ? "Student Verified"
-                : "Verify Student"}
+              School Association (optional)
             </Text>
-          </TouchableOpacity>
 
-          {/* STATUS */}
-          {!!associationMessage && (
-            <View
+            <Text
               style={[
-                styles.associationStatus,
+                styles.helperText,
+                { color: theme.colors.sub_text },
+              ]}
+            >
+              Link profile to a vocational school and verify
+              your student number.
+            </Text>
+
+            {/* SCHOOL SELECTOR */}
+            <TouchableOpacity
+              activeOpacity={0.8}
+              onPress={openSchoolPicker}   // ← was setSchoolPickerVisible(true)
+              style={[
+                styles.schoolSelector,
                 {
-                  backgroundColor: associationError
-                    ? "rgba(239,68,68,0.10)"
-                    : "rgba(16,185,129,0.10)",
+                  backgroundColor: theme.colors.card,
+                  borderColor: theme.colors.border,
                 },
               ]}
             >
-              <Icons.Ionicons
-                name={
-                  associationError
-                    ? "alert-circle-outline"
-                    : "checkmark-circle-outline"
-                }
-                size={18}
-                color={
-                  associationError
-                    ? "#ef4444"
-                    : theme.colors.indicator
-                }
-              />
-
-              <Text
-                style={[
-                  styles.associationStatusText,
-                  {
-                    color: associationError
-                      ? "#ef4444"
-                      : theme.colors.indicator,
-                  },
-                ]}
-              >
-                {associationMessage}
-              </Text>
-            </View>
-          )}
-
-          {/* SCHOOL PICKER MODAL */}
-          <Modal
-            visible={schoolPickerVisible}
-            transparent
-            animationType="slide"
-            onRequestClose={() =>
-              setSchoolPickerVisible(false)
-            }
-          >
-            <View style={styles.schoolModalOverlay}>
               <View
                 style={[
-                  styles.schoolModal,
-                  { backgroundColor: theme.colors.card },
+                  styles.schoolSelectorIcon,
+                  {
+                    backgroundColor: theme.colors.card2,
+                  },
                 ]}
               >
-                {/* HEADER */}
-                <View
+                <Icons.Ionicons
+                  name="school-outline"
+                  size={20}
+                  color="#fff"
+                />
+              </View>
+
+              <View style={styles.schoolSelectorInfo}>
+                <Text
                   style={[
-                    styles.schoolModalHeader,
+                    styles.schoolSelectorLabel,
+                    { color: theme.colors.sub_text },
+                  ]}
+                >
+                  SCHOOL
+                </Text>
+
+                <Text
+                  style={[
+                    styles.schoolSelectorName,
                     {
-                      borderBottomColor:
-                        theme.colors.border,
+                      color: form.school_associated?.schoolId
+                        ? theme.colors.text
+                        : theme.colors.sub_text,
+                    },
+                  ]}
+                  numberOfLines={1}
+                >
+                  {form.school_associated?.schoolId
+                    ? schools.find(
+                      (school) =>
+                        school.id ===
+                        form.school_associated.schoolId
+                    )?.school_name || "Selected school"
+                    : "Select a school"}
+                </Text>
+              </View>
+
+              {schoolsLoading ? (
+                <ActivityIndicator
+                  size="small"
+                  color={theme.colors.primary}
+                />
+              ) : (
+                <Icons.Ionicons
+                  name="chevron-down"
+                  size={18}
+                  color={theme.colors.sub_text}
+                />
+              )}
+            </TouchableOpacity>
+
+            {/* STUDENT NUMBER */}
+            <TextInput
+              label="Student ID / Student Number"
+              value={studentId}
+              onChangeText={(text) => {
+                setStudentId(text);
+
+                // Any modification invalidates a previous verification
+                if (
+                  form.school_associated?.isLinked
+                ) {
+                  setForm((prev) => ({
+                    ...prev,
+                    school_associated: {
+                      ...prev.school_associated,
+                      studentNo: text,
+                      isLinked: false,
+                    },
+                  }));
+                }
+
+                setAssociationMessage("");
+                setAssociationError(false);
+              }}
+              mode="outlined"
+              style={styles.paperInput}
+              theme={{ roundness: 12 }}
+              left={<TextInput.Icon icon="card-account-details-outline" />}
+              right={
+                studentChecking ? (
+                  <TextInput.Icon
+                    icon={() => (
+                      <ActivityIndicator
+                        size="small"
+                        color={theme.colors.primary}
+                      />
+                    )}
+                  />
+                ) : form.school_associated?.isLinked ? (
+                  <TextInput.Icon
+                    icon="check-circle"
+                    color={theme.colors.indicator}
+                  />
+                ) : null
+              }
+            />
+
+            {/* VERIFY BUTTON */}
+            <TouchableOpacity
+              activeOpacity={0.8}
+              disabled={
+                studentChecking ||
+                !form.school_associated?.schoolId ||
+                !studentId.trim()
+              }
+              onPress={verifySchoolAssociation}
+              style={[
+                styles.verifyAssociationButton,
+                {
+                  backgroundColor:
+                    !form.school_associated?.schoolId ||
+                      !studentId.trim()
+                      ? theme.colors.border
+                      : theme.colors.card2,
+                },
+              ]}
+            >
+              {studentChecking ? (
+                <ActivityIndicator
+                  size="small"
+                  color="#fff"
+                />
+              ) : (
+                <Icons.Ionicons
+                  name={
+                    form.school_associated?.isLinked
+                      ? "checkmark-circle"
+                      : "shield-checkmark-outline"
+                  }
+                  size={19}
+                  color="#fff"
+                />
+              )}
+
+              <Text style={styles.verifyAssociationText}>
+                {form.school_associated?.isLinked
+                  ? "Student Verified"
+                  : "Verify Student"}
+              </Text>
+            </TouchableOpacity>
+
+            {/* STATUS */}
+            {!!associationMessage && (
+              <View
+                style={[
+                  styles.associationStatus,
+                  {
+                    backgroundColor: associationError
+                      ? "rgba(239,68,68,0.10)"
+                      : "rgba(16,185,129,0.10)",
+                  },
+                ]}
+              >
+                <Icons.Ionicons
+                  name={
+                    associationError
+                      ? "alert-circle-outline"
+                      : "checkmark-circle-outline"
+                  }
+                  size={18}
+                  color={
+                    associationError
+                      ? "#ef4444"
+                      : theme.colors.indicator
+                  }
+                />
+
+                <Text
+                  style={[
+                    styles.associationStatusText,
+                    {
+                      color: associationError
+                        ? "#ef4444"
+                        : theme.colors.indicator,
                     },
                   ]}
                 >
-                  <View>
-                    <Text
-                      style={[
-                        styles.schoolModalTitle,
-                        { color: theme.colors.text },
-                      ]}
-                    >
-                      Select School
-                    </Text>
+                  {associationMessage}
+                </Text>
+              </View>
+            )}
 
-                    <Text
-                      style={[
-                        styles.schoolModalSubtitle,
-                        { color: theme.colors.sub_text },
-                      ]}
-                    >
-                      Choose the school you are associated with
-                    </Text>
-                  </View>
-
-                  <TouchableOpacity
-                    onPress={() =>
-                      setSchoolPickerVisible(false)
-                    }
+            {/* SCHOOL PICKER MODAL */}
+            <BottomSheetModal
+              ref={schoolSheetRef}
+              index={0}
+              snapPoints={schoolSnapPoints}
+              enablePanDownToClose
+              backdropComponent={renderSchoolBackdrop}
+              backgroundStyle={{
+                backgroundColor: theme.colors.card,
+                borderTopLeftRadius: 24,
+                borderTopRightRadius: 24,
+              }}
+              handleIndicatorStyle={{
+                backgroundColor: theme.colors.sub_text,
+                width: 40,
+              }}
+              onDismiss={() => {
+                // optional: any cleanup
+              }}
+            >
+              {/* Header */}
+              <View
+                style={[
+                  styles.schoolModalHeader,
+                  { borderBottomColor: theme.colors.border },
+                ]}
+              >
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.schoolModalTitle, { color: theme.colors.text }]}>
+                    Select School
+                  </Text>
+                  <Text
+                    style={[styles.schoolModalSubtitle, { color: theme.colors.sub_text }]}
                   >
-                    <Icons.Ionicons
-                      name="close"
-                      size={26}
-                      color={theme.colors.text}
-                    />
-                  </TouchableOpacity>
+                    Choose the school you are associated with
+                  </Text>
                 </View>
 
-                <ScrollView
-                  showsVerticalScrollIndicator={false}
-                >
-                  {schools.map((school) => {
-                    const selected =
-                      school.id ===
-                      form.school_associated?.schoolId;
+                <TouchableOpacity onPress={closeSchoolPicker} hitSlop={12}>
+                  <Icons.Ionicons name="close" size={26} color={theme.colors.text} />
+                </TouchableOpacity>
+              </View>
+
+              <BottomSheetScrollView
+                contentContainerStyle={{ paddingBottom: 40 }}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
+              >
+                {schoolsLoading ? (
+                  <View style={{ paddingVertical: 40, alignItems: "center" }}>
+                    <ActivityIndicator size="large" color={theme.colors.primary} />
+                  </View>
+                ) : schools.length === 0 ? (
+                  <View style={styles.emptySchools}>
+                    <Icons.Ionicons
+                      name="school-outline"
+                      size={48}
+                      color={theme.colors.sub_text}
+                    />
+                    <Text
+                      style={[styles.emptySchoolsText, { color: theme.colors.sub_text }]}
+                    >
+                      No schools available.
+                    </Text>
+                  </View>
+                ) : (
+                  schools.map((school) => {
+                    const selected = school.id === form.school_associated?.schoolId;
 
                     return (
                       <TouchableOpacity
@@ -1430,59 +1449,42 @@ const ProfileForm = ({
                         onPress={() => selectSchool(school)}
                         style={[
                           styles.schoolOption,
-                          {
-                            borderBottomColor:
-                              theme.colors.border,
-                          },
+                          { borderBottomColor: theme.colors.border },
                         ]}
                       >
                         <View
                           style={[
                             styles.schoolOptionIcon,
                             {
-                              backgroundColor:
-                                selected
-                                  ? theme.colors.primary
-                                  : theme.colors.card2,
+                              backgroundColor: selected
+                                ? theme.colors.primary
+                                : theme.colors.card2,
                             },
                           ]}
                         >
-                          <Icons.Ionicons
-                            name="school-outline"
-                            size={19}
-                            color="#fff"
-                          />
+                          {school.logo
+                            ? (<Image source={{ uri: school.logo }} style={{ height: "100%", width: "100%", objectFit: "fill" }} />)
+                            : (<Icons.Ionicons name="school-outline" size={19} color="#fff" />)
+                          }
                         </View>
 
-                        <View
-                          style={styles.schoolOptionInfo}
-                        >
+                        <View style={styles.schoolOptionInfo}>
                           <Text
-                            style={[
-                              styles.schoolOptionName,
-                              {
-                                color:
-                                  theme.colors.text,
-                              },
-                            ]}
+                            style={[styles.schoolOptionName, { color: theme.colors.text }]}
                             numberOfLines={1}
                           >
-                            {school.name}
+                            {school.school_name}
                           </Text>
 
                           {!!school.location && (
                             <Text
                               style={[
                                 styles.schoolOptionLocation,
-                                {
-                                  color:
-                                    theme.colors.sub_text,
-                                },
+                                { color: theme.colors.sub_text },
                               ]}
                               numberOfLines={1}
                             >
-                              {typeof school.location ===
-                                "object"
+                              {typeof school.location === "object"
                                 ? school.location?.address
                                 : school.location}
                             </Text>
@@ -1498,38 +1500,12 @@ const ProfileForm = ({
                         )}
                       </TouchableOpacity>
                     );
-                  })}
-
-                  {!schoolsLoading &&
-                    schools.length === 0 && (
-                      <View
-                        style={styles.emptySchools}
-                      >
-                        <Icons.Ionicons
-                          name="school-outline"
-                          size={48}
-                          color={theme.colors.sub_text}
-                        />
-
-                        <Text
-                          style={[
-                            styles.emptySchoolsText,
-                            {
-                              color:
-                                theme.colors.sub_text,
-                            },
-                          ]}
-                        >
-                          No schools available.
-                        </Text>
-                      </View>
-                    )}
-                </ScrollView>
-              </View>
-            </View>
-          </Modal>
-        </View>
-
+                  })
+                )}
+              </BottomSheetScrollView>
+            </BottomSheetModal>
+          </View>
+        )}
       </ScrollView>
 
       {/* Platform picker modal */}
@@ -1679,6 +1655,8 @@ const WorkerRegistration = ({ navigation }) => {
       setOriginalData(result.data);
       setIsWorker(true);
       setIsEditing(false);
+
+      // console.log(result.data);
     } else {
       setIsEditing(true);
     }
@@ -2117,8 +2095,8 @@ const styles = StyleSheet.create({
   },
 
   schoolAssociationBadge: {
-    maxWidth: "82%",
-    minWidth: 210,
+    maxWidth: "90%",
+    minWidth: "85%",
     borderRadius: 50,
     borderWidth: 1,
     paddingHorizontal: 10,
@@ -2156,6 +2134,76 @@ const styles = StyleSheet.create({
   schoolAssociationStudent: {
     fontSize: 10,
     marginTop: 1,
+  },
+
+  // School Modal
+  schoolModal: {
+    // maxHeight: "82%",
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    overflow: "hidden",
+  },
+  schoolModalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+    borderBottomWidth: 1,
+  },
+
+  schoolModalTitle: {
+    fontSize: 19,
+    fontWeight: "800",
+  },
+
+  schoolModalSubtitle: {
+    fontSize: 12,
+    marginTop: 3,
+  },
+
+  schoolOption: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 18,
+    paddingVertical: 13,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+
+  schoolOptionIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 12,
+  },
+
+  schoolOptionInfo: {
+    flex: 1,
+    minWidth: 0,
+  },
+
+  schoolOptionName: {
+    fontSize: 14,
+    fontWeight: "700",
+  },
+
+  schoolOptionLocation: {
+    fontSize: 11,
+    marginTop: 3,
+  },
+
+  emptySchools: {
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 50,
+    gap: 10,
+  },
+
+  emptySchoolsText: {
+    fontSize: 14,
+    fontWeight: "600",
   },
 
   // school sector form
@@ -2223,84 +2271,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "600",
     lineHeight: 17,
-  },
-
-  /* School picker */
-
-  schoolModalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.45)",
-    justifyContent: "flex-end",
-  },
-
-  schoolModal: {
-    maxHeight: "82%",
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    overflow: "hidden",
-  },
-
-  schoolModalHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingVertical: 18,
-    borderBottomWidth: 1,
-  },
-
-  schoolModalTitle: {
-    fontSize: 19,
-    fontWeight: "800",
-  },
-
-  schoolModalSubtitle: {
-    fontSize: 12,
-    marginTop: 3,
-  },
-
-  schoolOption: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingHorizontal: 18,
-    paddingVertical: 13,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-
-  schoolOptionIcon: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    alignItems: "center",
-    justifyContent: "center",
-    marginRight: 12,
-  },
-
-  schoolOptionInfo: {
-    flex: 1,
-    minWidth: 0,
-  },
-
-  schoolOptionName: {
-    fontSize: 14,
-    fontWeight: "700",
-  },
-
-  schoolOptionLocation: {
-    fontSize: 11,
-    marginTop: 3,
-  },
-
-  emptySchools: {
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 50,
-    gap: 10,
-  },
-
-  emptySchoolsText: {
-    fontSize: 14,
-    fontWeight: "600",
   },
 
   // ── Scroll & Layout ──

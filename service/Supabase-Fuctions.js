@@ -592,19 +592,60 @@ export async function getWorkerProfile(userId) {
   }
 }
 
+export async function getStudentFromAssociatedSchool(schoolId, studentNo) {
+  if (!studentNo) throw new Error("No student number given");
+  if (!schoolId) throw new Error("No school id given");
+
+  const { data, error } = await supabase
+    .from("pomy_school_students")
+    .select("*")
+    .eq("school_Id", schoolId)
+    .eq("student_number", studentNo.trim())
+    .maybeSingle();
+
+  if (error) throw new Error(error.message)
+
+  return { data: data, error: error };
+}
+
 export async function getSchoolAssociated(schoolId) {
   try {
+    const normalizedId = typeof schoolId === "string" ? schoolId.trim() : "";
+    const isValidUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/i.test(
+      normalizedId,
+    );
+
+    if (!normalizedId || !isValidUuid) {
+      return { success: true, data: null };
+    }
+
     const { data, error } = await supabase
       .from("pomy_schools")
       .select("*")
-      .eq("id", schoolId)
-      .single();
+      .eq("id", normalizedId)
+      .maybeSingle();
 
     if (error && error.code !== "PGRST116") throw error; // PGRST116 is "no rows found"
 
     return { success: true, data: data || null };
   } catch (error) {
     console.error("Fetch school Error:", error.message);
+    return { success: false, error: error.message };
+  }
+}
+
+export async function getAllSchoolsAssociated() {
+  try {
+    const { data, error } = await supabase
+      .from("pomy_schools")
+      .select("*")
+      .order("school_name", { ascending: true });
+
+    if (error && error.code !== "PGRST116") throw error;
+
+    return { success: true, data: data || null };
+  } catch (error) {
+    console.error("Fetch schools Error:", error.message);
     return { success: false, error: error.message };
   }
 }
@@ -623,6 +664,41 @@ export async function getWorkerProfileClient(id) {
   } catch (error) {
     console.error("Fetch Worker Error:", error.message);
     return { success: false, error: error.message };
+  }
+}
+
+export async function verifyWorkerAsSchoolAssociated(id, schoolData = {}) {
+  if (!id) {
+    throw new Error("Worker id is required");
+  }
+
+  console.log(id, schoolData)
+
+  try {
+    const payload = {
+      school_associated: {
+        schoolId: schoolData.schoolId || "",
+        studentId: schoolData.studentId || schoolData.studentNo || "",
+        isLinked: Boolean(schoolData.isLinked),
+      },
+      updated_at: new Date().toISOString(),
+    };
+
+    const { data, error } = await supabase
+      .from("pomy_workers")
+      .update(payload)
+      .eq("id", id)
+      .select();
+
+    if (error) throw error;
+
+    return { success: true, data: data?.[0] || null };
+  } catch (error) {
+    console.error("School association update failed:", error.message);
+    return {
+      success: false,
+      error: error.message || "Failed to update worker school association",
+    };
   }
 }
 
@@ -703,7 +779,8 @@ export async function updateWorkerProfile(uid, updateData) {
     const {
       data: existingProfile,
       error: fetchError,
-    } = await supabase.from("pomy_workers").select("worker_pp, experience_images, documents")
+    } = await supabase.from("pomy_workers")
+      .select("worker_pp, experience_images, documents")
       .eq("user_id", uid).single();
 
     if (fetchError && fetchError.code !== "PGRST116") throw fetchError;
@@ -715,6 +792,14 @@ export async function updateWorkerProfile(uid, updateData) {
     let workerProfile = updateData.worker_pp || [];
     let portfolioImgs = updateData.experience_images || [];
     let documents = updateData.documents || [];
+
+    console.log(updateData)
+
+    // const updatedData = await verifyWorkerAsSchoolAssociated(form?.id, {
+    //     schoolId: schoolId,
+    //     studentId: studentId.trim(),
+    //     isLinked: true,
+    //   });
 
     const getStoragePath = (item) => {
       if (!item) return null;
@@ -826,6 +911,7 @@ export async function updateWorkerProfile(uid, updateData) {
       experience_images: portfolioImgs,
       documents: documents,
       contact_options: updateData.contact_options || {},
+      updated_at: new Date().toISOString()
     };
 
     const { data, error } = await supabase
