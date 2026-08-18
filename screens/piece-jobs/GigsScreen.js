@@ -1,12 +1,6 @@
 "use client";
 
-import React, {
-  useState,
-  useEffect,
-  useRef,
-  useMemo,
-  useCallback,
-} from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback, requestAnimationFrame } from "react";
 import {
   View,
   Text,
@@ -44,6 +38,11 @@ import { isConnected } from "../../utils/checkNetworkBlocker";
 import NetInfo from "@react-native-community/netinfo";
 import { formatCurrency } from "../../utils/callFunctions";
 import { format } from "date-fns";
+import {
+  BottomSheetModal,
+  BottomSheetBackdrop,
+  BottomSheetScrollView,
+} from "@gorhom/bottom-sheet";
 
 const MEDIA_HEIGHT = 180;
 const { height, width } = Dimensions.get("window");
@@ -233,10 +232,10 @@ const GigsScreen = ({ navigation }) => {
   const [loadingWorkers, setLoadingWorkers] = useState(true);
   const [loadingGigs, setLoadingGigs] = useState(true);
   const [gigHasMore, setGigHasMore] = useState(true);
+
   // GIG FILTERS
   const [gigSearch, setGigSearch] = useState("");
   const [gigCategory, setGigCategory] = useState("all");
-
 
   // WORKER FILTERS
   const [workerSearch, setWorkerSearch] = useState("");
@@ -252,6 +251,41 @@ const GigsScreen = ({ navigation }) => {
   const [sheetVisible, setSheetVisible] = useState(false);
   const sheetAnim = React.useRef(new Animated.Value(0)).current;
   const pan = React.useRef(new Animated.Value(0)).current;
+
+  const commentsSheetRef = useRef(null);
+  const [commentsForWorkerId, setCommentsForWorkerId] = useState(null);
+  const commentsSnapPoints = useMemo(() => ["50%", "90%"], []);
+
+  const openCommentsSheet = useCallback((workerId) => {
+    setCommentsForWorkerId(workerId);
+
+    // requestAnimationFrame(() => {
+    const sheet = commentsSheetRef.current?.present();
+    // if (sheet && typeof sheet.present === "function") {
+    //   sheet.present();
+    //   } else {
+    //     console.warn("BottomSheetModal ref missing present(). Ref:", sheet);
+    //   }
+    // });
+  }, []);
+
+  const closeCommentsSheet = useCallback(() => {
+    commentsSheetRef.current?.dismiss();
+    setCommentsForWorkerId(null);
+  }, []);
+
+  const renderCommentsBackdrop = useCallback(
+    (props) => (
+      <BottomSheetBackdrop
+        {...props}
+        disappearsOnIndex={-1}
+        appearsOnIndex={0}
+        opacity={0.5}
+        pressBehavior="close"
+      />
+    ),
+    []
+  );
 
   const panResponder = React.useRef(
     PanResponder.create({
@@ -342,6 +376,9 @@ const GigsScreen = ({ navigation }) => {
   const viewModeRef = useRef(viewMode);
   const gigCategoryRef = useRef(gigCategory);
   const gigSearchRef = useRef(gigSearch);
+
+  const [commentText, setCommentText] = useState("");
+  const [expandedComments, setExpandedComments] = useState({});
 
   useEffect(() => { viewModeRef.current = viewMode; }, [viewMode]);
   useEffect(() => { gigCategoryRef.current = gigCategory; }, [gigCategory]);
@@ -935,8 +972,7 @@ const GigsScreen = ({ navigation }) => {
     const skills = hasSkills ? item.skills : [];
 
     return (
-      <TouchableOpacity
-        activeOpacity={0.9}
+      <View
         style={[
           styles.workerCard,
           {
@@ -944,181 +980,185 @@ const GigsScreen = ({ navigation }) => {
             borderColor: theme.colors.card,
           },
         ]}
-        onPress={() => {
-          navigation.navigate("WorkerProfileScreen", { worker: item });
-        }}
       >
-        {/* HEADER AREA */}
-        <View style={[styles.cardHeader, { color: theme.colors.text }]}>
-          <View style={styles.avatarSquare}>
-            {worker_pp ? (
-              <Image
-                source={{ uri: item.worker_pp[0].url || item.worker_pp[0] }}
-                style={{
-                  objectFit: "cover",
-                  width: "100%",
-                  height: "100%",
-                  borderRadius: 6,
-                }}
-              />
-            ) : (
-              <Text style={styles.avatarText}>{item.name?.charAt(0)}</Text>
-            )}
-          </View>
-          <View style={styles.headerInfo}>
-            <Text style={[styles.workerName, { color: theme.colors.text }]}>
-              {item.name}
-            </Text>
-            <View style={styles.locationRow}>
-              <Icons.Ionicons
-                name="location-sharp"
-                size={12}
-                color={theme.colors.indicator}
-              />
-              <Text style={[styles.locationText, { color: theme.colors.text }]}>
-                {locationString}
+        <TouchableOpacity
+          activeOpacity={0.9}
+          onPress={() => {
+            navigation.navigate("WorkerProfileScreen", { worker: item });
+          }}
+        >
+          {/* HEADER AREA */}
+          <View style={[styles.cardHeader, { color: theme.colors.text }]}>
+            <View style={styles.avatarSquare}>
+              {worker_pp ? (
+                <Image
+                  source={{ uri: item.worker_pp[0].url || item.worker_pp[0] }}
+                  style={{
+                    objectFit: "cover",
+                    width: "100%",
+                    height: "100%",
+                    borderRadius: 6,
+                  }}
+                />
+              ) : (
+                <Text style={styles.avatarText}>{item.name?.charAt(0)}</Text>
+              )}
+            </View>
+            <View style={styles.headerInfo}>
+              <Text style={[styles.workerName, { color: theme.colors.text }]}>
+                {item.name}
               </Text>
+              <View style={styles.locationRow}>
+                <Icons.Ionicons
+                  name="location-sharp"
+                  size={12}
+                  color={theme.colors.indicator}
+                />
+                <Text style={[styles.locationText, { color: theme.colors.text }]}>
+                  {locationString}
+                </Text>
+              </View>
             </View>
           </View>
-        </View>
 
-        {/* CONDITION: Show Bio only if NO skills are provided */}
-        {!hasSkills && (
-          <View style={styles.bodyContent}>
-            <Text
-              numberOfLines={2}
-              style={[styles.bioText, { color: theme.colors.text }]}
-            >
-              {item.bio ||
-                "Top-rated professional. Tap to view full portfolio and contact details."}
-            </Text>
-          </View>
-        )}
+          {/* CONDITION: Show Bio only if NO skills are provided */}
+          {!hasSkills && (
+            <View style={styles.bodyContent}>
+              <Text
+                numberOfLines={2}
+                style={[styles.bioText, { color: theme.colors.text }]}
+              >
+                {item.bio ||
+                  "Top-rated professional. Tap to view full portfolio and contact details."}
+              </Text>
+            </View>
+          )}
 
-        {/* CONDITION: Show Skills only if they exist */}
-        {hasSkills && (
-          <View style={styles.skillsContainer}>
-            <Text style={[styles.sectionHeader, { color: theme.colors.text }]}>
-              Services Provided
-            </Text>
-            <Text
-              style={[styles.skillsRowText, { color: theme.colors.text }]}
-              numberOfLines={1}
-              ellipsizeMode="tail"
-            >
-              {skills.map((skill, index) => (
-                <React.Fragment key={index}>
-                  {skill}
-                  {index < skills.length - 1 && "  |  "}
-                </React.Fragment>
-              ))}
-            </Text>
-          </View>
-        )}
-
-        {/* CONDITION: Show Portfolio only if images exist */}
-        {hasImages && (
-          <View style={styles.portfolioWrapper}>
-            {item.experience_images.length === 1 ? (
-              // Single image - full width
-              <Image
-                source={{
-                  uri:
-                    item.experience_images[0].url || item.experience_images[0],
-                }}
-                style={styles.portfolioImageSingle}
-              />
-            ) : item.experience_images.length === 2 ? (
-              // Two images - equal grid
-              <View style={styles.portfolioGridTwo}>
-                {item.experience_images.slice(0, 2).map((img, idx) => (
-                  <Image
-                    key={idx}
-                    source={{ uri: img.url || img }}
-                    style={styles.portfolioImageEqual}
-                  />
+          {/* CONDITION: Show Skills only if they exist */}
+          {hasSkills && (
+            <View style={styles.skillsContainer}>
+              <Text style={[styles.sectionHeader, { color: theme.colors.text }]}>
+                Services Provided
+              </Text>
+              <Text
+                style={[styles.skillsRowText, { color: theme.colors.text }]}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+              >
+                {skills.map((skill, index) => (
+                  <React.Fragment key={index}>
+                    {skill}
+                    {index < skills.length - 1 && "  |  "}
+                  </React.Fragment>
                 ))}
-              </View>
-            ) : item.experience_images.length === 4 ? (
-              <View style={styles.portfolioGridMultiple}>
-                <View style={styles.portfolioTopRow}>
-                  {/* First image - larger on the left */}
-                  <Image
-                    source={{
-                      uri:
-                        item.experience_images[0].url ||
-                        item.experience_images[0],
-                    }}
-                    style={styles.portfolioImageBottom}
-                  />
-                  <Image
-                    source={{
-                      uri:
-                        item.experience_images[1].url ||
-                        item.experience_images[0],
-                    }}
-                    style={styles.portfolioImageBottom}
-                  />
+              </Text>
+            </View>
+          )}
+
+          {/* CONDITION: Show Portfolio only if images exist */}
+          {hasImages && (
+            <View style={styles.portfolioWrapper}>
+              {item.experience_images.length === 1 ? (
+                // Single image - full width
+                <Image
+                  source={{
+                    uri:
+                      item.experience_images[0].url || item.experience_images[0],
+                  }}
+                  style={styles.portfolioImageSingle}
+                />
+              ) : item.experience_images.length === 2 ? (
+                // Two images - equal grid
+                <View style={styles.portfolioGridTwo}>
+                  {item.experience_images.slice(0, 2).map((img, idx) => (
+                    <Image
+                      key={idx}
+                      source={{ uri: img.url || img }}
+                      style={styles.portfolioImageEqual}
+                    />
+                  ))}
                 </View>
-                {/* Bottom row - remaining images (flex wrap) */}
-                {item.experience_images.length > 3 && (
-                  <View style={styles.portfolioBottomRow}>
-                    {item.experience_images.slice(2, 5).map((img, idx) => (
-                      <Image
-                        key={idx}
-                        source={{ uri: img.url || img }}
-                        style={styles.portfolioImageBottom}
-                      />
-                    ))}
+              ) : item.experience_images.length === 4 ? (
+                <View style={styles.portfolioGridMultiple}>
+                  <View style={styles.portfolioTopRow}>
+                    {/* First image - larger on the left */}
+                    <Image
+                      source={{
+                        uri:
+                          item.experience_images[0].url ||
+                          item.experience_images[0],
+                      }}
+                      style={styles.portfolioImageBottom}
+                    />
+                    <Image
+                      source={{
+                        uri:
+                          item.experience_images[1].url ||
+                          item.experience_images[0],
+                      }}
+                      style={styles.portfolioImageBottom}
+                    />
                   </View>
-                )}
-              </View>
-            ) : (
-              // 3+ images - Enhanced grid layout
-              <View style={styles.portfolioGridMultiple}>
-                <View style={styles.portfolioTopRow}>
-                  {/* First image - larger on the left */}
-                  <Image
-                    source={{
-                      uri:
-                        item.experience_images[0].url ||
-                        item.experience_images[0],
-                    }}
-                    style={styles.portfolioImageLargeLeft}
-                  />
-                  {/* Right column - 2 images stacked */}
-                  <View style={styles.portfolioRightColumn}>
-                    {item.experience_images.slice(1, 3).map((img, idx) => (
-                      <Image
-                        key={idx}
-                        source={{ uri: img.url || img }}
-                        style={styles.portfolioImageRightSmall}
-                      />
-                    ))}
-                  </View>
+                  {/* Bottom row - remaining images (flex wrap) */}
+                  {item.experience_images.length > 3 && (
+                    <View style={styles.portfolioBottomRow}>
+                      {item.experience_images.slice(2, 5).map((img, idx) => (
+                        <Image
+                          key={idx}
+                          source={{ uri: img.url || img }}
+                          style={styles.portfolioImageBottom}
+                        />
+                      ))}
+                    </View>
+                  )}
                 </View>
-                {/* Bottom row - remaining images (flex wrap) */}
-                {item.experience_images.length > 3 && (
-                  <View style={styles.portfolioBottomRow}>
-                    {item.experience_images.slice(3, 5).map((img, idx) => (
-                      <Image
-                        key={idx}
-                        source={{ uri: img.url || img }}
-                        style={styles.portfolioImageBottom}
-                      />
-                    ))}
+              ) : (
+                // 3+ images - Enhanced grid layout
+                <View style={styles.portfolioGridMultiple}>
+                  <View style={styles.portfolioTopRow}>
+                    {/* First image - larger on the left */}
+                    <Image
+                      source={{
+                        uri:
+                          item.experience_images[0].url ||
+                          item.experience_images[0],
+                      }}
+                      style={styles.portfolioImageLargeLeft}
+                    />
+                    {/* Right column - 2 images stacked */}
+                    <View style={styles.portfolioRightColumn}>
+                      {item.experience_images.slice(1, 3).map((img, idx) => (
+                        <Image
+                          key={idx}
+                          source={{ uri: img.url || img }}
+                          style={styles.portfolioImageRightSmall}
+                        />
+                      ))}
+                    </View>
                   </View>
-                )}
-              </View>
-            )}
-          </View>
-        )}
+                  {/* Bottom row - remaining images (flex wrap) */}
+                  {item.experience_images.length > 3 && (
+                    <View style={styles.portfolioBottomRow}>
+                      {item.experience_images.slice(3, 5).map((img, idx) => (
+                        <Image
+                          key={idx}
+                          source={{ uri: img.url || img }}
+                          style={styles.portfolioImageBottom}
+                        />
+                      ))}
+                    </View>
+                  )}
+                </View>
+              )}
+            </View>
+          )}
+        </TouchableOpacity>
 
         {/* FOOTER AREA */}
         <View style={styles.cardFooter}>
           <View style={styles.interactionGroup}>
             <TouchableOpacity
-              style={styles.voteBtn}
+              style={[styles.voteBtn, { borderTopLeftRadius: 6, borderBottomLeftRadius: 6 }]}
               onPress={() => handleLikeWorker(item.id)}
             >
               <Icons.Ionicons
@@ -1138,7 +1178,7 @@ const GigsScreen = ({ navigation }) => {
             </TouchableOpacity>
 
             <TouchableOpacity
-              style={styles.voteBtn}
+              style={[styles.voteBtn, { borderTopRightRadius: 6, borderBottomRightRadius: 6 }]}
               onPress={() => handleDislikeWorker(item.id)}
             >
               <Icons.Ionicons
@@ -1156,6 +1196,18 @@ const GigsScreen = ({ navigation }) => {
             </TouchableOpacity>
           </View>
 
+          {/* Open comments */}
+          <TouchableOpacity
+            style={[
+              styles.commentsBtn,
+              { backgroundColor: theme.colors.card2 },
+            ]}
+            onPress={() => openCommentsSheet(item.id)}
+          >
+            <Icons.Ionicons name="chatbox-ellipses-outline" size={16} color="#fff" />
+            <Text style={styles.actionBtnText}>{item.commentsCount || 0}</Text>
+          </TouchableOpacity>
+
           <TouchableOpacity
             style={[
               styles.blackActionBtn,
@@ -1167,8 +1219,74 @@ const GigsScreen = ({ navigation }) => {
             <Text style={styles.actionBtnText}>Call</Text>
           </TouchableOpacity>
         </View>
-      </TouchableOpacity>
+      </View>
     );
+  };
+
+  const DUMMY_COMMENTS = [
+    {
+      id: "c1",
+      displayName: "Thabo Nkosi",
+      email: "thabo.n@example.com",
+      createdAt: "2026-08-10T09:15:00Z",
+      text: "Excellent work ethic and very professional. Highly recommended for any handyman jobs around the city.",
+    },
+    {
+      id: "c2",
+      displayName: "Siphiwe Dlamini",
+      email: "siphiwe.d@mail.com",
+      createdAt: "2026-08-12T14:30:00Z",
+      text: "Did a fantastic job cleaning my apartment. Arrived on time and left everything spotless. Will definitely hire again.",
+    },
+    {
+      id: "c3",
+      displayName: "Anonymous",
+      email: "user123@gmail.com",
+      createdAt: "2026-08-14T11:05:00Z",
+      text: "Good service overall but communication could be a little better. Still worth booking if you need reliable help.",
+    },
+    {
+      id: "c4",
+      displayName: "Lindiwe M.",
+      email: "lindiwe.m@work.co.sz",
+      createdAt: "2026-08-15T16:45:00Z",
+      text: "This is a longer review to test the expand feature. The worker showed up early, brought all the necessary tools, explained every step of the process clearly, and finished ahead of schedule. The quality of the work exceeded my expectations and the price was fair. I would not hesitate to recommend them to friends and family who need similar services in the area.",
+    },
+    {
+      id: "c5",
+      displayName: "James K.",
+      email: "james.k@example.com",
+      createdAt: "2026-08-16T08:20:00Z",
+      text: "Quick response and solid results. Five stars.",
+    },
+  ];
+
+  const toggleExpandComment = useCallback((commentId) => {
+    setExpandedComments((prev) => ({
+      ...prev,
+      [commentId]: !prev[commentId],
+    }));
+  }, []);
+
+  const formatCommentDate = (iso) => {
+    if (!iso) return "Just now";
+    try {
+      return format(new Date(iso), "dd MMM yyyy • HH:mm");
+    } catch {
+      return "Just now";
+    }
+  };
+
+  const countWords = (text) => {
+    if (!text || typeof text !== "string") return 0;
+    return text.trim().split(/\s+/).filter(Boolean).length;
+  };
+
+  const handleSubmitComment = () => {
+    const value = (commentText || "").trim();
+    if (!value) return;
+    console.log("New comment for worker", commentsForWorkerId, ":", value);
+    setCommentText("");
   };
 
   // 1. Show NOTHING or a Loader while checking the very first time
@@ -1216,14 +1334,157 @@ const GigsScreen = ({ navigation }) => {
   }
 
   return (
-    <SafeAreaView
-      style={[styles.container, { backgroundColor: theme.colors.background }]}
-      edges={["top"]}
-    >
-      <StatusBar
-        barStyle={isDarkMode ? "light-content" : "dark-content"}
-        backgroundColor={theme.colors.background}
-      />
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={["top"]} >
+      <StatusBar barStyle={isDarkMode ? "light-content" : "dark-content"} backgroundColor={theme.colors.background} />
+
+      {/* Comments Bottom Sheet */}
+      <BottomSheetModal
+        ref={commentsSheetRef}
+        index={0}
+        snapPoints={commentsSnapPoints}
+        enablePanDownToClose
+        backdropComponent={renderCommentsBackdrop}
+        backgroundStyle={{
+          backgroundColor: theme.colors.card,
+          borderTopLeftRadius: 24,
+          borderTopRightRadius: 24,
+        }}
+        handleIndicatorStyle={{
+          backgroundColor: theme.colors.sub_text,
+          width: 40,
+        }}
+        onDismiss={() => {
+          closeCommentsSheet();
+          setCommentText("");
+          setExpandedComments({});
+        }}
+      >
+
+        <BottomSheetScrollView
+          contentContainerStyle={styles.commentsSheetContent}
+          keyboardShouldPersistTaps="handled"
+        >
+          <Text style={[styles.commentsHeader, { color: theme.colors.text }]}>
+            Comments
+          </Text>
+
+          {/* INPUT (top) */}
+          <View style={styles.commentInputRow}>
+            <TextInput
+              placeholder="Add a comment..."
+              placeholderTextColor={theme.colors.sub_text}
+              value={commentText}
+              onChangeText={setCommentText}
+              style={[
+                styles.commentInput,
+                {
+                  color: theme.colors.text,
+                  borderColor: isDarkMode ? "#444" : "#e2e8f0",
+                  backgroundColor: isDarkMode ? "#2a2a2a" : "#f8fafc",
+                },
+              ]}
+              multiline
+              maxLength={500}
+            />
+            <TouchableOpacity
+              style={[
+                styles.sendCommentBtn,
+                { backgroundColor: theme.colors.indicator },
+                !commentText?.trim() && { opacity: 0.5 },
+              ]}
+              onPress={handleSubmitComment}
+              disabled={!commentText?.trim()}
+            >
+              <Icons.Ionicons name="send" size={18} color="#fff" />
+            </TouchableOpacity>
+          </View>
+
+          {/* COMMENTS (under input) – plain map, no FlatList */}
+          {(DUMMY_COMMENTS || []).map((comment, index) => {
+            if (!comment) return null;
+
+            const text = comment.text || "";
+            const isExpanded = !!expandedComments[comment.id];
+            const wordCount = countWords(text);
+            const isLong = wordCount > 20;
+
+            let displayText = text;
+            if (isLong && !isExpanded) {
+              displayText = text.split(/\s+/).slice(0, 20).join(" ") + "...";
+            }
+
+            const author = comment.displayName || comment.email || "Anonymous";
+
+            return (
+              <View key={comment.id || `comment-${index}`}>
+                <View style={styles.commentItem}>
+                  <View style={styles.commentMetaRow}>
+                    <Text
+                      style={[styles.commentAuthor, { color: theme.colors.text }]}
+                      numberOfLines={1}
+                    >
+                      {author}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.commentDate,
+                        { color: theme.colors.sub_text },
+                      ]}
+                    >
+                      {formatCommentDate(comment.createdAt)}
+                    </Text>
+                  </View>
+
+                  {!!comment.displayName && !!comment.email && (
+                    <Text
+                      style={[
+                        styles.commentEmail,
+                        { color: theme.colors.sub_text },
+                      ]}
+                      numberOfLines={1}
+                    >
+                      {comment.email}
+                    </Text>
+                  )}
+
+                  <Text style={[styles.commentBody, { color: theme.colors.text }]}>
+                    {displayText}
+                  </Text>
+
+                  {isLong && (
+                    <TouchableOpacity
+                      onPress={() => toggleExpandComment(comment.id)}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                      <Text
+                        style={[
+                          styles.moreLessBtn,
+                          { color: theme.colors.indicator },
+                        ]}
+                      >
+                        {isExpanded ? "Less" : "More"}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                {index < DUMMY_COMMENTS.length - 1 && (
+                  <View
+                    style={[
+                      styles.commentDivider,
+                      {
+                        backgroundColor: isDarkMode ? "#333" : "#e2e8f0",
+                      },
+                    ]}
+                  />
+                )}
+              </View>
+            );
+          })}
+
+          <View style={{ height: height * 0.05 }} />
+        </BottomSheetScrollView>
+      </BottomSheetModal>
 
       {/* Custom Modern Header */}
       <View style={styles.customHeader}>
@@ -1531,7 +1792,7 @@ const GigsScreen = ({ navigation }) => {
                 viewMode === "workers" && styles.toggleButtonTextActive,
               ]}
             >
-              Freelancers ({filteredWorkers?.length || 0})
+              Freelancers
             </Text>
           </TouchableOpacity>
         </View>
@@ -1719,6 +1980,75 @@ const styles = StyleSheet.create({
   searchInput: {
     // flex: 1,
     fontSize: 14,
+  },
+  commentsSheetContent: {
+    paddingHorizontal: 16,
+    paddingBottom: Platform.OS === "ios" ? 40 : 24,
+  },
+  commentsHeader: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 16,
+  },
+  commentInputRow: {
+    flexDirection: "row",
+    alignItems: "flex-end",
+    justifyContent: "space-between",
+    gap: 10,
+    marginBottom: 20
+  },
+  commentInput: {
+    flex: 1,
+    // width: width * 0.8,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 14,
+    maxHeight: 100,
+    minHeight: 44,
+  },
+  sendCommentBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  commentItem: {
+    paddingVertical: 12,
+  },
+  commentMetaRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 2,
+  },
+  commentAuthor: {
+    fontSize: 15,
+    fontWeight: "700",
+    flex: 1,
+    marginRight: 8,
+  },
+  commentDate: {
+    fontSize: 12,
+  },
+  commentEmail: {
+    fontSize: 12,
+    marginBottom: 6,
+  },
+  commentBody: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  moreLessBtn: {
+    fontSize: 13,
+    fontWeight: "700",
+    marginTop: 6,
+  },
+  commentDivider: {
+    height: StyleSheet.hairlineWidth,
+    width: "100%",
   },
   categoriesContainer: {
     borderBottomWidth: 1,
@@ -2345,11 +2675,39 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     paddingBottom: 12,
     marginHorizontal: 14,
+    // Added space to accommodate the new comments button
+    gap: 8,
   },
+
+  // Styles for the new comments button
+  commentsBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 6,
+  },
+  commentsSheetContent: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingBottom: Platform.OS === 'ios' ? 30 : 16,
+  },
+  commentsHeader: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 16,
+  },
+  // commentInput: {
+  //   borderWidth: 1,
+  //   borderColor: "#e2e8f0",
+  //   borderRadius: 8,
+  //   padding: 10,
+  //   marginTop: 20,
+  // },
   interactionGroup: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 12,
+    gap: 3,
   },
   voteBtn: {
     flexDirection: "row",
@@ -2357,7 +2715,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#f8fafc",
     paddingHorizontal: 10,
     paddingVertical: 7,
-    borderRadius: 6,
+    // borderRadius: 6,
     borderWidth: 1,
     borderColor: "#e2e8f0",
   },
