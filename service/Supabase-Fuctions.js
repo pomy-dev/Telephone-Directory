@@ -965,6 +965,155 @@ export async function updateWorkerAvailability(workerId, isAvailable) {
   }
 }
 
+/**
+ * Add a comment to a worker.
+ *
+ * @param {string} workerId - The worker's ID
+ * @param {string} commentText - The comment text
+ * @param {object} user - The currently authenticated user
+ */
+export async function addCommentToWorker(workerId, commentText, user) {
+  try {
+    if (!workerId) throw new Error("Worker ID is required");
+
+    const comment = commentText?.trim();
+
+    if (!comment) throw new Error("Comment cannot be empty");
+
+    if (!user.uid) throw new Error("You must be logged in to comment");
+
+    const { data, error } = await supabase
+      .from("pomy_comments")
+      .insert({
+        worker_id: workerId,
+        user_id: user.uid,
+        display_name: user.displayName || "Anonymous",
+        email: user.email || null,
+        comment,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error("Error adding worker comment:", error);
+      throw error;
+    }
+
+    return {
+      success: true,
+      data,
+    };
+  } catch (error) {
+    console.error("addCommentToWorker error:", error);
+
+    return {
+      success: false,
+      error,
+    };
+  }
+}
+
+/**
+ * Get all comments belonging to a particular worker.
+ *
+ * @param {string} workerId - The worker's ID
+ */
+export async function getWorkerComments(workerId) {
+  try {
+    if (!workerId) {
+      throw new Error("Worker ID is required");
+    }
+
+    const { data, error } = await supabase
+      .from("pomy_comments")
+      .select(`
+        id,
+        created_at,
+        display_name,
+        email,
+        comment,
+        worker_id,
+        user_id
+      `)
+      .eq("worker_id", workerId)
+      .order("created_at", {
+        ascending: false,
+      });
+
+    if (error) {
+      console.error("Error getting worker comments:", error);
+      throw error;
+    }
+
+    // Convert database structure to the structure
+    // your current comments UI already expects.
+    const comments = (data || []).map((item) => ({
+      id: item.id,
+      displayName: item.display_name,
+      email: item.email,
+      createdAt: item.created_at,
+      text: item.comment,
+      workerId: item.worker_id,
+      userId: item.user_id,
+    }));
+
+    return {
+      success: true,
+      data: comments,
+    };
+  } catch (error) {
+    console.error("getWorkerComments error:", error);
+
+    return {
+      success: false,
+      error,
+      data: [],
+    };
+  }
+}
+
+/**
+ * Subscribe to realtime changes for a particular worker's comments.
+ *
+ * @param {string} workerId - The worker's ID
+ * @param {function} callback - Called whenever comments change
+ *
+ * @returns {object} Supabase realtime channel
+ */
+export function subscribeToWorkerComments(workerId, callback) {
+  if (!workerId) {
+    console.warn("Cannot subscribe to comments without worker ID");
+    return null;
+  }
+
+  const channel = supabase
+    .channel(`worker-comments-realtime-${workerId}`)
+    .on(
+      "postgres_changes",
+      {
+        event: "*",
+        schema: "public",
+        table: "pomy_comments",
+        filter: `worker_id=eq.${workerId}`,
+      },
+      (payload) => {
+        console.log("Worker comment realtime event:", payload);
+
+        if (typeof callback === "function") {
+          callback(payload);
+        }
+      }
+    )
+    .subscribe((status) => {
+      console.log(
+        `Worker comments realtime [${workerId}]:`,
+        status
+      );
+    });
+
+  return channel;
+}
+
 /** * get the gig by their id from,
  * the db
  */

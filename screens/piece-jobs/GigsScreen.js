@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useMemo, useCallback, requestAnimationFrame } from "react";
+import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import {
   View,
   Text,
@@ -28,6 +28,9 @@ import {
   subscribeToGigsScreen,
   logUserActivity,
   fetchPomyWorkers,
+  addCommentToWorker,
+  getWorkerComments,
+  subscribeToWorkerComments,
 } from "../../service/Supabase-Fuctions";
 import { AppContext } from "../../context/appContext";
 import { supabase } from "../../service/Supabase-Client";
@@ -247,6 +250,14 @@ const GigsScreen = ({ navigation }) => {
   const [refreshing, setRefreshing] = useState(false);
   const [nextCursor, setNextCursor] = useState({ createdAt: null, id: null });
   const [viewMode, setViewMode] = useState("gigs");
+
+  const [commentText, setCommentText] = useState("");
+  const [expandedComments, setExpandedComments] = useState({});
+  const [comments, setComments] = useState([]);
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [submittingComment, setSubmittingComment] = useState(false);
+
+  const commentsRealtimeChannelRef = useRef(null);
   const fabRotation = React.useRef(new Animated.Value(0)).current;
   const [sheetVisible, setSheetVisible] = useState(false);
   const sheetAnim = React.useRef(new Animated.Value(0)).current;
@@ -254,24 +265,59 @@ const GigsScreen = ({ navigation }) => {
 
   const commentsSheetRef = useRef(null);
   const [commentsForWorkerId, setCommentsForWorkerId] = useState(null);
+  const activeCommentsWorkerIdRef = useRef(null);
+  const commentsLoadRequestRef = useRef(0);
   const commentsSnapPoints = useMemo(() => ["50%", "90%"], []);
 
-  const openCommentsSheet = useCallback((workerId) => {
-    setCommentsForWorkerId(workerId);
+  const openCommentsSheet = useCallback(
+    (workerId) => {
+      if (!workerId) return;
 
-    // requestAnimationFrame(() => {
-    const sheet = commentsSheetRef.current?.present();
-    // if (sheet && typeof sheet.present === "function") {
-    //   sheet.present();
-    //   } else {
-    //     console.warn("BottomSheetModal ref missing present(). Ref:", sheet);
-    //   }
-    // });
-  }, []);
+      const isSheetAlreadyOpen = Boolean(activeCommentsWorkerIdRef.current);
+
+      activeCommentsWorkerIdRef.current = workerId;
+
+      // Set the worker ID first
+      setCommentsForWorkerId(workerId);
+
+      // Reset state for the new worker
+      setCommentText("");
+      setExpandedComments({});
+
+      // Keep the existing modal mounted when switching workers. Calling
+      // present() again on an open BottomSheetModal is ignored.
+      if (!isSheetAlreadyOpen) {
+        commentsSheetRef.current?.present();
+      }
+
+      // Load existing comments and setup realtime subscription AFTER the sheet is open
+      // This ensures the sheet opens promptly while data is being fetched in the background
+      loadWorkerComments(workerId);
+      setupWorkerCommentsRealtime(workerId);
+    },
+    []
+  );
 
   const closeCommentsSheet = useCallback(() => {
-    commentsSheetRef.current?.dismiss();
+    const closingWorkerId = activeCommentsWorkerIdRef.current;
+    activeCommentsWorkerIdRef.current = null;
+    commentsLoadRequestRef.current += 1;
+
+    if (commentsRealtimeChannelRef.current) {
+      console.log(
+        "Worker comments realtime [" +
+        closingWorkerId +
+        "]: CLOSING SUBSCRIPTION"
+      );
+      supabase.removeChannel(commentsRealtimeChannelRef.current);
+
+      commentsRealtimeChannelRef.current = null;
+    }
+
     setCommentsForWorkerId(null);
+    setComments([]);
+    setCommentText("");
+    setExpandedComments({});
   }, []);
 
   const renderCommentsBackdrop = useCallback(
@@ -376,9 +422,6 @@ const GigsScreen = ({ navigation }) => {
   const viewModeRef = useRef(viewMode);
   const gigCategoryRef = useRef(gigCategory);
   const gigSearchRef = useRef(gigSearch);
-
-  const [commentText, setCommentText] = useState("");
-  const [expandedComments, setExpandedComments] = useState({});
 
   useEffect(() => { viewModeRef.current = viewMode; }, [viewMode]);
   useEffect(() => { gigCategoryRef.current = gigCategory; }, [gigCategory]);
@@ -694,6 +737,88 @@ const GigsScreen = ({ navigation }) => {
     setRefreshing(false);
     setLoadingWorkers(false);
   };
+
+  const loadWorkerComments = useCallback(async (workerId) => {
+    if (!workerId) {
+      setComments([]);
+      return;
+    }
+
+    const requestId = ++commentsLoadRequestRef.current;
+    setLoadingComments(true);
+
+    try {
+      const result = await getWorkerComments(workerId);
+
+      if (requestId !== commentsLoadRequestRef.current) return;
+
+      if (result.success) {
+        setComments(result.data || []);
+      } else {
+        console.error("Failed to load comments:", result.error);
+        setComments([]);
+      }
+    } catch (error) {
+      console.error("loadWorkerComments error:", error);
+      setComments([]);
+    } finally {
+      setLoadingComments(false);
+    }
+  }, []);
+
+  const setupWorkerCommentsRealtime = useCallback((workerId) => {
+    if (!workerId) return;
+
+    // Already subscribed to this worker → keep it
+    if (
+      commentsRealtimeChannelRef.current &&
+      commentsRealtimeChannelRef.current.topic ===
+      `realtime:worker-comments-${workerId}`
+    ) {
+      return;
+    }
+
+    if (commentsRealtimeChannelRef.current) {
+      supabase.removeChannel(commentsRealtimeChannelRef.current);
+      commentsRealtimeChannelRef.current = null;
+    }
+
+    const channel = subscribeToWorkerComments(workerId, (payload) => {
+      console.log("Realtime worker comment update:", payload.eventType, payload);
+
+      if (payload.eventType === "INSERT" && payload.new) {
+        const item = payload.new;
+        const mapped = {
+          id: item.id,
+          displayName: item.display_name,
+          email: item.email,
+          createdAt: item.created_at,
+          text: item.comment,
+          workerId: item.worker_id,
+          userId: item.user_id,
+        };
+
+        setComments((prev) => {
+          if (prev.some((c) => String(c.id) === String(mapped.id))) return prev;
+          return [mapped, ...prev];
+        });
+
+        setFilteredWorkers((prev) =>
+          prev.map((w) =>
+            String(w.id) === String(workerId)
+              ? { ...w, commentsCount: (w.commentsCount || 0) + 1 }
+              : w
+          )
+        );
+        return;
+      }
+
+      // UPDATE / DELETE → full reload is fine
+      loadWorkerComments(workerId);
+    });
+
+    commentsRealtimeChannelRef.current = channel;
+  }, [loadWorkerComments]);
 
   const fetchLiveGigs = async (isLoadMore = false) => {
     // 1. BLOCK: Check network before doing anything else
@@ -1202,10 +1327,12 @@ const GigsScreen = ({ navigation }) => {
               styles.commentsBtn,
               { backgroundColor: theme.colors.card2 },
             ]}
-            onPress={() => openCommentsSheet(item.id)}
+            onPress={() => {
+              console.log("Opening comments for worker:", item.id);
+              openCommentsSheet(item.id);
+            }}
           >
             <Icons.Ionicons name="chatbox-ellipses-outline" size={16} color="#fff" />
-            <Text style={styles.actionBtnText}>{item.commentsCount || 0}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -1222,44 +1349,6 @@ const GigsScreen = ({ navigation }) => {
       </View>
     );
   };
-
-  const DUMMY_COMMENTS = [
-    {
-      id: "c1",
-      displayName: "Thabo Nkosi",
-      email: "thabo.n@example.com",
-      createdAt: "2026-08-10T09:15:00Z",
-      text: "Excellent work ethic and very professional. Highly recommended for any handyman jobs around the city.",
-    },
-    {
-      id: "c2",
-      displayName: "Siphiwe Dlamini",
-      email: "siphiwe.d@mail.com",
-      createdAt: "2026-08-12T14:30:00Z",
-      text: "Did a fantastic job cleaning my apartment. Arrived on time and left everything spotless. Will definitely hire again.",
-    },
-    {
-      id: "c3",
-      displayName: "Anonymous",
-      email: "user123@gmail.com",
-      createdAt: "2026-08-14T11:05:00Z",
-      text: "Good service overall but communication could be a little better. Still worth booking if you need reliable help.",
-    },
-    {
-      id: "c4",
-      displayName: "Lindiwe M.",
-      email: "lindiwe.m@work.co.sz",
-      createdAt: "2026-08-15T16:45:00Z",
-      text: "This is a longer review to test the expand feature. The worker showed up early, brought all the necessary tools, explained every step of the process clearly, and finished ahead of schedule. The quality of the work exceeded my expectations and the price was fair. I would not hesitate to recommend them to friends and family who need similar services in the area.",
-    },
-    {
-      id: "c5",
-      displayName: "James K.",
-      email: "james.k@example.com",
-      createdAt: "2026-08-16T08:20:00Z",
-      text: "Quick response and solid results. Five stars.",
-    },
-  ];
 
   const toggleExpandComment = useCallback((commentId) => {
     setExpandedComments((prev) => ({
@@ -1282,11 +1371,88 @@ const GigsScreen = ({ navigation }) => {
     return text.trim().split(/\s+/).filter(Boolean).length;
   };
 
-  const handleSubmitComment = () => {
+  const handleSubmitComment = async () => {
     const value = (commentText || "").trim();
+
     if (!value) return;
-    console.log("New comment for worker", commentsForWorkerId, ":", value);
-    setCommentText("");
+
+    if (!commentsForWorkerId) {
+      console.warn("No worker selected for comment");
+      return;
+    }
+
+    if (!user) {
+      console.warn("User must be logged in to comment");
+      return;
+    }
+
+    setSubmittingComment(true);
+
+    try {
+      const result = await addCommentToWorker(
+        commentsForWorkerId,
+        value,
+        user
+      );
+
+      if (!result.success) {
+        console.error(
+          "Failed to add comment:",
+          result.error
+        );
+        return;
+      }
+
+      const insertedComment = result.data;
+      const newComment = insertedComment
+        ? {
+          id: insertedComment.id,
+          displayName: insertedComment.display_name,
+          email: insertedComment.email,
+          createdAt: insertedComment.created_at,
+          text: insertedComment.comment,
+          workerId: insertedComment.worker_id,
+          userId: insertedComment.user_id,
+        }
+        : {
+          id: `local-${Date.now()}`,
+          displayName: user.displayName || "Anonymous",
+          email: user.email || null,
+          createdAt: new Date().toISOString(),
+          text: value,
+          workerId: commentsForWorkerId,
+          userId: user.uid,
+        };
+
+      commentsLoadRequestRef.current += 1;
+      setComments((previousComments) => {
+        if (
+          newComment.id &&
+          previousComments.some((comment) => comment.id === newComment.id)
+        ) {
+          return previousComments;
+        }
+
+        return [newComment, ...previousComments];
+      });
+
+      setFilteredWorkers((workers) =>
+        workers.map((worker) => {
+          if (worker.id !== commentsForWorkerId) return worker;
+
+          return {
+            ...worker,
+            commentsCount: (worker.commentsCount || 0) + 1,
+          };
+        }),
+      );
+
+      setCommentText("");
+    } catch (error) {
+      console.error("handleSubmitComment error:", error);
+    } finally {
+      setSubmittingComment(false);
+    }
   };
 
   // 1. Show NOTHING or a Loader while checking the very first time
@@ -1393,14 +1559,27 @@ const GigsScreen = ({ navigation }) => {
                 !commentText?.trim() && { opacity: 0.5 },
               ]}
               onPress={handleSubmitComment}
-              disabled={!commentText?.trim()}
+              disabled={!commentText?.trim() || submittingComment}
             >
-              <Icons.Ionicons name="send" size={18} color="#fff" />
+              {submittingComment ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Icons.Ionicons name="send" size={18} color="#fff" />
+              )}
             </TouchableOpacity>
           </View>
 
+          {loadingComments ? (
+            <View style={{ paddingVertical: 20 }}>
+              <ActivityIndicator
+                size="small"
+                color={theme.colors.indicator}
+              />
+            </View>
+          ) : null}
+
           {/* COMMENTS (under input) – plain map, no FlatList */}
-          {(DUMMY_COMMENTS || []).map((comment, index) => {
+          {(comments || []).map((comment, index) => {
             if (!comment) return null;
 
             const text = comment.text || "";
@@ -1468,7 +1647,7 @@ const GigsScreen = ({ navigation }) => {
                   )}
                 </View>
 
-                {index < DUMMY_COMMENTS.length - 1 && (
+                {index < comments.length - 1 && (
                   <View
                     style={[
                       styles.commentDivider,
@@ -2681,9 +2860,8 @@ const styles = StyleSheet.create({
 
   // Styles for the new comments button
   commentsBtn: {
-    flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 16,
+    paddingHorizontal: 25,
     paddingVertical: 10,
     borderRadius: 6,
   },
