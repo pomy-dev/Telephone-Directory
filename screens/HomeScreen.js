@@ -127,12 +127,12 @@ export default function HomeScreen({ navigation }) {
       name: "For-Hires",
       image: Images.forhire,
     },
-    {
-      id: "3",
-      screen: "LoanAssist",
-      name: "Smart Financing",
-      image: Images.loans,
-    },
+    // {
+    //   id: "3",
+    //   screen: "LoanAssist",
+    //   name: "Smart Financing",
+    //   image: Images.loans,
+    // },
   ];
 
   useEffect(() => {
